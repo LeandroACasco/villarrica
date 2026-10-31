@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f0f12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Villarrica</title>
+<link rel="icon" href="icons/favicon.png">
+<style>
+  :root { --bg: #0f0f12; --panel: #1b1b20; --key: #2a2a31; --key-hi: #393941; --text: #ece9e2; --muted: #8f8c86;
+    --accent: #f2a52b; --line: #2f2f37; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    user-select: none; -webkit-user-select: none; touch-action: none; overscroll-behavior: none; }
+  #game { position: fixed; left: 0; top: 0; image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+
+  /* top-right buttons */
+  #topbar { position: fixed; top: calc(env(safe-area-inset-top) + 8px); right: calc(env(safe-area-inset-right) + 8px);
+    display: flex; gap: 6px; z-index: 5; }
+  .icon-btn { background: rgba(15,15,18,.55); border: 1px solid rgba(255,255,255,.14); color: var(--text); border-radius: 10px;
+    height: 36px; min-width: 40px; padding: 0 10px; font-size: 16px; cursor: pointer; backdrop-filter: blur(4px); }
+  .icon-btn:hover { background: rgba(40,40,48,.75); }
+
+  #hud { position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: calc(env(safe-area-inset-left) + 8px); z-index: 4;
+    background: rgba(12,12,16,.62); border-left: 3px solid var(--accent); padding: 4px 10px 5px 8px; border-radius: 0 8px 8px 0;
+    display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
+  #hud b { color: var(--accent); font-size: 15px; letter-spacing: .12em; font-weight: 800; text-shadow: 0 2px 0 #000; }
+  #hud span { color: #d8d4ca; font-size: 12px; }
+  #dbg { position: fixed; left: calc(env(safe-area-inset-left) + 8px); bottom: calc(env(safe-area-inset-bottom) + 6px); z-index: 4;
+    font: 12px ui-monospace, monospace; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; }
+
+  /* touch controls */
+  #touch { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
+  #joyZone { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; pointer-events: auto; touch-action: none; }
+  .joy { position: absolute; width: 132px; height: 132px; margin: -66px 0 0 -66px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(255,255,255,.06) 0 55%, rgba(255,255,255,.1) 56% 100%);
+    border: 2px solid rgba(255,255,255,.22); transition: opacity .15s; }
+  .joy.idle { opacity: .45; }
+  .knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), rgba(255,255,255,.2)); box-shadow: 0 3px 10px rgba(0,0,0,.4); }
+  #btns { position: absolute; right: calc(env(safe-area-inset-right) + 18px); bottom: calc(env(safe-area-inset-bottom) + 18px);
+    width: 190px; height: 170px; pointer-events: none; }
+  .tb { position: absolute; border-radius: 50%; border: 2px solid rgba(255,255,255,.28); color: #fff; pointer-events: auto;
+    touch-action: none; font: 700 12px system-ui, sans-serif; letter-spacing: .03em; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-shadow: 0 1px 2px rgba(0,0,0,.6); cursor: pointer; padding: 0; }
+  .tb .ico { font-size: 22px; line-height: 1; }
+  .tb.down { filter: brightness(1.5); transform: scale(.94); }
+  .tb.a { right: 0; bottom: 18px; width: 84px; height: 84px; background: rgba(214,72,52,.55); }
+  .tb.b { right: 96px; bottom: 0; width: 64px; height: 64px; background: rgba(60,120,210,.5); }
+  .tb.c { right: 78px; bottom: 96px; width: 58px; height: 58px; background: rgba(70,70,82,.55); }
+
+  #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 14px); transform: translateX(-50%); background: #24242a;
+    border: 1px solid var(--line); padding: 9px 16px; border-radius: 10px; opacity: 0; transition: opacity .25s; pointer-events: none;
+    max-width: 80vw; z-index: 20; text-align: center; }
+  #toast.show { opacity: 1; }
+
+  #overlay { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; background: rgba(8,8,10,.78); text-align: center; padding: 24px; cursor: pointer; }
+  #overlay h1 { margin: 0; font-size: 34px; letter-spacing: .14em; color: var(--accent); font-weight: 800; text-shadow: 0 3px 0 #6b3d05; }
+  #overlay p { margin: 0; color: var(--muted); }
+  #overlay b { font-size: 16px; }
+
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(460px, 94vw); max-height: 92vh; }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  .dlg { padding: 18px; display: flex; flex-direction: column; gap: 10px; overflow: auto; max-height: 90vh; touch-action: pan-y; }
+  .dlg h2 { margin: 0 0 2px; font-size: 17px; }
+  .dlg h3 { margin: 10px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .dlg p { margin: 0; color: var(--muted); font-size: 13px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { flex: 1 1 170px; background: var(--key); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+    font: 500 14px system-ui, sans-serif; cursor: pointer; text-align: center; }
+  .btn:hover { background: var(--key-hi); }
+  .btn.primary { background: var(--accent); color: #111; border-color: var(--accent); }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { flex: 1; background: var(--key); color: var(--text); border: none; padding: 9px 6px; font: 500 13px system-ui; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: #111; }
+  table { border-collapse: collapse; font-size: 13px; width: 100%; }
+  td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
+  kbd { background: var(--key); border-radius: 4px; padding: 1px 6px; font: 12px ui-monospace, monospace; }
+  label.chk { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="touch" hidden>
+  <div id="joyZone"><div class="joy idle" id="joy"><div class="knob" id="knob"></div></div></div>
+  <div id="btns">
+    <button class="tb a" data-b="action"><span class="ico">✋</span>ACCIÓN</button>
+    <button class="tb b" data-b="run"><span class="ico">»</span>CORRER</button>
+    <button class="tb c" data-b="car"><span class="ico">🚗</span>AUTO</button>
+  </div>
+</div>
+
+<div id="hud"><b>VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
+<div id="dbg" hidden></div>
+<div id="topbar">
+  <button class="icon-btn" id="btnFull" title="Pantalla completa">⛶</button>
+  <button class="icon-btn" id="btnMenu" title="Menú (Esc)">☰</button>
+</div>
+
+<div id="overlay">
+  <h1>VILLARRICA</h1>
+  <p>Etapa 0 · barrio de prueba</p>
+  <b>Tocá o apretá una tecla para empezar</b>
+</div>
+<div id="toast"></div>
+
+<dialog id="menu">
+  <div class="dlg">
+    <h2>Menú</h2>
+    <h3>Controles táctiles</h3>
+    <div class="seg" id="segTouch"><button data-v="auto">Automático</button><button data-v="on">Mostrar</button><button data-v="off">Ocultar</button></div>
+    <h3>Opciones</h3>
+    <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
+    <label class="chk"><input type="checkbox" id="optVib"> Vibración</label>
+    <div class="row"><button class="btn" id="btnReset">📍 Volver al punto de inicio</button></div>
+    <h3>Teclado (PC)</h3>
+    <table>
+      <tr><td><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd></td><td>Caminar</td></tr>
+      <tr><td><kbd>Shift</kbd></td><td>Correr (mantener)</td></tr>
+      <tr><td><kbd>Espacio</kbd> / <kbd>J</kbd></td><td>Acción</td></tr>
+      <tr><td><kbd>F</kbd> / <kbd>K</kbd></td><td>Subir / bajar del auto</td></tr>
+      <tr><td><kbd>Esc</kbd> / <kbd>P</kbd></td><td>Menú y pausa</td></tr>
+    </table>
+    <h3>Control de consola</h3>
+    <p id="padInfo">Conectá un control (USB o Bluetooth) y apretá cualquier botón.</p>
+    <table>
+      <tr><td>Stick izq. / cruceta</td><td>Caminar (el stick regula la velocidad)</td></tr>
+      <tr><td><kbd>A</kbd></td><td>Acción</td></tr>
+      <tr><td><kbd>B</kbd> / <kbd>RT</kbd></td><td>Correr</td></tr>
+      <tr><td><kbd>X</kbd></td><td>Subir / bajar del auto</td></tr>
+      <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
+    </table>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Versión 47562f66 · 2026-10-31</p>
+    <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
+  </div>
+</dialog>
+
+<script>
+// ===== engine/core.js =====
+// Núcleo: utilidades, pantalla con escalado en píxeles enteros y loop de paso fijo a 60 Hz.
+'use strict';
+const VR = {};
+VR.TILE = 16;
+VR.clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+VR.lerp = (a, b, t) => a + (b - a) * t;
+// ruido determinístico por coordenada (mismo resultado siempre para la misma celda)
+VR.hash = (x, y, s = 0) => {
+  let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s | 0, 1442695041)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
+VR.rng = (seed) => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
+VR.store = {
+  get(k, d) { try { const v = localStorage.getItem('villarrica:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('villarrica:' + k, JSON.stringify(v)); } catch (e) {} },
+};
+VR.canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return c; };
+
+// Pantalla: el lado corto mide ~270 píxeles del juego y cada píxel del juego ocupa un número entero de píxeles físicos.
+VR.screen = {
+  BASE: 270,
+  init(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d', { alpha: false }); this.fit(); },
+  fit() {
+    const dpr = window.devicePixelRatio || 1;
+    const dw = Math.round(innerWidth * dpr), dh = Math.round(innerHeight * dpr);
+    const s = Math.max(1, Math.round(Math.min(dw, dh) / this.BASE));
+    this.scale = s;
+    this.w = Math.ceil(dw / s); this.h = Math.ceil(dh / s);
+    this.canvas.width = this.w; this.canvas.height = this.h;
+    this.canvas.style.width = (this.w * s / dpr) + 'px';
+    this.canvas.style.height = (this.h * s / dpr) + 'px';
+    this.ctx.imageSmoothingEnabled = false;
+  },
+};
+
+// Loop: la lógica corre en pasos fijos de 1/60 s y el dibujo interpola entre el paso anterior y el actual,
+// así se ve igual de suave en pantallas de 60, 90, 120 o 144 Hz.
+VR.loop = {
+  STEP: 1 / 60, paused: false, fps: 0,
+  start(update, render) {
+    let last = performance.now(), acc = 0, fpsT = 0, fpsN = 0;
+    const frame = (now) => {
+      requestAnimationFrame(frame);
+      let dt = (now - last) / 1000; last = now;
+      if (dt > 0.25) dt = 0.25;
+      fpsT += dt; fpsN++; if (fpsT >= 0.5) { this.fps = Math.round(fpsN / fpsT); fpsT = 0; fpsN = 0; }
+      if (this.paused) { acc = 0; render(1, dt); return; }
+      VR.input.poll();
+      acc += dt;
+      let n = 0;
+      while (acc >= this.STEP && n < 6) { update(this.STEP); VR.input.consume(); acc -= this.STEP; n++; }
+      if (n === 6) acc = 0;
+      render(acc / this.STEP, dt);
+    };
+    requestAnimationFrame(frame);
+  },
+};
+
+// ===== engine/input.js =====
+// Entrada unificada: teclado, joystick táctil analógico, botones táctiles y control de consola.
+// El juego solo lee VR.input.ax / ay (de -1 a 1), down(b) y pressed(b).
+'use strict';
+VR.input = (() => {
+  const BTN = ['action', 'run', 'car', 'menu'];
+  const kb = { u: 0, d: 0, l: 0, r: 0 };
+  const kbBtn = {}, touchBtn = {}, padBtn = {}, latch = {};
+  let prev = {}, cur = {}, pressedNow = {}, consumed = false;
+  const touchAxis = { x: 0, y: 0 }, padAxis = { x: 0, y: 0 };
+  const api = { ax: 0, ay: 0, source: 'kb', vibrate: true, onAny: null, enabled: true };
+
+  const dirKeys = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
+  const btnKeys = { Space: 'action', KeyJ: 'action', Enter: 'action', ShiftLeft: 'run', ShiftRight: 'run', KeyF: 'car', KeyK: 'car', Escape: 'menu', KeyP: 'menu' };
+
+  const any = () => { if (api.onAny) api.onAny(); };
+  addEventListener('keydown', (e) => {
+    if (!api.enabled) return;
+    const d = dirKeys[e.code], b = btnKeys[e.code];
+    if (!d && !b) return;
+    e.preventDefault(); api.source = 'kb'; any();
+    if (d) kb[d] = 1;
+    if (b && !e.repeat) { kbBtn[b] = true; latch[b] = true; }
+  });
+  addEventListener('keyup', (e) => {
+    const d = dirKeys[e.code], b = btnKeys[e.code];
+    if (d) kb[d] = 0;
+    if (b) kbBtn[b] = false;
+  });
+  const releaseAll = () => { kb.u = kb.d = kb.l = kb.r = 0; for (const b of BTN) kbBtn[b] = touchBtn[b] = padBtn[b] = false; touchAxis.x = touchAxis.y = 0; };
+  addEventListener('blur', releaseAll);
+  api.releaseAll = releaseAll;
+
+  const buzz = (ms) => { if (api.vibrate && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} };
+
+  // ---- táctil: el joystick aparece donde apoyás el pulgar (mitad izquierda) ----
+  api.initTouch = (zone, joy, knob, buttons) => {
+    let id = null, ox = 0, oy = 0;
+    const R = 50;
+    const home = () => { const r = zone.getBoundingClientRect(); return [r.left + 96, r.bottom - 110]; };
+    const place = (x, y) => { joy.style.left = x + 'px'; joy.style.top = y + 'px'; };
+    const rest = () => { const [x, y] = home(); place(x, y); knob.style.transform = ''; joy.classList.add('idle'); };
+    rest(); addEventListener('resize', () => { if (id === null) rest(); });
+    const move = (e) => {
+      let dx = e.clientX - ox, dy = e.clientY - oy;
+      const dist = Math.hypot(dx, dy);
+      if (dist > R) { // el joystick "sigue" al dedo si se pasa del borde
+        ox += dx * (1 - R / dist); oy += dy * (1 - R / dist); place(ox, oy);
+        dx = e.clientX - ox; dy = e.clientY - oy;
+      }
+      knob.style.transform = `translate(${dx}px, ${dy}px)`;
+      let m = Math.min(1, Math.hypot(dx, dy) / R);
+      if (m < 0.18) { touchAxis.x = touchAxis.y = 0; return; }
+      m = (m - 0.18) / 0.82;
+      const a = Math.atan2(dy, dx);
+      touchAxis.x = Math.cos(a) * m; touchAxis.y = Math.sin(a) * m;
+    };
+    zone.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); any(); if (id !== null) return;
+      id = e.pointerId; api.source = 'touch';
+      try { zone.setPointerCapture(id); } catch (x) {}
+      ox = e.clientX; oy = e.clientY; place(ox, oy); joy.classList.remove('idle'); move(e);
+    });
+    zone.addEventListener('pointermove', (e) => { if (e.pointerId === id) move(e); });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; touchAxis.x = touchAxis.y = 0; rest(); };
+    zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end); zone.addEventListener('lostpointercapture', end);
+
+    buttons.forEach((el) => {
+      const b = el.dataset.b;
+      const down = (e) => { e.preventDefault(); any(); api.source = 'touch'; try { el.setPointerCapture(e.pointerId); } catch (x) {}
+        if (touchBtn[b]) return; touchBtn[b] = true; latch[b] = true; el.classList.add('down'); buzz(8); };
+      const up = () => { if (!touchBtn[b]) return; touchBtn[b] = false; el.classList.remove('down'); };
+      el.addEventListener('pointerdown', down);
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+      el.addEventListener('contextmenu', (e) => e.preventDefault());
+    });
+  };
+
+  // ---- control de consola (mapeo estándar) ----
+  const PADMAP = { 0: 'action', 1: 'run', 7: 'run', 2: 'car', 9: 'menu' };
+  let padName = null;
+  addEventListener('gamepadconnected', (e) => { padName = (e.gamepad && e.gamepad.id) || 'control'; if (api.onPad) api.onPad(padName, true); });
+  addEventListener('gamepaddisconnected', () => { if (api.onPad) api.onPad(padName, false); });
+  function pollPad() {
+    const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : [];
+    const gp = pads[0];
+    for (const b of BTN) padBtn[b] = false;
+    padAxis.x = padAxis.y = 0;
+    if (!gp) return;
+    const p = (i) => !!(gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.5));
+    let x = (p(15) ? 1 : 0) - (p(14) ? 1 : 0), y = (p(13) ? 1 : 0) - (p(12) ? 1 : 0);
+    if (x || y) { const l = Math.hypot(x, y); x /= l; y /= l; }
+    else {
+      x = gp.axes[0] || 0; y = gp.axes[1] || 0;
+      let m = Math.hypot(x, y);
+      if (m < 0.2) { x = y = 0; } else { const k = Math.min(1, (m - 0.2) / 0.75) / m; x *= k; y *= k; }
+    }
+    padAxis.x = x; padAxis.y = y;
+    let used = !!(x || y);
+    for (const i in PADMAP) if (p(+i)) { padBtn[PADMAP[i]] = true; used = true; }
+    if (used) { api.source = 'pad'; any(); }
+  }
+
+  // Se llama una vez por cuadro antes de los pasos de lógica.
+  api.poll = () => {
+    pollPad();
+    let x = kb.r - kb.l, y = kb.d - kb.u;
+    if (x && y) { x *= Math.SQRT1_2; y *= Math.SQRT1_2; }
+    if (!x && !y) { x = touchAxis.x; y = touchAxis.y; }
+    if (!x && !y) { x = padAxis.x; y = padAxis.y; }
+    if (!api.enabled) x = y = 0;
+    api.ax = x; api.ay = y;
+    prev = cur; cur = {};
+    for (const b of BTN) {
+      cur[b] = api.enabled && !!(kbBtn[b] || touchBtn[b] || padBtn[b] || latch[b]);
+      pressedNow[b] = cur[b] && !prev[b];
+      latch[b] = false;
+    }
+    consumed = false;
+  };
+  // Los "recién apretados" valen solo para el primer paso de lógica del cuadro.
+  api.consume = () => { if (!consumed) { consumed = true; for (const b of BTN) pressedNow[b] = false; } };
+  api.down = (b) => !!cur[b];
+  api.pressed = (b) => !!pressedNow[b];
+  return api;
+})();
+
+// ===== engine/gfx.js =====
+// Herramientas de dibujo en píxeles: pintor, contorno automático y texto nítido.
+'use strict';
+VR.gfx = {
+  // Pintor simple sobre un canvas: r = rectángulo, p = píxel.
+  painter(c) {
+    const x = c.getContext('2d');
+    return {
+      ctx: x,
+      r(px, py, w, h, col) { x.fillStyle = col; x.fillRect(px, py, w, h); },
+      p(px, py, col) { x.fillStyle = col; x.fillRect(px, py, 1, 1); },
+    };
+  },
+  // Agrega un contorno de 1 px alrededor de todo lo opaco (estilo sprites de celular).
+  outline(c, col) {
+    const ctx = c.getContext('2d'), w = c.width, h = c.height;
+    const img = ctx.getImageData(0, 0, w, h), d = img.data;
+    const r = parseInt(col.slice(1, 3), 16), g = parseInt(col.slice(3, 5), 16), b = parseInt(col.slice(5, 7), 16);
+    const solid = (x, y) => x >= 0 && y >= 0 && x < w && y < h && d[(y * w + x) * 4 + 3] > 128;
+    const mark = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (solid(x, y)) continue;
+      if (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1)) mark.push((y * w + x) * 4);
+    }
+    for (const i of mark) { d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255; }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  },
+  flipX(c) {
+    const o = VR.canvas(c.width, c.height), x = o.getContext('2d');
+    x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(c, 0, 0);
+    return o;
+  },
+  // Texto en el mundo (globos, carteles): fuente del sistema, cacheada como imagen.
+  _txt: new Map(),
+  textImg(str, col = '#ffffff', size = 8, bold = true) {
+    const key = str + '|' + col + '|' + size + '|' + bold;
+    let c = this._txt.get(key);
+    if (c) return c;
+    const font = (bold ? 'bold ' : '') + size + 'px "Trebuchet MS", Verdana, sans-serif';
+    const m = VR.canvas(1, 1).getContext('2d'); m.font = font;
+    const w = Math.ceil(m.measureText(str).width) + 2, h = size + 4;
+    c = VR.canvas(w, h);
+    const x = c.getContext('2d'); x.font = font; x.textBaseline = 'top'; x.fillStyle = col; x.fillText(str, 1, 1);
+    if (this._txt.size > 400) this._txt.clear();
+    this._txt.set(key, c);
+    return c;
+  },
+  text(ctx, str, x, y, col = '#ffffff', opt = {}) {
+    const img = this.textImg(str, col, opt.size || 8, opt.bold !== false);
+    let px = Math.round(opt.center ? x - img.width / 2 : opt.right ? x - img.width : x);
+    if (opt.shadow) ctx.drawImage(this.textImg(str, opt.shadow, opt.size || 8, opt.bold !== false), px + 1, Math.round(y) + 1);
+    ctx.drawImage(img, px, Math.round(y));
+    return img.width;
+  },
+};
+
+// ===== world/tiles.js =====
+// Tiles generados por código (16×16), con 4 variantes cada uno para que el piso no se vea repetido.
+'use strict';
+VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7 };
+VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] = 1; VR.SOLID[VR.T.MONUMENT] = 1;
+// tile que se dibuja debajo de cada tipo
+VR.GROUND_OF = { [VR.T.TREE]: VR.T.GRASS, [VR.T.BUILDING]: VR.T.SIDEWALK, [VR.T.MONUMENT]: VR.T.PAVING };
+
+VR.tileset = (() => {
+  const S = VR.TILE, VARS = 4, TYPES = 8;
+  const c = VR.canvas(S * VARS, S * TYPES), ctx = c.getContext('2d');
+  const img = ctx.createImageData(c.width, c.height), d = img.data;
+  const put = (x, y, r, g, b) => { const i = (y * c.width + x) * 4; d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255; };
+  const n = (x, y, s) => VR.hash(x, y, s);
+  for (let t = 0; t < TYPES; t++) for (let v = 0; v < VARS; v++) for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const gx = v * S + x, gy = t * S + y, h = n(gx, gy, t * 7 + 1), h2 = n(gx, gy, t * 13 + 5);
+    let r, g, b;
+    switch (t) {
+      case VR.T.GRASS: {
+        r = 92; g = 158; b = 58;
+        if (h < 0.18) { r -= 18; g -= 22; b -= 10; } else if (h > 0.9) { r += 22; g += 22; b += 8; }
+        if (h2 > 0.985) { r = 222; g = 214; b = 96; } // florcitas
+        break;
+      }
+      case VR.T.ROAD: {
+        const k = (h - 0.5) * 12 | 0; r = 76 + k; g = 76 + k; b = 84 + k;
+        if (h2 > 0.992) { r -= 22; g -= 22; b -= 22; }
+        break;
+      }
+      case VR.T.SIDEWALK: {
+        const k = (h - 0.5) * 10 | 0; r = 190 + k; g = 182 + k; b = 166 + k;
+        if (x % 8 === 0 || y % 8 === 0) { r -= 26; g -= 26; b -= 26; }
+        break;
+      }
+      case VR.T.PAVING: { // baldosas rojizas de plaza, en damero
+        const k = (h - 0.5) * 10 | 0, alt = ((x >> 2) + (y >> 2) + v) & 1;
+        r = (alt ? 196 : 182) + k; g = (alt ? 146 : 132) + k; b = (alt ? 108 : 98) + k;
+        if (x % 4 === 0 || y % 4 === 0) { r -= 22; g -= 22; b -= 20; }
+        break;
+      }
+      case VR.T.DIRT: { // tierra colorada
+        const k = (h - 0.5) * 16 | 0; r = 168 + k; g = 92 + k; b = 58 + k;
+        if (h2 > 0.96) { r += 20; g += 16; b += 12; }
+        break;
+      }
+      default: r = 255; g = 0; b = 255;
+    }
+    put(gx, gy, r, g, b);
+  }
+  ctx.putImageData(img, 0, 0);
+  return { canvas: c, VARS, draw(dst, type, v, x, y) { dst.drawImage(c, (v % VARS) * S, type * S, S, S, x, y, S, S); } };
+})();
+
+// Copas de árboles pre-dibujadas (círculos con luz arriba a la izquierda y contorno oscuro).
+VR.canopy = (() => {
+  const cache = new Map();
+  const PAL = [
+    [[48, 102, 40], [72, 138, 52], [110, 176, 70]],
+    [[40, 94, 52], [62, 128, 64], [98, 166, 84]],
+    [[70, 104, 36], [104, 140, 46], [150, 182, 70]], // lapacho sin flor / más amarillento
+    [[150, 52, 120], [196, 82, 158], [236, 140, 200]], // lapacho rosado
+  ];
+  return (r, pal) => {
+    const key = r + ':' + pal;
+    let c = cache.get(key);
+    if (c) return c;
+    const S = r * 2 + 3;
+    c = VR.canvas(S, S);
+    const x = c.getContext('2d'), P = PAL[pal % PAL.length];
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const q = dx * dx + dy * dy;
+      // borde irregular
+      const edge = r * r * (0.82 + 0.18 * VR.hash(dx, dy, r + pal * 31));
+      if (q > edge) continue;
+      const sh = (dx + dy) / r, hn = VR.hash(dx * 3, dy * 5, pal);
+      let col = P[1];
+      if (sh > 0.55 || (sh > 0.1 && hn < 0.25)) col = P[0];
+      else if (sh < -0.6 || (sh < -0.15 && hn > 0.7)) col = P[2];
+      x.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`;
+      x.fillRect(dx + r + 1, dy + r + 1, 1, 1);
+    }
+    VR.gfx.outline(c, '#1d2a14');
+    cache.set(key, c);
+    return c;
+  };
+})();
+
+// ===== world/world.js =====
+// Mundo: grilla de tiles, edificios, árboles y decorados; se dibuja por bloques (chunks) pre-renderizados.
+'use strict';
+VR.World = class {
+  constructor(w, h) {
+    this.w = w; this.h = h;
+    this.tiles = new Uint8Array(w * h);
+    this.line = new Uint8Array(w * h); // 1 = línea central E-O, 2 = N-S, 3 = cebra de barras verticales, 4 = cebra horizontal
+    this.buildings = []; this.trees = []; this.decals = []; this.labels = [];
+    this.spawn = { x: w * 8, y: h * 8 };
+    this.CH = 32; // tiles por chunk (512 px)
+    this.cache = new Map(); this.MAXCACHE = 48;
+    this.index = null;
+  }
+  get(tx, ty) { return tx < 0 || ty < 0 || tx >= this.w || ty >= this.h ? -1 : this.tiles[ty * this.w + tx]; }
+  set(tx, ty, t) { if (tx >= 0 && ty >= 0 && tx < this.w && ty < this.h) this.tiles[ty * this.w + tx] = t; }
+  solid(tx, ty) { const t = this.get(tx, ty); return t < 0 || VR.SOLID[t] === 1; }
+  // ¿La caja [x0,x1)×[y0,y1) en píxeles toca algo sólido?
+  hits(x0, y0, x1, y1) {
+    const S = VR.TILE;
+    for (let ty = Math.floor(y0 / S); ty <= Math.floor((y1 - 0.001) / S); ty++)
+      for (let tx = Math.floor(x0 / S); tx <= Math.floor((x1 - 0.001) / S); tx++)
+        if (this.solid(tx, ty)) return true;
+    return false;
+  }
+  addBuilding(b) { this.buildings.push(b); for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) this.set(x, y, VR.T.BUILDING); }
+  addTree(tx, ty, r, pal) { this.trees.push({ x: tx, y: ty, r, pal }); this.set(tx, ty, VR.T.TREE); }
+
+  // Índice espacial: qué edificios/árboles tocan cada chunk (con margen para sombras y copas).
+  buildIndex() {
+    const CH = this.CH * VR.TILE, cw = Math.ceil(this.w / this.CH), chh = Math.ceil(this.h / this.CH);
+    this.index = Array.from({ length: cw * chh }, () => ({ b: [], t: [], d: [] }));
+    const add = (list, item, px0, py0, px1, py1) => {
+      for (let cy = Math.max(0, Math.floor(py0 / CH)); cy <= Math.min(chh - 1, Math.floor(py1 / CH)); cy++)
+        for (let cx = Math.max(0, Math.floor(px0 / CH)); cx <= Math.min(cw - 1, Math.floor(px1 / CH)); cx++)
+          this.index[cy * cw + cx][list].push(item);
+    };
+    const S = VR.TILE;
+    for (const b of this.buildings) add('b', b, b.x * S, b.y * S, (b.x + b.w) * S + 8, (b.y + b.h) * S + 8);
+    for (const t of this.trees) { const cx = t.x * S + 8, cy = t.y * S - 4; add('t', t, cx - t.r - 8, cy - t.r - 8, cx + t.r + 8, cy + t.r + 12); }
+    for (const d of this.decals) add('d', d, d.x * S, d.y * S, (d.x + d.w) * S, (d.y + d.h) * S);
+    this.cw = cw; this.chh = chh;
+  }
+
+  chunk(cx, cy) {
+    const key = cx + ',' + cy;
+    let c = this.cache.get(key);
+    if (c) { this.cache.delete(key); this.cache.set(key, c); return c; } // LRU
+    c = this.renderChunk(cx, cy);
+    this.cache.set(key, c);
+    if (this.cache.size > this.MAXCACHE) this.cache.delete(this.cache.keys().next().value);
+    return c;
+  }
+
+  renderChunk(cx, cy) {
+    const S = VR.TILE, N = this.CH, PX = N * S, ox = cx * PX, oy = cy * PX;
+    const ground = VR.canvas(PX, PX), g = ground.getContext('2d');
+    const idx = this.index[cy * this.cw + cx];
+    g.save(); g.translate(-ox, -oy);
+    // 1) piso
+    for (let ty = cy * N; ty < Math.min(this.h, cy * N + N); ty++) for (let tx = cx * N; tx < Math.min(this.w, cx * N + N); tx++) {
+      let t = this.tiles[ty * this.w + tx];
+      if (VR.GROUND_OF[t] !== undefined) t = VR.GROUND_OF[t];
+      VR.tileset.draw(g, t, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
+    }
+    // 2) decorados de piso (canchas, etc.)
+    for (const d of idx.d) VR.decor[d.kind] && VR.decor[d.kind](g, d);
+    // 3) cordones, líneas y cebras (autotiling según vecinos)
+    for (let ty = cy * N; ty < Math.min(this.h, cy * N + N); ty++) for (let tx = cx * N; tx < Math.min(this.w, cx * N + N); tx++) {
+      const t = this.tiles[ty * this.w + tx], x = tx * S, y = ty * S;
+      if (t === VR.T.SIDEWALK || t === VR.T.BUILDING) {
+        const R = VR.T.ROAD;
+        if (this.get(tx, ty - 1) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, S, 1); g.fillStyle = '#7d776c'; g.fillRect(x, y + 1, S, 1); }
+        if (this.get(tx, ty + 1) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x, y + S - 2, S, 1); g.fillStyle = '#3c3c44'; g.fillRect(x, y + S - 1, S, 1); }
+        if (this.get(tx - 1, ty) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + 1, y, 1, S); }
+        if (this.get(tx + 1, ty) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x + S - 1, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + S - 2, y, 1, S); }
+      }
+      const l = this.line[ty * this.w + tx];
+      if (!l) continue;
+      if (l === 1) { g.fillStyle = '#e2bf45'; g.fillRect(x + 2, y + 7, 9, 2); }
+      else if (l === 2) { g.fillStyle = '#e2bf45'; g.fillRect(x + 7, y + 2, 2, 9); }
+      else if (l === 3) { g.fillStyle = '#e8e6e0'; for (let i = 1; i < S; i += 5) g.fillRect(x + i, y + 1, 3, S - 2); }
+      else if (l === 4) { g.fillStyle = '#e8e6e0'; for (let i = 1; i < S; i += 5) g.fillRect(x + 1, y + i, S - 2, 3); }
+    }
+    // 4) sombras de árboles y edificios (sol del noroeste)
+    g.fillStyle = 'rgba(10,20,10,.28)';
+    for (const t of idx.t) { g.beginPath(); g.ellipse(t.x * S + 11, t.y * S + 4, t.r, t.r * 0.7, 0, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = 'rgba(0,0,0,.26)';
+    for (const b of idx.b) { g.fillRect((b.x + b.w) * S, b.y * S + 5, 5, b.h * S - 2); g.fillRect(b.x * S + 5, (b.y + b.h) * S, b.w * S, 3); }
+    // 5) troncos y edificios
+    for (const t of idx.t) { g.fillStyle = '#4b2f1b'; g.fillRect(t.x * S + 6, t.y * S + 2, 4, 10); g.fillStyle = '#6e4628'; g.fillRect(t.x * S + 6, t.y * S + 2, 2, 10); }
+    for (const b of idx.b) VR.drawBuilding(g, b);
+    g.restore();
+
+    return { ground };
+  }
+
+  draw(ctx, camX, camY, sw, sh) {
+    const PX = this.CH * VR.TILE;
+    const c0 = Math.max(0, Math.floor(camX / PX)), c1 = Math.min(this.cw - 1, Math.floor((camX + sw) / PX));
+    const r0 = Math.max(0, Math.floor(camY / PX)), r1 = Math.min(this.chh - 1, Math.floor((camY + sh) / PX));
+    for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {
+      ctx.drawImage(this.chunk(cx, cy).ground, cx * PX - camX, cy * PX - camY);
+    }
+  }
+  // Cosas altas visibles (copas, obelisco, arcos): se ordenan por Y junto con los personajes.
+  collectTall(camX, camY, sw, sh, out) {
+    const PX = this.CH * VR.TILE, S = VR.TILE, seen = new Set();
+    const c0 = Math.max(0, Math.floor(camX / PX)), c1 = Math.min(this.cw - 1, Math.floor((camX + sw) / PX));
+    const r0 = Math.max(0, Math.floor(camY / PX)), r1 = Math.min(this.chh - 1, Math.floor((camY + sh) / PX));
+    for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {
+      const idx = this.index[cy * this.cw + cx];
+      for (const t of idx.t) {
+        if (seen.has(t)) continue; seen.add(t);
+        const x = t.x * S + 8 - t.r - 1, y = t.y * S - 6 - t.r - 1;
+        if (x > camX + sw || y > camY + sh || x + t.r * 2 + 3 < camX || y + t.r * 2 + 3 < camY) continue;
+        out.push({ sy: t.y * S + 12, draw: (ctx) => ctx.drawImage(VR.canopy(t.r, t.pal), x - camX, y - camY) });
+      }
+      for (const d of idx.d) {
+        if (seen.has(d) || !VR.decorTop[d.kind]) continue; seen.add(d);
+        for (const part of VR.decorTop[d.kind](d)) out.push({ sy: part.sy, draw: (ctx) => { ctx.save(); ctx.translate(-camX, -camY); part.draw(ctx); ctx.restore(); } });
+      }
+    }
+  }
+};
+
+// ---------- edificios: techo arriba, fachada sur abajo (vista 3/4) ----------
+VR.drawBuilding = (g, b) => {
+  const S = VR.TILE, X = b.x * S, Y = b.y * S, W = b.w * S, H = b.h * S;
+  const fh = Math.min(H - 8, 6 + b.floors * 14), rh = H - fh;
+  const shade = (c, k) => c.map((v) => VR.clamp(Math.round(v * k), 0, 255));
+  const css = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+  // techo
+  g.fillStyle = css(b.roof); g.fillRect(X, Y, W, rh);
+  if (b.roofType === 'teja') {
+    g.fillStyle = css(shade(b.roof, 0.78));
+    for (let yy = Y + 3; yy < Y + rh - 1; yy += 4) { g.fillRect(X, yy, W, 1); for (let xx = X + ((yy >> 2) & 1) * 3; xx < X + W; xx += 6) g.fillRect(xx, yy - 3, 1, 3); }
+  } else if (b.roofType === 'chapa') {
+    g.fillStyle = css(shade(b.roof, 0.82)); for (let xx = X + 2; xx < X + W; xx += 4) g.fillRect(xx, Y, 1, rh);
+    g.fillStyle = css(shade(b.roof, 1.12)); for (let xx = X + 3; xx < X + W; xx += 4) g.fillRect(xx, Y, 1, rh);
+  } else { // losa: tanque de agua y manchas
+    g.fillStyle = css(shade(b.roof, 0.9)); g.fillRect(X + 2, Y + 2, W - 4, 1);
+    if (W >= 32 && rh >= 18) {
+      const tx = X + W - 14, ty = Y + 3;
+      g.fillStyle = '#2d3d52'; g.fillRect(tx, ty, 9, 9); g.fillStyle = '#4f6a8a'; g.fillRect(tx + 1, ty + 1, 7, 3);
+    }
+  }
+  g.fillStyle = css(shade(b.roof, 1.18)); g.fillRect(X, Y, W, 1); g.fillRect(X, Y, 1, rh);
+  g.fillStyle = css(shade(b.roof, 0.62)); g.fillRect(X + W - 1, Y, 1, rh); g.fillRect(X, Y + rh - 2, W, 2);
+  // fachada
+  const fy = Y + rh;
+  g.fillStyle = css(b.wall); g.fillRect(X, fy, W, fh);
+  g.fillStyle = css(shade(b.wall, 0.8)); g.fillRect(X, fy, W, 2); g.fillRect(X + W - 1, fy, 1, fh);
+  g.fillStyle = css(shade(b.wall, 0.55)); g.fillRect(X, fy + fh - 1, W, 1);
+  const glass = '#2c4258', glassHi = '#7fa3c0';
+  // pisos de arriba: ventanas
+  for (let f = b.floors - 1; f >= 1; f--) {
+    const wy = fy + 4 + (b.floors - 1 - f) * 14;
+    for (let wx = X + 4; wx + 6 <= X + W - 3; wx += 11) {
+      g.fillStyle = glass; g.fillRect(wx, wy, 6, 7); g.fillStyle = glassHi; g.fillRect(wx + 1, wy + 1, 1, 2);
+      g.fillStyle = css(shade(b.wall, 1.15)); g.fillRect(wx - 1, wy + 7, 8, 1);
+    }
+  }
+  // planta baja: local con toldo, o casa con puerta y ventanas
+  const gy = fy + fh - 15;
+  if (b.shop) {
+    g.fillStyle = glass; g.fillRect(X + 3, gy + 4, W - 6, 10);
+    g.fillStyle = glassHi; for (let wx = X + 5; wx < X + W - 5; wx += 9) g.fillRect(wx, gy + 5, 1, 3);
+    g.fillStyle = css(shade(b.wall, 0.7)); for (let wx = X + 3 + 12; wx < X + W - 6; wx += 12) g.fillRect(wx, gy + 4, 1, 10);
+    for (let wx = X + 1, i = 0; wx < X + W - 1; wx += 4, i++) { g.fillStyle = i & 1 ? '#f1ece0' : b.awning; g.fillRect(wx, gy, Math.min(4, X + W - 1 - wx), 4); }
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(X + 1, gy + 4, W - 2, 1);
+  } else {
+    const dx = X + ((W / 2) | 0) - 4;
+    g.fillStyle = '#5a3720'; g.fillRect(dx, gy + 2, 8, 12); g.fillStyle = '#7a4d2c'; g.fillRect(dx + 1, gy + 3, 6, 11);
+    g.fillStyle = '#e0c060'; g.fillRect(dx + 5, gy + 8, 1, 1);
+    for (let wx = X + 4; wx + 6 <= X + W - 3; wx += 11) {
+      if (wx + 6 > dx - 1 && wx < dx + 9) continue;
+      g.fillStyle = glass; g.fillRect(wx, gy + 4, 6, 6); g.fillStyle = glassHi; g.fillRect(wx + 1, gy + 5, 1, 2);
+      g.fillStyle = '#3b3b40'; for (let k = 0; k < 6; k += 2) g.fillRect(wx + k, gy + 4, 1, 6); // rejas
+    }
+  }
+};
+
+// ---------- decorados ----------
+VR.decor = {
+  cancha(g, d) { // canchita de tierra colorada con líneas de cal
+    const S = VR.TILE, X = d.x * S, Y = d.y * S, W = d.w * S, H = d.h * S;
+    g.fillStyle = '#e9e2d0';
+    g.fillRect(X + 4, Y + 4, W - 8, 1); g.fillRect(X + 4, Y + H - 5, W - 8, 1);
+    g.fillRect(X + 4, Y + 4, 1, H - 8); g.fillRect(X + W - 5, Y + 4, 1, H - 8);
+    g.fillRect(X + 4, Y + (H >> 1), W - 8, 1);
+    g.beginPath(); g.strokeStyle = '#e9e2d0'; g.lineWidth = 1; g.arc(X + W / 2, Y + H / 2 + 0.5, 14, 0, Math.PI * 2); g.stroke();
+    g.fillRect(X + (W >> 1) - 16, Y + 4, 1, 16); g.fillRect(X + (W >> 1) + 15, Y + 4, 1, 16); g.fillRect(X + (W >> 1) - 16, Y + 20, 32, 1);
+    g.fillRect(X + (W >> 1) - 16, Y + H - 21, 1, 16); g.fillRect(X + (W >> 1) + 15, Y + H - 21, 1, 16); g.fillRect(X + (W >> 1) - 16, Y + H - 21, 32, 1);
+  },
+  monumento(g, d) { // base de piedra (la parte alta va en la capa de arriba)
+    const S = VR.TILE, X = d.x * S, Y = d.y * S;
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(X + 4, Y + 6, 32, 30);
+    g.fillStyle = '#8f8a80'; g.fillRect(X, Y, 32, 32); g.fillStyle = '#b8b2a6'; g.fillRect(X + 2, Y + 2, 28, 18);
+    g.fillStyle = '#6d685f'; g.fillRect(X, Y + 28, 32, 4); g.fillStyle = '#a49e92'; g.fillRect(X + 4, Y + 20, 24, 8);
+    g.fillStyle = '#c9a54a'; g.fillRect(X + 12, Y + 22, 8, 4); // placa
+  },
+};
+VR.decorTop = {
+  cancha(d) { // arcos (uno en cada punta)
+    const S = VR.TILE, X = d.x * S, W = d.w * S, Y = d.y * S, H = d.h * S, cx = X + (W >> 1);
+    return [Y + 4, Y + H - 4].map((gy) => ({ sy: gy, draw(g) {
+      g.fillStyle = '#1f1d1a'; g.fillRect(cx - 10, gy - 11, 20, 4); g.fillRect(cx - 10, gy - 11, 4, 12); g.fillRect(cx + 6, gy - 11, 4, 12);
+      g.fillStyle = '#f4f2ec'; g.fillRect(cx - 9, gy - 10, 18, 2); g.fillRect(cx - 9, gy - 10, 2, 10); g.fillRect(cx + 7, gy - 10, 2, 10);
+      g.fillStyle = 'rgba(255,255,255,.35)'; for (let i = -7; i < 7; i += 2) g.fillRect(cx + i, gy - 8, 1, 8);
+    } }));
+  },
+  monumento(d) { // obelisco
+    const S = VR.TILE, X = d.x * S + 16, Y = d.y * S + 6;
+    return [{ sy: d.y * S + 30, draw(g) {
+      g.fillStyle = '#1f1d1a'; g.fillRect(X - 6, Y - 40, 12, 42);
+      g.fillStyle = '#d9d3c5'; g.fillRect(X - 5, Y - 36, 10, 37); g.fillStyle = '#f1ece0'; g.fillRect(X - 5, Y - 36, 4, 37);
+      g.fillStyle = '#a8a294'; g.fillRect(X + 3, Y - 36, 2, 37);
+      g.fillStyle = '#1f1d1a'; g.fillRect(X - 3, Y - 44, 6, 4); g.fillRect(X - 1, Y - 46, 2, 2);
+      g.fillStyle = '#d9d3c5'; g.fillRect(X - 2, Y - 43, 4, 7); g.fillStyle = '#f1ece0'; g.fillRect(X - 2, Y - 43, 2, 7);
+    } }];
+  },
+};
+
+// ===== world/testmap.js =====
+// Barrio de prueba (Etapa 0): 4×4 manzanas generadas, con plaza y canchita.
+// En la Etapa 1 esto se reemplaza por el centro real de Villarrica armado desde OpenStreetMap.
+'use strict';
+VR.makeTestMap = () => {
+  const T = VR.T, P = 24, BL = 4, N = BL * P + 5;
+  const w = new VR.World(N, N), rnd = VR.rng(20061);
+  const pick = (a) => a[(rnd() * a.length) | 0];
+  // calles, veredas, líneas y cebras
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const mx = x % P, my = y % P, rx = mx < 5 || x >= BL * P, ry = my < 5 || y >= BL * P;
+    const sx = mx === 5 || mx === 6 || mx >= P - 2, sy = my === 5 || my === 6 || my >= P - 2;
+    let t = T.GRASS;
+    if (rx || ry) t = T.ROAD; else if (sx || sy) t = T.SIDEWALK;
+    w.set(x, y, t);
+    const i = y * N + x;
+    if (ry && !rx) w.line[i] = (mx === 5 || mx === 6 || mx === P - 1 || mx === P - 2) ? 4 : (my === 2 ? 1 : 0);
+    if (rx && !ry) w.line[i] = (my === 5 || my === 6 || my === P - 1 || my === P - 2) ? 3 : (mx === 2 ? 2 : 0);
+  }
+  const WALLS = [[236, 222, 186], [230, 196, 140], [214, 164, 150], [176, 204, 214], [240, 236, 226], [190, 214, 170], [226, 182, 110], [200, 184, 214]];
+  const ROOFS = { teja: [[178, 82, 52], [160, 70, 46], [190, 98, 60]], chapa: [[150, 156, 162], [124, 132, 140], [92, 110, 128]], losa: [[178, 172, 160], [160, 156, 148]] };
+  const AWN = ['#c8402e', '#2e6fc8', '#2e9a5a', '#d08a1e'];
+  const house = (x, y, bw, bh, facesStreet) => {
+    if (rnd() < 0.12) { // baldío con un árbol
+      if (bw >= 2 && bh >= 2) w.addTree(x + ((bw / 2) | 0), y + ((bh / 2) | 0), 9 + ((rnd() * 4) | 0), (rnd() * 3) | 0);
+      return;
+    }
+    const roofType = pick(['teja', 'teja', 'chapa', 'losa']);
+    let floors = rnd() < 0.72 ? 1 : rnd() < 0.85 ? 2 : 3;
+    while (floors > 1 && 6 + floors * 14 > bh * 16 - 10) floors--;
+    w.addBuilding({ x, y, w: bw, h: bh, floors, roofType, roof: pick(ROOFS[roofType]), wall: pick(WALLS), shop: facesStreet && rnd() < 0.35, awning: pick(AWN) });
+  };
+  // reparte un tramo en lotes de 3 a 6 tiles
+  const split = (len) => { const out = []; let r = len; while (r > 0) { let s = 3 + ((rnd() * 4) | 0); if (r - s < 3) s = r; out.push(s); r -= s; } return out; };
+  const block = (bx, by) => {
+    const x0 = bx * P + 7, y0 = by * P + 7, S = 15;
+    if (bx === 1 && by === 1) return plaza(x0, y0, S);
+    if (bx === 2 && by === 2) return cancha(x0, y0, S);
+    const dt = 5 + ((rnd() * 2) | 0), db = 5 + ((rnd() * 2) | 0);
+    let x = x0; for (const s of split(S)) { house(x, y0, s, dt, true); x += s; }
+    x = x0; for (const s of split(S)) { house(x, y0 + S - db, s, db, true); x += s; }
+    const midY = y0 + dt, midH = S - dt - db;
+    if (midH >= 3) {
+      house(x0, midY, 4, midH, true); house(x0 + S - 4, midY, 4, midH, true);
+      // patio del medio con árboles
+      for (let k = 0; k < 3; k++) { const tx = x0 + 5 + ((rnd() * 5) | 0), ty = midY + ((rnd() * midH) | 0); if (w.get(tx, ty) === T.GRASS) w.addTree(tx, ty, 8 + ((rnd() * 4) | 0), (rnd() * 3) | 0); }
+    }
+  };
+  const plaza = (x0, y0, S) => {
+    const c = x0 + 7;
+    for (let y = y0; y < y0 + S; y++) for (let x = x0; x < x0 + S; x++) {
+      const edge = x === x0 || y === y0 || x === x0 + S - 1 || y === y0 + S - 1;
+      const cross = Math.abs(x - c) <= 0 || Math.abs(y - c + x0 - y0) <= 0;
+      const diag = Math.abs((x - x0) - (y - y0)) <= 0 || Math.abs((x - x0) + (y - y0) - (S - 1)) <= 0;
+      const ring = Math.max(Math.abs(x - c), Math.abs(y - (y0 + 7))) <= 2;
+      if (edge || cross || diag || ring) w.set(x, y, T.PAVING);
+    }
+    for (let y = y0 + 6; y <= y0 + 7; y++) for (let x = c - 1; x <= c; x++) w.set(x, y, T.MONUMENT);
+    w.decals.push({ kind: 'monumento', x: c - 1, y: y0 + 6, w: 2, h: 2 });
+    for (let k = 0; k < 40; k++) {
+      const tx = x0 + 1 + ((rnd() * (S - 2)) | 0), ty = y0 + 1 + ((rnd() * (S - 2)) | 0);
+      if (w.get(tx, ty) !== T.GRASS || w.trees.some((t) => Math.abs(t.x - tx) + Math.abs(t.y - ty) < 3)) continue;
+      w.addTree(tx, ty, 10 + ((rnd() * 4) | 0), rnd() < 0.3 ? 3 : (rnd() * 2) | 0);
+    }
+    w.labels.push({ text: 'Plaza de prueba', x: (c) * 16, y: (y0 - 1) * 16 });
+  };
+  const cancha = (x0, y0, S) => {
+    for (let y = y0 + 1; y < y0 + S - 1; y++) for (let x = x0 + 3; x < x0 + S - 3; x++) w.set(x, y, T.DIRT);
+    w.decals.push({ kind: 'cancha', x: x0 + 3, y: y0 + 1, w: S - 6, h: S - 2 });
+    for (const ty of [y0 + 2, y0 + 6, y0 + 10]) { w.addTree(x0 + 1, ty, 10, 2); w.addTree(x0 + S - 2, ty + 2, 10, 2); }
+  };
+  for (let by = 0; by < BL; by++) for (let bx = 0; bx < BL; bx++) block(bx, by);
+  w.spawn = { x: (P + 14) * 16 + 8, y: (2 * P - 2) * 16 + 10 };
+  w.buildIndex();
+  return w;
+};
+
+// ===== game/player.js =====
+// Jugador: sprite original de 16×24 generado por código, 4 direcciones × 4 cuadros de caminata.
+'use strict';
+VR.makePlayerSprites = (pal) => {
+  const C = Object.assign({ skin: '#c98b5c', skinD: '#a76c42', hair: '#2a1b12', shirt: '#d23c2c', shirtD: '#9f2a20',
+    pants: '#2c3e6b', pantsD: '#1e2b4d', shoes: '#18181c', eye: '#1a1210' }, pal || {});
+  const STEP = [0, 1, 0, -1];
+  const frame = (dir, f) => {
+    const c = VR.canvas(16, 24), P = VR.gfx.painter(c), s = STEP[f], bob = f % 2 ? 0 : 0;
+    if (dir === 'down' || dir === 'up') {
+      const front = dir === 'down';
+      // piernas
+      P.r(5, 15, 6, 2, C.pants);
+      P.r(5, 17, 2, 4 - (s < 0 ? 1 : 0), C.pants); P.r(5, 21 - (s < 0 ? 1 : 0), 2, 1, C.shoes);
+      P.r(9, 17, 2, 4 - (s > 0 ? 1 : 0), C.pantsD); P.r(9, 21 - (s > 0 ? 1 : 0), 2, 1, C.shoes);
+      // brazos (se balancean)
+      P.r(2, 10 + (s > 0 ? 1 : 0), 2, 4, C.shirtD); P.r(2, 14 + (s > 0 ? 1 : 0), 2, 1, C.skin);
+      P.r(12, 10 + (s < 0 ? 1 : 0), 2, 4, C.shirtD); P.r(12, 14 + (s < 0 ? 1 : 0), 2, 1, C.skin);
+      // torso
+      P.r(4, 9 + bob, 8, 6, C.shirt); P.r(4, 14, 8, 1, C.shirtD);
+      if (front) { P.r(7, 9, 2, 1, C.skinD); } // cuello
+      // cabeza
+      P.r(5, 2, 6, 7, C.skin);
+      if (front) {
+        P.r(5, 2, 6, 3, C.hair); P.r(5, 5, 1, 2, C.hair); P.r(10, 5, 1, 2, C.hair);
+        P.p(6, 6, C.eye); P.p(9, 6, C.eye); P.r(7, 8, 2, 1, C.skinD);
+      } else {
+        P.r(5, 2, 6, 6, C.hair); P.r(6, 8, 4, 1, C.skinD);
+      }
+    } else { // perfil mirando a la derecha
+      P.r(7 - s, 15, 2, 6, C.pantsD); P.r(7 - s, 21, 3, 1, C.shoes);
+      P.r(6, 9, 5, 6, C.shirt); P.r(6, 14, 5, 1, C.shirtD);
+      P.r(7 + s, 15, 2, 6, C.pants); P.r(7 + s, 21, 3, 1, C.shoes);
+      P.r(7 + s, 10, 2, 4, C.shirtD); P.r(7 + s, 14, 2, 1, C.skin);
+      P.r(6, 2, 6, 7, C.skin); P.r(6, 2, 6, 3, C.hair); P.r(6, 5, 2, 2, C.hair);
+      P.p(10, 6, C.eye); P.p(12, 6, C.skin); P.r(9, 8, 2, 1, C.skinD);
+    }
+    return VR.gfx.outline(c, '#140f0c');
+  };
+  const out = {};
+  for (const d of ['down', 'up', 'right']) out[d] = [0, 1, 2, 3].map((f) => frame(d, f));
+  out.left = out.right.map((c) => VR.gfx.flipX(c));
+  return out;
+};
+
+VR.Player = class {
+  constructor(world, x, y) {
+    this.world = world; this.x = this.px = x; this.y = this.py = y;
+    this.dir = 'down'; this.anim = 0; this.moving = false; this.speed = 0;
+    this.sprites = VR.makePlayerSprites();
+    this.bubble = null;
+    this.HW = 4; this.HH = 4; // caja de colisión en los pies
+  }
+  update(dt, input) {
+    this.px = this.x; this.py = this.y;
+    const ax = input.ax, ay = input.ay, mag = Math.min(1, Math.hypot(ax, ay));
+    const run = input.down('run');
+    const target = mag * (run ? 104 : 58);
+    this.speed = target; // en la etapa 2 agregamos inercia para los vehículos
+    this.moving = mag > 0.05;
+    if (this.moving) {
+      const nx = ax / (mag || 1), ny = ay / (mag || 1);
+      if (Math.abs(nx) > Math.abs(ny) * 1.15) this.dir = nx > 0 ? 'right' : 'left';
+      else this.dir = ny > 0 ? 'down' : 'up';
+      this.move(nx * this.speed * dt, ny * this.speed * dt);
+      this.anim += dt * (run ? 11 : 7.5) * Math.max(0.5, mag);
+    } else this.anim = 0;
+    if (this.bubble) { this.bubble.t -= dt; if (this.bubble.t <= 0) this.bubble = null; }
+  }
+  // movimiento por ejes separados, con "deslizamiento" en las esquinas
+  move(dx, dy) {
+    const W = this.world, hw = this.HW, hh = this.HH;
+    const box = (x, y) => W.hits(x - hw, y - hh, x + hw, y);
+    if (dx) {
+      if (!box(this.x + dx, this.y)) this.x += dx;
+      else if (!dy) { for (const n of [-1, 1]) if (!box(this.x + dx, this.y + n * 5)) { this.y += n * Math.min(Math.abs(dx), 1); break; } }
+    }
+    if (dy) {
+      if (!box(this.x, this.y + dy)) this.y += dy;
+      else if (!dx) { for (const n of [-1, 1]) if (!box(this.x + n * 5, this.y + dy)) { this.x += n * Math.min(Math.abs(dy), 1); break; } }
+    }
+  }
+  say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
+  draw(ctx, camX, camY, a) {
+    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    const f = this.moving ? (Math.floor(this.anim) % 4) : 0;
+    ctx.drawImage(this.sprites[this.dir][f], x - 8, y - 23);
+  }
+  drawBubble(ctx, camX, camY, a) {
+    if (!this.bubble) return;
+    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 30;
+    const img = VR.gfx.textImg(this.bubble.text, '#1a1a1e', 9);
+    const w = img.width + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2), by = y - h;
+    ctx.fillStyle = '#1a1a1e'; ctx.fillRect(bx - 1, by, w + 2, h); ctx.fillRect(bx, by - 1, w, h + 2);
+    ctx.fillStyle = '#fbf8ef'; ctx.fillRect(bx, by, w, h);
+    ctx.fillStyle = '#1a1a1e'; ctx.fillRect(x - 2, by + h + 1, 5, 1); ctx.fillRect(x - 1, by + h + 2, 3, 1); ctx.fillRect(x, by + h + 3, 1, 1);
+    ctx.fillStyle = '#fbf8ef'; ctx.fillRect(x - 1, by + h, 3, 1); ctx.fillRect(x, by + h + 1, 1, 1);
+    ctx.drawImage(img, bx + 4, by + 2);
+  }
+};
+
+// ===== main.js =====
+// Arranque: pantalla, mundo, jugador, cámara, HUD, menú y guardado de la posición.
+'use strict';
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
+  const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true) };
+
+  VR.screen.init($('game'));
+  const world = VR.makeTestMap();
+  const saved = VR.store.get('pos', null);
+  const start = saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn;
+  const player = new VR.Player(world, start.x, start.y);
+  if (saved && saved.dir) player.dir = saved.dir;
+
+  // ---------- cámara: sigue al jugador mirando un poco hacia donde camina ----------
+  const cam = { x: player.x, y: player.y, px: player.x, py: player.y, lx: 0, ly: 0 };
+  function updateCamera(dt) {
+    cam.px = cam.x; cam.py = cam.y;
+    const look = player.moving ? 26 * Math.min(1, player.speed / 58) : 0;
+    cam.lx += ((VR.input.ax * look) - cam.lx) * Math.min(1, dt * 2.5);
+    cam.ly += ((VR.input.ay * look * 0.7) - cam.ly) * Math.min(1, dt * 2.5);
+    const tx = player.x + cam.lx, ty = player.y - 10 + cam.ly;
+    const k = 1 - Math.exp(-dt * 7);
+    cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
+  }
+  const camView = (a) => {
+    const sw = VR.screen.w, sh = VR.screen.h, W = world.w * VR.TILE, H = world.h * VR.TILE;
+    let x = VR.lerp(cam.px, cam.x, a) - sw / 2, y = VR.lerp(cam.py, cam.y, a) - sh / 2;
+    x = W <= sw ? (W - sw) / 2 : VR.clamp(x, 0, W - sw);
+    y = H <= sh ? (H - sh) / 2 : VR.clamp(y, 0, H - sh);
+    return [Math.round(x), Math.round(y)];
+  };
+
+  // ---------- lógica ----------
+  const SALUDOS = ["¡Mba'éichapa!", "¡Mba'e la porte!", 'Haku la ára, che...', "¡Jaha jaha!", 'Ndera, qué lindo día'];
+  let sayIdx = 0;
+  function update(dt) {
+    if (VR.input.pressed('menu')) { openMenu(); return; }
+    player.update(dt, VR.input);
+    if (VR.input.pressed('action')) player.say(SALUDOS[sayIdx++ % SALUDOS.length]);
+    if (VR.input.pressed('car')) toast('🚗 Los autos y las motos llegan en la Etapa 2');
+    updateCamera(dt);
+  }
+
+  // ---------- dibujo ----------
+  const tall = [];
+  function render(a) {
+    const ctx = VR.screen.ctx, sw = VR.screen.w, sh = VR.screen.h;
+    const [cx, cy] = camView(a);
+    ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
+    world.draw(ctx, cx, cy, sw, sh);
+    // cosas altas y personajes ordenados por profundidad
+    tall.length = 0;
+    world.collectTall(cx, cy, sw, sh, tall);
+    tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => player.draw(c, cx, cy, a) });
+    tall.sort((p, q) => p.sy - q.sy);
+    for (const t of tall) t.draw(ctx);
+    for (const l of world.labels) {
+      const lx = l.x - cx, ly = l.y - cy;
+      if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, '#fff6d8', { center: true, shadow: '#1a1a1e' });
+    }
+    player.drawBubble(ctx, cx, cy, a);
+    drawHud();
+  }
+  let hudT = 0;
+  function drawHud() {
+    if (!settings.fps) { $('dbg').hidden = true; return; }
+    if (performance.now() - hudT < 250) return; hudT = performance.now();
+    $('dbg').hidden = false;
+    $('dbg').textContent = `${VR.loop.fps} fps · ${VR.screen.w}×${VR.screen.h} ×${VR.screen.scale} · tile ${(player.x / 16) | 0}, ${(player.y / 16) | 0}`;
+  }
+
+  // ---------- controles táctiles ----------
+  const applyTouch = () => {
+    const show = settings.touch === 'on' || (settings.touch === 'auto' && (isTouch || VR.input.source === 'touch'));
+    $('touch').hidden = !(show && VR.input.source !== 'pad' || settings.touch === 'on');
+  };
+  VR.input.initTouch($('joyZone'), $('joy'), $('knob'), document.querySelectorAll('#btns .tb'));
+  VR.input.vibrate = settings.vib;
+  let lastSource = VR.input.source;
+  VR.input.onAny = () => { hideOverlay(); if (VR.input.source !== lastSource) { lastSource = VR.input.source; applyTouch(); } };
+  VR.input.onPad = (name, on) => { $('padInfo').textContent = on ? '🎮 Conectado: ' + name : 'Control desconectado.'; toast(on ? '🎮 Control conectado' : 'Control desconectado'); applyTouch(); };
+
+  // ---------- portada / menú / pantalla completa ----------
+  function hideOverlay() { $('overlay').hidden = true; }
+  $('overlay').addEventListener('pointerdown', (e) => { e.preventDefault(); hideOverlay(); });
+  const menu = $('menu');
+  function openMenu() { if (menu.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; menu.showModal(); }
+  menu.addEventListener('close', () => { VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; });
+  $('btnMenu').onclick = openMenu;
+  $('menuClose').onclick = () => menu.close();
+  menu.addEventListener('keydown', (e) => { if (e.code === 'KeyP') menu.close(); });
+  $('btnFull').onclick = () => {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).then(() => { try { screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => toast('Pantalla completa no disponible'));
+    else toast('En iPhone: Compartir → "Agregar a inicio" para jugar a pantalla completa');
+  };
+  const seg = (id, key, onChange) => {
+    const s = $(id), paint = () => s.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === settings[key]));
+    s.querySelectorAll('button').forEach((b) => b.onclick = () => { settings[key] = b.dataset.v; VR.store.set(key, settings[key]); paint(); onChange(); });
+    paint();
+  };
+  seg('segTouch', 'touch', applyTouch);
+  $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
+  $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
+  $('btnReset').onclick = () => { player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en la plaza'); };
+
+  // ---------- guardar la posición ----------
+  const savePos = () => VR.store.set('pos', { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir });
+  setInterval(savePos, 3000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } });
+  addEventListener('pagehide', savePos);
+
+  addEventListener('resize', () => VR.screen.fit());
+  addEventListener('orientationchange', () => setTimeout(() => VR.screen.fit(), 250));
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+  applyTouch();
+  VR.loop.start(update, render);
+  window.__vr = { world, player, cam, settings };
+})();
+
+</script>
+</body>
+</html>
