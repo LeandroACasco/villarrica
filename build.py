@@ -2,11 +2,11 @@
 
   python3 build.py
 """
-import hashlib, json, pathlib, shutil, datetime
+import hashlib, json, pathlib, shutil, datetime, subprocess, sys
 
 root = pathlib.Path(__file__).parent
 # orden de carga de los scripts (todo queda en un solo index.html)
-SCRIPTS = ['engine/core.js', 'engine/input.js', 'engine/gfx.js',
+SCRIPTS = ['engine/inflate.js', 'engine/core.js', 'engine/input.js', 'engine/gfx.js',
            'world/tiles.js', 'world/world.js', 'world/testmap.js',
            'game/player.js', 'main.js']
 
@@ -17,9 +17,13 @@ def build():
     (docs / 'icons').mkdir(exist_ok=True)
     for f in ['icon-192.png', 'icon-512.png', 'maskable-512.png', 'favicon.png']:
         shutil.copy(root / 'icons' / f, docs / 'icons' / f)
+    # mapa: se vuelve a generar solo si cambió el .osm o el convertidor
+    osm, conv, mp = root / 'data/centro.osm', root / 'tools/osm_to_map.py', docs / 'map.bin'
+    if not mp.exists() or mp.stat().st_mtime < max(osm.stat().st_mtime, conv.stat().st_mtime):
+        subprocess.run([sys.executable, str(conv), str(osm), str(mp)], check=True)
     code = '\n'.join('// ===== %s =====\n%s' % (s, (root / 'src' / s).read_text()) for s in SCRIPTS)
     html = (root / 'src/shell.html').read_text().replace('/*SCRIPTS*/', code)
-    version = hashlib.sha1(html.encode()).hexdigest()[:8]
+    version = hashlib.sha1(html.encode() + mp.read_bytes()).hexdigest()[:8]
     html = html.replace('/*VERSION*/', 'Versión %s · %s' % (version, datetime.date.today().isoformat()))
     head = '''<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">

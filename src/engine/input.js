@@ -2,7 +2,7 @@
 // El juego solo lee VR.input.ax / ay (de -1 a 1), down(b) y pressed(b).
 'use strict';
 VR.input = (() => {
-  const BTN = ['action', 'run', 'car', 'menu'];
+  const BTN = ['action', 'run', 'car', 'menu', 'map'];
   const kb = { u: 0, d: 0, l: 0, r: 0 };
   const kbBtn = {}, touchBtn = {}, padBtn = {}, latch = {};
   let prev = {}, cur = {}, pressedNow = {}, consumed = false;
@@ -10,7 +10,7 @@ VR.input = (() => {
   const api = { ax: 0, ay: 0, source: 'kb', vibrate: true, onAny: null, enabled: true };
 
   const dirKeys = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
-  const btnKeys = { Space: 'action', KeyJ: 'action', Enter: 'action', ShiftLeft: 'run', ShiftRight: 'run', KeyF: 'car', KeyK: 'car', Escape: 'menu', KeyP: 'menu' };
+  const btnKeys = { Space: 'action', KeyJ: 'action', Enter: 'action', ShiftLeft: 'run', ShiftRight: 'run', KeyF: 'car', KeyK: 'car', Escape: 'menu', KeyP: 'menu', KeyM: 'map', Tab: 'map' };
 
   const any = () => { if (api.onAny) api.onAny(); };
   addEventListener('keydown', (e) => {
@@ -76,7 +76,7 @@ VR.input = (() => {
   };
 
   // ---- control de consola (mapeo estándar) ----
-  const PADMAP = { 0: 'action', 1: 'run', 7: 'run', 2: 'car', 9: 'menu' };
+  const PADMAP = { 0: 'action', 1: 'run', 7: 'run', 2: 'car', 9: 'menu', 8: 'map' };
   let padName = null;
   addEventListener('gamepadconnected', (e) => { padName = (e.gamepad && e.gamepad.id) || 'control'; if (api.onPad) api.onPad(padName, true); });
   addEventListener('gamepaddisconnected', () => { if (api.onPad) api.onPad(padName, false); });

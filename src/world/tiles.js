@@ -1,12 +1,12 @@
 // Tiles generados por código (16×16), con 4 variantes cada uno para que el piso no se vea repetido.
 'use strict';
-VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7 };
-VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] = 1; VR.SOLID[VR.T.MONUMENT] = 1;
+VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8 };
+VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] = 1; VR.SOLID[VR.T.MONUMENT] = 1; VR.SOLID[VR.T.WATER] = 1;
 // tile que se dibuja debajo de cada tipo
 VR.GROUND_OF = { [VR.T.TREE]: VR.T.GRASS, [VR.T.BUILDING]: VR.T.SIDEWALK, [VR.T.MONUMENT]: VR.T.PAVING };
 
 VR.tileset = (() => {
-  const S = VR.TILE, VARS = 4, TYPES = 8;
+  const S = VR.TILE, VARS = 4, TYPES = 9;
   const c = VR.canvas(S * VARS, S * TYPES), ctx = c.getContext('2d');
   const img = ctx.createImageData(c.width, c.height), d = img.data;
   const put = (x, y, r, g, b) => { const i = (y * c.width + x) * 4; d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255; };
@@ -40,6 +40,11 @@ VR.tileset = (() => {
       case VR.T.DIRT: { // tierra colorada
         const k = (h - 0.5) * 16 | 0; r = 168 + k; g = 92 + k; b = 58 + k;
         if (h2 > 0.96) { r += 20; g += 16; b += 12; }
+        break;
+      }
+      case VR.T.WATER: { // laguna: azul con reflejos horizontales
+        const k = (h - 0.5) * 6 | 0; r = 62 + k; g = 118 + k; b = 186 + k;
+        if (((x + v * 5 + (y >> 2) * 7) % 13) < 3 && (y % 4) === 1) { r += 60; g += 60; b += 50; }
         break;
       }
       default: r = 255; g = 0; b = 255;

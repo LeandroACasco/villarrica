@@ -1,14 +1,19 @@
 // Arranque: pantalla, mundo, jugador, cámara, HUD, menú y guardado de la posición.
 'use strict';
-(() => {
+(async () => {
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
   const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true) };
 
   VR.screen.init($('game'));
-  const world = VR.makeTestMap();
-  const saved = VR.store.get('pos', null);
+  const prueba = /[?&]prueba\b/.test(location.search);
+  let world;
+  try { world = prueba ? VR.makeTestMap() : await VR.loadMap('map.bin'); }
+  catch (e) { $('ovSub').textContent = '⚠ ' + e.message + ' · revisá la conexión y recargá'; return; }
+  $('zone').textContent = prueba ? 'Barrio de prueba' : 'Centro';
+  $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1 · el centro'; $('ovGo').hidden = false;
+  const saved = VR.store.get('pos:' + world.id, null);
   const start = saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn;
   const player = new VR.Player(world, start.x, start.y);
   if (saved && saved.dir) player.dir = saved.dir;
@@ -36,7 +41,9 @@
   const SALUDOS = ["¡Mba'éichapa!", "¡Mba'e la porte!", 'Haku la ára, che...', "¡Jaha jaha!", 'Ndera, qué lindo día'];
   let sayIdx = 0;
   function update(dt) {
+    if (mapOpen) { if (['map', 'menu', 'action'].some((b) => VR.input.pressed(b))) closeMap(); return; }
     if (VR.input.pressed('menu')) { openMenu(); return; }
+    if (VR.input.pressed('map')) { openMap(); return; }
     player.update(dt, VR.input);
     if (VR.input.pressed('action')) player.say(SALUDOS[sayIdx++ % SALUDOS.length]);
     if (VR.input.pressed('car')) toast('🚗 Los autos y las motos llegan en la Etapa 2');
@@ -50,6 +57,7 @@
     const [cx, cy] = camView(a);
     ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
     world.draw(ctx, cx, cy, sw, sh);
+    world.warm(cx, cy, sw, sh);
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
@@ -63,8 +71,13 @@
     player.drawBubble(ctx, cx, cy, a);
     drawHud();
   }
-  let hudT = 0;
+  let hudT = 0, zoneT = 0, zone = '';
   function drawHud() {
+    if (performance.now() - zoneT > 200) {
+      zoneT = performance.now();
+      const z = world.placeName(player.x, player.y - 2);
+      if (z && z !== zone) { zone = z; $('zone').textContent = z; }
+    }
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
     $('dbg').hidden = false;
@@ -83,7 +96,7 @@
   VR.input.onPad = (name, on) => { $('padInfo').textContent = on ? '🎮 Conectado: ' + name : 'Control desconectado.'; toast(on ? '🎮 Control conectado' : 'Control desconectado'); applyTouch(); };
 
   // ---------- portada / menú / pantalla completa ----------
-  function hideOverlay() { $('overlay').hidden = true; }
+  function hideOverlay() { if (!$('ovGo').hidden) $('overlay').hidden = true; }
   $('overlay').addEventListener('pointerdown', (e) => { e.preventDefault(); hideOverlay(); });
   const menu = $('menu');
   function openMenu() { if (menu.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; menu.showModal(); }
@@ -105,10 +118,41 @@
   seg('segTouch', 'touch', applyTouch);
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
-  $('btnReset').onclick = () => { player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en la plaza'); };
+  $('btnReset').onclick = () => { player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
+
+  // ---------- mapa de la ciudad ----------
+  let mapOpen = false, mapBuilt = false;
+  const MAPCOL = [[92, 158, 58], [70, 70, 78], [196, 188, 172], [196, 120, 92], [200, 150, 112], [52, 112, 44], [230, 230, 230], [168, 98, 64], [70, 130, 200]];
+  function buildMap() {
+    const c = $('mapCanvas'); c.width = world.w; c.height = world.h;
+    const x = c.getContext('2d'), img = x.createImageData(world.w, world.h), d = img.data;
+    for (let i = 0; i < world.tiles.length; i++) {
+      let col = MAPCOL[world.tiles[i]] || [255, 0, 255];
+      if (world.line[i] === 1 || world.line[i] === 2) col = [226, 191, 69];
+      d[i * 4] = col[0]; d[i * 4 + 1] = col[1]; d[i * 4 + 2] = col[2]; d[i * 4 + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    const L = $('mapLabels'); L.innerHTML = '';
+    for (const l of world.labels) {
+      const s = document.createElement('span'); s.textContent = l.text;
+      s.style.left = (l.x / 16 / world.w * 100) + '%'; s.style.top = (l.y / 16 / world.h * 100) + '%'; L.appendChild(s);
+    }
+    mapBuilt = true;
+  }
+  function sizeMap() {
+    const k = Math.min((innerWidth - 32) / world.w, (innerHeight - 70) / world.h);
+    $('mapBox').style.width = Math.floor(world.w * k) + 'px'; $('mapBox').style.height = Math.floor(world.h * k) + 'px';
+    $('mapMe').style.left = (player.x / 16 / world.w * 100) + '%'; $('mapMe').style.top = (player.y / 16 / world.h * 100) + '%';
+    $('mapWhere').textContent = zone || '—';
+  }
+  function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); sizeMap(); $('mapView').hidden = false; }
+  function closeMap() { mapOpen = false; $('mapView').hidden = true; }
+  $('btnMap').onclick = () => (mapOpen ? closeMap() : openMap());
+  $('mapView').addEventListener('pointerdown', (e) => { e.preventDefault(); closeMap(); });
+  addEventListener('resize', () => { if (mapOpen) sizeMap(); });
 
   // ---------- guardar la posición ----------
-  const savePos = () => VR.store.set('pos', { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir });
+  const savePos = () => VR.store.set('pos:' + world.id, { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir });
   setInterval(savePos, 3000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } });
   addEventListener('pagehide', savePos);

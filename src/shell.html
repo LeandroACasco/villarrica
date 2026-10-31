@@ -53,6 +53,16 @@
   .tb.b { right: 96px; bottom: 0; width: 64px; height: 64px; background: rgba(60,120,210,.5); }
   .tb.c { right: 78px; bottom: 96px; width: 58px; height: 58px; background: rgba(70,70,82,.55); }
 
+  #mapView { position: fixed; inset: 0; z-index: 8; background: rgba(10,10,12,.92); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px; padding: 16px; cursor: pointer; }
+  #mapView p { margin: 0; color: var(--muted); font-size: 13px; text-align: center; } #mapView p b { color: var(--text); }
+  #mapBox { position: relative; border: 2px solid #3a3a44; border-radius: 6px; overflow: hidden; }
+  #mapCanvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  #mapLabels span { position: absolute; transform: translate(-50%, -100%); font: 600 11px system-ui; color: #fff;
+    text-shadow: 0 1px 2px #000, 0 0 3px #000; white-space: nowrap; pointer-events: none; }
+  #mapMe { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #f2a52b;
+    border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(242,165,43,.35); animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { box-shadow: 0 0 0 7px rgba(242,165,43,.1); } }
   #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 14px); transform: translateX(-50%); background: #24242a;
     border: 1px solid var(--line); padding: 9px 16px; border-radius: 10px; opacity: 0; transition: opacity .25s; pointer-events: none;
     max-width: 80vw; z-index: 20; text-align: center; }
@@ -100,16 +110,21 @@
 <div id="hud"><b>VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
 <div id="dbg" hidden></div>
 <div id="topbar">
+  <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
   <button class="icon-btn" id="btnFull" title="Pantalla completa">⛶</button>
   <button class="icon-btn" id="btnMenu" title="Menú (Esc)">☰</button>
 </div>
 
 <div id="overlay">
   <h1>VILLARRICA</h1>
-  <p>Etapa 0 · barrio de prueba</p>
-  <b>Tocá o apretá una tecla para empezar</b>
+  <p id="ovSub">Cargando la ciudad…</p>
+  <b id="ovGo" hidden>Tocá o apretá una tecla para empezar</b>
 </div>
 <div id="toast"></div>
+<div id="mapView" hidden>
+  <div id="mapBox"><canvas id="mapCanvas"></canvas><div id="mapLabels"></div><div id="mapMe"></div></div>
+  <p>Estás en <b id="mapWhere">—</b> · tocá o apretá M para volver</p>
+</div>
 
 <dialog id="menu">
   <div class="dlg">
@@ -119,13 +134,14 @@
     <h3>Opciones</h3>
     <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
     <label class="chk"><input type="checkbox" id="optVib"> Vibración</label>
-    <div class="row"><button class="btn" id="btnReset">📍 Volver al punto de inicio</button></div>
+    <div class="row"><button class="btn" id="btnReset">📍 Volver a la Plaza de los Héroes</button></div>
     <h3>Teclado (PC)</h3>
     <table>
       <tr><td><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd></td><td>Caminar</td></tr>
       <tr><td><kbd>Shift</kbd></td><td>Correr (mantener)</td></tr>
       <tr><td><kbd>Espacio</kbd> / <kbd>J</kbd></td><td>Acción</td></tr>
       <tr><td><kbd>F</kbd> / <kbd>K</kbd></td><td>Subir / bajar del auto</td></tr>
+      <tr><td><kbd>M</kbd> / <kbd>Tab</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Esc</kbd> / <kbd>P</kbd></td><td>Menú y pausa</td></tr>
     </table>
     <h3>Control de consola</h3>
@@ -135,9 +151,10 @@
       <tr><td><kbd>A</kbd></td><td>Acción</td></tr>
       <tr><td><kbd>B</kbd> / <kbd>RT</kbd></td><td>Correr</td></tr>
       <tr><td><kbd>X</kbd></td><td>Subir / bajar del auto</td></tr>
+      <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. /*VERSION*/</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). /*VERSION*/</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>

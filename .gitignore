@@ -1,5 +1,4 @@
 dist/
 __pycache__/
-*.osm
 node_modules/
 .DS_Store
