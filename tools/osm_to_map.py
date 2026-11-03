@@ -218,6 +218,28 @@ def main(src, out, preview=None):
     W, H = int(fx1 - fx0), int(fy1 - fy0)
     T = lambda q: (q[0] - fx0, q[1] - fy0)
     ways = [(tags, [T(final[i]) for i in ids]) for tags, ids in raw_ways]
+
+    # ---------- red de calles para el tránsito (nodos en px, tramos con tipo y sentido) ----------
+    KINDS = list(ROADS)
+    gidx, gnodes, gedges = {}, [], []
+    def gnode(i):
+        if i not in gidx:
+            x, y = T(final[i]); gidx[i] = len(gnodes) // 2; gnodes.extend([int(round(x * 16)), int(round(y * 16))])
+        return gidx[i]
+    for tags, ids in raw_ways:
+        hw = tags.get('highway')
+        if hw not in ROADS or tags.get('area') == 'yes':
+            continue
+        ow = tags.get('oneway')
+        ow = 1 if ow in ('yes', 'true', '1') else -1 if ow == '-1' else 0
+        if tags.get('junction') == 'roundabout' and not ow:
+            ow = 1
+        surf = surface_tile(tags)
+        for a, b2 in zip(ids, ids[1:]):
+            if a == b2:
+                continue
+            gedges.extend([gnode(a), gnode(b2), KINDS.index(hw) | (surf << 4), ow & 3])
+    print('red de calles: %d nodos, %d tramos' % (len(gnodes) // 2, len(gedges) // 4))
     print('mapa %d x %d tiles (%.1f x %.1f km), %d vías' % (W, H, W * 2 / 1000, H * 2 / 1000, len(ways)))
 
     def canvas(mode='L'):
@@ -481,7 +503,8 @@ def main(src, out, preview=None):
             blabels.append({'text': nm, 'x': int(np.median(xs)) * 4 * 16, 'y': int(np.median(ys)) * 4 * 16})
 
     # ---------- empaquetar ----------
-    meta = {'w': W, 'h': H, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
+    roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
+    meta = {'w': W, 'h': H, 'roads': roads, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
             'spawn': spawn, 'nb': len(ids), 'nt': len(trees), 'bounds': [mnla, mnlo, mxla, mxlo], 'rot': round(ang, 3),
             'credit': '© colaboradores de OpenStreetMap (ODbL) · barrios: INE Paraguay'}
     js = json.dumps(meta, ensure_ascii=False).encode()
