@@ -24,13 +24,27 @@ VR.screen = {
   fit() {
     const dpr = window.devicePixelRatio || 1;
     const dw = Math.round(innerWidth * dpr), dh = Math.round(innerHeight * dpr);
-    const s = Math.max(1, Math.round(Math.min(dw, dh) / this.BASE));
+    // escala entera; en pantallas chicas también se permiten medios (×1,5 o ×2,5) para que alejar la cámara se note
+    const raw = Math.min(dw, dh) / this.BASE;
+    const s = raw >= 3 ? Math.round(raw) : Math.max(1, Math.round(raw * 2) / 2);
     this.scale = s;
     this.w = Math.ceil(dw / s); this.h = Math.ceil(dh / s);
     this.canvas.width = this.w; this.canvas.height = this.h;
     this.canvas.style.width = (this.w * s / dpr) + 'px';
     this.canvas.style.height = (this.h * s / dpr) + 'px';
     this.ctx.imageSmoothingEnabled = false;
+  },
+  // Alejar o acercar la cámara (p. ej. al subir al auto): cambia el lado corto de la pantalla en píxeles
+  // del juego. El salto entre escalas enteras se suaviza con una transición CSS desde la escala anterior.
+  setBase(base) {
+    if (base === this.BASE) return;
+    const old = this.scale;
+    this.BASE = base; this.fit();
+    if (old === this.scale) return;
+    const c = this.canvas;
+    c.style.transition = 'none'; c.style.transform = `scale(${old / this.scale})`;
+    void c.offsetWidth;
+    c.style.transition = 'transform .45s cubic-bezier(.2,.7,.3,1)'; c.style.transform = 'scale(1)';
   },
 };
 

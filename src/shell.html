@@ -30,6 +30,9 @@
     display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
   #hud b { color: var(--accent); font-size: 15px; letter-spacing: .12em; font-weight: 800; text-shadow: 0 2px 0 #000; }
   #hud span { color: #d8d4ca; font-size: 12px; }
+  #speed { position: fixed; right: calc(env(safe-area-inset-right) + 14px); top: calc(env(safe-area-inset-top) + 58px); z-index: 4;
+    font: 900 26px/1 system-ui, sans-serif; color: #ffd75e; text-shadow: 2px 2px 0 #1a1a1e; text-align: right; pointer-events: none; }
+  #speed small { display: block; font-size: 10px; letter-spacing: .15em; color: #fff6d8; }
   #dbg { position: fixed; left: calc(env(safe-area-inset-left) + 8px); bottom: calc(env(safe-area-inset-bottom) + 6px); z-index: 4;
     font: 12px ui-monospace, monospace; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; }
 
@@ -116,6 +119,7 @@
 <div id="banner"></div>
 <div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
 <div id="dbg" hidden></div>
+<div id="speed" hidden>0<small>km/h</small></div>
 <div id="topbar">
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
   <button class="icon-btn" id="btnFull" title="Pantalla completa">⛶</button>

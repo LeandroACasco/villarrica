@@ -8,7 +8,7 @@ root = pathlib.Path(__file__).parent
 # orden de carga de los scripts (todo queda en un solo index.html)
 SCRIPTS = ['engine/inflate.js', 'engine/core.js', 'engine/input.js', 'engine/gfx.js',
            'world/tiles.js', 'world/world.js', 'world/testmap.js',
-           'game/player.js', 'main.js']
+           'game/player.js', 'game/car.js', 'main.js']
 
 
 def build():

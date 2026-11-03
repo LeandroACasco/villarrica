@@ -30,6 +30,9 @@
     display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
   #hud b { color: var(--accent); font-size: 15px; letter-spacing: .12em; font-weight: 800; text-shadow: 0 2px 0 #000; }
   #hud span { color: #d8d4ca; font-size: 12px; }
+  #speed { position: fixed; right: calc(env(safe-area-inset-right) + 14px); top: calc(env(safe-area-inset-top) + 58px); z-index: 4;
+    font: 900 26px/1 system-ui, sans-serif; color: #ffd75e; text-shadow: 2px 2px 0 #1a1a1e; text-align: right; pointer-events: none; }
+  #speed small { display: block; font-size: 10px; letter-spacing: .15em; color: #fff6d8; }
   #dbg { position: fixed; left: calc(env(safe-area-inset-left) + 8px); bottom: calc(env(safe-area-inset-bottom) + 6px); z-index: 4;
     font: 12px ui-monospace, monospace; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; }
 
@@ -119,6 +122,7 @@
 <div id="banner"></div>
 <div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
 <div id="dbg" hidden></div>
+<div id="speed" hidden>0<small>km/h</small></div>
 <div id="topbar">
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
   <button class="icon-btn" id="btnFull" title="Pantalla completa">⛶</button>
@@ -164,7 +168,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión a63dbab0 · 2026-11-03</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 96a01dd1 · 2026-11-03</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -297,13 +301,27 @@ VR.screen = {
   fit() {
     const dpr = window.devicePixelRatio || 1;
     const dw = Math.round(innerWidth * dpr), dh = Math.round(innerHeight * dpr);
-    const s = Math.max(1, Math.round(Math.min(dw, dh) / this.BASE));
+    // escala entera; en pantallas chicas también se permiten medios (×1,5 o ×2,5) para que alejar la cámara se note
+    const raw = Math.min(dw, dh) / this.BASE;
+    const s = raw >= 3 ? Math.round(raw) : Math.max(1, Math.round(raw * 2) / 2);
     this.scale = s;
     this.w = Math.ceil(dw / s); this.h = Math.ceil(dh / s);
     this.canvas.width = this.w; this.canvas.height = this.h;
     this.canvas.style.width = (this.w * s / dpr) + 'px';
     this.canvas.style.height = (this.h * s / dpr) + 'px';
     this.ctx.imageSmoothingEnabled = false;
+  },
+  // Alejar o acercar la cámara (p. ej. al subir al auto): cambia el lado corto de la pantalla en píxeles
+  // del juego. El salto entre escalas enteras se suaviza con una transición CSS desde la escala anterior.
+  setBase(base) {
+    if (base === this.BASE) return;
+    const old = this.scale;
+    this.BASE = base; this.fit();
+    if (old === this.scale) return;
+    const c = this.canvas;
+    c.style.transition = 'none'; c.style.transform = `scale(${old / this.scale})`;
+    void c.offsetWidth;
+    c.style.transition = 'transform .45s cubic-bezier(.2,.7,.3,1)'; c.style.transform = 'scale(1)';
   },
 };
 
@@ -364,6 +382,7 @@ VR.input = (() => {
   api.releaseAll = releaseAll;
 
   const buzz = (ms) => { if (api.vibrate && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} };
+  api.buzz = buzz;
 
   // ---- táctil: el joystick aparece donde apoyás el pulgar (mitad izquierda) ----
   api.initTouch = (zone, joy, knob, buttons) => {
@@ -642,6 +661,7 @@ VR.World = class {
     this.CH = 32; // tiles por chunk (512 px)
     this.cache = new Map(); this.MAXCACHE = 40;
     this.index = null;
+    this.boxGrid = new Map(); // cosas que se mueven o no son baldosas (autos): grilla de 64 px
     this.id = 'w' + w + 'x' + h;
   }
   get(tx, ty) { return tx < 0 || ty < 0 || tx >= this.w || ty >= this.h ? -1 : this.tiles[ty * this.w + tx]; }
@@ -654,7 +674,27 @@ VR.World = class {
     for (let ty = Math.floor(y0 / S); ty <= Math.floor((y1 - 0.001) / S); ty++)
       for (let tx = Math.floor(x0 / S); tx <= Math.floor((x1 - 0.001) / S); tx++)
         if (this.solid(tx, ty)) return true;
-    return false;
+    return this.boxOverlap(x0, y0, x1, y1);
+  }
+  // ---------- autos (cajas en una grilla de 64 px) ----------
+  _cells(b, fn) { for (let cy = Math.floor(b.y0 / 64); cy <= Math.floor(b.y1 / 64); cy++) for (let cx = Math.floor(b.x0 / 64); cx <= Math.floor(b.x1 / 64); cx++) fn(cx + cy * 65536); }
+  addBox(obj) { const b = obj.box(); obj._box = b; this._cells(b, (k) => { let l = this.boxGrid.get(k); if (!l) this.boxGrid.set(k, l = []); l.push(b); }); }
+  removeBox(obj) { const b = obj._box; if (!b) return; this._cells(b, (k) => { const l = this.boxGrid.get(k); if (l) { const i = l.indexOf(b); if (i >= 0) l.splice(i, 1); } }); obj._box = null; }
+  moveBox(obj) { if (obj._box) this.removeBox(obj); this.addBox(obj); }
+  boxAt(px, py, except) {
+    const l = this.boxGrid.get(Math.floor(px / 64) + Math.floor(py / 64) * 65536);
+    if (l) for (const b of l) if (b.car !== except && px >= b.x0 && px < b.x1 && py >= b.y0 && py < b.y1) return b.car;
+    return null;
+  }
+  boxOverlap(x0, y0, x1, y1, except) {
+    let hit = false;
+    this._cells({ x0, y0, x1, y1 }, (k) => { const l = this.boxGrid.get(k); if (l && !hit) for (const b of l) if (b.car !== except && x0 < b.x1 && x1 > b.x0 && y0 < b.y1 && y1 > b.y0) { hit = true; break; } });
+    return hit;
+  }
+  carsIn(x0, y0, x1, y1, out) {
+    const seen = new Set();
+    this._cells({ x0, y0, x1, y1 }, (k) => { const l = this.boxGrid.get(k); if (l) for (const b of l) if (!seen.has(b.car)) { seen.add(b.car); out.push(b.car); } });
+    return out;
   }
   // Nombre del lugar donde está una posición (plaza/parque, o la calle más cercana).
   placeName(px, py) {
@@ -1154,6 +1194,229 @@ VR.Player = class {
   }
 };
 
+// ===== game/car.js =====
+// Autos: un compacto original de 5 puertas (dibujado por código, sin marcas), estacionado por la ciudad,
+// que se puede manejar. Física arcade simple: aceleración, freno, marcha atrás, giro según la velocidad,
+// agarre distinto en asfalto, empedrado, tierra y pasto, y choques contra edificios, árboles, agua y otros autos.
+'use strict';
+VR.CAR = { LEN: 30, WID: 16, FRAMES: 64 };
+VR.CAR_COLORS = [
+  ['#c8322a', '#8e1f1a', '#e4685c'], // rojo
+  ['#c9ccd1', '#8d9198', '#eef0f2'], // plateado
+  ['#f2f0ea', '#b9b6ae', '#ffffff'], // blanco
+  ['#2f5fa8', '#1e3f74', '#5c8ad0'], // azul
+  ['#2c2c32', '#16161a', '#55555e'], // negro
+  ['#d8a02a', '#9c6f16', '#f0c45a'], // amarillo
+  ['#3f7f4a', '#28552f', '#66a872'], // verde
+  ['#7a2a48', '#521a30', '#a44c6c'], // bordó
+];
+
+// Sprite base mirando hacia arriba (16×30): capó corto, parabrisas grande, techo, luneta y portón trasero.
+VR.drawCarBase = (pal) => {
+  const [C, D, L] = pal, c = VR.canvas(16, 30), P = VR.gfx.painter(c);
+  const GLASS = '#3b4d63', GLASS_L = '#6f8aa6', TIRE = '#121214';
+  // ruedas (asoman a los costados)
+  P.r(0, 5, 2, 6, TIRE); P.r(14, 5, 2, 6, TIRE); P.r(0, 21, 2, 6, TIRE); P.r(14, 21, 2, 6, TIRE);
+  // carrocería redondeada
+  P.r(2, 1, 12, 28, C); P.r(1, 3, 14, 24, C);
+  P.r(3, 0, 10, 1, C); P.r(3, 29, 10, 1, D);
+  // sombreado lateral (luz del noroeste)
+  P.r(13, 3, 2, 24, D); P.r(1, 3, 1, 24, L);
+  // capó con brillo
+  P.r(4, 2, 7, 1, L); P.r(4, 3, 2, 4, L);
+  // parabrisas (trapecio)
+  P.r(3, 8, 10, 4, GLASS); P.r(2, 10, 12, 2, GLASS); P.r(4, 8, 3, 1, GLASS_L); P.r(3, 9, 2, 1, GLASS_L);
+  // techo
+  P.r(3, 12, 10, 9, C); P.r(12, 12, 1, 9, D); P.r(4, 13, 6, 1, L);
+  // ventanillas laterales
+  P.r(1, 12, 1, 9, GLASS); P.r(14, 12, 1, 9, GLASS);
+  // luneta trasera
+  P.r(3, 21, 10, 4, GLASS); P.r(4, 21, 3, 1, GLASS_L);
+  // portón trasero
+  P.r(3, 25, 10, 3, D); P.r(4, 25, 8, 1, C);
+  // faros y luces traseras
+  P.r(2, 1, 3, 1, '#fff7c8'); P.r(11, 1, 3, 1, '#fff7c8');
+  P.r(2, 28, 2, 1, '#e8302a'); P.r(12, 28, 2, 1, '#e8302a');
+  // espejos
+  P.r(0, 9, 1, 2, D); P.r(15, 9, 1, 2, D);
+  return c;
+};
+
+// 64 ángulos rotados al pixel (vecino más cercano) y contorneados después, para que queden nítidos.
+VR.carFrames = (() => {
+  const cache = new Map();
+  return (colorIdx) => {
+    let f = cache.get(colorIdx);
+    if (f) return f;
+    const base = VR.drawCarBase(VR.CAR_COLORS[colorIdx % VR.CAR_COLORS.length]);
+    const bw = base.width, bh = base.height, src = base.getContext('2d').getImageData(0, 0, bw, bh).data;
+    const S = 36, N = VR.CAR.FRAMES;
+    f = { img: [], shadow: [], S };
+    for (let k = 0; k < N; k++) {
+      const a = k / N * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+      const c = VR.canvas(S, S), x = c.getContext('2d'), img = x.createImageData(S, S), d = img.data;
+      for (let y = 0; y < S; y++) for (let xx = 0; xx < S; xx++) {
+        const dx = xx - S / 2 + 0.5, dy = y - S / 2 + 0.5;
+        // rotación inversa: ángulo 0 = mirando arriba, sentido horario
+        const sx = Math.round(dx * ca + dy * sa + bw / 2 - 0.5), sy = Math.round(-dx * sa + dy * ca + bh / 2 - 0.5);
+        if (sx < 0 || sy < 0 || sx >= bw || sy >= bh) continue;
+        const i = (sy * bw + sx) * 4, o = (y * S + xx) * 4;
+        if (src[i + 3] < 128) continue;
+        d[o] = src[i]; d[o + 1] = src[i + 1]; d[o + 2] = src[i + 2]; d[o + 3] = 255;
+      }
+      x.putImageData(img, 0, 0);
+      VR.gfx.outline(c, '#141216');
+      const sh = VR.canvas(S, S), sx = sh.getContext('2d');
+      sx.drawImage(c, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(0,0,0,.32)'; sx.fillRect(0, 0, S, S);
+      f.img.push(c); f.shadow.push(sh);
+    }
+    cache.set(colorIdx, f);
+    return f;
+  };
+})();
+
+VR.Car = class {
+  constructor(world, x, y, angle, color) {
+    this.world = world; this.x = this.px = x; this.y = this.py = y; this.a = this.pa = angle;
+    this.v = 0; this.color = color; this.driven = false; this.hit = 0;
+    this.frames = VR.carFrames(color);
+  }
+  // caja que ocupa (para chocar y para caminar alrededor), aproximada por su rectángulo girado
+  box() {
+    const hl = VR.CAR.LEN / 2 - 1, hw = VR.CAR.WID / 2 - 1, c = Math.abs(Math.cos(this.a)), s = Math.abs(Math.sin(this.a));
+    const ex = hw * c + hl * s, ey = hw * s + hl * c;
+    return { x0: this.x - ex, y0: this.y - ey, x1: this.x + ex, y1: this.y + ey, car: this };
+  }
+  // puntos del contorno del auto (para chocar)
+  points(x, y, a) {
+    const hl = VR.CAR.LEN / 2 - 1, hw = VR.CAR.WID / 2 - 2, fx = Math.sin(a), fy = -Math.cos(a), rx = Math.cos(a), ry = Math.sin(a);
+    const out = [];
+    for (const [l, w] of [[hl, -hw], [hl, hw], [-hl, -hw], [-hl, hw], [hl, 0], [-hl, 0], [0, -hw], [0, hw]])
+      out.push([x + fx * l + rx * w, y + fy * l + ry * w]);
+    return out;
+  }
+  blocked(x, y, a) {
+    const W = this.world, S = VR.TILE;
+    for (const [px, py] of this.points(x, y, a)) {
+      if (W.solid(Math.floor(px / S), Math.floor(py / S))) return true;
+      if (W.boxAt(px, py, this)) return true;
+    }
+    return false;
+  }
+  surfaceGrip() {
+    const t = this.world.get(Math.floor(this.x / VR.TILE), Math.floor(this.y / VR.TILE)), T = VR.T;
+    if (t === T.ROAD) return { max: 240, acc: 1 };
+    if (t === T.STONE) return { max: 205, acc: 0.95 };
+    if (t === T.DIRTROAD || t === T.DIRT) return { max: 170, acc: 0.85 };
+    if (t === T.SIDEWALK || t === T.PAVING) return { max: 150, acc: 0.9 };
+    return { max: 115, acc: 0.7 }; // pasto
+  }
+  // input: ejes y botones. Teclado y cruceta: arriba acelera, abajo frena/reversa, costados giran.
+  // Joystick táctil o analógico: el auto va hacia donde apuntás, más rápido cuanto más lo empujás.
+  update(dt, input) {
+    this.px = this.x; this.py = this.y; this.pa = this.a;
+    const g = this.surfaceGrip();
+    let throttle = 0, steer = 0;
+    const brake = input.down('run');
+    const analog = input.source === 'touch';
+    if (this.driven) {
+      if (analog) {
+        const m = Math.min(1, Math.hypot(input.ax, input.ay));
+        if (m > 0.1) {
+          const want = Math.atan2(input.ax, -input.ay);
+          let d = want - this.a; d = Math.atan2(Math.sin(d), Math.cos(d));
+          if (Math.abs(d) > 2.2 && this.v < 40) { throttle = -m; steer = VR.clamp(-d * 2, -1, 1); } // marcha atrás
+          else { throttle = m * (Math.abs(d) > 1.6 ? 0.35 : 1); steer = VR.clamp(d * 2.2, -1, 1); }
+        }
+      } else {
+        throttle = -input.ay; steer = input.ax;
+      }
+    }
+    // velocidad
+    if (brake) this.v -= Math.sign(this.v) * Math.min(Math.abs(this.v), 420 * dt);
+    if (throttle > 0) this.v += (this.v < 0 ? 380 : 175 * g.acc) * throttle * dt;
+    else if (throttle < 0) this.v += (this.v > 0 ? 380 : 120) * throttle * dt;
+    else this.v -= Math.sign(this.v) * Math.min(Math.abs(this.v), 70 * dt); // rodar libre
+    const max = g.max;
+    if (this.v > max) this.v = Math.max(max, this.v - 260 * dt);
+    if (this.v < -75) this.v = -75;
+    // giro: depende de la velocidad (parado no gira), en reversa al revés
+    const sp = Math.abs(this.v), turn = 2.7 * Math.min(1, sp / 55) * (1 - Math.min(0.45, sp / 600));
+    this.a += steer * turn * Math.sign(this.v || 1) * dt;
+    // mover en pasos chicos para no atravesar paredes
+    const dist = this.v * dt, n = Math.max(1, Math.ceil(Math.abs(dist) / 4));
+    for (let i = 0; i < n; i++) {
+      const nx = this.x + Math.sin(this.a) * dist / n, ny = this.y - Math.cos(this.a) * dist / n;
+      if (!this.blocked(nx, ny, this.a)) { this.x = nx; this.y = ny; continue; }
+      // rozar: probar cada eje por separado
+      if (!this.blocked(nx, this.y, this.a)) { this.x = nx; this.v *= 0.97; continue; }
+      if (!this.blocked(this.x, ny, this.a)) { this.y = ny; this.v *= 0.97; continue; }
+      if (Math.abs(this.v) > 60) { this.hit = 0.25; VR.input.buzz && VR.input.buzz(30); }
+      this.v = -this.v * 0.25;
+      break;
+    }
+    if (this.blocked(this.x, this.y, this.a)) this.a = this.pa; // el giro no puede meterlo en una pared
+    if (this.hit > 0) this.hit -= dt;
+    this.world.moveBox(this);
+  }
+  kmh() { return Math.round(Math.abs(this.v) / VR.TILE * 2 * 3.6); } // 1 tile = 2 m
+  frame(a) {
+    const N = VR.CAR.FRAMES;
+    return ((Math.round(a / (Math.PI * 2) * N) % N) + N) % N;
+  }
+  draw(ctx, camX, camY, al) {
+    const x = Math.round(VR.lerp(this.px, this.x, al) - camX), y = Math.round(VR.lerp(this.py, this.y, al) - camY);
+    let a = this.pa + Math.atan2(Math.sin(this.a - this.pa), Math.cos(this.a - this.pa)) * al;
+    const k = this.frame(a), F = this.frames, h = F.S >> 1;
+    const shake = this.hit > 0 ? ((this.hit * 60) | 0) % 2 : 0;
+    ctx.drawImage(F.shadow[k], x - h + 3, y - h + 3);
+    ctx.drawImage(F.img[k], x - h + shake, y - h);
+  }
+};
+
+// Autos estacionados junto al cordón, por toda la ciudad (siempre los mismos: semilla fija).
+VR.parkCars = (world, n, near) => {
+  const T = VR.T, rnd = VR.rng(2006), S = VR.TILE, cars = [];
+  const road = (x, y) => { const t = world.get(x, y); return t === T.ROAD || t === T.STONE; };
+  const curb = (x, y) => world.get(x, y) === T.SIDEWALK;
+  // ¿hay lugar para estacionar en (x, y)? devuelve [cx, cy, ángulo] o null
+  const spot = (x, y) => {
+    if (!road(x, y)) return null;
+    // cordón al norte o al sur: auto horizontal
+    for (const dy of [-1, 1]) {
+      let ok = true;
+      for (let i = -1; i <= 2 && ok; i++) ok = road(x + i, y) && road(x + i, y - dy) && curb(x + i, y + dy) && !world.line[(y) * world.w + x + i];
+      if (ok) return [x * S + 16, y * S + 8 - dy * 1, rnd() < 0.5 ? Math.PI / 2 : -Math.PI / 2];
+    }
+    for (const dx of [-1, 1]) {
+      let ok = true;
+      for (let i = -1; i <= 2 && ok; i++) ok = road(x, y + i) && road(x - dx, y + i) && curb(x + dx, y + i) && !world.line[(y + i) * world.w + x];
+      if (ok) return [x * S + 8 - dx * 1, y * S + 16, rnd() < 0.5 ? 0 : Math.PI];
+    }
+    return null;
+  };
+  const free = (cx, cy) => !world.boxAt(cx, cy) && !world.boxAt(cx + 18, cy) && !world.boxAt(cx - 18, cy) && !world.boxAt(cx, cy + 18) && !world.boxAt(cx, cy - 18);
+  const add = (s, color) => { const c = new VR.Car(world, s[0], s[1], s[2], color); world.addBox(c); cars.push(c); return c; };
+  // el primero: bien cerca del punto de partida
+  let first = null;
+  if (near) {
+    const tx = Math.floor(near.x / S), ty = Math.floor(near.y / S);
+    let best = null;
+    for (let r = 0; r < 14 && !best; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const s = spot(tx + dx, ty + dy);
+      if (s && (!best || Math.hypot(s[0] - near.x, s[1] - near.y) < Math.hypot(best[0] - near.x, best[1] - near.y))) best = s;
+    }
+    if (best) { best[2] = Math.PI / 2; first = add(best, 0); }
+  }
+  for (let tries = 0; tries < n * 60 && cars.length < n; tries++) {
+    const x = 2 + ((rnd() * (world.w - 4)) | 0), y = 2 + ((rnd() * (world.h - 4)) | 0);
+    const s = spot(x, y);
+    if (s && free(s[0], s[1])) add(s, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+  }
+  return { cars, first };
+};
+
 // ===== main.js =====
 // Arranque: pantalla, mundo, jugador, cámara, HUD, menú y guardado de la posición.
 'use strict';
@@ -1174,15 +1437,63 @@ VR.Player = class {
   const start = saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn;
   const player = new VR.Player(world, start.x, start.y);
   if (saved && saved.dir) player.dir = saved.dir;
+  // ---------- autos estacionados (el primero, al lado del punto de partida) ----------
+  const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 900, world.spawn);
+  const cars = parked.cars;
+  let car = null; // auto que estás manejando
+  const WALK_BASE = 270, DRIVE_BASE = 420;
+  const sc = saved && saved.car;
+  if (sc && cars[sc.i]) {
+    const c = cars[sc.i]; world.removeBox(c); c.x = c.px = sc.x; c.y = c.py = sc.y; c.a = c.pa = sc.a; world.addBox(c);
+    if (sc.in) { car = c; c.driven = true; player.x = player.px = c.x; player.y = player.py = c.y; VR.screen.setBase(DRIVE_BASE); setTimeout(() => driveLabels(true)); }
+  }
+  const LABELS = { action: [['✋', 'ACCIÓN'], ['📯', 'BOCINA']], run: [['»', 'CORRER'], ['⏹', 'FRENO']], car: [['🚗', 'AUTO'], ['🚪', 'BAJAR']] };
+  function driveLabels(on) {
+    document.querySelectorAll('#btns .tb').forEach((el) => { const L = LABELS[el.dataset.b]; if (L) el.innerHTML = '<span class="ico">' + L[on ? 1 : 0][0] + '</span>' + L[on ? 1 : 0][1]; });
+  }
+  const nearCar = () => {
+    let best = null, bd = 30;
+    for (const c of world.carsIn(player.x - 40, player.y - 40, player.x + 40, player.y + 40, [])) {
+      const d = Math.hypot(c.x - player.x, c.y - (player.y - 4));
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  };
+  function enterCar(c) {
+    car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE);
+    hint = ''; lastCar = c; driveLabels(true);
+  }
+  function exitCar() {
+    const c = car, a = c.a, rx = Math.cos(a), ry = Math.sin(a), fx = Math.sin(a), fy = -Math.cos(a);
+    const tries = [];
+    for (const d of [14, 18, 22, 26]) tries.push([-rx * d, -ry * d], [rx * d, ry * d]);
+    for (const d of [24, 30]) tries.push([-fx * d, -fy * d], [fx * d, fy * d]);
+    for (const [dx, dy] of tries) {
+      const x = c.x + dx, y = c.y + dy + 4;
+      if (!world.hits(x - player.HW, y - player.HH, x + player.HW, y)) {
+        player.x = player.px = x; player.y = player.py = y;
+        c.driven = false; c.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); return true;
+      }
+    }
+    toast('No hay lugar para bajar acá'); return false;
+  }
 
   // ---------- cámara: sigue al jugador mirando un poco hacia donde camina ----------
   const cam = { x: player.x, y: player.y, px: player.x, py: player.y, lx: 0, ly: 0 };
   function updateCamera(dt) {
     cam.px = cam.x; cam.py = cam.y;
-    const look = player.moving ? 26 * Math.min(1, player.speed / 58) : 0;
-    cam.lx += ((VR.input.ax * look) - cam.lx) * Math.min(1, dt * 2.5);
-    cam.ly += ((VR.input.ay * look * 0.7) - cam.ly) * Math.min(1, dt * 2.5);
-    const tx = player.x + cam.lx, ty = player.y - 10 + cam.ly;
+    let wx, wy;
+    if (car) { // manejando: la cámara mira hacia adelante, más cuanto más rápido vas
+      const k = Math.min(1, Math.abs(car.v) / 220) * Math.sign(car.v);
+      wx = Math.sin(car.a) * 70 * k; wy = -Math.cos(car.a) * 55 * k;
+    } else {
+      const look = player.moving ? 26 * Math.min(1, player.speed / 58) : 0;
+      wx = VR.input.ax * look; wy = VR.input.ay * look * 0.7;
+    }
+    cam.lx += (wx - cam.lx) * Math.min(1, dt * 2.5);
+    cam.ly += (wy - cam.ly) * Math.min(1, dt * 2.5);
+    const fx = car ? car.x : player.x, fy = car ? car.y : player.y - 10;
+    const tx = fx + cam.lx, ty = fy + cam.ly;
     const k = 1 - Math.exp(-dt * 7);
     cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
   }
@@ -1196,14 +1507,26 @@ VR.Player = class {
 
   // ---------- lógica ----------
   const SALUDOS = ["¡Mba'éichapa!", "¡Mba'e la porte!", 'Haku la ára, che...', "¡Jaha jaha!", 'Ndera, qué lindo día'];
-  let sayIdx = 0;
+  const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
+  let sayIdx = 0, hint = '', hintCar = null;
   function update(dt) {
     if (mapOpen) { if (['map', 'menu', 'action'].some((b) => VR.input.pressed(b))) closeMap(); return; }
     if (VR.input.pressed('menu')) { openMenu(); return; }
     if (VR.input.pressed('map')) { openMap(); return; }
-    player.update(dt, VR.input);
-    if (VR.input.pressed('action')) player.say(SALUDOS[sayIdx++ % SALUDOS.length]);
-    if (VR.input.pressed('car')) toast('🚗 Los autos y las motos llegan en la Etapa 2');
+    if (car) {
+      car.update(dt, VR.input);
+      player.px = player.x; player.py = player.y; player.x = car.x; player.y = car.y;
+      if (VR.input.pressed('action')) player.say(BOCINAS[sayIdx++ % BOCINAS.length], 1.2);
+      if (VR.input.pressed('car')) { if (Math.abs(car.v) < 45) exitCar(); else toast('Frená para bajarte'); }
+      if (player.bubble) { player.bubble.t -= dt; if (player.bubble.t <= 0) player.bubble = null; }
+    } else {
+      player.update(dt, VR.input);
+      const nc = nearCar();
+      hint = nc ? (VR.input.source === 'touch' ? '🚗 Subir' : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
+      hintCar = nc;
+      if (VR.input.pressed('car')) { if (nc) enterCar(nc); else toast('Acercate a un auto para subir'); }
+      else if (VR.input.pressed('action')) player.say(SALUDOS[sayIdx++ % SALUDOS.length]);
+    }
     updateCamera(dt);
   }
 
@@ -1218,7 +1541,8 @@ VR.Player = class {
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
-    tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => player.draw(c, cx, cy, a) });
+    if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => player.draw(c, cx, cy, a) });
+    for (const c of world.carsIn(cx - 40, cy - 40, cx + sw + 40, cy + sh + 40, [])) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
     for (const l of world.labels) {
@@ -1226,6 +1550,7 @@ VR.Player = class {
       if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, '#fff6d8', { center: true, shadow: '#1a1a1e' });
     }
     player.drawBubble(ctx, cx, cy, a);
+    if (hint && hintCar) VR.gfx.text(ctx, hint, Math.round(hintCar.x - cx), Math.round(hintCar.y - cy - 26), '#ffd75e', { center: true, shadow: '#1a1a1e' });
     drawHud();
   }
   let hudT = 0, zoneT = 0, zone = '', barrio = '';
@@ -1243,6 +1568,8 @@ VR.Player = class {
         barrio = b; $('hudTitle').textContent = b.toUpperCase();
       }
     }
+    const spd = $('speed');
+    if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh(); } else if (!spd.hidden) spd.hidden = true;
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
     $('dbg').hidden = false;
@@ -1283,7 +1610,7 @@ VR.Player = class {
   seg('segTouch', 'touch', applyTouch);
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
-  $('btnReset').onclick = () => { player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
+  $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
 
   // ---------- mapa de la ciudad ----------
   let mapOpen = false, mapBuilt = false;
@@ -1317,7 +1644,13 @@ VR.Player = class {
   addEventListener('resize', () => { if (mapOpen) sizeMap(); });
 
   // ---------- guardar la posición ----------
-  const savePos = () => VR.store.set('pos:' + world.id, { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir });
+  let lastCar = car;
+  const savePos = () => {
+    if (car) lastCar = car;
+    const c = lastCar, i = c ? cars.indexOf(c) : -1;
+    VR.store.set('pos:' + world.id, { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir,
+      car: i >= 0 ? { i, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
+  };
   setInterval(savePos, 3000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } });
   addEventListener('pagehide', savePos);
@@ -1327,7 +1660,7 @@ VR.Player = class {
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { world, player, cam, settings };
+  window.__vr = { world, player, cam, settings, cars, get car() { return car; }, enterCar, exitCar };
 })();
 
 </script>

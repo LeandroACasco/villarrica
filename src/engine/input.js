@@ -31,6 +31,7 @@ VR.input = (() => {
   api.releaseAll = releaseAll;
 
   const buzz = (ms) => { if (api.vibrate && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} };
+  api.buzz = buzz;
 
   // ---- táctil: el joystick aparece donde apoyás el pulgar (mitad izquierda) ----
   api.initTouch = (zone, joy, knob, buttons) => {

@@ -17,6 +17,7 @@ VR.World = class {
     this.CH = 32; // tiles por chunk (512 px)
     this.cache = new Map(); this.MAXCACHE = 40;
     this.index = null;
+    this.boxGrid = new Map(); // cosas que se mueven o no son baldosas (autos): grilla de 64 px
     this.id = 'w' + w + 'x' + h;
   }
   get(tx, ty) { return tx < 0 || ty < 0 || tx >= this.w || ty >= this.h ? -1 : this.tiles[ty * this.w + tx]; }
@@ -29,7 +30,27 @@ VR.World = class {
     for (let ty = Math.floor(y0 / S); ty <= Math.floor((y1 - 0.001) / S); ty++)
       for (let tx = Math.floor(x0 / S); tx <= Math.floor((x1 - 0.001) / S); tx++)
         if (this.solid(tx, ty)) return true;
-    return false;
+    return this.boxOverlap(x0, y0, x1, y1);
+  }
+  // ---------- autos (cajas en una grilla de 64 px) ----------
+  _cells(b, fn) { for (let cy = Math.floor(b.y0 / 64); cy <= Math.floor(b.y1 / 64); cy++) for (let cx = Math.floor(b.x0 / 64); cx <= Math.floor(b.x1 / 64); cx++) fn(cx + cy * 65536); }
+  addBox(obj) { const b = obj.box(); obj._box = b; this._cells(b, (k) => { let l = this.boxGrid.get(k); if (!l) this.boxGrid.set(k, l = []); l.push(b); }); }
+  removeBox(obj) { const b = obj._box; if (!b) return; this._cells(b, (k) => { const l = this.boxGrid.get(k); if (l) { const i = l.indexOf(b); if (i >= 0) l.splice(i, 1); } }); obj._box = null; }
+  moveBox(obj) { if (obj._box) this.removeBox(obj); this.addBox(obj); }
+  boxAt(px, py, except) {
+    const l = this.boxGrid.get(Math.floor(px / 64) + Math.floor(py / 64) * 65536);
+    if (l) for (const b of l) if (b.car !== except && px >= b.x0 && px < b.x1 && py >= b.y0 && py < b.y1) return b.car;
+    return null;
+  }
+  boxOverlap(x0, y0, x1, y1, except) {
+    let hit = false;
+    this._cells({ x0, y0, x1, y1 }, (k) => { const l = this.boxGrid.get(k); if (l && !hit) for (const b of l) if (b.car !== except && x0 < b.x1 && x1 > b.x0 && y0 < b.y1 && y1 > b.y0) { hit = true; break; } });
+    return hit;
+  }
+  carsIn(x0, y0, x1, y1, out) {
+    const seen = new Set();
+    this._cells({ x0, y0, x1, y1 }, (k) => { const l = this.boxGrid.get(k); if (l) for (const b of l) if (!seen.has(b.car)) { seen.add(b.car); out.push(b.car); } });
+    return out;
   }
   // Nombre del lugar donde está una posición (plaza/parque, o la calle más cercana).
   placeName(px, py) {
