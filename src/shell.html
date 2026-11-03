@@ -61,15 +61,28 @@
   .tb.b { right: 96px; bottom: 0; width: 64px; height: 64px; background: rgba(60,120,210,.5); }
   .tb.c { right: 78px; bottom: 96px; width: 58px; height: 58px; background: rgba(70,70,82,.55); }
 
-  #mapView { position: fixed; inset: 0; z-index: 8; background: rgba(10,10,12,.92); display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 10px; padding: 16px; cursor: pointer; }
-  #mapView p { margin: 0; color: var(--muted); font-size: 13px; text-align: center; } #mapView p b { color: var(--text); }
-  #mapBox { position: relative; border: 2px solid #3a3a44; border-radius: 6px; overflow: hidden; }
-  #mapCanvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
-  #mapLabels span { position: absolute; transform: translate(-50%, -100%); font: 600 11px system-ui; color: #fff;
+  #mapView { position: fixed; inset: 0; z-index: 8; background: #14161a; }
+  #mapBox { position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: grab; }
+  #mapBox:active { cursor: grabbing; }
+  #mapInner { position: absolute; left: 0; top: 0; transform-origin: 0 0; --ik: 1; }
+  #mapCanvas { display: block; image-rendering: pixelated; }
+  #mapRoute { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  #mapRoute polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  #mapLabels span { position: absolute; transform-origin: 0 0; transform: scale(var(--ik)) translate(-50%, -100%); font: 600 11px system-ui; color: #fff;
     text-shadow: 0 1px 2px #000, 0 0 3px #000; white-space: nowrap; pointer-events: none; }
+  #mapDest { position: absolute; transform-origin: 0 0; transform: scale(var(--ik)) translate(-20%, -100%); font-size: 26px; line-height: 1;
+    filter: drop-shadow(0 2px 2px #000); pointer-events: none; }
+  #mapTools { position: fixed; top: calc(env(safe-area-inset-top) + 10px); right: calc(env(safe-area-inset-right) + 10px); z-index: 9;
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  #mapTools button { min-width: 44px; height: 44px; border-radius: 10px; border: 1px solid #44444f; background: rgba(30,30,36,.9); color: #fff;
+    font: 700 18px system-ui; padding: 0 12px; cursor: pointer; }
+  #mapTools button.wide { font-size: 13px; }
+  #mapHelp { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 10px); z-index: 9; margin: 0; text-align: center;
+    color: #cfcabe; font-size: 13px; text-shadow: 0 1px 3px #000; pointer-events: none; padding: 0 70px; }
+  #mapHelp b { color: #fff; }
+  #gps { display: block; color: #7fe3ff !important; font-weight: 700; }
   #mapLabels span.barrio { font: 900 15px system-ui; letter-spacing: .12em; text-transform: uppercase; color: #ffd75e; opacity: .9; }
-  #mapMe { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #f2a52b;
+  #mapMe { position: absolute; width: 12px; height: 12px; transform-origin: 0 0; transform: scale(var(--ik)) translate(-50%, -50%); border-radius: 50%; background: #f2a52b;
     border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(242,165,43,.35); animation: pulse 1s infinite alternate; }
   @keyframes pulse { to { box-shadow: 0 0 0 7px rgba(242,165,43,.1); } }
   #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translateX(-50%); background: #24242a;
@@ -122,7 +135,7 @@
 </div>
 
 <div id="banner"></div>
-<div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
+<div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span><span id="gps" hidden></span></div>
 <div id="dbg" hidden></div>
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
@@ -139,8 +152,9 @@
 </div>
 <div id="toast"></div>
 <div id="mapView" hidden>
-  <div id="mapBox"><canvas id="mapCanvas"></canvas><div id="mapLabels"></div><div id="mapMe"></div></div>
-  <p>Estás en <b id="mapWhere">—</b> · tocá o apretá M para volver</p>
+  <div id="mapBox"><div id="mapInner"><canvas id="mapCanvas"></canvas><svg id="mapRoute"><polyline id="routeBg" stroke="#0b2a36" stroke-width="7"/><polyline id="routeFg" stroke="#3fd3ff" stroke-width="4"/></svg><div id="mapLabels"></div><div id="mapDest" hidden>🏁</div><div id="mapMe"></div></div></div>
+  <div id="mapTools"><button id="mzClose" title="Volver (M)">✕</button><button id="mzIn" title="Acercar (+)">＋</button><button id="mzOut" title="Alejar (−)">－</button><button id="mzMe" title="Ir a donde estoy">📍</button><button id="mzClear" class="wide" hidden>Quitar destino</button></div>
+  <p id="mapHelp">Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar un destino · arrastrá o pellizcá para moverte</p>
 </div>
 
 <dialog id="menu">

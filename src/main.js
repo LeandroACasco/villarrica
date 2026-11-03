@@ -98,7 +98,11 @@
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
   let sayIdx = 0, hint = '', hintCar = null;
   function update(dt) {
-    if (mapOpen) { if (['map', 'menu', 'action'].some((b) => VR.input.pressed(b))) closeMap(); return; }
+    if (mapOpen) {
+      if (['map', 'menu'].some((b) => VR.input.pressed(b))) closeMap();
+      else if (VR.input.ax || VR.input.ay) { mv.ox -= VR.input.ax * 700 * dt; mv.oy -= VR.input.ay * 700 * dt; mapApply(); }
+      return;
+    }
     if (VR.input.pressed('menu')) { openMenu(); return; }
     if (VR.input.pressed('map')) { openMap(); return; }
     if (car) {
@@ -116,6 +120,7 @@
       else if (VR.input.pressed('action')) player.say(SALUDOS[sayIdx++ % SALUDOS.length]);
     }
     updateCamera(dt);
+    updateGps(dt);
     if (traffic) {
       const sw = VR.screen.w, sh = VR.screen.h, f = car || player;
       traffic.update(dt, f, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 },
@@ -223,21 +228,133 @@
     const L = $('mapLabels'); L.innerHTML = '';
     for (const l of (world.barrioLabels || []).map((b) => ({ ...b, cls: 'barrio' })).concat(world.labels)) {
       const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls;
-      s.style.left = (l.x / 16 / world.w * 100) + '%'; s.style.top = (l.y / 16 / world.h * 100) + '%'; L.appendChild(s);
+      s.style.left = (l.x / 16) + 'px'; s.style.top = (l.y / 16) + 'px'; L.appendChild(s);
     }
     mapBuilt = true;
   }
-  function sizeMap() {
-    const k = Math.min((innerWidth - 32) / world.w, (innerHeight - 70) / world.h);
-    $('mapBox').style.width = Math.floor(world.w * k) + 'px'; $('mapBox').style.height = Math.floor(world.h * k) + 'px';
-    $('mapMe').style.left = (player.x / 16 / world.w * 100) + '%'; $('mapMe').style.top = (player.y / 16 / world.h * 100) + '%';
-    $('mapWhere').textContent = (zone || '—') + (barrio && barrio !== 'Villarrica' ? ' · ' + barrio : '');
+  // ---------- mapa grande: zoom (rueda, pellizco, botones, + y −), arrastrar, tocar para marcar destino ----------
+  const mv = { k: 0, ox: 0, oy: 0 }, mapBox = $('mapBox'), mapInner = $('mapInner');
+  const fitK = () => Math.min(innerWidth / world.w, innerHeight / world.h) * 0.96;
+  function mapApply() {
+    const fk = fitK();
+    mv.k = VR.clamp(mv.k, fk * 0.9, 14);
+    const W = world.w * mv.k, H = world.h * mv.k, m = 60;
+    mv.ox = W < innerWidth ? (innerWidth - W) / 2 : VR.clamp(mv.ox, innerWidth - W - m, m);
+    mv.oy = H < innerHeight ? (innerHeight - H) / 2 : VR.clamp(mv.oy, innerHeight - H - m, m);
+    mapInner.style.transform = `translate(${mv.ox}px, ${mv.oy}px) scale(${mv.k})`;
+    mapInner.style.setProperty('--ik', 1 / mv.k);
+    // nombres chicos solo cuando hay zoom suficiente
+    $('mapLabels').classList.toggle('far', mv.k < fk * 1.8);
   }
-  function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); sizeMap(); $('mapView').hidden = false; }
+  function mapZoom(f, cx = innerWidth / 2, cy = innerHeight / 2) {
+    const k0 = mv.k, k1 = VR.clamp(k0 * f, fitK() * 0.9, 14);
+    mv.ox = cx - (cx - mv.ox) * k1 / k0; mv.oy = cy - (cy - mv.oy) * k1 / k0; mv.k = k1; mapApply();
+  }
+  function mapCenterOn(px, py) { mv.ox = innerWidth / 2 - px / 16 * mv.k; mv.oy = innerHeight / 2 - py / 16 * mv.k; mapApply(); }
+  function sizeMap() {
+    $('mapCanvas').style.width = world.w + 'px'; $('mapCanvas').style.height = world.h + 'px';
+    mapInner.style.width = world.w + 'px'; mapInner.style.height = world.h + 'px';
+    $('mapRoute').setAttribute('width', world.w); $('mapRoute').setAttribute('height', world.h);
+    const f = car || player;
+    $('mapMe').style.left = (f.x / 16) + 'px'; $('mapMe').style.top = (f.y / 16) + 'px';
+    $('mapWhere').textContent = (zone || '—') + (barrio && barrio !== 'Villarrica' ? ' · ' + barrio : '');
+    if (!mv.k) { mv.k = fitK(); mapApply(); } else mapCenterOn(f.x, f.y);
+    drawMapRoute();
+  }
+  function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }
   $('btnMap').onclick = () => (mapOpen ? closeMap() : openMap());
-  $('mapView').addEventListener('pointerdown', (e) => { e.preventDefault(); closeMap(); });
-  addEventListener('resize', () => { if (mapOpen) sizeMap(); });
+  $('mzClose').onclick = closeMap;
+  $('mzIn').onclick = () => mapZoom(1.6);
+  $('mzOut').onclick = () => mapZoom(1 / 1.6);
+  $('mzMe').onclick = () => { if (mv.k < fitK() * 3) mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); };
+  $('mzClear').onclick = () => { setDest(null); };
+  for (const id of ['mzClose', 'mzIn', 'mzOut', 'mzMe', 'mzClear']) $(id).addEventListener('pointerdown', (e) => e.stopPropagation());
+  const ptrs = new Map(); let pinch = null, dragMoved = 0;
+  mapBox.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); try { mapBox.setPointerCapture(e.pointerId); } catch (x) {}
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 1) dragMoved = 0;
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; dragMoved = 99; }
+  });
+  mapBox.addEventListener('pointermove', (e) => {
+    const p = ptrs.get(e.pointerId); if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    if (ptrs.size === 1) { dragMoved += Math.abs(dx) + Math.abs(dy); mv.ox += dx; mv.oy += dy; mapApply(); }
+    else if (ptrs.size === 2 && pinch) {
+      const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      mv.ox += mx - pinch.mx; mv.oy += my - pinch.my; mapZoom(d / (pinch.d || 1), mx, my); pinch = { d, mx, my };
+    }
+  });
+  const ptrUp = (e) => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch = null;
+    if (ptrs.size === 0 && dragMoved < 8 && e.type === 'pointerup') mapTap(e.clientX, e.clientY);
+  };
+  mapBox.addEventListener('pointerup', ptrUp); mapBox.addEventListener('pointercancel', ptrUp);
+  mapBox.addEventListener('wheel', (e) => { e.preventDefault(); mapZoom(Math.exp(-e.deltaY * 0.0016), e.clientX, e.clientY); }, { passive: false });
+  addEventListener('keydown', (e) => {
+    if (!mapOpen) return;
+    if (e.code === 'Equal' || e.code === 'NumpadAdd') mapZoom(1.4);
+    else if (e.code === 'Minus' || e.code === 'NumpadSubtract') mapZoom(1 / 1.4);
+    else if (e.code === 'Delete' || e.code === 'Backspace') setDest(null);
+  });
+  addEventListener('resize', () => { if (mapOpen) mapApply(); });
+  // tocar: si es cerca de un nombre (plaza, lugar), el destino es ese lugar; si no, el punto tocado
+  function mapTap(cx, cy) {
+    const tx = (cx - mv.ox) / mv.k, ty = (cy - mv.oy) / mv.k;
+    if (tx < 0 || ty < 0 || tx >= world.w || ty >= world.h) return;
+    let best = null, bd = 26;
+    for (const l of world.labels) { const d = Math.hypot(l.x / 16 * mv.k + mv.ox - cx, l.y / 16 * mv.k + mv.oy - cy - 6); if (d < bd) { bd = d; best = l; } }
+    if (best) setDest({ x: best.x, y: best.y + 20, name: best.text });
+    else { const x = tx * 16, y = ty * 16; setDest({ x, y, name: world.placeName(x, y) || 'el destino' }); }
+  }
+
+  // ---------- GPS ----------
+  const gps = prueba ? null : new VR.GPS(world);
+  let dest = null, route = null, routeLen = 0, gpsT = 0, gpsRe = 0;
+  function setDest(d) {
+    dest = d; route = null; gpsRe = 0;
+    if (d) { recalc(); toast('🏁 Destino: ' + d.name); } else toast('Destino quitado');
+    VR.store.set('dest:' + world.id, d);
+    updateGpsHud(); drawMapRoute();
+  }
+  function recalc() {
+    if (!dest || !gps) return;
+    const f = car || player;
+    route = gps.route(f.x, f.y, dest.x, dest.y, !!car);
+    routeLen = route ? VR.polyLen(route) : 0;
+  }
+  function updateGpsHud() {
+    const el = $('gps');
+    $('mzClear').hidden = !dest; $('mapDest').hidden = !dest;
+    if (dest) { $('mapDest').style.left = dest.x / 16 + 'px'; $('mapDest').style.top = dest.y / 16 + 'px'; }
+    if (!dest) { el.hidden = true; return; }
+    el.hidden = false;
+    const m = routeLen / VR.TILE * 2;
+    el.textContent = '🏁 ' + dest.name + ' · ' + (m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : (Math.round(m / 10) * 10) + ' m');
+  }
+  function drawMapRoute() {
+    const pts = route ? Array.from({ length: route.length / 2 }, (_, i) => (route[i * 2] / 16).toFixed(1) + ',' + (route[i * 2 + 1] / 16).toFixed(1)).join(' ') : '';
+    $('routeBg').setAttribute('points', pts); $('routeFg').setAttribute('points', pts);
+  }
+  function updateGps(dt) {
+    if (!dest || !gps) return;
+    gpsT += dt; gpsRe -= dt;
+    if (gpsT < 0.25) return; gpsT = 0;
+    const f = car || player;
+    if (Math.hypot(f.x - dest.x, f.y - dest.y) < 40) { dest = null; route = null; VR.store.set('dest:' + world.id, null); toast('🏁 ¡Llegaste!'); updateGpsHud(); drawMapRoute(); return; }
+    if (!route) { if (gpsRe <= 0) { gpsRe = 1; recalc(); } }
+    else {
+      const [d, i] = VR.polyNear(route, f.x, f.y);
+      if (d > 56 && gpsRe <= 0) { gpsRe = 1; recalc(); }
+      else if (d <= 56) { route = [f.x, f.y].concat(route.slice((i + 1) * 2)); routeLen = VR.polyLen(route); }
+    }
+    updateGpsHud();
+    if (mapOpen) drawMapRoute();
+  }
+  { const sd = VR.store.get('dest:' + world.id, null); if (sd && gps) { dest = sd; recalc(); updateGpsHud(); } }
 
   // ---------- minimapa (norte arriba; se aleja al manejar; tocarlo abre el mapa grande) ----------
   const mini = $('mini'), mctx = mini.getContext('2d');
@@ -264,6 +381,20 @@
     if (traffic) for (const v of traffic.list) {
       const px = (v.x / VR.TILE - sx) * k, py = (v.y / VR.TILE - sy) * k;
       if (px > 0 && py > 0 && px < D && py < D) { mctx.fillStyle = v.type === 'moto' ? '#f0f0f0' : '#ffd75e'; mctx.fillRect(px - 1.5, py - 1.5, 3, 3); }
+    }
+    // camino del GPS y bandera del destino
+    if (route) {
+      mctx.lineJoin = mctx.lineCap = 'round';
+      mctx.beginPath();
+      for (let i = 0; i < route.length; i += 2) { const px = (route[i] / VR.TILE - sx) * k, py = (route[i + 1] / VR.TILE - sy) * k; i ? mctx.lineTo(px, py) : mctx.moveTo(px, py); }
+      mctx.strokeStyle = '#0b2a36'; mctx.lineWidth = 6 * D / 112; mctx.stroke();
+      mctx.strokeStyle = '#3fd3ff'; mctx.lineWidth = 3.5 * D / 112; mctx.stroke();
+    }
+    if (dest) {
+      let px = (dest.x / VR.TILE - sx) * k, py = (dest.y / VR.TILE - sy) * k;
+      const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 10 * D / 112;
+      if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
+      mctx.font = `${Math.round(15 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText('🏁', px, py);
     }
     // dónde dejaste el auto
     if (!car && lastCar) {

@@ -61,15 +61,28 @@
   .tb.b { right: 96px; bottom: 0; width: 64px; height: 64px; background: rgba(60,120,210,.5); }
   .tb.c { right: 78px; bottom: 96px; width: 58px; height: 58px; background: rgba(70,70,82,.55); }
 
-  #mapView { position: fixed; inset: 0; z-index: 8; background: rgba(10,10,12,.92); display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 10px; padding: 16px; cursor: pointer; }
-  #mapView p { margin: 0; color: var(--muted); font-size: 13px; text-align: center; } #mapView p b { color: var(--text); }
-  #mapBox { position: relative; border: 2px solid #3a3a44; border-radius: 6px; overflow: hidden; }
-  #mapCanvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
-  #mapLabels span { position: absolute; transform: translate(-50%, -100%); font: 600 11px system-ui; color: #fff;
+  #mapView { position: fixed; inset: 0; z-index: 8; background: #14161a; }
+  #mapBox { position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: grab; }
+  #mapBox:active { cursor: grabbing; }
+  #mapInner { position: absolute; left: 0; top: 0; transform-origin: 0 0; --ik: 1; }
+  #mapCanvas { display: block; image-rendering: pixelated; }
+  #mapRoute { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  #mapRoute polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  #mapLabels span { position: absolute; transform-origin: 0 0; transform: scale(var(--ik)) translate(-50%, -100%); font: 600 11px system-ui; color: #fff;
     text-shadow: 0 1px 2px #000, 0 0 3px #000; white-space: nowrap; pointer-events: none; }
+  #mapDest { position: absolute; transform-origin: 0 0; transform: scale(var(--ik)) translate(-20%, -100%); font-size: 26px; line-height: 1;
+    filter: drop-shadow(0 2px 2px #000); pointer-events: none; }
+  #mapTools { position: fixed; top: calc(env(safe-area-inset-top) + 10px); right: calc(env(safe-area-inset-right) + 10px); z-index: 9;
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  #mapTools button { min-width: 44px; height: 44px; border-radius: 10px; border: 1px solid #44444f; background: rgba(30,30,36,.9); color: #fff;
+    font: 700 18px system-ui; padding: 0 12px; cursor: pointer; }
+  #mapTools button.wide { font-size: 13px; }
+  #mapHelp { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 10px); z-index: 9; margin: 0; text-align: center;
+    color: #cfcabe; font-size: 13px; text-shadow: 0 1px 3px #000; pointer-events: none; padding: 0 70px; }
+  #mapHelp b { color: #fff; }
+  #gps { display: block; color: #7fe3ff !important; font-weight: 700; }
   #mapLabels span.barrio { font: 900 15px system-ui; letter-spacing: .12em; text-transform: uppercase; color: #ffd75e; opacity: .9; }
-  #mapMe { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #f2a52b;
+  #mapMe { position: absolute; width: 12px; height: 12px; transform-origin: 0 0; transform: scale(var(--ik)) translate(-50%, -50%); border-radius: 50%; background: #f2a52b;
     border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(242,165,43,.35); animation: pulse 1s infinite alternate; }
   @keyframes pulse { to { box-shadow: 0 0 0 7px rgba(242,165,43,.1); } }
   #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translateX(-50%); background: #24242a;
@@ -125,7 +138,7 @@
 </div>
 
 <div id="banner"></div>
-<div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
+<div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span><span id="gps" hidden></span></div>
 <div id="dbg" hidden></div>
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
@@ -142,8 +155,9 @@
 </div>
 <div id="toast"></div>
 <div id="mapView" hidden>
-  <div id="mapBox"><canvas id="mapCanvas"></canvas><div id="mapLabels"></div><div id="mapMe"></div></div>
-  <p>Estás en <b id="mapWhere">—</b> · tocá o apretá M para volver</p>
+  <div id="mapBox"><div id="mapInner"><canvas id="mapCanvas"></canvas><svg id="mapRoute"><polyline id="routeBg" stroke="#0b2a36" stroke-width="7"/><polyline id="routeFg" stroke="#3fd3ff" stroke-width="4"/></svg><div id="mapLabels"></div><div id="mapDest" hidden>🏁</div><div id="mapMe"></div></div></div>
+  <div id="mapTools"><button id="mzClose" title="Volver (M)">✕</button><button id="mzIn" title="Acercar (+)">＋</button><button id="mzOut" title="Alejar (−)">－</button><button id="mzMe" title="Ir a donde estoy">📍</button><button id="mzClear" class="wide" hidden>Quitar destino</button></div>
+  <p id="mapHelp">Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar un destino · arrastrá o pellizcá para moverte</p>
 </div>
 
 <dialog id="menu">
@@ -174,7 +188,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión bbb539d7 · 2026-11-03</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión f447abc9 · 2026-11-03</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -1669,6 +1683,85 @@ VR.Traffic = class {
   }
 };
 
+// ===== game/gps.js =====
+// GPS: camino más corto por la red de calles (la misma que usa el tránsito, más pasillos y calles de servicio).
+// En vehículo respeta las manos únicas; a pie no. Dijkstra con montículo binario sobre ~10.000 nodos: unos ms.
+'use strict';
+VR.GPS = class {
+  constructor(world) {
+    const R = world.roads;
+    this.ok = !!R;
+    if (!R) return;
+    const N = R.nodes.length / 2;
+    this.N = N; this.nx = new Float32Array(N); this.ny = new Float32Array(N);
+    for (let i = 0; i < N; i++) { this.nx[i] = R.nodes[i * 2]; this.ny[i] = R.nodes[i * 2 + 1]; }
+    // adyacencia en arreglos planos: [destino, largo, ¿solo a pie?]
+    const adj = Array.from({ length: N }, () => []), E = R.edges;
+    for (let i = 0; i < E.length; i += 4) {
+      const a = E[i], b = E[i + 1], ow = E[i + 3] === 3 ? -1 : E[i + 3];
+      const kind = R.kinds[E[i + 2] & 15], surf = E[i + 2] >> 4;
+      let len = Math.hypot(this.nx[b] - this.nx[a], this.ny[b] - this.ny[a]);
+      if (len < 0.5) continue;
+      // costo: un poco más caro el pasillo y la tierra, así prefiere las calles buenas
+      const cost = len * (kind === 'service' || kind === 'living_street' ? 1.6 : 1) * (surf === VR.T.DIRTROAD ? 1.25 : 1);
+      adj[a].push(b, cost, ow < 0 ? 1 : 0);
+      adj[b].push(a, cost, ow > 0 ? 1 : 0);
+    }
+    this.adj = adj;
+  }
+  nearest(x, y) {
+    let best = -1, bd = Infinity;
+    for (let i = 0; i < this.N; i++) {
+      if (!this.adj[i].length) continue;
+      const d = (this.nx[i] - x) ** 2 + (this.ny[i] - y) ** 2;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+  // devuelve [x0, y0, x1, y1, ...] en px del mapa, desde (fx, fy) hasta (tx, ty), o null
+  route(fx, fy, tx, ty, oneway) {
+    if (!this.ok) return null;
+    const s = this.nearest(fx, fy), g = this.nearest(tx, ty);
+    if (s < 0 || g < 0) return null;
+    const N = this.N, dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
+    const heap = [], push = (d, n) => { heap.push([d, n]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = i * 2 + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+    dist[s] = 0; push(0, s);
+    while (heap.length) {
+      const [d, n] = pop();
+      if (d > dist[n]) continue;
+      if (n === g) break;
+      const A = this.adj[n];
+      for (let k = 0; k < A.length; k += 3) {
+        if (oneway && A[k + 2]) continue;
+        const m = A[k], nd = d + A[k + 1];
+        if (nd < dist[m]) { dist[m] = nd; prev[m] = n; push(nd, m); }
+      }
+    }
+    if (dist[g] === Infinity) return oneway ? this.route(fx, fy, tx, ty, false) : null; // sin salida respetando manos: a pie
+    const path = [];
+    for (let n = g; n >= 0; n = prev[n]) path.push(n);
+    path.reverse();
+    const pts = [fx, fy];
+    for (const n of path) pts.push(this.nx[n], this.ny[n]);
+    pts.push(tx, ty);
+    return pts;
+  }
+};
+// largo de una polilínea [x, y, ...] desde el índice de punto i
+VR.polyLen = (p, i = 0) => { let L = 0; for (let k = i * 2; k + 3 < p.length; k += 2) L += Math.hypot(p[k + 2] - p[k], p[k + 3] - p[k + 1]); return L; };
+// distancia de (x, y) a la polilínea y segmento más cercano
+VR.polyNear = (p, x, y) => {
+  let bd = Infinity, bi = 0;
+  for (let k = 0; k + 3 < p.length; k += 2) {
+    const ax = p[k], ay = p[k + 1], dx = p[k + 2] - ax, dy = p[k + 3] - ay, L2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2));
+    const d = Math.hypot(ax + dx * t - x, ay + dy * t - y);
+    if (d < bd) { bd = d; bi = k / 2; }
+  }
+  return [bd, bi];
+};
+
 // ===== main.js =====
 // Arranque: pantalla, mundo, jugador, cámara, HUD, menú y guardado de la posición.
 'use strict';
@@ -1770,7 +1863,11 @@ VR.Traffic = class {
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
   let sayIdx = 0, hint = '', hintCar = null;
   function update(dt) {
-    if (mapOpen) { if (['map', 'menu', 'action'].some((b) => VR.input.pressed(b))) closeMap(); return; }
+    if (mapOpen) {
+      if (['map', 'menu'].some((b) => VR.input.pressed(b))) closeMap();
+      else if (VR.input.ax || VR.input.ay) { mv.ox -= VR.input.ax * 700 * dt; mv.oy -= VR.input.ay * 700 * dt; mapApply(); }
+      return;
+    }
     if (VR.input.pressed('menu')) { openMenu(); return; }
     if (VR.input.pressed('map')) { openMap(); return; }
     if (car) {
@@ -1788,6 +1885,7 @@ VR.Traffic = class {
       else if (VR.input.pressed('action')) player.say(SALUDOS[sayIdx++ % SALUDOS.length]);
     }
     updateCamera(dt);
+    updateGps(dt);
     if (traffic) {
       const sw = VR.screen.w, sh = VR.screen.h, f = car || player;
       traffic.update(dt, f, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 },
@@ -1895,21 +1993,133 @@ VR.Traffic = class {
     const L = $('mapLabels'); L.innerHTML = '';
     for (const l of (world.barrioLabels || []).map((b) => ({ ...b, cls: 'barrio' })).concat(world.labels)) {
       const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls;
-      s.style.left = (l.x / 16 / world.w * 100) + '%'; s.style.top = (l.y / 16 / world.h * 100) + '%'; L.appendChild(s);
+      s.style.left = (l.x / 16) + 'px'; s.style.top = (l.y / 16) + 'px'; L.appendChild(s);
     }
     mapBuilt = true;
   }
-  function sizeMap() {
-    const k = Math.min((innerWidth - 32) / world.w, (innerHeight - 70) / world.h);
-    $('mapBox').style.width = Math.floor(world.w * k) + 'px'; $('mapBox').style.height = Math.floor(world.h * k) + 'px';
-    $('mapMe').style.left = (player.x / 16 / world.w * 100) + '%'; $('mapMe').style.top = (player.y / 16 / world.h * 100) + '%';
-    $('mapWhere').textContent = (zone || '—') + (barrio && barrio !== 'Villarrica' ? ' · ' + barrio : '');
+  // ---------- mapa grande: zoom (rueda, pellizco, botones, + y −), arrastrar, tocar para marcar destino ----------
+  const mv = { k: 0, ox: 0, oy: 0 }, mapBox = $('mapBox'), mapInner = $('mapInner');
+  const fitK = () => Math.min(innerWidth / world.w, innerHeight / world.h) * 0.96;
+  function mapApply() {
+    const fk = fitK();
+    mv.k = VR.clamp(mv.k, fk * 0.9, 14);
+    const W = world.w * mv.k, H = world.h * mv.k, m = 60;
+    mv.ox = W < innerWidth ? (innerWidth - W) / 2 : VR.clamp(mv.ox, innerWidth - W - m, m);
+    mv.oy = H < innerHeight ? (innerHeight - H) / 2 : VR.clamp(mv.oy, innerHeight - H - m, m);
+    mapInner.style.transform = `translate(${mv.ox}px, ${mv.oy}px) scale(${mv.k})`;
+    mapInner.style.setProperty('--ik', 1 / mv.k);
+    // nombres chicos solo cuando hay zoom suficiente
+    $('mapLabels').classList.toggle('far', mv.k < fk * 1.8);
   }
-  function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); sizeMap(); $('mapView').hidden = false; }
+  function mapZoom(f, cx = innerWidth / 2, cy = innerHeight / 2) {
+    const k0 = mv.k, k1 = VR.clamp(k0 * f, fitK() * 0.9, 14);
+    mv.ox = cx - (cx - mv.ox) * k1 / k0; mv.oy = cy - (cy - mv.oy) * k1 / k0; mv.k = k1; mapApply();
+  }
+  function mapCenterOn(px, py) { mv.ox = innerWidth / 2 - px / 16 * mv.k; mv.oy = innerHeight / 2 - py / 16 * mv.k; mapApply(); }
+  function sizeMap() {
+    $('mapCanvas').style.width = world.w + 'px'; $('mapCanvas').style.height = world.h + 'px';
+    mapInner.style.width = world.w + 'px'; mapInner.style.height = world.h + 'px';
+    $('mapRoute').setAttribute('width', world.w); $('mapRoute').setAttribute('height', world.h);
+    const f = car || player;
+    $('mapMe').style.left = (f.x / 16) + 'px'; $('mapMe').style.top = (f.y / 16) + 'px';
+    $('mapWhere').textContent = (zone || '—') + (barrio && barrio !== 'Villarrica' ? ' · ' + barrio : '');
+    if (!mv.k) { mv.k = fitK(); mapApply(); } else mapCenterOn(f.x, f.y);
+    drawMapRoute();
+  }
+  function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }
   $('btnMap').onclick = () => (mapOpen ? closeMap() : openMap());
-  $('mapView').addEventListener('pointerdown', (e) => { e.preventDefault(); closeMap(); });
-  addEventListener('resize', () => { if (mapOpen) sizeMap(); });
+  $('mzClose').onclick = closeMap;
+  $('mzIn').onclick = () => mapZoom(1.6);
+  $('mzOut').onclick = () => mapZoom(1 / 1.6);
+  $('mzMe').onclick = () => { if (mv.k < fitK() * 3) mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); };
+  $('mzClear').onclick = () => { setDest(null); };
+  for (const id of ['mzClose', 'mzIn', 'mzOut', 'mzMe', 'mzClear']) $(id).addEventListener('pointerdown', (e) => e.stopPropagation());
+  const ptrs = new Map(); let pinch = null, dragMoved = 0;
+  mapBox.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); try { mapBox.setPointerCapture(e.pointerId); } catch (x) {}
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 1) dragMoved = 0;
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; dragMoved = 99; }
+  });
+  mapBox.addEventListener('pointermove', (e) => {
+    const p = ptrs.get(e.pointerId); if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    if (ptrs.size === 1) { dragMoved += Math.abs(dx) + Math.abs(dy); mv.ox += dx; mv.oy += dy; mapApply(); }
+    else if (ptrs.size === 2 && pinch) {
+      const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      mv.ox += mx - pinch.mx; mv.oy += my - pinch.my; mapZoom(d / (pinch.d || 1), mx, my); pinch = { d, mx, my };
+    }
+  });
+  const ptrUp = (e) => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch = null;
+    if (ptrs.size === 0 && dragMoved < 8 && e.type === 'pointerup') mapTap(e.clientX, e.clientY);
+  };
+  mapBox.addEventListener('pointerup', ptrUp); mapBox.addEventListener('pointercancel', ptrUp);
+  mapBox.addEventListener('wheel', (e) => { e.preventDefault(); mapZoom(Math.exp(-e.deltaY * 0.0016), e.clientX, e.clientY); }, { passive: false });
+  addEventListener('keydown', (e) => {
+    if (!mapOpen) return;
+    if (e.code === 'Equal' || e.code === 'NumpadAdd') mapZoom(1.4);
+    else if (e.code === 'Minus' || e.code === 'NumpadSubtract') mapZoom(1 / 1.4);
+    else if (e.code === 'Delete' || e.code === 'Backspace') setDest(null);
+  });
+  addEventListener('resize', () => { if (mapOpen) mapApply(); });
+  // tocar: si es cerca de un nombre (plaza, lugar), el destino es ese lugar; si no, el punto tocado
+  function mapTap(cx, cy) {
+    const tx = (cx - mv.ox) / mv.k, ty = (cy - mv.oy) / mv.k;
+    if (tx < 0 || ty < 0 || tx >= world.w || ty >= world.h) return;
+    let best = null, bd = 26;
+    for (const l of world.labels) { const d = Math.hypot(l.x / 16 * mv.k + mv.ox - cx, l.y / 16 * mv.k + mv.oy - cy - 6); if (d < bd) { bd = d; best = l; } }
+    if (best) setDest({ x: best.x, y: best.y + 20, name: best.text });
+    else { const x = tx * 16, y = ty * 16; setDest({ x, y, name: world.placeName(x, y) || 'el destino' }); }
+  }
+
+  // ---------- GPS ----------
+  const gps = prueba ? null : new VR.GPS(world);
+  let dest = null, route = null, routeLen = 0, gpsT = 0, gpsRe = 0;
+  function setDest(d) {
+    dest = d; route = null; gpsRe = 0;
+    if (d) { recalc(); toast('🏁 Destino: ' + d.name); } else toast('Destino quitado');
+    VR.store.set('dest:' + world.id, d);
+    updateGpsHud(); drawMapRoute();
+  }
+  function recalc() {
+    if (!dest || !gps) return;
+    const f = car || player;
+    route = gps.route(f.x, f.y, dest.x, dest.y, !!car);
+    routeLen = route ? VR.polyLen(route) : 0;
+  }
+  function updateGpsHud() {
+    const el = $('gps');
+    $('mzClear').hidden = !dest; $('mapDest').hidden = !dest;
+    if (dest) { $('mapDest').style.left = dest.x / 16 + 'px'; $('mapDest').style.top = dest.y / 16 + 'px'; }
+    if (!dest) { el.hidden = true; return; }
+    el.hidden = false;
+    const m = routeLen / VR.TILE * 2;
+    el.textContent = '🏁 ' + dest.name + ' · ' + (m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : (Math.round(m / 10) * 10) + ' m');
+  }
+  function drawMapRoute() {
+    const pts = route ? Array.from({ length: route.length / 2 }, (_, i) => (route[i * 2] / 16).toFixed(1) + ',' + (route[i * 2 + 1] / 16).toFixed(1)).join(' ') : '';
+    $('routeBg').setAttribute('points', pts); $('routeFg').setAttribute('points', pts);
+  }
+  function updateGps(dt) {
+    if (!dest || !gps) return;
+    gpsT += dt; gpsRe -= dt;
+    if (gpsT < 0.25) return; gpsT = 0;
+    const f = car || player;
+    if (Math.hypot(f.x - dest.x, f.y - dest.y) < 40) { dest = null; route = null; VR.store.set('dest:' + world.id, null); toast('🏁 ¡Llegaste!'); updateGpsHud(); drawMapRoute(); return; }
+    if (!route) { if (gpsRe <= 0) { gpsRe = 1; recalc(); } }
+    else {
+      const [d, i] = VR.polyNear(route, f.x, f.y);
+      if (d > 56 && gpsRe <= 0) { gpsRe = 1; recalc(); }
+      else if (d <= 56) { route = [f.x, f.y].concat(route.slice((i + 1) * 2)); routeLen = VR.polyLen(route); }
+    }
+    updateGpsHud();
+    if (mapOpen) drawMapRoute();
+  }
+  { const sd = VR.store.get('dest:' + world.id, null); if (sd && gps) { dest = sd; recalc(); updateGpsHud(); } }
 
   // ---------- minimapa (norte arriba; se aleja al manejar; tocarlo abre el mapa grande) ----------
   const mini = $('mini'), mctx = mini.getContext('2d');
@@ -1936,6 +2146,20 @@ VR.Traffic = class {
     if (traffic) for (const v of traffic.list) {
       const px = (v.x / VR.TILE - sx) * k, py = (v.y / VR.TILE - sy) * k;
       if (px > 0 && py > 0 && px < D && py < D) { mctx.fillStyle = v.type === 'moto' ? '#f0f0f0' : '#ffd75e'; mctx.fillRect(px - 1.5, py - 1.5, 3, 3); }
+    }
+    // camino del GPS y bandera del destino
+    if (route) {
+      mctx.lineJoin = mctx.lineCap = 'round';
+      mctx.beginPath();
+      for (let i = 0; i < route.length; i += 2) { const px = (route[i] / VR.TILE - sx) * k, py = (route[i + 1] / VR.TILE - sy) * k; i ? mctx.lineTo(px, py) : mctx.moveTo(px, py); }
+      mctx.strokeStyle = '#0b2a36'; mctx.lineWidth = 6 * D / 112; mctx.stroke();
+      mctx.strokeStyle = '#3fd3ff'; mctx.lineWidth = 3.5 * D / 112; mctx.stroke();
+    }
+    if (dest) {
+      let px = (dest.x / VR.TILE - sx) * k, py = (dest.y / VR.TILE - sy) * k;
+      const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 10 * D / 112;
+      if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
+      mctx.font = `${Math.round(15 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText('🏁', px, py);
     }
     // dónde dejaste el auto
     if (!car && lastCar) {
