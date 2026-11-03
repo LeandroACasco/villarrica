@@ -9,9 +9,10 @@ VR.World = class {
     this.line = new Uint8Array(N);   // 1 = línea amarilla E-O, 2 = N-S, 3 = cebra de barras verticales, 4 = cebra horizontal
     this.street = new Uint8Array(N); // índice+1 en this.streets (calle más cercana)
     this.area = new Uint8Array(N);   // índice+1 en this.areas (plazas y parques)
+    this.barrio = new Uint8Array(N); // índice+1 en this.barrios (barrios del INE)
     this.bid = new Uint16Array(N);   // edificio de cada celda (índice+1 en this.buildings)
     this.buildings = []; this.trees = []; this.decals = []; this.labels = [];
-    this.streets = []; this.areas = [];
+    this.streets = []; this.areas = []; this.barrios = [];
     this.spawn = { x: w * 8, y: h * 8 }; this.spawnName = 'el inicio';
     this.CH = 32; // tiles por chunk (512 px)
     this.cache = new Map(); this.MAXCACHE = 40;
@@ -42,6 +43,12 @@ VR.World = class {
       if (x >= 0 && y >= 0 && x < this.w && y < this.h && this.street[y * this.w + x]) return this.streets[this.street[y * this.w + x] - 1];
     }
     return null;
+  }
+  barrioName(px, py) {
+    const tx = Math.floor(px / VR.TILE), ty = Math.floor(py / VR.TILE);
+    if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return null;
+    const b = this.barrio[ty * this.w + tx];
+    return b ? this.barrios[b - 1] : null;
   }
   // edificio rectangular (barrio de prueba)
   addBuilding(b) {
@@ -103,11 +110,18 @@ VR.World = class {
     for (let ty = ty0; ty < ty1; ty++) for (let tx = tx0; tx < tx1; tx++) {
       const t = this.tiles[ty * this.w + tx], x = tx * S, y = ty * S;
       if (t === T.SIDEWALK || t === T.BUILDING) {
-        const R = T.ROAD;
-        if (this.get(tx, ty - 1) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, S, 1); g.fillStyle = '#7d776c'; g.fillRect(x, y + 1, S, 1); }
-        if (this.get(tx, ty + 1) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x, y + S - 2, S, 1); g.fillStyle = '#3c3c44'; g.fillRect(x, y + S - 1, S, 1); }
-        if (this.get(tx - 1, ty) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + 1, y, 1, S); }
-        if (this.get(tx + 1, ty) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x + S - 1, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + S - 2, y, 1, S); }
+        const RL = VR.ROADLIKE, curb = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n >= 0 && RL[n] === 1 && n !== T.DIRTROAD; };
+        if (curb(0, -1)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, S, 1); g.fillStyle = '#7d776c'; g.fillRect(x, y + 1, S, 1); }
+        if (curb(0, 1)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y + S - 2, S, 1); g.fillStyle = '#3c3c44'; g.fillRect(x, y + S - 1, S, 1); }
+        if (curb(-1, 0)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + 1, y, 1, S); }
+        if (curb(1, 0)) { g.fillStyle = '#e4ded0'; g.fillRect(x + S - 1, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + S - 2, y, 1, S); }
+      } else if (t === T.DIRTROAD) { // borde de la calle de tierra: pasto ralo más oscuro
+        const edge = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n >= 0 && VR.ROADLIKE[n] !== 1 && n !== T.SIDEWALK; };
+        g.fillStyle = 'rgba(70,40,20,.35)';
+        if (edge(0, -1)) g.fillRect(x, y, S, 2);
+        if (edge(0, 1)) g.fillRect(x, y + S - 2, S, 2);
+        if (edge(-1, 0)) g.fillRect(x, y, 2, S);
+        if (edge(1, 0)) g.fillRect(x + S - 2, y, 2, S);
       } else if (t === T.WATER) {
         const W = T.WATER, bank = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n !== W && n !== -1; };
         if (bank(0, -1)) { g.fillStyle = '#6b5a3a'; g.fillRect(x, y, S, 2); g.fillStyle = '#9cc6e6'; g.fillRect(x, y + 2, S, 1); }
@@ -316,22 +330,22 @@ VR.decorTop = {
 VR.loadMap = async (url) => {
   const res = await fetch(url);
   if (!res.ok) throw new Error('No se pudo bajar el mapa (' + res.status + ')');
-  const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 2600000);
+  const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 52000000);
   const jl = raw[0] | (raw[1] << 8) | (raw[2] << 16) | (raw[3] << 24);
   const meta = JSON.parse(new TextDecoder().decode(raw.subarray(4, 4 + jl)));
   const w = new VR.World(meta.w, meta.h), N = meta.w * meta.h;
   let o = 4 + jl;
-  const u8 = () => { const a = raw.slice(o, o + N); o += N; return a; };
+  const u8 = () => { const a = raw.subarray(o, o + N); o += N; return a; }; // vistas, sin copiar
   const u16 = (n) => { const a = new Uint16Array(raw.slice(o, o + n * 2).buffer); o += n * 2; return a; };
-  w.tiles = u8(); w.line = u8(); w.street = u8(); w.area = u8(); w.bid = u16(N);
+  w.tiles = u8(); w.line = u8(); w.street = u8(); w.area = u8(); if (meta.barrios) w.barrio = u8(); w.bid = u16(N);
   const bd = u16(meta.nb * 8), tr = u16(meta.nt * 4), P = VR.BPAL;
   for (let i = 0; i < meta.nb; i++) {
     const [x0, x1, floors, rt, rc, wc, shop, awn] = bd.subarray(i * 8, i * 8 + 8);
     w.buildings.push({ x0, x1, door: (x0 + x1) >> 1, floors, rt: P.types[rt], roof: P.roofs[rt][rc], wall: P.walls[wc], shop: !!shop, awning: P.awnings[awn] });
   }
   for (let i = 0; i < meta.nt; i++) w.trees.push({ x: tr[i * 4], y: tr[i * 4 + 1], r: tr[i * 4 + 2], pal: tr[i * 4 + 3] });
-  w.streets = meta.streets; w.areas = meta.areas; w.labels = meta.labels; w.decals = meta.decals;
-  w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'centro-' + meta.w + 'x' + meta.h;
+  w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
+  w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
   w.buildIndex();
   return w;
 };

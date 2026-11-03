@@ -12,7 +12,7 @@
   try { world = prueba ? VR.makeTestMap() : await VR.loadMap('map.bin'); }
   catch (e) { $('ovSub').textContent = '⚠ ' + e.message + ' · revisá la conexión y recargá'; return; }
   $('zone').textContent = prueba ? 'Barrio de prueba' : 'Centro';
-  $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1 · el centro'; $('ovGo').hidden = false;
+  $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1.5 · Villarrica entera'; $('ovGo').hidden = false;
   const saved = VR.store.get('pos:' + world.id, null);
   const start = saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn;
   const player = new VR.Player(world, start.x, start.y);
@@ -71,12 +71,20 @@
     player.drawBubble(ctx, cx, cy, a);
     drawHud();
   }
-  let hudT = 0, zoneT = 0, zone = '';
+  let hudT = 0, zoneT = 0, zone = '', barrio = '';
   function drawHud() {
     if (performance.now() - zoneT > 200) {
       zoneT = performance.now();
       const z = world.placeName(player.x, player.y - 2);
       if (z && z !== zone) { zone = z; $('zone').textContent = z; }
+      const b = world.barrioName(player.x, player.y - 2) || (world.barrios.length ? 'Afueras' : 'Villarrica');
+      if (b !== barrio) {
+        if (barrio) {
+          const bn = $('banner'); bn.innerHTML = '<small>' + (b === 'Afueras' ? 'saliendo de' : 'barrio') + '</small>' + (b === 'Afueras' ? 'Villarrica' : b);
+          bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2600);
+        }
+        barrio = b; $('hudTitle').textContent = b.toUpperCase();
+      }
     }
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
@@ -122,7 +130,7 @@
 
   // ---------- mapa de la ciudad ----------
   let mapOpen = false, mapBuilt = false;
-  const MAPCOL = [[92, 158, 58], [70, 70, 78], [196, 188, 172], [196, 120, 92], [200, 150, 112], [52, 112, 44], [230, 230, 230], [168, 98, 64], [70, 130, 200]];
+  const MAPCOL = [[92, 158, 58], [70, 70, 78], [196, 188, 172], [196, 120, 92], [200, 150, 112], [52, 112, 44], [230, 230, 230], [168, 98, 64], [70, 130, 200], [124, 116, 104], [182, 104, 64]];
   function buildMap() {
     const c = $('mapCanvas'); c.width = world.w; c.height = world.h;
     const x = c.getContext('2d'), img = x.createImageData(world.w, world.h), d = img.data;
@@ -133,8 +141,8 @@
     }
     x.putImageData(img, 0, 0);
     const L = $('mapLabels'); L.innerHTML = '';
-    for (const l of world.labels) {
-      const s = document.createElement('span'); s.textContent = l.text;
+    for (const l of (world.barrioLabels || []).map((b) => ({ ...b, cls: 'barrio' })).concat(world.labels)) {
+      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls;
       s.style.left = (l.x / 16 / world.w * 100) + '%'; s.style.top = (l.y / 16 / world.h * 100) + '%'; L.appendChild(s);
     }
     mapBuilt = true;
@@ -143,7 +151,7 @@
     const k = Math.min((innerWidth - 32) / world.w, (innerHeight - 70) / world.h);
     $('mapBox').style.width = Math.floor(world.w * k) + 'px'; $('mapBox').style.height = Math.floor(world.h * k) + 'px';
     $('mapMe').style.left = (player.x / 16 / world.w * 100) + '%'; $('mapMe').style.top = (player.y / 16 / world.h * 100) + '%';
-    $('mapWhere').textContent = zone || '—';
+    $('mapWhere').textContent = (zone || '—') + (barrio && barrio !== 'Villarrica' ? ' · ' + barrio : '');
   }
   function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); sizeMap(); $('mapView').hidden = false; }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }

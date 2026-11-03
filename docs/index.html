@@ -60,13 +60,19 @@
   #mapCanvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
   #mapLabels span { position: absolute; transform: translate(-50%, -100%); font: 600 11px system-ui; color: #fff;
     text-shadow: 0 1px 2px #000, 0 0 3px #000; white-space: nowrap; pointer-events: none; }
+  #mapLabels span.barrio { font: 900 15px system-ui; letter-spacing: .12em; text-transform: uppercase; color: #ffd75e; opacity: .9; }
   #mapMe { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #f2a52b;
     border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(242,165,43,.35); animation: pulse 1s infinite alternate; }
   @keyframes pulse { to { box-shadow: 0 0 0 7px rgba(242,165,43,.1); } }
-  #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 14px); transform: translateX(-50%); background: #24242a;
+  #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translateX(-50%); background: #24242a;
     border: 1px solid var(--line); padding: 9px 16px; border-radius: 10px; opacity: 0; transition: opacity .25s; pointer-events: none;
     max-width: 80vw; z-index: 20; text-align: center; }
   #toast.show { opacity: 1; }
+  #banner { position: fixed; left: 0; right: 0; top: 24%; z-index: 5; text-align: center; pointer-events: none; opacity: 0; transition: opacity .6s;
+    font: 900 clamp(26px, 7vw, 52px)/1 system-ui, sans-serif; letter-spacing: .06em; color: #ffd75e; text-transform: uppercase;
+    text-shadow: 3px 3px 0 #1a1a1e, -1px -1px 0 #1a1a1e, 1px -1px 0 #1a1a1e, -1px 1px 0 #1a1a1e; }
+  #banner small { display: block; font-size: .38em; letter-spacing: .3em; color: #fff6d8; margin-bottom: .35em; }
+  #banner.show { opacity: 1; }
 
   #overlay { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 10px; background: rgba(8,8,10,.78); text-align: center; padding: 24px; cursor: pointer; }
@@ -110,7 +116,8 @@
   </div>
 </div>
 
-<div id="hud"><b>VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
+<div id="banner"></div>
+<div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
 <div id="dbg" hidden></div>
 <div id="topbar">
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
@@ -157,7 +164,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Versión 98442138 · 2026-10-31</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión a63dbab0 · 2026-11-03</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -510,13 +517,15 @@ VR.gfx = {
 // ===== world/tiles.js =====
 // Tiles generados por código (16×16), con 4 variantes cada uno para que el piso no se vea repetido.
 'use strict';
-VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8 };
+VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8, STONE: 9, DIRTROAD: 10 };
+// calzadas: asfalto, empedrado y calle de tierra
+VR.ROADLIKE = new Uint8Array(16); VR.ROADLIKE[VR.T.ROAD] = 1; VR.ROADLIKE[VR.T.STONE] = 1; VR.ROADLIKE[VR.T.DIRTROAD] = 1;
 VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] = 1; VR.SOLID[VR.T.MONUMENT] = 1; VR.SOLID[VR.T.WATER] = 1;
 // tile que se dibuja debajo de cada tipo
 VR.GROUND_OF = { [VR.T.TREE]: VR.T.GRASS, [VR.T.BUILDING]: VR.T.SIDEWALK, [VR.T.MONUMENT]: VR.T.PAVING };
 
 VR.tileset = (() => {
-  const S = VR.TILE, VARS = 4, TYPES = 9;
+  const S = VR.TILE, VARS = 4, TYPES = 11;
   const c = VR.canvas(S * VARS, S * TYPES), ctx = c.getContext('2d');
   const img = ctx.createImageData(c.width, c.height), d = img.data;
   const put = (x, y, r, g, b) => { const i = (y * c.width + x) * 4; d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255; };
@@ -555,6 +564,20 @@ VR.tileset = (() => {
       case VR.T.WATER: { // laguna: azul con reflejos horizontales
         const k = (h - 0.5) * 6 | 0; r = 62 + k; g = 118 + k; b = 186 + k;
         if (((x + v * 5 + (y >> 2) * 7) % 13) < 3 && (y % 4) === 1) { r += 60; g += 60; b += 50; }
+        break;
+      }
+      case VR.T.STONE: { // empedrado: piedras irregulares gris tostado con juntas oscuras
+        const cx = ((x + (y >> 2 & 1) * 2) >> 2), cy = y >> 2, st = n(cx + v * 7, cy, 77);
+        const jx = (x + (y >> 2 & 1) * 2) % 4 === 0, jy = y % 4 === 0;
+        const k = (st - 0.5) * 26 | 0;
+        r = 124 + k; g = 116 + k; b = 104 + k;
+        if (jx || jy) { r = 78; g = 72; b = 64; } else if (((x + y) & 3) === 1 && h > 0.5) { r += 12; g += 12; b += 10; }
+        break;
+      }
+      case VR.T.DIRTROAD: { // calle de tierra colorada, más pisada que la de los patios, con huellas
+        const k = (h - 0.5) * 10 | 0; r = 204 + k; g = 128 + k; b = 84 + k;
+        if (h2 > 0.93) { r -= 34; g -= 26; b -= 18; } else if (h2 < 0.05) { r += 18; g += 16; b += 12; } // piedritas
+        if ((y + v * 3) % 6 === 0 && h > 0.6) { r -= 14; g -= 10; b -= 6; } // marcas de ruedas
         break;
       }
       default: r = 255; g = 0; b = 255;
@@ -611,9 +634,10 @@ VR.World = class {
     this.line = new Uint8Array(N);   // 1 = línea amarilla E-O, 2 = N-S, 3 = cebra de barras verticales, 4 = cebra horizontal
     this.street = new Uint8Array(N); // índice+1 en this.streets (calle más cercana)
     this.area = new Uint8Array(N);   // índice+1 en this.areas (plazas y parques)
+    this.barrio = new Uint8Array(N); // índice+1 en this.barrios (barrios del INE)
     this.bid = new Uint16Array(N);   // edificio de cada celda (índice+1 en this.buildings)
     this.buildings = []; this.trees = []; this.decals = []; this.labels = [];
-    this.streets = []; this.areas = [];
+    this.streets = []; this.areas = []; this.barrios = [];
     this.spawn = { x: w * 8, y: h * 8 }; this.spawnName = 'el inicio';
     this.CH = 32; // tiles por chunk (512 px)
     this.cache = new Map(); this.MAXCACHE = 40;
@@ -644,6 +668,12 @@ VR.World = class {
       if (x >= 0 && y >= 0 && x < this.w && y < this.h && this.street[y * this.w + x]) return this.streets[this.street[y * this.w + x] - 1];
     }
     return null;
+  }
+  barrioName(px, py) {
+    const tx = Math.floor(px / VR.TILE), ty = Math.floor(py / VR.TILE);
+    if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return null;
+    const b = this.barrio[ty * this.w + tx];
+    return b ? this.barrios[b - 1] : null;
   }
   // edificio rectangular (barrio de prueba)
   addBuilding(b) {
@@ -705,11 +735,18 @@ VR.World = class {
     for (let ty = ty0; ty < ty1; ty++) for (let tx = tx0; tx < tx1; tx++) {
       const t = this.tiles[ty * this.w + tx], x = tx * S, y = ty * S;
       if (t === T.SIDEWALK || t === T.BUILDING) {
-        const R = T.ROAD;
-        if (this.get(tx, ty - 1) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, S, 1); g.fillStyle = '#7d776c'; g.fillRect(x, y + 1, S, 1); }
-        if (this.get(tx, ty + 1) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x, y + S - 2, S, 1); g.fillStyle = '#3c3c44'; g.fillRect(x, y + S - 1, S, 1); }
-        if (this.get(tx - 1, ty) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + 1, y, 1, S); }
-        if (this.get(tx + 1, ty) === R) { g.fillStyle = '#e4ded0'; g.fillRect(x + S - 1, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + S - 2, y, 1, S); }
+        const RL = VR.ROADLIKE, curb = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n >= 0 && RL[n] === 1 && n !== T.DIRTROAD; };
+        if (curb(0, -1)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, S, 1); g.fillStyle = '#7d776c'; g.fillRect(x, y + 1, S, 1); }
+        if (curb(0, 1)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y + S - 2, S, 1); g.fillStyle = '#3c3c44'; g.fillRect(x, y + S - 1, S, 1); }
+        if (curb(-1, 0)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + 1, y, 1, S); }
+        if (curb(1, 0)) { g.fillStyle = '#e4ded0'; g.fillRect(x + S - 1, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + S - 2, y, 1, S); }
+      } else if (t === T.DIRTROAD) { // borde de la calle de tierra: pasto ralo más oscuro
+        const edge = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n >= 0 && VR.ROADLIKE[n] !== 1 && n !== T.SIDEWALK; };
+        g.fillStyle = 'rgba(70,40,20,.35)';
+        if (edge(0, -1)) g.fillRect(x, y, S, 2);
+        if (edge(0, 1)) g.fillRect(x, y + S - 2, S, 2);
+        if (edge(-1, 0)) g.fillRect(x, y, 2, S);
+        if (edge(1, 0)) g.fillRect(x + S - 2, y, 2, S);
       } else if (t === T.WATER) {
         const W = T.WATER, bank = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n !== W && n !== -1; };
         if (bank(0, -1)) { g.fillStyle = '#6b5a3a'; g.fillRect(x, y, S, 2); g.fillStyle = '#9cc6e6'; g.fillRect(x, y + 2, S, 1); }
@@ -918,22 +955,22 @@ VR.decorTop = {
 VR.loadMap = async (url) => {
   const res = await fetch(url);
   if (!res.ok) throw new Error('No se pudo bajar el mapa (' + res.status + ')');
-  const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 2600000);
+  const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 52000000);
   const jl = raw[0] | (raw[1] << 8) | (raw[2] << 16) | (raw[3] << 24);
   const meta = JSON.parse(new TextDecoder().decode(raw.subarray(4, 4 + jl)));
   const w = new VR.World(meta.w, meta.h), N = meta.w * meta.h;
   let o = 4 + jl;
-  const u8 = () => { const a = raw.slice(o, o + N); o += N; return a; };
+  const u8 = () => { const a = raw.subarray(o, o + N); o += N; return a; }; // vistas, sin copiar
   const u16 = (n) => { const a = new Uint16Array(raw.slice(o, o + n * 2).buffer); o += n * 2; return a; };
-  w.tiles = u8(); w.line = u8(); w.street = u8(); w.area = u8(); w.bid = u16(N);
+  w.tiles = u8(); w.line = u8(); w.street = u8(); w.area = u8(); if (meta.barrios) w.barrio = u8(); w.bid = u16(N);
   const bd = u16(meta.nb * 8), tr = u16(meta.nt * 4), P = VR.BPAL;
   for (let i = 0; i < meta.nb; i++) {
     const [x0, x1, floors, rt, rc, wc, shop, awn] = bd.subarray(i * 8, i * 8 + 8);
     w.buildings.push({ x0, x1, door: (x0 + x1) >> 1, floors, rt: P.types[rt], roof: P.roofs[rt][rc], wall: P.walls[wc], shop: !!shop, awning: P.awnings[awn] });
   }
   for (let i = 0; i < meta.nt; i++) w.trees.push({ x: tr[i * 4], y: tr[i * 4 + 1], r: tr[i * 4 + 2], pal: tr[i * 4 + 3] });
-  w.streets = meta.streets; w.areas = meta.areas; w.labels = meta.labels; w.decals = meta.decals;
-  w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'centro-' + meta.w + 'x' + meta.h;
+  w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
+  w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
   w.buildIndex();
   return w;
 };
@@ -1132,7 +1169,7 @@ VR.Player = class {
   try { world = prueba ? VR.makeTestMap() : await VR.loadMap('map.bin'); }
   catch (e) { $('ovSub').textContent = '⚠ ' + e.message + ' · revisá la conexión y recargá'; return; }
   $('zone').textContent = prueba ? 'Barrio de prueba' : 'Centro';
-  $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1 · el centro'; $('ovGo').hidden = false;
+  $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1.5 · Villarrica entera'; $('ovGo').hidden = false;
   const saved = VR.store.get('pos:' + world.id, null);
   const start = saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn;
   const player = new VR.Player(world, start.x, start.y);
@@ -1191,12 +1228,20 @@ VR.Player = class {
     player.drawBubble(ctx, cx, cy, a);
     drawHud();
   }
-  let hudT = 0, zoneT = 0, zone = '';
+  let hudT = 0, zoneT = 0, zone = '', barrio = '';
   function drawHud() {
     if (performance.now() - zoneT > 200) {
       zoneT = performance.now();
       const z = world.placeName(player.x, player.y - 2);
       if (z && z !== zone) { zone = z; $('zone').textContent = z; }
+      const b = world.barrioName(player.x, player.y - 2) || (world.barrios.length ? 'Afueras' : 'Villarrica');
+      if (b !== barrio) {
+        if (barrio) {
+          const bn = $('banner'); bn.innerHTML = '<small>' + (b === 'Afueras' ? 'saliendo de' : 'barrio') + '</small>' + (b === 'Afueras' ? 'Villarrica' : b);
+          bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2600);
+        }
+        barrio = b; $('hudTitle').textContent = b.toUpperCase();
+      }
     }
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
@@ -1242,7 +1287,7 @@ VR.Player = class {
 
   // ---------- mapa de la ciudad ----------
   let mapOpen = false, mapBuilt = false;
-  const MAPCOL = [[92, 158, 58], [70, 70, 78], [196, 188, 172], [196, 120, 92], [200, 150, 112], [52, 112, 44], [230, 230, 230], [168, 98, 64], [70, 130, 200]];
+  const MAPCOL = [[92, 158, 58], [70, 70, 78], [196, 188, 172], [196, 120, 92], [200, 150, 112], [52, 112, 44], [230, 230, 230], [168, 98, 64], [70, 130, 200], [124, 116, 104], [182, 104, 64]];
   function buildMap() {
     const c = $('mapCanvas'); c.width = world.w; c.height = world.h;
     const x = c.getContext('2d'), img = x.createImageData(world.w, world.h), d = img.data;
@@ -1253,8 +1298,8 @@ VR.Player = class {
     }
     x.putImageData(img, 0, 0);
     const L = $('mapLabels'); L.innerHTML = '';
-    for (const l of world.labels) {
-      const s = document.createElement('span'); s.textContent = l.text;
+    for (const l of (world.barrioLabels || []).map((b) => ({ ...b, cls: 'barrio' })).concat(world.labels)) {
+      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls;
       s.style.left = (l.x / 16 / world.w * 100) + '%'; s.style.top = (l.y / 16 / world.h * 100) + '%'; L.appendChild(s);
     }
     mapBuilt = true;
@@ -1263,7 +1308,7 @@ VR.Player = class {
     const k = Math.min((innerWidth - 32) / world.w, (innerHeight - 70) / world.h);
     $('mapBox').style.width = Math.floor(world.w * k) + 'px'; $('mapBox').style.height = Math.floor(world.h * k) + 'px';
     $('mapMe').style.left = (player.x / 16 / world.w * 100) + '%'; $('mapMe').style.top = (player.y / 16 / world.h * 100) + '%';
-    $('mapWhere').textContent = zone || '—';
+    $('mapWhere').textContent = (zone || '—') + (barrio && barrio !== 'Villarrica' ? ' · ' + barrio : '');
   }
   function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); sizeMap(); $('mapView').hidden = false; }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }

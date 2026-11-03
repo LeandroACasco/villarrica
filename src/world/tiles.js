@@ -1,12 +1,14 @@
 // Tiles generados por código (16×16), con 4 variantes cada uno para que el piso no se vea repetido.
 'use strict';
-VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8 };
+VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8, STONE: 9, DIRTROAD: 10 };
+// calzadas: asfalto, empedrado y calle de tierra
+VR.ROADLIKE = new Uint8Array(16); VR.ROADLIKE[VR.T.ROAD] = 1; VR.ROADLIKE[VR.T.STONE] = 1; VR.ROADLIKE[VR.T.DIRTROAD] = 1;
 VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] = 1; VR.SOLID[VR.T.MONUMENT] = 1; VR.SOLID[VR.T.WATER] = 1;
 // tile que se dibuja debajo de cada tipo
 VR.GROUND_OF = { [VR.T.TREE]: VR.T.GRASS, [VR.T.BUILDING]: VR.T.SIDEWALK, [VR.T.MONUMENT]: VR.T.PAVING };
 
 VR.tileset = (() => {
-  const S = VR.TILE, VARS = 4, TYPES = 9;
+  const S = VR.TILE, VARS = 4, TYPES = 11;
   const c = VR.canvas(S * VARS, S * TYPES), ctx = c.getContext('2d');
   const img = ctx.createImageData(c.width, c.height), d = img.data;
   const put = (x, y, r, g, b) => { const i = (y * c.width + x) * 4; d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255; };
@@ -45,6 +47,20 @@ VR.tileset = (() => {
       case VR.T.WATER: { // laguna: azul con reflejos horizontales
         const k = (h - 0.5) * 6 | 0; r = 62 + k; g = 118 + k; b = 186 + k;
         if (((x + v * 5 + (y >> 2) * 7) % 13) < 3 && (y % 4) === 1) { r += 60; g += 60; b += 50; }
+        break;
+      }
+      case VR.T.STONE: { // empedrado: piedras irregulares gris tostado con juntas oscuras
+        const cx = ((x + (y >> 2 & 1) * 2) >> 2), cy = y >> 2, st = n(cx + v * 7, cy, 77);
+        const jx = (x + (y >> 2 & 1) * 2) % 4 === 0, jy = y % 4 === 0;
+        const k = (st - 0.5) * 26 | 0;
+        r = 124 + k; g = 116 + k; b = 104 + k;
+        if (jx || jy) { r = 78; g = 72; b = 64; } else if (((x + y) & 3) === 1 && h > 0.5) { r += 12; g += 12; b += 10; }
+        break;
+      }
+      case VR.T.DIRTROAD: { // calle de tierra colorada, más pisada que la de los patios, con huellas
+        const k = (h - 0.5) * 10 | 0; r = 204 + k; g = 128 + k; b = 84 + k;
+        if (h2 > 0.93) { r -= 34; g -= 26; b -= 18; } else if (h2 < 0.05) { r += 18; g += 16; b += 12; } // piedritas
+        if ((y + v * 3) % 6 === 0 && h > 0.6) { r -= 14; g -= 10; b -= 6; } // marcas de ruedas
         break;
       }
       default: r = 255; g = 0; b = 255;

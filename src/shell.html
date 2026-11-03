@@ -60,13 +60,19 @@
   #mapCanvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
   #mapLabels span { position: absolute; transform: translate(-50%, -100%); font: 600 11px system-ui; color: #fff;
     text-shadow: 0 1px 2px #000, 0 0 3px #000; white-space: nowrap; pointer-events: none; }
+  #mapLabels span.barrio { font: 900 15px system-ui; letter-spacing: .12em; text-transform: uppercase; color: #ffd75e; opacity: .9; }
   #mapMe { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #f2a52b;
     border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(242,165,43,.35); animation: pulse 1s infinite alternate; }
   @keyframes pulse { to { box-shadow: 0 0 0 7px rgba(242,165,43,.1); } }
-  #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 14px); transform: translateX(-50%); background: #24242a;
+  #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translateX(-50%); background: #24242a;
     border: 1px solid var(--line); padding: 9px 16px; border-radius: 10px; opacity: 0; transition: opacity .25s; pointer-events: none;
     max-width: 80vw; z-index: 20; text-align: center; }
   #toast.show { opacity: 1; }
+  #banner { position: fixed; left: 0; right: 0; top: 24%; z-index: 5; text-align: center; pointer-events: none; opacity: 0; transition: opacity .6s;
+    font: 900 clamp(26px, 7vw, 52px)/1 system-ui, sans-serif; letter-spacing: .06em; color: #ffd75e; text-transform: uppercase;
+    text-shadow: 3px 3px 0 #1a1a1e, -1px -1px 0 #1a1a1e, 1px -1px 0 #1a1a1e, -1px 1px 0 #1a1a1e; }
+  #banner small { display: block; font-size: .38em; letter-spacing: .3em; color: #fff6d8; margin-bottom: .35em; }
+  #banner.show { opacity: 1; }
 
   #overlay { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 10px; background: rgba(8,8,10,.78); text-align: center; padding: 24px; cursor: pointer; }
@@ -107,7 +113,8 @@
   </div>
 </div>
 
-<div id="hud"><b>VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
+<div id="banner"></div>
+<div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span></div>
 <div id="dbg" hidden></div>
 <div id="topbar">
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
@@ -154,7 +161,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). /*VERSION*/</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. /*VERSION*/</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>

@@ -17,5 +17,9 @@ python3 -m http.server -d docs 8000
 - `src/world/` tiles generados por código, mundo por bloques, barrio de prueba
 - `src/game/` jugador
 - `src/main.js` arranque, cámara, menú
+- `tools/osm_to_map.py` arma `docs/map.bin` con toda la ciudad: endereza el damero (gira la ciudad ~2° y lleva cada calle casi recta a una fila o columna), calles de asfalto, empedrado y tierra, edificios, plazas, parques, agua y barrios
 
-Los datos del mapa vienen de OpenStreetMap — © colaboradores de OpenStreetMap (ODbL).
+## Datos
+
+- `data/villarrica.osm.gz`: OpenStreetMap, zona urbana de Villarrica (bbox lon −56.4745 a −56.4212, lat −25.8100 a −25.7605), bajado de Overpass el 03/11/2026. © colaboradores de OpenStreetMap (ODbL).
+- `data/barrios_ine.json`: los 8 barrios urbanos de Villarrica, recortados de la cartografía de barrios y localidades 2025 del INE Paraguay.
