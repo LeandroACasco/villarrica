@@ -126,7 +126,7 @@
 
   // ---------- dibujo ----------
   const tall = [];
-  function render(a) {
+  function render(a, dt) {
     const ctx = VR.screen.ctx, sw = VR.screen.w, sh = VR.screen.h;
     const [cx, cy] = camView(a);
     ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
@@ -144,6 +144,7 @@
       if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, '#fff6d8', { center: true, shadow: '#1a1a1e' });
     }
     player.drawBubble(ctx, cx, cy, a);
+    drawMini(dt || 0);
     if (traffic) for (const v of traffic.list) if (v.honkT > 0) VR.gfx.text(ctx, v.honkTxt, Math.round(v.x - cx), Math.round(v.y - cy - 24), '#fff6d8', { center: true, shadow: '#1a1a1e' });
     if (hint && hintCar) VR.gfx.text(ctx, hint, Math.round(hintCar.x - cx), Math.round(hintCar.y - cy - 26), '#ffd75e', { center: true, shadow: '#1a1a1e' });
     drawHud();
@@ -237,6 +238,51 @@
   $('btnMap').onclick = () => (mapOpen ? closeMap() : openMap());
   $('mapView').addEventListener('pointerdown', (e) => { e.preventDefault(); closeMap(); });
   addEventListener('resize', () => { if (mapOpen) sizeMap(); });
+
+  // ---------- minimapa (norte arriba; se aleja al manejar; tocarlo abre el mapa grande) ----------
+  const mini = $('mini'), mctx = mini.getContext('2d');
+  let miniReady = false, miniZoom = 2.2, miniT = 0;
+  const sizeMini = () => { const d = Math.round(mini.clientWidth * (window.devicePixelRatio || 1)); if (mini.width !== d) { mini.width = mini.height = d; } };
+  if (!prueba) setTimeout(() => { buildMap(); miniReady = true; mini.hidden = false; sizeMini(); }, 400);
+  mini.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); openMap(); });
+  addEventListener('resize', () => { if (miniReady) sizeMini(); });
+  function drawMini(dt) {
+    if (!miniReady || mapOpen) return;
+    miniT += dt; if (miniT < 1 / 30) return; miniT = 0;
+    const D = mini.width, r = D / 2, src = $('mapCanvas');
+    const want = car ? 0.9 + 0.8 * (1 - Math.min(1, Math.abs(car.v) / 240)) : 2.2; // px de minimapa (en px físicos/D·112) por baldosa
+    miniZoom += (want - miniZoom) * 0.1;
+    const k = miniZoom * D / 112, f = car || player, tx = f.x / VR.TILE, ty = (car ? f.y : f.y - 4) / VR.TILE;
+    mctx.save();
+    mctx.beginPath(); mctx.arc(r, r, r, 0, Math.PI * 2); mctx.clip();
+    mctx.fillStyle = '#2b3a22'; mctx.fillRect(0, 0, D, D);
+    mctx.imageSmoothingEnabled = false;
+    const sw = D / k, sx = tx - sw / 2, sy = ty - sw / 2;
+    mctx.drawImage(src, sx, sy, sw, sw, 0, 0, D, D);
+    mctx.fillStyle = 'rgba(0,0,0,.12)'; mctx.fillRect(0, 0, D, D);
+    // tránsito: puntitos
+    if (traffic) for (const v of traffic.list) {
+      const px = (v.x / VR.TILE - sx) * k, py = (v.y / VR.TILE - sy) * k;
+      if (px > 0 && py > 0 && px < D && py < D) { mctx.fillStyle = v.type === 'moto' ? '#f0f0f0' : '#ffd75e'; mctx.fillRect(px - 1.5, py - 1.5, 3, 3); }
+    }
+    // dónde dejaste el auto
+    if (!car && lastCar) {
+      let px = (lastCar.x / VR.TILE - sx) * k, py = (lastCar.y / VR.TILE - sy) * k;
+      const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 8;
+      if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
+      mctx.fillStyle = '#1a1a1e'; mctx.fillRect(px - 5, py - 4, 10, 8); mctx.fillStyle = '#e8493a'; mctx.fillRect(px - 4, py - 3, 8, 6);
+    }
+    // vos: flecha hacia donde mirás o vas
+    const ang = car ? car.a : ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
+    const s = D / 112;
+    mctx.translate(r, r); mctx.rotate(ang);
+    mctx.beginPath(); mctx.moveTo(0, -8 * s); mctx.lineTo(6 * s, 6 * s); mctx.lineTo(0, 3 * s); mctx.lineTo(-6 * s, 6 * s); mctx.closePath();
+    mctx.fillStyle = '#1a1a1e'; mctx.lineWidth = 3 * s; mctx.strokeStyle = '#1a1a1e'; mctx.stroke(); mctx.fillStyle = '#ffffff'; mctx.fill();
+    mctx.restore();
+    // N
+    mctx.font = `900 ${Math.round(11 * s)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'top';
+    mctx.fillStyle = '#1a1a1e'; mctx.fillText('N', r + 1, 4 * s + 1); mctx.fillStyle = '#ffd75e'; mctx.fillText('N', r, 4 * s);
+  }
 
   // ---------- guardar la posición ----------
   let lastCar = car;
