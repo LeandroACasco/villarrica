@@ -318,6 +318,15 @@ VR.decor = {
     g.fillRect(X + (W >> 1) - 16, Y + 4, 1, 16); g.fillRect(X + (W >> 1) + 15, Y + 4, 1, 16); g.fillRect(X + (W >> 1) - 16, Y + 20, 32, 1);
     g.fillRect(X + (W >> 1) - 16, Y + H - 21, 1, 16); g.fillRect(X + (W >> 1) + 15, Y + H - 21, 1, 16); g.fillRect(X + (W >> 1) - 16, Y + H - 21, 32, 1);
   },
+  monumento_bajo(g, d) { // monumento chico y bajo (bloque claro con borde), visto desde arriba
+    const S = VR.TILE, X = d.x * S, Y = d.y * S;
+    g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(X + 5, Y + 5, 30, 30);
+    g.fillStyle = '#7d786e'; g.fillRect(X, Y, 32, 32);
+    g.fillStyle = '#d8d3c6'; g.fillRect(X + 2, Y + 2, 28, 28);
+    g.fillStyle = '#f4f1e8'; g.fillRect(X + 7, Y + 7, 18, 18);
+    g.fillStyle = '#b4ae9f'; g.fillRect(X + 7, Y + 23, 18, 2); g.fillRect(X + 23, Y + 7, 2, 18);
+    g.fillStyle = '#c9a54a'; g.fillRect(X + 13, Y + 3, 6, 2); // placa
+  },
   monumento(g, d) { // base de piedra (la parte alta se ordena con los personajes)
     const S = VR.TILE, X = d.x * S, Y = d.y * S;
     g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(X + 4, Y + 6, 32, 30);

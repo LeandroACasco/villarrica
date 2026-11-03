@@ -242,7 +242,28 @@ VR.parkCars = (world, n, near) => {
       // motos en batería, la rueda trasera contra el cordón sur (miran hacia la calle), cada 11 px
       for (let px = fx; px <= x1 * S - 8; px += 11) if (rnd() < 0.8)
         add(px + ((rnd() * 2) | 0), yr - 8, (rnd() < 0.5 ? 0 : 0.12) - 0.06 + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
-      world.parkingDemo = { x0: x0 * S, x1: x1 * S, y0: ty * S, y1: (yb + 1) * S };
+      world.parkingDemo = [{ x0: x0 * S, x1: x1 * S, y0: ty * S, y1: (yb + 1) * S }];
+    }
+    // --- y en General Díaz, del lado este de la plaza (mano única hacia el norte): autos a la izquierda
+    //     (oeste, el lado de la plaza, como en la foto satelital) y motos a la derecha ---
+    const ai = world.areas.indexOf('Plaza de los Héroes') + 1;
+    if (ai) {
+      let bx0 = 1e9, bx1 = -1, by0 = 1e9, by1 = -1;
+      const cx0 = Math.max(0, tx - 90), cy0 = Math.max(0, Math.floor(near.y / S) - 90);
+      for (let y = cy0; y < Math.min(world.h, cy0 + 180); y++) for (let x = cx0; x < Math.min(world.w, cx0 + 180); x++)
+        if (world.area[y * world.w + x] === ai) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
+      if (bx1 > 0) {
+        const my = (by0 + by1) >> 1;
+        let xa = bx1 + 1, lim2 = 10; while (lim2-- > 0 && !road(xa, my)) xa++;
+        let xb = xa; while (road(xb + 1, my)) xb++;
+        if (xb - xa >= 3) {
+          const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 8, xr = (xb + 1) * S - 6;
+          for (let py = ya * S + 16; py <= yz * S - 16; py += 36) if (rnd() < 0.85) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = (ya + 1) * S; py <= yz * S - 8; py += 11) if (rnd() < 0.8)
+            add(xr - 8, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          (world.parkingDemo = world.parkingDemo || []).push({ x0: xa * S, x1: (xb + 1) * S, y0: ya * S, y1: yz * S });
+        }
+      }
     }
   }
 
@@ -262,7 +283,7 @@ VR.parkCars = (world, n, near) => {
   };
   const free = (cx, cy, r) => !world.boxOverlap(cx - r, cy - r, cx + r, cy + r);
   const demo = world.parkingDemo;
-  const inDemo = (x, y) => demo && x > demo.x0 - 60 && x < demo.x1 + 60 && y > demo.y0 - 20 && y < demo.y1 + 20;
+  const inDemo = (x, y) => demo && demo.some((d) => x > d.x0 - 60 && x < d.x1 + 60 && y > d.y0 - 60 && y < d.y1 + 60);
   for (let tries = 0; tries < n * 60 && cars.length < n; tries++) {
     const x = 2 + ((rnd() * (world.w - 4)) | 0), y = 2 + ((rnd() * (world.h - 4)) | 0);
     const s = spot(x, y);

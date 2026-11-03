@@ -398,7 +398,7 @@ def main(src, out, preview=None):
         big = len(xs) > 500
         # borde: celdas de la plaza con un vecino fuera
         inner = sub.copy()
-        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)) + (((2, 0), (-2, 0), (0, 2), (0, -2)) if big else ()):
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)) + (((2, 0), (-2, 0), (0, 2), (0, -2)) if big and 'Héroes' not in p['name'] else ()):
             sh = np.zeros_like(sub)
             ya, yb = max(0, dy), sub.shape[0] + min(0, dy)
             xa, xb = max(0, dx), sub.shape[1] + min(0, dx)
@@ -408,7 +408,30 @@ def main(src, out, preview=None):
         gy, gx = np.mgrid[y0b:y1b, x0b:x1b]
         ddx, ddy = gx - cx, gy - cy
         hw, hh = (x1b - x0b) / 2, (y1b - y0b) / 2
-        if is_park:
+        heroes = 'Héroes' in p['name']
+        if heroes:
+            # Plaza de los Héroes según la vista satelital (Leandro, 03/11/2026): casi un bosque, un camino
+            # diagonal del sudoeste al noreste, el monumento cerca del centro (un poco al oeste) y, del lado
+            # este, un sector abierto de baldosas con dos monumentos chicos.
+            u = (gx - x0b) / max(1, x1b - x0b - 1); v = (gy - y0b) / max(1, y1b - y0b - 1)
+            Wd, Hd = x1b - x0b, y1b - y0b
+            # distancia (en tiles) a la recta del camino diagonal
+            ax_, ay_, bx_, by_ = 0.04 * Wd, 0.96 * Hd, 0.96 * Wd, 0.06 * Hd
+            px_, py_ = gx - x0b, gy - y0b
+            dist = np.abs((bx_ - ax_) * (ay_ - py_) - (ax_ - px_) * (by_ - ay_)) / math.hypot(bx_ - ax_, by_ - ay_)
+            east = (u > 0.66) & (v > 0.2) & (v < 0.97) & ((u - 0.66) * 1.6 > (0.34 - v))
+            mx, my = int(x0b + 0.49 * Wd), int(y0b + 0.44 * Hd)
+            ring = (np.abs(gx - mx) <= 3) & (np.abs(gy - my) <= 3)
+            pave = border | (dist <= 1.3) | east | ring
+            # hoyos de árbol en el sector de baldosas (cada 5 tiles)
+            pits = east & (((gx - x0b) % 5) == 2) & (((gy - y0b) % 5) == 2) & ~((u > 0.8) & (u < 0.96) & (((v > 0.3) & (v < 0.5)) | ((v > 0.62) & (v < 0.82))))
+            pave &= ~pits
+            cx, cy = mx + 1, my + 1
+            for mu, mv in ((0.88, 0.40), (0.87, 0.72)):
+                dxm, dym = int(x0b + mu * Wd), int(y0b + mv * Hd)
+                tiles[dym:dym + 2, dxm:dxm + 2] = MONUMENT
+                decals.append({'kind': 'monumento_bajo', 'x': dxm, 'y': dym, 'w': 2, 'h': 2})
+        elif is_park:
             wsub = dilate(water[y0b:y1b, x0b:x1b] > 0, 2) & sub
             pave = border | wsub
         else:
@@ -417,15 +440,18 @@ def main(src, out, preview=None):
             ring = big & (np.maximum(np.abs(ddx), np.abs(ddy)) <= 4)
             pave = border | cross | diag | ring
         tsub = tiles[y0b:y1b, x0b:x1b]
-        tsub[sub & pave] = PAVING
-        tsub[sub & ~pave] = GRASS
+        keep = tsub == MONUMENT
+        tsub[sub & pave & ~keep] = PAVING
+        tsub[sub & ~pave & ~keep] = GRASS
         if 'Héroes' in p['name']:
             tiles[cy - 1:cy + 1, cx - 1:cx + 1] = MONUMENT
             decals.append({'kind': 'monumento', 'x': cx - 1, 'y': cy - 1, 'w': 2, 'h': 2})
         cand = list(zip(*np.nonzero((tsub == GRASS) & sub)))
         cand = [(x + x0b, y + y0b) for y, x in cand]
         rnd.shuffle(cand)
-        if is_park:
+        if heroes:  # copas grandes y tupidas, casi sin huecos
+            plant(cand, 0.95, 2, lambda x, y: (x, y, rnd.randint(16, 20), 3 if rnd.random() < 0.12 else rnd.choice([0, 0, 1, 1, 2])))
+        elif is_park:
             plant(cand, 0.6, 3, lambda x, y: (x, y, rnd.randint(10, 14), rnd.choice([0, 1, 1, 3])))
         else:
             plant(cand, 0.55, 4, lambda x, y: (x, y, rnd.randint(10, 13), 3 if rnd.random() < 0.3 else rnd.randint(0, 1)))
