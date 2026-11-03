@@ -101,6 +101,11 @@ VR.Traffic = class {
     const W = this.world;
     for (const v of this.list) {
       const ai = v.ai;
+      if (ai.stun > 0) { // lo chocaron: queda a merced del golpe un rato y después sigue su camino
+        ai.stun -= dt; v.physics(dt, 0, 0, false, true);
+        if (ai.stun <= 0 && ai.honk <= 0) { ai.honk = 5; onHonk && onHonk(v); }
+        continue;
+      }
       v.px = v.x; v.py = v.y; v.pa = v.a;
       // avanzar el cursor del camino y pasar al tramo siguiente
       const L = 20 + Math.abs(v.v) * 0.12;
@@ -148,6 +153,7 @@ VR.Traffic = class {
       if (v.v < target) v.v = Math.min(target, v.v + (v.type === 'moto' ? 160 : 120) * dt);
       else v.v = Math.max(target, v.v - 380 * dt);
       v.x += fx * v.v * dt; v.y += fy * v.v * dt;
+      v.vx = fx * v.v; v.vy = fy * v.v; v.w = 0;
       W.moveBox(v);
     }
   }

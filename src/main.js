@@ -23,6 +23,7 @@
   let car = null; // auto que estás manejando
   const WALK_BASE = 270, DRIVE_BASE = 420;
   const traffic = prueba ? null : new VR.Traffic(world, { max: 34, motoShare: 0.45 });
+  const peds = prueba ? null : new VR.Peds(world);
   const ME = { shirt: ['#d23c2c', '#9f2a20'], head: '#2a1b12' }; // así se ve el jugador arriba de la moto
   const sc = saved && saved.car;
   if (sc) {
@@ -117,8 +118,9 @@
       hint = nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
       hintCar = nc;
       if (VR.input.pressed('car')) { if (nc) enterCar(nc); else toast('Acercate a un auto o una moto para subir'); }
-      else if (VR.input.pressed('action')) player.say(SALUDOS[sayIdx++ % SALUDOS.length]);
+      else if (VR.input.pressed('action')) { player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
     }
+    world.updateDynamic(dt);
     updateCamera(dt);
     updateGps(dt);
     if (traffic) {
@@ -127,6 +129,7 @@
         car ? null : { x: player.x, y: player.y - 4 }, (v) => { v.honkT = 1.1; v.honkTxt = BOCINAS[(Math.random() * BOCINAS.length) | 0]; });
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
+    if (peds) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
   }
 
   // ---------- dibujo ----------
@@ -141,6 +144,7 @@
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
     if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => player.draw(c, cx, cy, a) });
+    if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     for (const c of world.carsIn(cx - 40, cy - 40, cx + sw + 40, cy + sh + 40, [])) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
@@ -150,6 +154,7 @@
     }
     player.drawBubble(ctx, cx, cy, a);
     drawMini(dt || 0);
+    drawGpsArrow(ctx, cx, cy, a);
     if (traffic) for (const v of traffic.list) if (v.honkT > 0) VR.gfx.text(ctx, v.honkTxt, Math.round(v.x - cx), Math.round(v.y - cy - 24), '#fff6d8', { center: true, shadow: '#1a1a1e' });
     if (hint && hintCar) VR.gfx.text(ctx, hint, Math.round(hintCar.x - cx), Math.round(hintCar.y - cy - 26), '#ffd75e', { center: true, shadow: '#1a1a1e' });
     drawHud();
@@ -356,6 +361,29 @@
   }
   { const sd = VR.store.get('dest:' + world.id, null); if (sd && gps) { dest = sd; recalc(); updateGpsHud(); } }
 
+  // flecha del GPS alrededor tuyo, apuntando hacia donde sigue el camino (unos 70 px más adelante)
+  function drawGpsArrow(ctx, cx, cy, al) {
+    if (!dest) return;
+    const f = car || player, fx = VR.lerp(f.px, f.x, al), fy = VR.lerp(f.py, f.y, al) - (car ? 0 : 10);
+    // bandera en el destino si está a la vista
+    VR.gfx.text(ctx, '🏁', Math.round(dest.x - cx), Math.round(dest.y - cy - 20), '#fff', { center: true, size: 14 });
+    if (!route) return;
+    let tx = route[route.length - 2], ty = route[route.length - 1], need = car ? 80 : 60;
+    for (let i = 0; i + 3 < route.length; i += 2) {
+      const L = Math.hypot(route[i + 2] - route[i], route[i + 3] - route[i + 1]);
+      if (need <= L) { const t = need / (L || 1); tx = route[i] + (route[i + 2] - route[i]) * t; ty = route[i + 1] + (route[i + 3] - route[i + 1]) * t; break; }
+      need -= L;
+    }
+    const ang = Math.atan2(tx - fx, -(ty - fy)), R = car ? (car.type === 'moto' ? 22 : 28) : 20;
+    const pulse = 1 + 0.12 * Math.sin(performance.now() / 160);
+    ctx.save();
+    ctx.translate(Math.round(fx - cx + Math.sin(ang) * R), Math.round(fy - cy - Math.cos(ang) * R));
+    ctx.rotate(ang); ctx.scale(pulse, pulse);
+    ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(7, 3); ctx.lineTo(2.5, 3); ctx.lineTo(2.5, 7); ctx.lineTo(-2.5, 7); ctx.lineTo(-2.5, 3); ctx.lineTo(-7, 3); ctx.closePath();
+    ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b2a36'; ctx.stroke(); ctx.fillStyle = '#3fd3ff'; ctx.fill();
+    ctx.restore();
+  }
+
   // ---------- minimapa (norte arriba; se aleja al manejar; tocarlo abre el mapa grande) ----------
   const mini = $('mini'), mctx = mini.getContext('2d');
   let miniReady = false, miniZoom = 2.2, miniT = 0;
@@ -432,5 +460,5 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { world, player, cam, settings, cars, traffic, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { world, player, cam, settings, cars, traffic, peds, get car() { return car; }, enterCar, exitCar };
 })();

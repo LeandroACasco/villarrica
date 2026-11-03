@@ -113,7 +113,7 @@ VR.input = (() => {
     prev = cur; cur = {};
     for (const b of BTN) {
       cur[b] = api.enabled && !!(kbBtn[b] || touchBtn[b] || padBtn[b] || latch[b]);
-      pressedNow[b] = cur[b] && !prev[b];
+      pressedNow[b] = pressedNow[b] || (cur[b] && !prev[b]); // se guarda hasta que un paso de lógica lo use (pantallas de 90–144 Hz)
       latch[b] = false;
     }
     consumed = false;

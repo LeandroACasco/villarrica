@@ -152,8 +152,6 @@ VR.Car = class {
   // Teclado y cruceta: arriba acelera, abajo frena/reversa, costados giran.
   // Joystick táctil: el vehículo va hacia donde apuntás, más rápido cuanto más lo empujás.
   update(dt, input) {
-    this.px = this.x; this.py = this.y; this.pa = this.a;
-    const sp = this.spec, [max, grip] = this.topSpeed();
     let throttle = 0, steer = 0;
     const brake = input.down('run');
     if (input.source === 'touch') {
@@ -165,31 +163,130 @@ VR.Car = class {
         else { throttle = m * (Math.abs(d) > 1.6 ? 0.35 : 1); steer = VR.clamp(d * 2.2, -1, 1); }
       }
     } else { throttle = -input.ay; steer = input.ax; }
-    if (brake) this.v -= Math.sign(this.v) * Math.min(Math.abs(this.v), sp.brake * dt);
-    if (throttle > 0) this.v += (this.v < 0 ? 380 : sp.acc * grip) * throttle * dt;
-    else if (throttle < 0) this.v += (this.v > 0 ? 380 : 120) * throttle * dt;
-    else this.v -= Math.sign(this.v) * Math.min(Math.abs(this.v), 70 * dt);
-    if (this.v > max) this.v = Math.max(max, this.v - 260 * dt);
-    if (this.v < -sp.rev) this.v = -sp.rev;
-    const s = Math.abs(this.v), turn = sp.turn * Math.min(1, s / 55) * (1 - Math.min(0.45, s / 600));
-    this.a += steer * turn * Math.sign(this.v || 1) * dt;
-    this.advance(this.v * dt);
+    this.physics(dt, throttle, steer, brake);
   }
-  // mover en pasos chicos para no atravesar paredes; roza o rebota al chocar
-  advance(dist) {
-    const n = Math.max(1, Math.ceil(Math.abs(dist) / 4));
-    for (let i = 0; i < n; i++) {
-      const nx = this.x + Math.sin(this.a) * dist / n, ny = this.y - Math.cos(this.a) * dist / n;
-      if (!this.blocked(nx, ny, this.a)) { this.x = nx; this.y = ny; continue; }
-      if (!this.blocked(nx, this.y, this.a)) { this.x = nx; this.v *= 0.97; continue; }
-      if (!this.blocked(this.x, ny, this.a)) { this.y = ny; this.v *= 0.97; continue; }
-      if (Math.abs(this.v) > 60) { this.hit = 0.25; if (this.driven && VR.input.buzz) VR.input.buzz(30); }
-      this.v = -this.v * 0.25;
-      break;
+  get mass() { return this.type === 'moto' ? 0.3 : 1; }
+  // Física: velocidad como vector (vx, vy) además del rumbo, así el vehículo puede derrapar;
+  // giro con velocidad angular (w) que también cambian los choques.
+  physics(dt, throttle, steer, brake, parked = false) {
+    this.px = this.x; this.py = this.y; this.pa = this.a;
+    if (this.vx === undefined) { this.vx = Math.sin(this.a) * this.v; this.vy = -Math.cos(this.a) * this.v; this.w = 0; }
+    const sp = this.spec, [max, gripF] = this.topSpeed();
+    let fx = Math.sin(this.a), fy = -Math.cos(this.a), rx = Math.cos(this.a), ry = Math.sin(this.a);
+    let vf = this.vx * fx + this.vy * fy, vr = this.vx * rx + this.vy * ry;
+    // motor y frenos (sobre la velocidad hacia adelante)
+    if (parked) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 260 * dt);
+    else {
+      if (brake) vf -= Math.sign(vf) * Math.min(Math.abs(vf), sp.brake * dt);
+      if (throttle > 0) vf += (vf < 0 ? 380 : sp.acc * gripF) * throttle * dt;
+      else if (throttle < 0) vf += (vf > 0 ? 380 : 120) * throttle * dt;
+      else vf -= Math.sign(vf) * Math.min(Math.abs(vf), 70 * dt);
+      if (vf > max) vf = Math.max(max, vf - 260 * dt);
+      if (vf < -sp.rev) vf = Math.max(-sp.rev, vf + 300 * dt);
     }
-    if (this.blocked(this.x, this.y, this.a)) this.a = this.pa;
-    if (this.hit > 0) this.hit -= VR.loop.STEP;
+    // agarre lateral: menos en tierra y pasto, y casi nada si frenás fuerte doblando (derrape)
+    const t = this.world.get(Math.floor(this.x / VR.TILE), Math.floor(this.y / VR.TILE)), T = VR.T;
+    let grip = t === T.ROAD ? 9 : t === T.STONE ? 7 : t === T.DIRTROAD || t === T.DIRT ? 4.5 : t === T.SIDEWALK || t === T.PAVING ? 7.5 : 3.5;
+    if (this.type === 'moto') grip *= 1.4;
+    if (brake && Math.abs(vf) > 70 && Math.abs(steer) > 0.2) grip *= 0.22;
+    if (parked) grip = 6;
+    vr *= Math.exp(-grip * dt);
+    // giro: la velocidad angular busca la del volante (y se recupera de los golpes)
+    const s = Math.abs(vf), wt = parked ? 0 : steer * sp.turn * Math.min(1, s / 55) * (1 - Math.min(0.45, s / 600)) * (vf < -2 ? -1 : 1);
+    this.w += (wt - this.w) * Math.min(1, (parked ? 2.5 : 7) * dt);
+    this.vx = fx * vf + rx * vr; this.vy = fy * vf + ry * vr;
+    // marcas de frenada / derrape
+    if (Math.abs(vr) > 25 || (brake && s > 90)) this.skid(t === T.DIRTROAD || t === T.DIRT || t === T.GRASS);
+    this.move(dt);
+    fx = Math.sin(this.a); fy = -Math.cos(this.a);
+    this.v = this.vx * fx + this.vy * fy;
+    if (this.hit > 0) this.hit -= dt;
     this.world.moveBox(this);
+  }
+  skid(dirt) {
+    const fx = Math.sin(this.a), fy = -Math.cos(this.a), rx = Math.cos(this.a), ry = Math.sin(this.a), l = this.spec.len / 2 - 5, w = this.spec.wid / 2 - 2;
+    const col = dirt ? 'rgba(90,45,20,.4)' : 'rgba(18,16,14,.45)';
+    const wheels = this.type === 'moto' ? [[this.x - fx * l, this.y - fy * l]]
+      : [[this.x - fx * l + rx * w, this.y - fy * l + ry * w], [this.x - fx * l - rx * w, this.y - fy * l - ry * w]];
+    const last = this._sk && this._skT > performance.now() - 120 ? this._sk : null;
+    wheels.forEach((p, i) => { const q = last ? last[i] : p; this.world.markLine(q[0], q[1], p[0], p[1], col); });
+    this._sk = wheels; this._skT = performance.now();
+  }
+  // ¿qué toca el vehículo en esta posición? puntos bloqueados y el primer vehículo tocado
+  contacts(x, y, a) {
+    const W = this.world, S = VR.TILE, pts = [];
+    let other = null;
+    for (const [px, py] of this.points(x, y, a)) {
+      if (W.solid(Math.floor(px / S), Math.floor(py / S))) { pts.push(px, py); continue; }
+      const o = W.boxAt(px, py, this);
+      if (o) { pts.push(px, py); other = other || o; }
+    }
+    return pts.length ? { pts, other } : null;
+  }
+  // mover en pasos chicos; al chocar: rebote (según el ángulo), roce contra la pared, giro por el golpe
+  // y, si es otro vehículo, intercambio de impulso (lo empujás)
+  move(dt) {
+    const sp = Math.hypot(this.vx, this.vy), n = Math.max(1, Math.ceil(sp * dt / 3) + (Math.abs(this.w) * dt > 0.05 ? 1 : 0));
+    const h = dt / n;
+    // si arrancó metido en algo (lo empujaron, apareció encima), primero se separa
+    const now = this.contacts(this.x, this.y, this.a);
+    if (now) {
+      let freed = false;
+      for (let d = 1; d <= 8 && !freed; d++) for (let k = 0; k < 8 && !freed; k++) {
+        const ex = Math.cos(k * Math.PI / 4) * d, ey = Math.sin(k * Math.PI / 4) * d;
+        if (!this.contacts(this.x + ex, this.y + ey, this.a)) { this.x += ex; this.y += ey; freed = true; }
+      }
+      if (!freed) { this.x += this.vx * dt; this.y += this.vy * dt; this.vx *= 0.9; this.vy *= 0.9; return; } // trabado del todo: se escurre
+    }
+    for (let i = 0; i < n; i++) {
+      const nx = this.x + this.vx * h, ny = this.y + this.vy * h, na = this.a + this.w * h;
+      const c = this.contacts(nx, ny, na);
+      if (!c) { this.x = nx; this.y = ny; this.a = na; continue; }
+      // normal del choque: desde los puntos tocados hacia el centro
+      let mx = 0, my = 0, k = c.pts.length / 2;
+      for (let j = 0; j < c.pts.length; j += 2) { mx += c.pts[j]; my += c.pts[j + 1]; }
+      mx /= k; my /= k;
+      let nnx = nx - mx, nny = ny - my, nl = Math.hypot(nnx, nny);
+      if (nl < 0.01) { nnx = -this.vx; nny = -this.vy; nl = Math.hypot(nnx, nny) || 1; }
+      nnx /= nl; nny /= nl;
+      const o = c.other;
+      let impact = 0;
+      if (o) {
+        if (o.vx === undefined) { o.vx = Math.sin(o.a) * o.v; o.vy = -Math.cos(o.a) * o.v; o.w = 0; }
+        const rvn = (this.vx - o.vx) * nnx + (this.vy - o.vy) * nny;
+        if (rvn < 0) {
+          const e = 0.35, J = -(1 + e) * rvn / (1 / this.mass + 1 / o.mass);
+          this.vx += J / this.mass * nnx; this.vy += J / this.mass * nny;
+          o.vx -= J / o.mass * nnx; o.vy -= J / o.mass * nny;
+          // giro de los dos según dónde fue el golpe
+          const cx = mx - nx, cy = my - ny, ox = mx - o.x, oy = my - o.y;
+          this.w += (cx * nny - cy * nnx) * J * 0.0016 / this.mass;
+          o.w -= (ox * nny - oy * nnx) * J * 0.0016 / o.mass;
+          o.hit = Math.min(0.3, -rvn / 300);
+          impact = -rvn;
+          this.world.wake(o, impact);
+        }
+      } else {
+        const vn = this.vx * nnx + this.vy * nny;
+        if (vn < 0) {
+          const e = 0.3;
+          this.vx -= (1 + e) * vn * nnx; this.vy -= (1 + e) * vn * nny;
+          // roce: pierde algo de la velocidad que va a lo largo de la pared
+          const tx = this.vx - (this.vx * nnx + this.vy * nny) * nnx, ty = this.vy - (this.vx * nnx + this.vy * nny) * nny;
+          this.vx -= tx * 0.12; this.vy -= ty * 0.12;
+          const cx = mx - nx, cy = my - ny;
+          this.w += (cx * nny - cy * nnx) * (-vn) * 0.0022;
+          impact = -vn;
+        }
+      }
+      this.w = VR.clamp(this.w, -6, 6);
+      if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); }
+      // no se mete en la pared: si el giro solo ya lo traba, no gira; y si quedó pegado, se separa un poco
+      if (!this.contacts(this.x, this.y, na)) this.a = na;
+      else if (this.contacts(this.x, this.y, this.a)) {
+        for (let d = 1; d <= 4; d++) if (!this.contacts(this.x + nnx * d, this.y + nny * d, this.a)) { this.x += nnx * d; this.y += nny * d; break; }
+      }
+    }
   }
   kmh() { return Math.round(Math.abs(this.v) / VR.TILE * 2 * 3.6); } // 1 tile = 2 m
   frame(a) { const N = 64; return ((Math.round(a / (Math.PI * 2) * N) % N) + N) % N; }

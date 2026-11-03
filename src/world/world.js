@@ -37,6 +37,37 @@ VR.World = class {
   addBox(obj) { const b = obj.box(); obj._box = b; this._cells(b, (k) => { let l = this.boxGrid.get(k); if (!l) this.boxGrid.set(k, l = []); l.push(b); }); }
   removeBox(obj) { const b = obj._box; if (!b) return; this._cells(b, (k) => { const l = this.boxGrid.get(k); if (l) { const i = l.indexOf(b); if (i >= 0) l.splice(i, 1); } }); obj._box = null; }
   moveBox(obj) { if (obj._box) this.removeBox(obj); this.addBox(obj); }
+  // vehículos empujados (estacionados o del tránsito) que tienen que moverse solos hasta frenar
+  wake(car, impact) {
+    if (!this.dynamic) this.dynamic = new Set();
+    if (car.ai) car.ai.stun = Math.max(car.ai.stun || 0, 0.6 + Math.min(1.6, impact / 120));
+    else if (!car.driven) this.dynamic.add(car);
+  }
+  updateDynamic(dt) {
+    if (!this.dynamic) return;
+    for (const c of this.dynamic) {
+      if (c.driven || c.ai) { this.dynamic.delete(c); continue; }
+      c.physics(dt, 0, 0, false, true);
+      if (Math.hypot(c.vx, c.vy) < 2 && Math.abs(c.w) < 0.05) { c.vx = c.vy = c.w = 0; c.v = 0; c.px = c.x; c.py = c.y; c.pa = c.a; this.dynamic.delete(c); }
+    }
+  }
+  // marca en el piso (frenadas): se pinta sobre el bloque ya dibujado; se borra sola cuando el bloque sale de la caché
+  markLine(x0, y0, x1, y1, col) {
+    const PX = this.CH * VR.TILE, done = new Set();
+    for (const [x, y] of [[x0, y0], [x1, y1]]) {
+      const cx = Math.floor(x / PX), cy = Math.floor(y / PX), key = cx + ',' + cy;
+      if (done.has(key)) continue; done.add(key);
+      const c = this.cache.get(key); if (!c) continue;
+      const g = c.ground.getContext('2d');
+      g.strokeStyle = col; g.lineWidth = 2; g.lineCap = 'round'; g.beginPath();
+      g.moveTo(x0 - cx * PX, y0 - cy * PX); g.lineTo(x1 - cx * PX, y1 - cy * PX); g.stroke();
+    }
+  }
+  mark(px, py, col) {
+    const PX = this.CH * VR.TILE, cx = Math.floor(px / PX), cy = Math.floor(py / PX), c = this.cache.get(cx + ',' + cy);
+    if (!c) return;
+    const g = c.ground.getContext('2d'); g.fillStyle = col; g.fillRect(Math.round(px - cx * PX) - 1, Math.round(py - cy * PX) - 1, 2, 2);
+  }
   boxAt(px, py, except) {
     const l = this.boxGrid.get(Math.floor(px / 64) + Math.floor(py / 64) * 65536);
     if (l) for (const b of l) if (b.car !== except && px >= b.x0 && px < b.x1 && py >= b.y0 && py < b.y1) return b.car;
