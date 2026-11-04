@@ -4,8 +4,7 @@
 // del lado izquierdo y sombra del derecho, se separa de la capa de abajo con una línea más oscura y al final
 // todo lleva un contorno oscuro. Animaciones por fase (quieto, caminar, correr) en 4 direcciones. Original.
 'use strict';
-(function () {
-  const VR = window.VR || (window.VR = {});
+(function (VR) {
   const SH = (h, k) => { const n = parseInt(h.slice(1), 16), f = (v) => Math.max(0, Math.min(255, Math.round(v * k))).toString(16).padStart(2, '0'); return '#' + f(n >> 16) + f((n >> 8) & 255) + f(n & 255); };
   const RGB = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
@@ -24,7 +23,7 @@
     shoes: { zapatillas: ['Zapatillas', 150000], botitas: ['Zapatillas altas', 180000], chinelas: ['Chinelas', 20000], zapatos: ['Zapatos', 200000], botines: ['Botines', 180000] },
     hat: { ninguno: ['Sin gorra', 0], gorra: ['Gorra', 30000], gorraAtras: ['Gorra para atrás', 30000], gorro: ['Gorro de lana', 35000], piri: ['Sombrero piri', 45000] },
     extra: { lentes: ['Lentes de sol', 25000], anteojos: ['Anteojos', 90000], mochila: ['Mochila', 90000], termo: ['Termo de tereré', 60000], reloj: ['Reloj', 70000], cadenita: ['Cadenita', 40000] },
-    beard: { no: ['Sin barba', 0], bigote: ['Bigote', 0], barba: ['Barba', 0], candado: ['Candado', 0] },
+    beard: { no: ['Sin barba', 0], bigote: ['Bigote', 0], barba: ['Barba', 0], candado: ['Candado', 0], chivita: ['Chivita', 0] },
     build: { flaco: ['Flaco', 0], normal: ['Normal', 0], fornido: ['Fornido', 0], panza: ['Con panza', 0] },
     gender: { m: ['Hombre', 0], f: ['Mujer', 0] },
   };
@@ -370,7 +369,7 @@
           const bc = SH(hair, 1.0);
           if (L.beard === 'bigote' || L.beard === 'candado') pix(hx - 0.6, hy + 1.25, bc, Math.round(1.3 * k), P);
           if (L.beard === 'barba') paint((g) => { ell(g, hx, hy + 1.9, 1.6, 1.0); }, bc, { light: false, sep: false });
-          if (L.beard === 'candado') pix(hx - 0.35, hy + 1.95, bc, Math.round(0.8 * k), Math.round(0.6 * k));
+          if (L.beard === 'candado' || L.beard === 'chivita') pix(hx - 0.35, hy + 1.95, bc, Math.round(0.8 * k), Math.round(0.6 * k));
           if (L.beard === 'barba') pix(hx - 0.45, hy + 1.55, SH(skin, 0.6), Math.round(0.9 * k), P);
         }
         if (L.lentes) { paint((g) => { g.fillRect(hx - 1.75, ey - 0.25, 1.5, 0.75); g.fillRect(hx + 0.25, ey - 0.25, 1.5, 0.75); g.fillRect(hx - 0.3, ey - 0.15, 0.6, 0.3); }, '#18181e', { light: false, sep: false }); }
@@ -439,6 +438,7 @@
       if (k >= 2) pix(hx + 1.6, hy + 1.6, SH(skin, 0.62), Math.round(0.6 * k), P);
       if (L.beard === 'barba') paint((g) => ell(g, hx + 0.6, hy + 1.8, 1.4, 0.9), hair, { light: false, sep: false });
       if (L.beard === 'bigote' || L.beard === 'candado') pix(hx + 1.4, hy + 1.25, hair, Math.round(0.9 * k), P);
+      if (L.beard === 'chivita') pix(hx + 1.1, hy + 1.95, hair, Math.round(0.7 * k), Math.round(0.6 * k));
       if (L.lentes) paint((g) => g.fillRect(hx + 0.6, hy - 0.25, 1.4, 0.7), '#18181e', { light: false, sep: false });
       if (L.anteojos && k >= 2) { pix(hx + 0.6, hy - 0.35, '#2a2420', Math.round(1.4 * k), P); pix(hx + 0.6, hy + 0.5, '#2a2420', Math.round(1.4 * k), P); pix(hx - 0.5, hy - 0.1, '#2a2420', Math.round(1.1 * k), P); }
       drawHair(false);
@@ -538,4 +538,14 @@
     for (const d of ['down', 'up', 'right', 'left']) { out[d] = {}; for (const a in n) out[d][a] = Array.from({ length: n[a] }, (_, i) => render(L, d, a, i / n[a], k)); }
     return out;
   };
-})();
+  // versión perezosa para el juego: cada cuadro se dibuja recién la primera vez que se usa (sin tirones)
+  VR.av2Lazy = (look, k = 1, n = { idle: 1, walk: 8, run: 8 }) => {
+    const L = Object.assign({}, VR.AV2_DEFAULT, look), c = new Map();
+    return { n, look: L, get(d, a, i) {
+      const key = d + a + i; let f = c.get(key);
+      if (!f) { f = render(L, d, a, i / n[a], k); c.set(key, f); }
+      return f;
+    } };
+  };
+  VR.AV2_LEANDRO = { gender: 'm', skin: 1, hair: 'medio', hairColor: 0, beard: 'chivita', top: 'puffer', topColor: 3, topColor2: 13, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 };
+})(typeof VR !== 'undefined' ? VR : (window.VR = window.VR || {}));

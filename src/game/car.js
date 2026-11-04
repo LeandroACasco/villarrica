@@ -143,9 +143,12 @@ VR.drawRiderBase = (shirt, head) => VR.vbase(10, 20, (T) => {
 // Rota un sprite a 64 ángulos. Los dibujos suaves (VR.vbase) se rotan grandes con suavizado, se contornean y
 // se achican: quedan sin escalones. Los de píxel (otros) se rotan al pixel con vecino más cercano.
 VR.rotFrames = (base, S, outline = true) => {
-  const N = 64, f = { img: [], shadow: [], S };
+  // Cada ángulo se dibuja recién cuando hace falta (y se guarda): antes se armaban los 64 de una vez cada vez
+  // que aparecía un vehículo de un color nuevo, y eso trababa el juego (sobre todo en el teléfono).
+  const N = 64, f = { img: new Array(N), shadow: new Array(N), S };
   const ss = base.ss || 1;
-  for (let k = 0; k < N; k++) {
+  let src = null;
+  const make = (k) => {
     const a = k / N * Math.PI * 2;
     let c;
     if (ss > 1) {
@@ -154,7 +157,8 @@ VR.rotFrames = (base, S, outline = true) => {
       x.translate(B / 2, B / 2); x.rotate(a); x.drawImage(base, -base.width / 2, -base.height / 2);
       c = VR.gfx.down(outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big, S, S);
     } else {
-      const bw = base.width, bh = base.height, src = base.getContext('2d').getImageData(0, 0, bw, bh).data, ca = Math.cos(a), sa = Math.sin(a);
+      const bw = base.width, bh = base.height, ca = Math.cos(a), sa = Math.sin(a);
+      if (!src) src = base.getContext('2d').getImageData(0, 0, bw, bh).data;
       c = VR.canvas(S, S); const x = c.getContext('2d'), img = x.createImageData(S, S), d = img.data;
       for (let y = 0; y < S; y++) for (let xx = 0; xx < S; xx++) {
         const dx = xx - S / 2 + 0.5, dy = y - S / 2 + 0.5;
@@ -169,8 +173,10 @@ VR.rotFrames = (base, S, outline = true) => {
     }
     const sh = VR.canvas(S, S), sx = sh.getContext('2d');
     sx.drawImage(c, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(0,0,0,.32)'; sx.fillRect(0, 0, S, S);
-    f.img.push(c); f.shadow.push(sh);
-  }
+    f.img[k] = c; f.shadow[k] = sh;
+  };
+  f.get = (k) => { if (!f.img[k]) make(k); return f.img[k]; };
+  f.getShadow = (k) => { if (!f.shadow[k]) make(k); return f.shadow[k]; };
   return f;
 };
 
@@ -419,12 +425,12 @@ VR.Car = class {
     const a = this.pa + Math.atan2(Math.sin(this.a - this.pa), Math.cos(this.a - this.pa)) * al;
     const k = this.frame(a), F = this.frames, h = F.S >> 1;
     const shake = this.hit > 0 ? ((this.hit * 60) | 0) % 2 : 0;
-    ctx.drawImage(F.shadow[k], x - h + 3, y - h + 3);
-    ctx.drawImage(F.img[k], x - h + shake, y - h);
+    ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3);
+    ctx.drawImage(F.get(k), x - h + shake, y - h);
     if (this.rider) {
       const R = VR.riderFrames(this.rider.shirt, this.rider.head), rh = R.S >> 1;
       const ro = this.spec.riderOff || 0;
-      ctx.drawImage(R.img[k], x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro));
+      ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro));
     }
   }
 };

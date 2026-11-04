@@ -10,19 +10,10 @@ VR.PED_TALK = {
 VR.Peds = class {
   constructor(world) {
     this.world = world; this.list = []; this.rnd = VR.rng(99);
-    const R = this.rnd, pick = (a) => a[(R() * a.length) | 0];
-    const SKIN = [['#c98b5c', '#a76c42'], ['#e0aa7e', '#bd875c'], ['#8f5b38', '#6f4328'], ['#f0c7a0', '#cfa27a'], ['#b07850', '#8e5a36']];
-    const HAIR = ['#2a1b12', '#1a1410', '#4a2e1a', '#6b4a2a', '#c9c2b4', '#20202a'];
-    const SHIRT = [['#2e6fc8', '#1f4c8c'], ['#f0ece2', '#b8b2a4'], ['#3b9a5a', '#286a3d'], ['#e8b830', '#a8841c'], ['#7a4ab0', '#563480'], ['#30303a', '#18181e'], ['#e86aa0', '#b04876'], ['#e87a2a', '#a8561c'], ['#58b8c8', '#3a8a98']];
-    const PANTS = [['#2c3e6b', '#1e2b4d'], ['#3a3a40', '#26262a'], ['#7a6a52', '#5a4c3a'], ['#2a5a8a', '#1c3e62'], ['#b8b0a0', '#8e8676']];
+    const R = this.rnd;
+    // 32 looks al azar del mismo sistema que el probador; los cuadros se dibujan a medida que se usan
     this.sprites = [];
-    for (let i = 0; i < 24; i++) {
-      const [skin, skinD] = pick(SKIN), [shirt, shirtD] = pick(SHIRT), [pants, pantsD] = pick(PANTS);
-      const st = R(), skirt = R() < 0.25, style = skirt ? (R() < 0.7 ? 'largo' : 'corto') : st < 0.55 ? 'corto' : st < 0.75 ? 'gorra' : st < 0.9 ? 'largo' : 'pelado';
-      const SKIRT = [['#c8322a', '#8e1f1a'], ['#2c3e6b', '#1e2b4d'], ['#e8b830', '#a8841c'], ['#30303a', '#18181e']];
-      const [pa, paD] = skirt ? pick(SKIRT) : [pants, pantsD];
-      this.sprites.push(VR.makePlayerSprites({ skin, skinD, hair: pick(HAIR), shirt, shirtD, pants: pa, pantsD: paD, style, skirt, cap: pick(['#2e6fc8', '#c8322a', '#f0ece2', '#30303a', '#3b9a5a']), shoes: pick(['#18181c', '#f0ece2', '#2e6fc8', '#6a4424']) }));
-    }
+    for (let i = 0; i < 32; i++) this.sprites.push(VR.av2Lazy(VR.av2Random(R)));
     this.flat = new Map(); // sprite "acostado" (cuando lo chocás)
   }
   walkable(px, py) {
@@ -96,7 +87,7 @@ VR.Peds = class {
       const sp = p.mode === 'flee' ? 95 : p.sp;
       const nx = p.x + p.vx * sp * dt, ny = p.y + p.vy * sp * dt;
       const ahead = this.free(p.x + p.vx * 8, p.y + p.vy * 8);
-      if (ahead && !this.world.hits(nx - 3, ny - 3, nx + 3, ny)) { p.x = nx; p.y = ny; p.anim += dt * (p.mode === 'flee' ? 11 : 7); }
+      if (ahead && !this.world.hits(nx - 3, ny - 3, nx + 3, ny)) { p.x = nx; p.y = ny; p.anim += dt * (p.mode === 'flee' ? 15 : 8.5); }
       else if (p.mode === 'flee') { this.newDir(p, p.dir); p.mode = 'flee'; }
       else this.newDir(p, p.dir);
       if (p.t <= 0) {
@@ -121,19 +112,19 @@ VR.Peds = class {
   lying(pal) {
     let c = this.flat.get(pal);
     if (!c) {
-      const s = this.sprites[pal].down[0]; c = VR.canvas(28, 18); const g = c.getContext('2d');
-      g.translate(14, 9); g.rotate(Math.PI / 2); g.drawImage(s, -8, -13); this.flat.set(pal, c);
+      const s = this.sprites[pal].get('down', 'idle', 0); c = VR.canvas(34, 18); const g = c.getContext('2d');
+      g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(s, -8, -16); this.flat.set(pal, c);
     }
     return c;
   }
   collect(camX, camY, sw, sh, al, out) {
     for (const p of this.list) {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
-      if (x < -20 || y < -30 || x > sw + 20 || y > sh + 20) continue;
+      if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 14, y - 12);
-        else ctx.drawImage(this.sprites[p.pal][p.dir][p.mode === 'idle' ? 0 : Math.floor(p.anim) % 4], x - VR.SPR.ox, y - VR.SPR.oy);
+        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12);
+        else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8, y - 31);
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
     }

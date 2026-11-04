@@ -99,7 +99,7 @@ VR.Player = class {
   constructor(world, x, y) {
     this.world = world; this.x = this.px = x; this.y = this.py = y;
     this.dir = 'down'; this.anim = 0; this.moving = false; this.speed = 0;
-    this.sprites = VR.makePlayerSprites();
+    this.sprites = VR.av2Lazy(VR.AV2_LEANDRO); this.run = false;
     this.bubble = null;
     this.HW = 4; this.HH = 4; // caja de colisión en los pies
   }
@@ -115,7 +115,7 @@ VR.Player = class {
       if (Math.abs(nx) > Math.abs(ny) * 1.15) this.dir = nx > 0 ? 'right' : 'left';
       else this.dir = ny > 0 ? 'down' : 'up';
       this.move(nx * this.speed * dt, ny * this.speed * dt);
-      this.anim += dt * (run ? 11 : 7.5) * Math.max(0.5, mag);
+      this.run = run; this.anim += dt * (run ? 15 : 9.5) * Math.max(0.5, mag);
     } else this.anim = 0;
     if (this.bubble) { this.bubble.t -= dt; if (this.bubble.t <= 0) this.bubble = null; }
   }
@@ -136,12 +136,12 @@ VR.Player = class {
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
-    const f = this.moving ? (Math.floor(this.anim) % 4) : 0;
-    ctx.drawImage(this.sprites[this.dir][f], x - VR.SPR.ox, y - VR.SPR.oy);
+    const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
+    ctx.drawImage(img, x - 8, y - 31);
   }
   drawBubble(ctx, camX, camY, a) {
     if (!this.bubble) return;
-    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 30;
+    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 36;
     const img = VR.gfx.textImg(this.bubble.text, '#1a1a1e', 9);
     const w = img.width + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2), by = y - h;
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(bx - 1, by, w + 2, h); ctx.fillRect(bx, by - 1, w, h + 2);
