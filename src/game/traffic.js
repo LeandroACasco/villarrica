@@ -59,7 +59,9 @@ VR.Traffic = class {
   carrot(ai, ahead) {
     let s = ai.s + ahead, e = ai.e, from = ai.from;
     if (s > e.len && ai.next) { s -= e.len; const ne = this.edges[ai.next[0]], to = from === e.a ? e.b : e.a; e = ne; from = to; }
-    return this.lane(e, from, Math.min(s, e.len));
+    const p = this.lane(e, from, Math.min(s, e.len));
+    if (ai.off) { p[0] -= p[3] * ai.off; p[1] += p[2] * ai.off; } // corrido hacia el cordón (+) o para pasar (−)
+    return p;
   }
   spawn(px, py, view) {
     const W = this.world;
@@ -101,8 +103,18 @@ VR.Traffic = class {
       if (Math.hypot(v.x - focus.x, v.y - focus.y) > 1300) this.remove(v);
     }
     const W = this.world;
+    // vehículos con la sirena prendida (unidades y el tuyo)
+    const sirens = [];
+    if (VR.emer) for (const u of VR.emer.units) if (u.v.siren && !u.dead) sirens.push(u.v);
+    if (playerBody === null && VR.playerCar && VR.playerCar.siren) sirens.push(VR.playerCar);
     for (const v of this.list) {
       const ai = v.ai;
+      // ¿viene una sirena? correrse al costado y casi parar hasta que pase
+      if (sirens.length && !(ai.yield > 0)) for (const s of sirens) {
+        const dx = v.x - s.x, dy = v.y - s.y, d = Math.hypot(dx, dy); if (d > 170 || d < 1) continue;
+        const sf = Math.sin(s.a) * dx - Math.cos(s.a) * dy; // ¿estoy adelante de la sirena?
+        if (sf > 0 && Math.abs(Math.cos(s.a) * dx + Math.sin(s.a) * dy) < 40) { ai.yield = 2.6; break; }
+      }
       if (ai.stun > 0) { // lo chocaron: queda a merced del golpe un rato y después sigue su camino
         ai.stun -= dt; v.physics(dt, 0, 0, false, true);
         if (ai.stun <= 0 && ai.honk <= 0) { ai.honk = 5; onHonk && onHonk(v); }
@@ -121,6 +133,11 @@ VR.Traffic = class {
         ai.next = this.pickNext(ai.e, ai.next[1]);
       }
       [cx, cy] = this.carrot(ai, L);
+      // abrir paso / esquivar: el carril se corre de a poco hacia el lado que corresponde
+      const offT = ai.yield > 0 ? Math.min(10, ai.e.w * 0.3) : ai.dodge > 0 ? -Math.min(11, ai.e.w * 0.32) : 0;
+      ai.off = (ai.off || 0) + VR.clamp(offT - (ai.off || 0), -18 * dt, 18 * dt);
+      if (ai.yield > 0) ai.yield -= dt;
+      if (ai.dodge > 0) ai.dodge -= dt;
       // girar hacia la zanahoria
       const want = Math.atan2(cx - v.x, -(cy - v.y));
       let d = want - v.a; d = Math.atan2(Math.sin(d), Math.cos(d));
@@ -145,13 +162,23 @@ VR.Traffic = class {
         if (o) blockedBy = o;
         else if (playerBody && Math.abs(qx - playerBody.x) < 9 && Math.abs(qy - playerBody.y) < 9) blockedBy = playerBody;
       }
+      if (ai.yield > 0) target = Math.min(target, 18);
+      if (ai.back > 0) { ai.back -= dt; v.v = -28; v.x += fx * v.v * dt; v.y += fy * v.v * dt; v.vx = fx * v.v; v.vy = fy * v.v; W.moveBox(v); continue; }
       if (blockedBy) {
         target = 0; ai.wait += dt;
         if ((blockedBy === playerBody || blockedBy.driven) && ai.wait > 1.2 && ai.honk <= 0) { ai.honk = 4 + this.rnd() * 3; onHonk && onHonk(v); }
       } else ai.wait = 0;
       if (ai.honk > 0) ai.honk -= dt;
-      // trabado mucho rato (p. ej. dos que se miran en una esquina): pasa igual
-      if (ai.wait > 6 && blockedBy && blockedBy !== playerBody && !blockedBy.driven) target = 30;
+      // trabado: primero intenta pasar por el costado, después retrocede un poco, y si sigue trabado fuera de
+      // la pantalla, desaparece (para que no se armen tapones eternos)
+      if (blockedBy && blockedBy !== playerBody && !blockedBy.driven) {
+        const parked = !blockedBy.ai || blockedBy.ai.wait > 1.5;
+        if (ai.wait > 1.6 && parked && !(ai.dodge > 0)) ai.dodge = 2.2;
+        if (ai.wait > 4.5 && !ai.triedBack) { ai.triedBack = true; ai.back = 0.9; ai.dodge = 2.6; }
+        if (ai.wait > 6) target = 30;
+        const off = v.x < view.x0 - 50 || v.x > view.x1 + 50 || v.y < view.y0 - 50 || v.y > view.y1 + 50;
+        if (ai.wait > 9 && off) { this.remove(v); break; }
+      } else if (!blockedBy) ai.triedBack = false;
       if (v.v < target) v.v = Math.min(target, v.v + (v.type === 'moto' ? 160 : 120) * dt);
       else v.v = Math.max(target, v.v - 380 * dt);
       v.x += fx * v.v * dt; v.y += fy * v.v * dt;

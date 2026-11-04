@@ -31,6 +31,7 @@
     onWasted: () => sentTo('💥 Explotó con vos adentro... te llevaron al hospital.') });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
+  VR.audio.setOn(VR.store.get('snd', true));
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg) {
     if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); }
@@ -111,7 +112,7 @@
   };
 
   // ---------- lógica ----------
-  const SALUDOS = ["¡Mba'éichapa!", "¡Mba'e la porte!", 'Haku la ára, che...', "¡Jaha jaha!", 'Ndera, qué lindo día'];
+  const SALUDOS = ["¡Mba'éichapa!", "¡Mba'e la porte!", 'Haku la ára, che...', "¡Jaha jaha!", '¡Ára porã!'];
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
   let sayIdx = 0, hint = '', hintCar = null, holdT = 0;
   function update(dt) {
@@ -129,7 +130,7 @@
         if (VR.input.down('action')) holdT += dt;
         else { if (holdT > 0 && holdT <= 0.22) { car.siren = !car.siren; toast(car.siren ? '🚨 Sirena prendida' : 'Sirena apagada'); } holdT = 0; }
         if (emer) emer.holdT = holdT;
-      } else if (VR.input.pressed('action')) player.say(BOCINAS[sayIdx++ % BOCINAS.length], 1.2);
+      } else if (VR.input.pressed('action')) { player.say(BOCINAS[sayIdx++ % BOCINAS.length], 1.2); VR.audio.horn(car.x, car.y, car.type === 'moto' ? 'moto' : car.spec.mass > 1.3 ? 'big' : 'car'); }
       if (VR.input.pressed('car')) { if (Math.abs(car.v) < 45) exitCar(); else toast('Frená para bajarte'); }
       if (player.bubble) { player.bubble.t -= dt; if (player.bubble.t <= 0) player.bubble = null; }
     } else {
@@ -141,12 +142,13 @@
       else if (VR.input.pressed('action')) { player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
     }
     world.updateDynamic(dt);
+    VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
     updateCamera(dt);
     updateGps(dt);
     if (traffic) {
       const sw = VR.screen.w, sh = VR.screen.h, f = car || player;
       traffic.update(dt, f, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 },
-        car ? null : { x: player.x, y: player.y - 4 }, (v) => { v.honkT = 1.1; v.honkTxt = BOCINAS[(Math.random() * BOCINAS.length) | 0]; });
+        car ? null : { x: player.x, y: player.y - 4 }, (v) => { v.honkT = 1.1; v.honkTxt = BOCINAS[(Math.random() * BOCINAS.length) | 0]; VR.audio.horn(v.x, v.y, v.type === 'moto' ? 'moto' : v.spec.mass > 1.3 ? 'big' : 'car'); });
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
     if (peds) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
@@ -219,7 +221,7 @@
   VR.input.initTouch($('joyZone'), $('joy'), $('knob'), document.querySelectorAll('#btns .tb'));
   VR.input.vibrate = settings.vib;
   let lastSource = VR.input.source;
-  VR.input.onAny = () => { hideOverlay(); if (VR.input.source !== lastSource) { lastSource = VR.input.source; applyTouch(); } };
+  VR.input.onAny = () => { VR.audio.resume(); hideOverlay(); if (VR.input.source !== lastSource) { lastSource = VR.input.source; applyTouch(); } };
   VR.input.onPad = (name, on) => { $('padInfo').textContent = on ? '🎮 Conectado: ' + name : 'Control desconectado.'; toast(on ? '🎮 Control conectado' : 'Control desconectado'); applyTouch(); };
 
   // ---------- portada / menú / pantalla completa ----------
@@ -246,7 +248,7 @@
   seg('segHora', 'hora', () => {});
   seg('segPj', 'pj', () => player.setLook(settings.pj));
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
-  $('optSnd').checked = emer ? emer.sound : true; $('optSnd').onchange = (e) => { if (emer) emer.sound = e.target.checked; VR.store.set('snd', e.target.checked); };
+  $('optSnd').checked = emer ? emer.sound : true; $('optSnd').onchange = (e) => { if (emer) emer.sound = e.target.checked; VR.audio.setOn(e.target.checked); VR.store.set('snd', e.target.checked); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
   $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
 

@@ -1,0 +1,74 @@
+// Sonidos sintetizados (04/11/2026): bocinas, motor del vehículo que manejás, choques, explosiones, agua,
+// pasos de los que corren y el "¡ay!" de los golpes, todo con WebAudio (sin archivos). Un solo contexto de audio
+// que también usa la sirena. El volumen baja con la distancia a la cámara. Menú → Sonido lo apaga todo.
+'use strict';
+VR.audio = {
+  ac: null, master: null, on: true, failed: false, noiseBuf: null,
+  ctx() {
+    if (this.ac || this.failed) return this.ac;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; this.ac = new AC();
+      this.master = this.ac.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.ac.destination);
+      const n = this.ac.sampleRate, b = this.ac.createBuffer(1, n, n), d = b.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      this.noiseBuf = b;
+    } catch (e) { this.failed = true; }
+    return this.ac;
+  },
+  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; },
+  resume() { const ac = this.ctx(); if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); },
+  // volumen según la distancia (px del mapa) al punto que mira la cámara
+  near(x, y, far = 520) { const c = VR.audioCam; if (!c) return 1; const d = Math.hypot(x - c.x, y - c.y); return Math.max(0, 1 - d / far); },
+  tone(f, dur, { type = 'square', vol = 0.08, at = 0, f2 = null, lp = 2600 } = {}) {
+    const ac = this.ctx(); if (!ac || !this.on || vol <= 0.001) return;
+    const t = ac.currentTime + at, o = ac.createOscillator(), g = ac.createGain(), fl = ac.createBiquadFilter();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    fl.type = 'lowpass'; fl.frequency.value = lp;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.012); g.gain.setValueAtTime(vol, t + Math.max(0.02, dur - 0.04)); g.gain.linearRampToValueAtTime(0, t + dur);
+    o.connect(fl); fl.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.05);
+  },
+  noise(dur, { vol = 0.1, lp = 1200, hp = 0, at = 0, decay = true } = {}) {
+    const ac = this.ctx(); if (!ac || !this.on || vol <= 0.001) return;
+    const t = ac.currentTime + at, s = ac.createBufferSource(), g = ac.createGain(), fl = ac.createBiquadFilter();
+    s.buffer = this.noiseBuf; s.loop = true; fl.type = 'lowpass'; fl.frequency.value = lp;
+    let last = fl; if (hp) { const h = ac.createBiquadFilter(); h.type = 'highpass'; h.frequency.value = hp; fl.connect(h); last = h; }
+    g.gain.setValueAtTime(vol, t); if (decay) g.gain.exponentialRampToValueAtTime(0.0008, t + dur); else g.gain.setValueAtTime(vol, t + dur);
+    s.connect(fl); last.connect(g); g.connect(this.master); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+  },
+  // ---- efectos ----
+  horn(x, y, kind = 'car') { // bocina: dos tonos juntos (las motos más agudas)
+    const v = this.near(x, y) * 0.07; if (v <= 0) return;
+    const [a, b] = kind === 'moto' ? [520, 655] : kind === 'big' ? [220, 277] : [370, 466];
+    this.tone(a, 0.28, { vol: v, lp: 1800 }); this.tone(b, 0.28, { vol: v * 0.8, lp: 1800 });
+  },
+  crash(x, y, imp) { const v = this.near(x, y) * Math.min(0.35, imp / 900); if (v <= 0.01) return; this.noise(0.25 + imp / 1500, { vol: v, lp: 900 + imp * 2 }); this.tone(90, 0.12, { type: 'sine', vol: v * 0.8, f2: 45 }); if (imp > 160) this.noise(0.18, { vol: v * 0.35, lp: 6000, hp: 2500, at: 0.03 }); },
+  boom(x, y) { const v = this.near(x, y, 900) * 0.5; if (v <= 0.01) return; this.noise(1.6, { vol: v, lp: 700 }); this.tone(70, 0.8, { type: 'sine', vol: v, f2: 28 }); this.noise(0.5, { vol: v * 0.3, lp: 4000, at: 0.05 }); },
+  ouch(x, y) { const v = this.near(x, y, 300) * 0.05; if (v <= 0) return; const f = 300 + Math.random() * 180; this.tone(f, 0.18, { type: 'triangle', vol: v, f2: f * 0.6 }); },
+  // ---- sonidos continuos: motor y agua ----
+  loop(name) {
+    const ac = this.ctx(); if (!ac) return null;
+    this.loops = this.loops || {};
+    if (this.loops[name]) return this.loops[name];
+    const g = ac.createGain(); g.gain.value = 0; g.connect(this.master);
+    let L;
+    if (name === 'water') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.6; s.connect(f); f.connect(g); s.start(); L = { g }; }
+    else { // motor: diente de sierra + sub, por un pasabajos; la frecuencia sigue a las vueltas
+      const o = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(); o.type = 'sawtooth'; o2.type = 'square'; f.type = 'lowpass'; f.frequency.value = 600; f.Q.value = 2;
+      const g2 = ac.createGain(); g2.gain.value = 0.4; o.connect(f); o2.connect(g2); g2.connect(f); f.connect(g); o.start(); o2.start(); L = { g, o, o2, f };
+    }
+    return (this.loops[name] = L);
+  },
+  // motor del vehículo que manejás: kind car|moto|big|pati|horse
+  engine(car, dt) {
+    const L = this.loop('engine'); if (!L) return;
+    const t = this.ac.currentTime;
+    if (!car || !this.on || car.wreck || car.model === 'karumbe' || car.model === 'pati') { L.g.gain.setTargetAtTime(car && car.model === 'pati' && this.on ? 0.012 : 0, t, 0.08); if (car && car.model === 'pati') { L.o.frequency.setTargetAtTime(300 + Math.abs(car.v) * 3, t, 0.05); L.f.frequency.setTargetAtTime(1400, t, 0.1); } return; }
+    const moto = car.type === 'moto', big = car.spec.mass > 1.3, s = Math.min(1, Math.abs(car.v) / (car.spec.max.road || 240));
+    const gear = moto ? 4 : 5, gp = (s * gear) % 1, rpm = 0.25 + (s < 0.05 ? 0 : 0.35 + gp * 0.6) * (0.6 + s * 0.4);
+    const base = moto ? 46 : big ? 28 : 34, f = base + rpm * (moto ? 120 : 80);
+    L.o.frequency.setTargetAtTime(f, t, 0.04); L.o2.frequency.setTargetAtTime(f / 2, t, 0.04);
+    L.f.frequency.setTargetAtTime(380 + rpm * (moto ? 1600 : 1100), t, 0.06);
+    L.g.gain.setTargetAtTime(0.035 + rpm * 0.03, t, 0.06);
+  },
+  water(on) { const L = this.loop('water'); if (L) L.g.gain.setTargetAtTime(on && this.on ? 0.05 : 0, this.ac.currentTime, 0.05); },
+};

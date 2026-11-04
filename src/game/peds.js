@@ -3,8 +3,9 @@
 // enojada, y te contesta en jopara si la saludás.
 'use strict';
 VR.PED_TALK = {
-  greet: ['¡Iporã, ha nde?', "¡Mba'éichapa, che ra'a!", 'Hína, ko hakuete...', '¡Ajépa ndera!', 'Jaha ñamba\'apo', '¡Upéicha!'],
-  flee: ['¡Epa!', '¡Cuidado, che!', '¡Ndera!', '¡Eñangarekóke!', '¡Despacio!'],
+  greet: ['¡Iporã, ha nde?', "¡Mba'éichapa, che ra'a!", 'Hína, ko hakuete...', '¡Ajépa!', 'Jaha ñamba\'apo', '¡Upéicha!'],
+  flee: ['¡Epa!', '¡Cuidado, che!', '¡Eñangarekóke!', '¡Despacio!'],
+  reckless: ["¡Upei oje'e lo mitã omanoreiha!", '¡Despacio, loco!', '¡Vas a matar a alguien!', "¡Upei oje'e lo mitã omanoreiha!"],
   hit: ['¡Ay, che!', '¡Mirá por dónde andás!', "¡Mba'e piko!", '¡Ay, mi espalda!'],
 };
 VR.Peds = class {

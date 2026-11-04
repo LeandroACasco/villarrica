@@ -12,11 +12,11 @@ VR.Siren = class {
   ensure() {
     if (this.ac || this.failed) return !!this.ac;
     try {
-      const AC = window.AudioContext || window.webkitAudioContext; this.ac = new AC();
+      this.ac = VR.audio.ctx(); if (!this.ac) throw new Error('sin audio');
       this.osc = this.ac.createOscillator(); this.osc.type = 'sawtooth';
       this.lp = this.ac.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 1800;
       this.gain = this.ac.createGain(); this.gain.gain.value = 0;
-      this.osc.connect(this.lp); this.lp.connect(this.gain); this.gain.connect(this.ac.destination); this.osc.start();
+      this.osc.connect(this.lp); this.lp.connect(this.gain); this.gain.connect(VR.audio.master); this.osc.start();
     } catch (e) { this.failed = true; return false; }
     return true;
   }
@@ -57,8 +57,16 @@ VR.Emergency = class {
   damage(c, imp, o) {
     const hurt = (v, k) => { if (v.wreck) return; const m = (v.spec.mass > 2 ? 0.45 : 1) * (v.unit ? 0.35 : 1); v.hp = (v.hp ?? 100) - (imp - 50) * 0.13 * k * m; if (v.hp <= 0 && !v.burning) this.ignite(v); };
     hurt(c, 1); if (o && o.spec) hurt(o, 0.8);
+    VR.audio.crash(c.x, c.y, imp);
+    if (c.driven && imp > 110) this.reckless(c.x, c.y);
     if (c.driven && o && o.spec && o.spec.emer === 'policia') this.crime('choque_policia', 1, c.x, c.y, true);
     if (c.driven && o && o.spec) o.hitByPlayer = this.t;
+  }
+  // la gente que está cerca te reta cuando manejás como loco
+  reckless(x, y) {
+    if ((this.cool.reck || 0) > this.t || !this.peds) return; let best = null, bd = 150;
+    for (const p of this.peds.list) { if (p.mode === 'down' || p.say) continue; const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = p; } }
+    if (best) { const L = VR.PED_TALK.reckless; best.say = { text: L[(this.rnd() * L.length) | 0], t: 2.6 }; this.cool.reck = this.t + 5; }
   }
   ignite(v) {
     v.burning = true; v.burnT = 0; v.hp = 0; this.burning.add(v);
@@ -70,7 +78,7 @@ VR.Emergency = class {
   explode(v) {
     v.burning = false; this.burning.delete(v); v.wreck = true; v.smolder = 40; v.siren = false;
     v.frames = VR.burntFrames(v.frames); v.rider = null; v.vx *= 0.2; v.vy *= 0.2;
-    this.wrecks.push({ v, t: 0 }); this.flash = 0.25;
+    this.wrecks.push({ v, t: 0 }); this.flash = 0.25; VR.audio.boom(v.x, v.y);
     for (let i = 0; i < 46; i++) { const a = this.rnd() * Math.PI * 2, s = 40 + this.rnd() * 160; this.fx.push({ k: i < 30 ? 'fire' : 'debris', x: v.x, y: v.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5 + this.rnd() * 0.7, max: 1.2, r: 3 + this.rnd() * 5 }); }
     for (let i = 0; i < 18; i++) this.fx.push({ k: 'smoke', x: v.x + (this.rnd() - 0.5) * 20, y: v.y + (this.rnd() - 0.5) * 20, vx: (this.rnd() - 0.5) * 30, vy: -10 - this.rnd() * 20, life: 1.5 + this.rnd() * 1.5, max: 3, r: 6 + this.rnd() * 8 });
     for (let i = 0; i < 6; i++) this.world.mark(v.x + (this.rnd() - 0.5) * 14, v.y + (this.rnd() - 0.5) * 14, 'rgba(20,16,12,.7)');
@@ -80,7 +88,7 @@ VR.Emergency = class {
       const k = 1 - d / 60; o.hp = (o.hp ?? 100) - 75 * k; if (o.hp <= 0 && !o.burning && !o.wreck) this.ignite(o);
       if (o.vx === undefined) { o.vx = 0; o.vy = 0; o.w = 0; } o.vx += (o.x - v.x) / (d || 1) * 160 * k / o.mass; o.vy += (o.y - v.y) / (d || 1) * 160 * k / o.mass; o.w += (this.rnd() - 0.5) * 4 * k; this.world.wake(o, 200);
     }
-    if (this.peds) for (const p of this.peds.list) { const d = Math.hypot(p.x - v.x, p.y - v.y); if (d < 55 && p.mode !== 'down') { p.mode = 'down'; p.t = 2.5; p.vx = (p.x - v.x) / (d || 1) * 120; p.vy = (p.y - v.y) / (d || 1) * 120; } }
+    if (this.peds) for (const p of this.peds.list) { const d = Math.hypot(p.x - v.x, p.y - v.y); if (d < 55 && p.mode !== 'down') { p.mode = 'down'; p.t = 2.5; p.vx = (p.x - v.x) / (d || 1) * 120; p.vy = (p.y - v.y) / (d || 1) * 120; if (d < 38) { p.injured = true; p.t = 40; this.dispatch('ambulancia', p); } } }
     if (this.player && !this.inCar && Math.hypot(this.player.x - v.x, this.player.y - v.y) < 45) this.player.say('¡Ay, Dios mío!', 1.6);
     if (v.driven) { this.onWasted(); return; }
     if (this.t - (v.hitByPlayer ?? -99) < 12 || v.byPlayer) this.crime('explosion', 1, v.x, v.y);
@@ -105,8 +113,8 @@ VR.Emergency = class {
     if (this.level > before) { this.toast('🚨 ' + '★'.repeat(this.level) + ' · ' + (this.level >= 4 ? '¡Te busca toda la Policía!' : this.level >= 2 ? 'La Policía te está buscando' : 'Alguien llamó al 911')); if (VR.input.buzz) VR.input.buzz(40); }
   }
   pedHit(p, speed) {
-    this.crime('atropello', 1, p.x, p.y);
-    if (speed > 105) { p.injured = true; p.t = 40; this.dispatch('ambulancia', p); }
+    this.crime('atropello', 1, p.x, p.y); VR.audio.ouch(p.x, p.y);
+    if (speed > 55) { p.injured = true; p.t = 40; this.dispatch('ambulancia', p); }
   }
   stolen(v) {
     const e = v.spec.emer;
@@ -147,37 +155,53 @@ VR.Emergency = class {
     v.unit = u; this.world.addBox(v); this.units.push(u);
     return u;
   }
+  // Manejo de las unidades: siguen el camino del GPS por el medio de la calle (como el tránsito, sin trabarse
+  // contra las paredes), frenan en las esquinas y para no chocar, y esquivan por el costado si algo las tapa.
   drive(u, dt, tx, ty, arrive, ram) {
     const v = u.v, d0 = Math.hypot(tx - v.x, ty - v.y);
     u.repath -= dt;
-    if (u.repath <= 0 && d0 > 110) { u.repath = 1.6 + this.rnd() * 0.6; u.path = this.gps && this.gps.ok ? this.trim(this.gps.route(v.x, v.y, tx, ty, false), tx, ty) : null; u.pi = 1; }
-    let px = tx, py = ty;
-    if (u.path && d0 > 110) {
-      const P = u.path, n = P.length / 2;
-      for (;;) { // pasar al punto siguiente si ya llegó o si ya lo dejó atrás
-        if (u.pi >= n - 1) break;
-        const ax = P[u.pi * 2], ay = P[u.pi * 2 + 1], bx = P[u.pi * 2 + 2], by = P[u.pi * 2 + 3];
-        const da = Math.hypot(ax - v.x, ay - v.y), past = (v.x - ax) * (bx - ax) + (v.y - ay) * (by - ay) > 0;
-        if (da < 30 || (past && da < 90)) u.pi++; else break;
-      }
-      px = u.path[u.pi * 2]; py = u.path[u.pi * 2 + 1];
+    if (!u.path || (u.repath <= 0 && (ram || Math.hypot(tx - u.pt[0], ty - u.pt[1]) > 30))) {
+      let P = this.gps && this.gps.ok ? this.trim(this.gps.route(v.x, v.y, tx, ty, false), tx, ty) : null;
+      if (!P) P = [v.x, v.y, tx, ty];
+      P = Array.from(P); P[0] = v.x; P[1] = v.y;
+      const cum = [0]; for (let k = 2; k < P.length; k += 2) cum.push(cum[cum.length - 1] + Math.hypot(P[k] - P[k - 2], P[k + 1] - P[k - 1]));
+      u.path = P; u.cum = cum; u.s = 0; u.pt = [tx, ty]; u.repath = ram ? 1.3 : 5;
     }
-    const want = Math.atan2(px - v.x, -(py - v.y));
+    const P = u.path, cum = u.cum, total = cum[cum.length - 1];
+    const at = (s) => { s = Math.max(0, Math.min(total, s)); let k = 1; while (k < cum.length - 1 && cum[k] < s) k++; const t = (s - cum[k - 1]) / ((cum[k] - cum[k - 1]) || 1); const x0 = P[k * 2 - 2], y0 = P[k * 2 - 1], x1 = P[k * 2], y1 = P[k * 2 + 1], L = Math.hypot(x1 - x0, y1 - y0) || 1; return [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, (x1 - x0) / L, (y1 - y0) / L]; };
+    const cruise = u.kind === 'bomberos' ? 118 : u.kind === 'ambulancia' ? 150 : 172, left = total - u.s;
+    let target = cruise;
+    if (left < arrive) target = 0; else target = Math.min(target, Math.max(28, (left - arrive) * 1.6));
+    const Lk = 18 + Math.abs(v.v) * 0.16;
+    const [cx0, cy0, ddx, ddy] = at(u.s + Lk), off = u.off || 0, cx = cx0 - ddy * off, cy = cy0 + ddx * off;
+    const want = Math.atan2(cx - v.x, -(cy - v.y));
     let d = want - v.a; d = Math.atan2(Math.sin(d), Math.cos(d));
-    let steer = VR.clamp(d * 2.4, -1, 1), throttle = Math.abs(d) > 1.5 ? 0.35 : 1, brake = false;
-    if (!ram && d0 < arrive * 2.2) throttle = Math.min(throttle, 0.4);
-    if (!ram && d0 < arrive) { throttle = 0; brake = true; }
-    if (Math.abs(d) > 2.4 && Math.abs(v.v) < 50) { throttle = -0.8; steer = -steer; } // está de espaldas: maniobra
-    if (ram && d0 < 220) throttle = Math.min(throttle, 0.7);
-    if (u.rev > 0) { u.rev -= dt; throttle = -1; steer = -Math.sign(d || 1); }
-    else if (throttle > 0.3) { // trabado: casi no se movió en el último rato → marcha atrás
-      u.stuck += dt;
-      if (!u.lp) u.lp = [v.x, v.y];
-      if (u.stuck > 0.9) { if (Math.hypot(v.x - u.lp[0], v.y - u.lp[1]) < 10) u.rev = 0.9; u.stuck = 0; u.lp = [v.x, v.y]; }
-    } else { u.stuck = 0; u.lp = null; }
-    v.physics(dt, throttle, steer, brake);
+    target *= Math.max(0.3, Math.cos(Math.min(1.5, Math.abs(d))));
+    // ¿algo adelante?
+    const fx = Math.sin(v.a), fy = -Math.cos(v.a);
+    let blocked = null;
+    for (let k = v.LEN / 2 + 3; k <= v.LEN / 2 + 8 + Math.max(0, v.v) * 0.3 && !blocked; k += 5) blocked = this.world.boxAt(v.x + fx * k, v.y + fy * k, v);
+    if (blocked && !(ram && blocked.driven)) {
+      target = Math.min(target, blocked.ai && blocked.ai.yield > 0 ? 40 : 8);
+      u.block = (u.block || 0) + dt;
+      if (u.block > 0.8 && !(u.dodge > 0)) { u.dodge = 1.8; u.side = -(u.side || 1); }
+      if (u.block > 3 && blocked.ai && this.traffic) { this.traffic.remove(blocked); u.block = 0; } // el del tránsito se fue por otro lado
+    } else u.block = 0;
+    if (u.dodge > 0) u.dodge -= dt;
+    const offT = u.dodge > 0 ? 11 * (u.side || 1) : 0;
+    u.off = off + VR.clamp(offT - off, -22 * dt, 22 * dt);
+    const turn = (u.kind === 'bomberos' ? 2.3 : 3.3) * dt;
+    if (Math.abs(v.v) > 2) v.a += VR.clamp(d, -turn, turn);
+    if (v.v < target) v.v = Math.min(target, v.v + (u.kind === 'bomberos' ? 120 : 190) * dt); else v.v = Math.max(target, v.v - 420 * dt);
+    if (v.v < 2 && target > 0 && Math.abs(d) > 0.3) v.a += VR.clamp(d, -turn * 0.5, turn * 0.5);
+    v.px = v.x; v.py = v.y; v.pa = v.a;
+    if (Math.hypot(cx - v.x, cy - v.y) < Lk * 1.9) u.s += Math.max(0, v.v) * dt;
+    v.x += Math.sin(v.a) * v.v * dt; v.y += -Math.cos(v.a) * v.v * dt;
+    v.vx = Math.sin(v.a) * v.v; v.vy = -Math.cos(v.a) * v.v; v.w = 0;
+    this.world.moveBox(v);
     return d0;
   }
+  halt(u, dt) { const v = u.v; v.px = v.x; v.py = v.y; v.pa = v.a; v.v = Math.max(0, v.v - 400 * dt); v.x += Math.sin(v.a) * v.v * dt; v.y -= Math.cos(v.a) * v.v * dt; v.vx = Math.sin(v.a) * v.v; v.vy = -Math.cos(v.a) * v.v; this.world.moveBox(v); }
   // corta el camino donde pasa más cerca del destino (el nodo más cercano puede quedar del otro lado)
   trim(P, tx, ty) {
     if (!P || P.length < 6) return P;
@@ -193,8 +217,10 @@ VR.Emergency = class {
   spawnCrew(u, role, n) {
     const v = u.v, rx = Math.cos(v.a), ry = Math.sin(v.a);
     for (let i = 0; i < n; i++) {
-      const side = i % 2 ? 1 : -1, x = v.x + rx * side * (v.WID / 2 + 6), y = v.y + ry * side * (v.WID / 2 + 6) + 4;
-      if (this.world.hits(x - 3, y - 3, x + 3, y)) continue;
+      const side = i % 2 ? 1 : -1, fx = Math.sin(v.a), fy = -Math.cos(v.a), W = this.world;
+      const tries = [[rx * side * (v.WID / 2 + 6), ry * side * (v.WID / 2 + 6)], [-rx * side * (v.WID / 2 + 6), -ry * side * (v.WID / 2 + 6)], [-fx * (v.LEN / 2 + 6), -fy * (v.LEN / 2 + 6)], [fx * (v.LEN / 2 + 6), fy * (v.LEN / 2 + 6)], [0, 0]];
+      let x = v.x, y = v.y + 4;
+      for (const [ox, oy] of tries) { const X = v.x + ox, Y = v.y + oy + 4; if (!W.hits(X - 3, Y - 3, X + 3, Y)) { x = X; y = Y; break; } }
       const L = this.looks[role]; const c = { x, y, px: x, py: y, dir: 'down', anim: 0, moving: false, run: false, role, unit: u, look: L[(this.rnd() * L.length) | 0], say: null, spray: 0, t: 0 };
       u.crew.push(c); this.crew.push(c);
     }
@@ -263,22 +289,22 @@ VR.Emergency = class {
         if (u.task === 'chase') {
           const d = Math.hypot(tgt.x - v.x, tgt.y - v.y);
           if (!car && d < 95 && Math.abs(v.v) < 60) { // te bajaste: se bajan a buscarte
-            v.physics(dt, 0, 0, true);
+            this.halt(u, dt);
             if (!u.crew.length && !u.out) { u.out = true; this.spawnCrew(u, 'poli', 2); for (const c of u.crew) c.say = { text: VR.POLI_DICE[(this.rnd() * VR.POLI_DICE.length) | 0], t: 1.8 }; }
-          } else if (u.crew.length && d < 140 && !car) v.physics(dt, 0, 0, true);
+          } else if (u.crew.length && d < 140 && !car) this.halt(u, dt);
           else this.drive(u, dt, tgt.x, tgt.y, 30, true);
           if (car && d < v.LEN / 2 + car.LEN / 2 + 8 && Math.abs(car.v) < 14) { u.pin = (u.pin || 0) + dt; if (u.pin > 2.2) { this.busted(); return; } } else u.pin = 0;
-        } else if (u.task === 'regroup') { v.physics(dt, 0, 0, true); if (!u.crew.length) u.task = 'leave'; }
+        } else if (u.task === 'regroup') { this.halt(u, dt); if (!u.crew.length) u.task = 'leave'; }
       } else if (u.task === 'goto') {
         const T = u.target, alive = T && (u.kind === 'bomberos' ? (T.burning || (T.wreck && T.smolder > 0)) : T.injured && this.peds.list.includes(T));
         if (!alive) { u.target = u.queue.shift() || null; if (!u.target) u.task = u.crew.length ? 'regroup' : 'leave'; continue; }
         const d = this.drive(u, dt, T.x, T.y, u.kind === 'bomberos' ? 95 : 50, false);
         if (d < (u.kind === 'bomberos' ? 125 : 70) && Math.abs(v.v) < 30) { u.task = 'work'; this.spawnCrew(u, 'bombero', u.kind === 'bomberos' ? 2 : 1); }
       } else if (u.task === 'work') {
-        v.physics(dt, 0, 0, true);
+        this.halt(u, dt);
         const T = u.target, done = !T || (u.kind === 'bomberos' ? !T.burning && !(T.wreck && T.smolder > 0) : !T.injured);
         if (done) { u.target = u.queue.shift() || null; u.task = u.target ? 'goto' : 'regroup'; if (u.target && !u.crew.length) u.task = 'goto'; }
-      } else if (u.task === 'regroup') { v.physics(dt, 0, 0, true); if (!u.crew.length) { u.task = 'leave'; } }
+      } else if (u.task === 'regroup') { this.halt(u, dt); if (!u.crew.length) { u.task = 'leave'; } }
       if (u.task === 'leave') {
         v.siren = false;
         if (!u.away) u.away = this.spawnPoint(700, 1100) || [v.x + 800, v.y];
@@ -308,8 +334,8 @@ VR.Emergency = class {
       } else { // bomberos y paramédicos
         const T = u.target;
         if ((u.task === 'work' || u.task === 'goto') && T) {
-          const d = Math.hypot(T.x - c.x, T.y - c.y), stop = u.kind === 'bomberos' ? 26 : 10;
-          if (d > stop) this.walk(c, dt, T.x + (c === u.crew[0] ? -1 : 1) * (u.kind === 'bomberos' ? 18 : 6), T.y + 8, 75);
+          const d = Math.hypot(T.x - c.x, T.y - c.y), stop = u.kind === 'bomberos' ? 28 : 15;
+          if (d > stop) this.walk(c, dt, T.x + (c === u.crew[0] ? -1 : 1) * (u.kind === 'bomberos' ? 18 : 6), T.y + 4, 75);
           else {
             c.moving = false; c.px = c.x; c.py = c.y;
             const dx = T.x - c.x, dy = T.y - c.y; c.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
@@ -333,6 +359,11 @@ VR.Emergency = class {
         if (this.peds && this.rnd() < 0.3) for (const q of this.peds.list) if (q.mode !== 'down' && Math.abs(q.x - p.x) < 5 && Math.abs(q.y - 4 - p.y) < 7) { q.mode = 'down'; q.t = 1.4; q.vx = p.vx * 0.3; q.vy = p.vy * 0.3; }
       }
     }
+    // manejar rápido por la vereda: la gente te reta
+    if (car && Math.abs(car.v) > 85) { const tt = this.world.get(Math.floor(car.x / VR.TILE), Math.floor(car.y / VR.TILE)); if (tt === VR.T.SIDEWALK || tt === VR.T.PAVING || tt === VR.T.CHECKER) this.reckless(car.x, car.y); }
+    // agua que se escucha: la tuya o la de los bomberos trabajando cerca
+    const spraying = (car && car.model === 'bomba' && input.down('action') && this.holdT > 0.22) || this.crew.some((c) => c.role === 'bombero' && c.unit.kind === 'bomberos' && c.unit.task === 'work' && !c.moving && Math.hypot(c.x - focus.x, c.y - focus.y) < 300);
+    VR.audio.water(spraying);
     // tu camión bomba: cañón de agua
     if (car && car.model === 'bomba' && input.down('action') && this.holdT > 0.22) {
       const fx = Math.sin(car.a), fy = -Math.cos(car.a);
