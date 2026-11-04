@@ -527,6 +527,7 @@ VR.decorTop = {
           const on = 0.75 + 0.25 * Math.sin(tw + k * 1.7 + y);
           g.fillStyle = `rgba(255,236,170,${0.25 * on})`; g.fillRect(Math.round(x) - 2, Math.round(yy) - 1, 5, 5);
           g.fillStyle = '#fff7d8'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
+          if (VR.night && k % 4 === 2) VR.night.add(x, yy + 6, 24, '255,224,150', 0.4);
         }
       }
     } }];

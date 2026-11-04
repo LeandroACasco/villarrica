@@ -4,7 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true) };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real') };
 
   VR.screen.init($('game'));
   const prueba = /[?&]prueba\b/.test(location.search);
@@ -24,6 +24,7 @@
   const WALK_BASE = 270, DRIVE_BASE = 420;
   const traffic = prueba ? null : new VR.Traffic(world, { max: 34, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
+  const night = VR.night = new VR.Night(world);
   const ME = { shirt: ['#d23c2c', '#9f2a20'], head: '#2a1b12' }; // así se ve el jugador arriba de la moto
   const sc = saved && saved.car;
   if (sc) {
@@ -145,9 +146,12 @@
     world.collectTall(cx, cy, sw, sh, tall);
     if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => player.draw(c, cx, cy, a) });
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
-    for (const c of world.carsIn(cx - 40, cy - 40, cx + sw + 40, cy + sh + 40, [])) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
+    const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
+    for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
+    night.update(Math.min(0.1, dt || 0.016), settings.hora);
+    night.render(ctx, cx, cy, sw, sh, vis);
     for (const l of world.labels) {
       const lx = l.x - cx, ly = l.y - cy;
       if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, l.small ? '#ffe9a8' : '#fff6d8', { center: true, shadow: '#1a1a1e', size: l.small ? 7 : 8 });
@@ -214,6 +218,7 @@
     paint();
   };
   seg('segTouch', 'touch', applyTouch);
+  seg('segHora', 'hora', () => {});
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
   $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
