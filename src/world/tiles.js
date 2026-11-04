@@ -86,6 +86,19 @@ VR.canopy = (() => {
     if (c) return c;
     const S = r * 2 + 3;
     c = VR.canvas(S, S);
+    if (pal === 4) { // palmera: hojas largas en estrella
+      const x = c.getContext('2d'), cx = r + 1, cy = r + 1;
+      for (let k = 0; k < 9; k++) {
+        const a = k / 9 * Math.PI * 2 + 0.3, len = r * (0.85 + 0.15 * VR.hash(k, r, 7));
+        for (let t = 0; t <= len; t += 0.5) {
+          const px = cx + Math.cos(a) * t, py = cy + Math.sin(a) * t + (t / len) ** 2 * 3;
+          x.fillStyle = t < len * 0.5 ? '#4d8a32' : (k % 2 ? '#3d7228' : '#62a03c');
+          x.fillRect(Math.round(px), Math.round(py), 2, 2);
+        }
+      }
+      x.fillStyle = '#6e4a24'; x.fillRect(cx - 1, cy - 1, 3, 3);
+      VR.gfx.outline(c, '#1d2a14'); cache.set(key, c); return c;
+    }
     const x = c.getContext('2d'), P = PAL[pal % PAL.length];
     for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
       const q = dx * dx + dy * dy;

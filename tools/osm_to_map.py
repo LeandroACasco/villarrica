@@ -37,7 +37,7 @@ BARRIO_NAMES = {'Estacion': 'Estación', 'Santa Lucia': 'Santa Lucía'}
 # lugares destacados: se les pone cartel y colores propios
 LANDMARKS = {
     'Catedral de Villarrica': {'floors': 3, 'roof': 'teja', 'roofc': 1, 'wallc': 8, 'label': 'Catedral'},
-    'Municipalidad de Villarrica': {'floors': 2, 'roof': 'losa', 'roofc': 0, 'wallc': 9, 'label': 'Municipalidad'},
+    'Municipalidad de Villarrica': {'floors': 2, 'roof': 'losa', 'roofc': 0, 'wallc': 10, 'label': 'Municipalidad'},
     'Gobernacion del Guaira': {'floors': 2, 'roof': 'losa', 'roofc': 0, 'wallc': 9, 'label': 'Gobernación'},
     'Palacio de Justicia': {'floors': 2, 'roof': 'losa', 'roofc': 1, 'wallc': 4, 'label': 'Palacio de Justicia'},
     'Terminal de Omnibus': {'floors': 1, 'roof': 'chapa', 'roofc': 0, 'wallc': 4, 'label': 'Terminal de Ómnibus'},
@@ -458,6 +458,52 @@ def main(src, out, preview=None):
         if p['named']:
             labels.append({'text': p['name'], 'x': int(cx * 16 + 8), 'y': int(y0b * 16 + (24 if is_park else -4))})
 
+    # ---------- Municipalidad: manzana arbolada con el edificio en el medio (vista satelital, 03/11/2026) ----------
+    # Edificio rectangular de dos pisos, techos planos con borde de teja, dos pórticos con frontón hacia el este
+    # (el principal al norte, el del Teatro Municipal al sur), jardín con palmeras y busto frente a la entrada.
+    special = {}
+    muni = next((i for i, b in enumerate(buildings) if b['tags'].get('name') == 'Municipalidad de Villarrica'), None)
+    if muni is not None and (bid == muni + 1).any():
+        ys, xs = np.nonzero(bid == muni + 1)
+        bx0, bx1, by0, by1 = int(xs.min()), int(xs.max()), int(ys.min()), int(ys.max())
+        roadlike = np.isin(tiles, (ROAD, STONE, DIRTROAD, SIDEWALK))
+        rect = np.zeros_like(roadlike); rect[by0:by1 + 1, bx0:bx1 + 1] = True; rect &= ~roadlike
+        bid[rect] = muni + 1; tiles[rect] = BUILDING
+        # la manzana: relleno desde el edificio hasta las veredas
+        block = np.zeros_like(roadlike)
+        from collections import deque
+        q = deque([(bx0, by0)]); block[by0, bx0] = True; n_ = 0
+        while q and n_ < 60000:
+            x, y = q.popleft(); n_ += 1
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx_, ny_ = x + dx, y + dy
+                if 0 <= nx_ < W and 0 <= ny_ < H and not block[ny_, nx_] and not roadlike[ny_, nx_]:
+                    block[ny_, nx_] = True; q.append((nx_, ny_))
+        yard = block & ~rect
+        other = yard & (bid > 0)
+        bid[other] = 0
+        tiles[yard] = GRASS
+        area_names.append('Municipalidad de Villarrica'); area[yard] = len(area_names)
+        bh = by1 - by0 + 1
+        y1p, y2p = by0 + int(bh * 0.22), by0 + int(bh * 0.82)   # pórtico principal y del teatro
+        gy_, gx_ = np.mgrid[0:H, 0:W]
+        apron = yard & (gx_ > bx1) & (gx_ <= bx1 + 5) & (gy_ >= by0 - 1) & (gy_ <= by1 + 1)
+        paths = yard & (gx_ > bx1) & ((np.abs(gy_ - y1p) <= 1) | (np.abs(gy_ - y2p) <= 1))
+        tiles[apron | paths] = PAVING
+        # canteros con flores frente a la entrada (pasto dentro del sector de baldosas)
+        for yy in (y1p - 4, y1p + 4):
+            tiles[yy - 1:yy + 1, bx1 + 7:bx1 + 11] = GRASS
+        for k, (px_, py_) in enumerate(((bx1 + 7, y1p - 4), (bx1 + 10, y1p - 4), (bx1 + 7, y1p + 4), (bx1 + 10, y1p + 4))):
+            tree_at[py_, px_] = True; trees.append((px_, py_, 10, 4))
+        cand = list(zip(*np.nonzero(yard & (tiles == GRASS))))
+        cand = [(x, y) for y, x in cand if not (bx1 < x < bx1 + 12 and y1p - 6 < y < y1p + 6)]
+        rnd.shuffle(cand)
+        plant(cand, 0.7, 2, lambda x, y: (x, y, rnd.randint(12, 16), rnd.choice([0, 0, 1, 1, 2, 3])))
+        decals.append({'kind': 'muni', 'x': bx0, 'y': by0, 'w': bx1 - bx0 + 1 + 6, 'h': bh, 'bw': bx1 - bx0 + 1, 'p1': y1p - by0, 'p2': y2p - by0})
+        tiles[y1p:y1p + 1, bx1 + 4:bx1 + 5] = MONUMENT  # pedestal del busto (sólido)
+        special['muni'] = muni + 1
+        print('Municipalidad: edificio %dx%d tiles, manzana %d tiles' % (bx1 - bx0 + 1, bh, int(yard.sum())))
+
     # ---------- árboles en montes y patios ----------
     busy = np.isin(tiles, (ROAD, STONE, DIRTROAD, SIDEWALK, BUILDING, WATER))
     busy = dilate(busy, 1)
@@ -476,6 +522,7 @@ def main(src, out, preview=None):
     remap = np.zeros(len(buildings) + 1, np.int32)
     remap[ids] = np.arange(1, len(ids) + 1)
     bid = remap[bid]
+    special = {k: int(remap[v]) for k, v in special.items()}
     bdata = []
     main_street = set(i + 1 for i, n in enumerate(names) if any(k in n for k in ('Mariscal López', 'General Díaz', 'Alejo García', 'Carlos Antonio López', 'Natalicio Talavera', 'Humaitá')))
     # caja de cada edificio de una sola pasada
@@ -530,7 +577,7 @@ def main(src, out, preview=None):
 
     # ---------- empaquetar ----------
     roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
-    meta = {'w': W, 'h': H, 'roads': roads, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
+    meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
             'spawn': spawn, 'nb': len(ids), 'nt': len(trees), 'bounds': [mnla, mnlo, mxla, mxlo], 'rot': round(ang, 3),
             'credit': '© colaboradores de OpenStreetMap (ODbL) · barrios: INE Paraguay'}
     js = json.dumps(meta, ensure_ascii=False).encode()

@@ -188,7 +188,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 500d2fd3 · 2026-11-03</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0c7a17a7 · 2026-11-03</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -642,6 +642,19 @@ VR.canopy = (() => {
     if (c) return c;
     const S = r * 2 + 3;
     c = VR.canvas(S, S);
+    if (pal === 4) { // palmera: hojas largas en estrella
+      const x = c.getContext('2d'), cx = r + 1, cy = r + 1;
+      for (let k = 0; k < 9; k++) {
+        const a = k / 9 * Math.PI * 2 + 0.3, len = r * (0.85 + 0.15 * VR.hash(k, r, 7));
+        for (let t = 0; t <= len; t += 0.5) {
+          const px = cx + Math.cos(a) * t, py = cy + Math.sin(a) * t + (t / len) ** 2 * 3;
+          x.fillStyle = t < len * 0.5 ? '#4d8a32' : (k % 2 ? '#3d7228' : '#62a03c');
+          x.fillRect(Math.round(px), Math.round(py), 2, 2);
+        }
+      }
+      x.fillStyle = '#6e4a24'; x.fillRect(cx - 1, cy - 1, 3, 3);
+      VR.gfx.outline(c, '#1d2a14'); cache.set(key, c); return c;
+    }
     const x = c.getContext('2d'), P = PAL[pal % PAL.length];
     for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
       const q = dx * dx + dy * dy;
@@ -871,10 +884,12 @@ VR.World = class {
         if (!id) { ty++; continue; }
         let top = ty; while (this.b(tx, top - 1) === id) top--;
         let bot = ty; while (this.b(tx, bot + 1) === id) bot++;
-        VR.drawBuildingColumn(g, this, tx, top, bot + 1, id);
+        if (!this.special || id !== this.special.muni) VR.drawBuildingColumn(g, this, tx, top, bot + 1, id);
         ty = bot + 1;
       }
     }
+    // 7) edificios dibujados a mano (lugares emblemáticos), encima de todo lo del piso
+    for (const d of idx.d) VR.decorOver[d.kind] && VR.decorOver[d.kind](g, d);
     g.restore();
     return { ground };
   }
@@ -910,7 +925,7 @@ VR.World = class {
 // ---------- paleta de edificios (los índices los usa tools/osm_to_map.py) ----------
 VR.BPAL = {
   walls: [[236, 222, 186], [230, 196, 140], [214, 164, 150], [176, 204, 214], [240, 236, 226], [190, 214, 170], [226, 182, 110], [200, 184, 214],
-    [246, 242, 230], [232, 230, 222]], // 8 = catedral, 9 = edificios públicos
+    [246, 242, 230], [232, 230, 222], [234, 156, 132]], // 8 = catedral, 9 = edificios públicos, 10 = Municipalidad (salmón)
   roofs: [
     [[178, 82, 52], [160, 70, 46], [190, 98, 60], [150, 60, 40], [200, 92, 58], [124, 52, 38]], // teja
     [[150, 156, 162], [124, 132, 140], [92, 110, 128], [176, 180, 186], [96, 140, 170], [62, 120, 86]], // chapa
@@ -1030,7 +1045,93 @@ VR.decor = {
     g.fillStyle = '#c9a54a'; g.fillRect(X + 12, Y + 22, 8, 4); // placa
   },
 };
+// ---------- Municipalidad de Villarrica (vista satelital y fotos de referencia, 03/11/2026) ----------
+// Edificio neoclásico de dos pisos color salmón con molduras crema; techos planos grises en franjas con borde de
+// teja; dos pórticos con frontón hacia el este (el principal con la escarapela y la bandera, y el del teatro).
+VR.decorOver = {
+  muni(g, d) {
+    const S = VR.TILE, X0 = d.x * S, Y0 = d.y * S, W = d.bw * S, H = d.h * S, FH = 36, RE = Y0 + H - FH;
+    const SAL = '#e99c82', SAL_D = '#c97a62', SAL_L = '#f4b8a0', CREAM = '#f2deae', CREAM_D = '#cdb582', TEJA = '#b5573c', TEJA_D = '#8e3f2b';
+    const GLASS = '#3a3f4c';
+    // techo: borde de teja y franjas de losa gris con parapetos crema
+    g.fillStyle = TEJA; g.fillRect(X0, Y0, W, RE - Y0);
+    for (let y = Y0 + 2; y < RE; y += 4) { g.fillStyle = TEJA_D; g.fillRect(X0, y, W, 1); }
+    const inset = 10, strips = 3, sw = (W - inset * 2) / strips;
+    for (let i = 0; i < strips; i++) {
+      const x = Math.round(X0 + inset + i * sw);
+      g.fillStyle = CREAM_D; g.fillRect(x, Y0 + inset - 2, Math.round(sw), RE - Y0 - inset * 2 + 4);
+      g.fillStyle = i === 1 ? '#c9c5bb' : '#b9b5ab'; g.fillRect(x + 2, Y0 + inset, Math.round(sw) - 4, RE - Y0 - inset * 2);
+      g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(x + 2, Y0 + inset, Math.round(sw) - 4, 2);
+    }
+    g.fillStyle = CREAM; g.fillRect(X0, Y0, W, 2); g.fillRect(X0, Y0, 2, RE - Y0); g.fillRect(X0 + W - 2, Y0, 2, RE - Y0);
+    // fachada sur (dos pisos): salmón, cornisa y faja crema, ventanas con arco, pilastras
+    g.fillStyle = CREAM; g.fillRect(X0, RE, W, 4); g.fillStyle = CREAM_D; g.fillRect(X0, RE + 4, W, 1);
+    g.fillStyle = SAL; g.fillRect(X0, RE + 5, W, FH - 5);
+    g.fillStyle = CREAM; g.fillRect(X0, RE + 19, W, 2);
+    g.fillStyle = SAL_D; g.fillRect(X0, Y0 + H - 3, W, 3);
+    for (let x = X0 + 6; x < X0 + W - 10; x += 16) {
+      g.fillStyle = CREAM; g.fillRect(x, RE + 5, 3, FH - 8);           // pilastra
+      for (const wy of [RE + 8, RE + 23]) {
+        g.fillStyle = CREAM; g.fillRect(x + 6, wy, 7, 10); g.fillStyle = GLASS; g.fillRect(x + 7, wy + 2, 5, 8);
+        g.fillStyle = CREAM; g.fillRect(x + 7, wy + 1, 5, 1);           // arco
+      }
+    }
+    g.fillStyle = SAL_L; g.fillRect(X0, RE + 5, 2, FH - 8);
+    // pórticos hacia el este: techo a dos aguas visto desde arriba, frontón y columnas dobles
+    const portico = (py, main) => {
+      const ph = main ? 80 : 56, px = X0 + W - 6, pw = 40, y = Y0 + py * S - ph / 2;
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(px + 4, y + 6, pw, ph);
+      // faldones
+      g.fillStyle = TEJA; g.fillRect(px, y, pw, ph / 2); g.fillStyle = TEJA_D; g.fillRect(px, y + ph / 2, pw, ph / 2);
+      for (let k = 0; k < pw; k += 4) { g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(px + k, y, 1, ph); }
+      g.fillStyle = '#d07056'; g.fillRect(px, y + ph / 2 - 1, pw, 2);  // cumbrera
+      // frontón (borde crema al este) y cornisas
+      g.fillStyle = CREAM; g.fillRect(px + pw - 4, y, 4, ph); g.fillRect(px, y, pw, 2); g.fillRect(px, y + ph - 2, pw, 2);
+      g.fillStyle = CREAM_D; g.fillRect(px + pw - 4, y + ph / 2 - 1, 4, 2);
+      // columnas dobles asomando debajo del borde este (vistas desde arriba)
+      for (let k = 6; k < ph - 4; k += 12) { g.fillStyle = '#fff3d2'; g.fillRect(px + pw, y + k, 4, 4); g.fillRect(px + pw, y + k + 5, 4, 4); g.fillStyle = CREAM_D; g.fillRect(px + pw + 3, y + k, 1, 9); }
+      // cara sur del pórtico (se ve en 3/4): dos pisos de columnas sobre fondo en sombra
+      g.fillStyle = SAL_D; g.fillRect(px, y + ph, pw + 4, 26);
+      for (let k = 2; k < pw; k += 7) { g.fillStyle = CREAM; g.fillRect(px + k, y + ph, 3, 26); g.fillStyle = CREAM_D; g.fillRect(px + k + 2, y + ph, 1, 26); }
+      g.fillStyle = CREAM; g.fillRect(px, y + ph + 12, pw + 4, 2); g.fillRect(px, y + ph, pw + 4, 2);
+      if (main) { // escudo en el frontón y escarapela del balcón
+        const ex = px + pw - 2, ey = y + ph / 2;
+        g.fillStyle = '#f7f3e8'; g.beginPath(); g.arc(ex, ey, 4, 0, Math.PI * 2); g.fill(); g.fillStyle = '#c8322a'; g.fillRect(ex - 1, ey - 2, 2, 4);
+        const rx = px + pw + 8, ry = y + ph / 2;
+        g.fillStyle = '#c8322a'; g.beginPath(); g.arc(rx, ry, 6, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#ffffff'; g.beginPath(); g.arc(rx, ry, 4, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#1f4fa8'; g.beginPath(); g.arc(rx, ry, 2, 0, Math.PI * 2); g.fill();
+      }
+    };
+    portico(d.p2, false);
+    portico(d.p1, true);
+  },
+};
 VR.decorTop = {
+  muni(d) { // bandera en el frontón principal (flamea) y busto frente a la entrada
+    const S = VR.TILE, X0 = d.x * S, W = d.bw * S, py = d.y * S + d.p1 * S;
+    const fx = X0 + W + 30, fy = py - 26;
+    return [{ sy: py + 30, draw(g) {
+      // mástil
+      g.fillStyle = '#1f1d1a'; g.fillRect(fx - 1, fy - 46, 3, 48); g.fillStyle = '#d8d4cc'; g.fillRect(fx, fy - 46, 1, 48);
+      // bandera: tres franjas que ondulan
+      const t = performance.now() / 260;
+      for (let i = 0; i < 18; i++) {
+        const o = Math.round(Math.sin(t + i * 0.45) * 1.5), x = fx + 2 + i;
+        g.fillStyle = '#d0302a'; g.fillRect(x, fy - 46 + o, 1, 4);
+        g.fillStyle = '#ffffff'; g.fillRect(x, fy - 42 + o, 1, 4);
+        g.fillStyle = '#2050a8'; g.fillRect(x, fy - 38 + o, 1, 4);
+      }
+    } }, { sy: py * 1 + 10, draw(g) {
+      // busto sobre pedestal salmón (frente a la entrada principal)
+      const X = (d.x + d.bw + 4) * S, Y = (d.y + d.p1) * S;
+      g.fillStyle = '#1f1d1a'; g.fillRect(X + 1, Y - 13, 14, 26);
+      g.fillStyle = '#e99c82'; g.fillRect(X + 2, Y - 4, 12, 16); g.fillStyle = '#f4b8a0'; g.fillRect(X + 2, Y - 4, 4, 16);
+      g.fillStyle = '#c97a62'; g.fillRect(X + 2, Y + 9, 12, 3);
+      g.fillStyle = '#7d7a74'; g.fillRect(X + 4, Y - 12, 8, 8); g.fillStyle = '#a19d95'; g.fillRect(X + 5, Y - 12, 3, 6);
+      g.fillStyle = '#5f5c56'; g.fillRect(X + 3, Y - 6, 10, 3);
+    } }];
+  },
   cancha(d) { // arcos (uno en cada punta)
     const S = VR.TILE, X = d.x * S, W = d.w * S, Y = d.y * S, H = d.h * S, cx = X + (W >> 1);
     return [Y + 4, Y + H - 4].map((gy) => ({ sy: gy, draw(g) {
@@ -1071,7 +1172,7 @@ VR.loadMap = async (url) => {
   for (let i = 0; i < meta.nt; i++) w.trees.push({ x: tr[i * 4], y: tr[i * 4 + 1], r: tr[i * 4 + 2], pal: tr[i * 4 + 3] });
   w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
   w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
-  w.roads = meta.roads || null;
+  w.roads = meta.roads || null; w.special = meta.special || {};
   w.buildIndex();
   return w;
 };
