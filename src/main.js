@@ -4,7 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real') };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico') };
 
   VR.screen.init($('game'));
   const prueba = /[?&]prueba\b/.test(location.search);
@@ -219,6 +219,7 @@
   };
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
+  seg('segPj', 'pj', () => player.setLook(settings.pj));
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
   $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };

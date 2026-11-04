@@ -547,5 +547,13 @@
       return f;
     } };
   };
-  VR.AV2_LEANDRO = { gender: 'm', skin: 1, hair: 'medio', hairColor: 0, beard: 'chivita', top: 'puffer', topColor: 3, topColor2: 13, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 };
+  // protagonista genérico (por defecto) y el equipo de Kiut Studio, para elegir en el menú
+  VR.AV2_TEAM = {
+    generico: ['Genérico', { gender: 'm', skin: 2, hair: 'degrade', hairColor: 0, top: 'remera', topColor: 1, topColor2: 6, print: true, bottom: 'jean', bottomColor: 1, shoes: 'zapatillas', shoesColor: 1 }],
+    leandro: ['Leandro', { gender: 'm', skin: 1, hair: 'medio', hairColor: 0, beard: 'chivita', top: 'puffer', topColor: 3, topColor2: 13, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 }],
+    sofia: ['Sofía', { gender: 'f', skin: 1, hair: 'onduladoFlequillo', hairColor: 0, top: 'sueter', topColor: 7, bottom: 'cargoShort', bottomColor: 14, shoes: 'zapatillas', shoesColor: 14 }],
+    deisy: ['Deisy', { gender: 'f', skin: 3, hair: 'largo', hairColor: 1, top: 'hoodieAbierto', topColor: 14, topColor2: 2, bottom: 'jean', bottomColor: 0, shoes: 'zapatillas', shoesColor: 3 }],
+    cinthia: ['Cinthia', { gender: 'f', skin: 0, hair: 'colitaLado', hairColor: 8, top: 'campera', topColor: 7, topColor2: 12, bottom: 'vestir', bottomColor: 3, shoes: 'zapatos' }],
+    nora: ['Nora', { gender: 'f', skin: 0, hair: 'ondulado', hairColor: 7, top: 'remera', topColor: 12, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 }],
+  };
 })(typeof VR !== 'undefined' ? VR : (window.VR = window.VR || {}));

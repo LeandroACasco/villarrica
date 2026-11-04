@@ -113,6 +113,7 @@
   dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(460px, 94vw); max-height: 92vh; }
   dialog::backdrop { background: rgba(0,0,0,.6); }
   .dlg { padding: 18px; display: flex; flex-direction: column; gap: 10px; overflow: auto; max-height: 90vh; touch-action: pan-y; }
+  .dlg > * { flex-shrink: 0; }
   .dlg h2 { margin: 0 0 2px; font-size: 17px; }
   .dlg h3 { margin: 10px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   .dlg p { margin: 0; color: var(--muted); font-size: 13px; }
@@ -125,6 +126,7 @@
   .seg button { flex: 1; background: var(--key); color: var(--text); border: none; padding: 9px 6px; font: 500 13px system-ui; cursor: pointer; }
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button.on { background: var(--accent); color: #111; }
+  #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
   kbd { background: var(--key); border-radius: 4px; padding: 1px 6px; font: 12px ui-monospace, monospace; }
@@ -175,6 +177,8 @@
     <h2>Menú</h2>
     <h3>Controles táctiles</h3>
     <div class="seg" id="segTouch"><button data-v="auto">Automático</button><button data-v="on">Mostrar</button><button data-v="off">Ocultar</button></div>
+    <h3>Personaje</h3>
+    <div class="seg" id="segPj"><button data-v="generico">Genérico</button><button data-v="leandro">Leandro</button><button data-v="sofia">Sofía</button><button data-v="deisy">Deisy</button><button data-v="cinthia">Cinthia</button><button data-v="nora">Nora</button></div>
     <h3>Hora del día</h3>
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
     <h3>Opciones</h3>
@@ -200,7 +204,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 431d868e · 2026-11-04</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 117e6e40 · 2026-11-04</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -1985,7 +1989,15 @@ VR.makeTestMap = () => {
       return f;
     } };
   };
-  VR.AV2_LEANDRO = { gender: 'm', skin: 1, hair: 'medio', hairColor: 0, beard: 'chivita', top: 'puffer', topColor: 3, topColor2: 13, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 };
+  // protagonista genérico (por defecto) y el equipo de Kiut Studio, para elegir en el menú
+  VR.AV2_TEAM = {
+    generico: ['Genérico', { gender: 'm', skin: 2, hair: 'degrade', hairColor: 0, top: 'remera', topColor: 1, topColor2: 6, print: true, bottom: 'jean', bottomColor: 1, shoes: 'zapatillas', shoesColor: 1 }],
+    leandro: ['Leandro', { gender: 'm', skin: 1, hair: 'medio', hairColor: 0, beard: 'chivita', top: 'puffer', topColor: 3, topColor2: 13, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 }],
+    sofia: ['Sofía', { gender: 'f', skin: 1, hair: 'onduladoFlequillo', hairColor: 0, top: 'sueter', topColor: 7, bottom: 'cargoShort', bottomColor: 14, shoes: 'zapatillas', shoesColor: 14 }],
+    deisy: ['Deisy', { gender: 'f', skin: 3, hair: 'largo', hairColor: 1, top: 'hoodieAbierto', topColor: 14, topColor2: 2, bottom: 'jean', bottomColor: 0, shoes: 'zapatillas', shoesColor: 3 }],
+    cinthia: ['Cinthia', { gender: 'f', skin: 0, hair: 'colitaLado', hairColor: 8, top: 'campera', topColor: 7, topColor2: 12, bottom: 'vestir', bottomColor: 3, shoes: 'zapatos' }],
+    nora: ['Nora', { gender: 'f', skin: 0, hair: 'ondulado', hairColor: 7, top: 'remera', topColor: 12, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 }],
+  };
 })(typeof VR !== 'undefined' ? VR : (window.VR = window.VR || {}));
 
 // ===== game/player.js =====
@@ -2090,7 +2102,7 @@ VR.Player = class {
   constructor(world, x, y) {
     this.world = world; this.x = this.px = x; this.y = this.py = y;
     this.dir = 'down'; this.anim = 0; this.moving = false; this.speed = 0;
-    this.sprites = VR.av2Lazy(VR.AV2_LEANDRO); this.run = false;
+    this.setLook(VR.store.get('pj', 'generico')); this.run = false;
     this.bubble = null;
     this.HW = 4; this.HH = 4; // caja de colisión en los pies
   }
@@ -2123,6 +2135,7 @@ VR.Player = class {
       else if (!dx) { for (const n of [-1, 1]) if (!box(this.x + n * 5, this.y + dy)) { this.x += n * Math.min(Math.abs(dy), 1); break; } }
     }
   }
+  setLook(key) { const t = VR.AV2_TEAM[key] || VR.AV2_TEAM.generico; this.look = key; this.sprites = VR.av2Lazy(t[1]); }
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
@@ -3288,7 +3301,7 @@ VR.showVehicleCard = (v) => {
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real') };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico') };
 
   VR.screen.init($('game'));
   const prueba = /[?&]prueba\b/.test(location.search);
@@ -3503,6 +3516,7 @@ VR.showVehicleCard = (v) => {
   };
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
+  seg('segPj', 'pj', () => player.setLook(settings.pj));
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
   $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };

@@ -99,7 +99,7 @@ VR.Player = class {
   constructor(world, x, y) {
     this.world = world; this.x = this.px = x; this.y = this.py = y;
     this.dir = 'down'; this.anim = 0; this.moving = false; this.speed = 0;
-    this.sprites = VR.av2Lazy(VR.AV2_LEANDRO); this.run = false;
+    this.setLook(VR.store.get('pj', 'generico')); this.run = false;
     this.bubble = null;
     this.HW = 4; this.HH = 4; // caja de colisión en los pies
   }
@@ -132,6 +132,7 @@ VR.Player = class {
       else if (!dx) { for (const n of [-1, 1]) if (!box(this.x + n * 5, this.y + dy)) { this.x += n * Math.min(Math.abs(dy), 1); break; } }
     }
   }
+  setLook(key) { const t = VR.AV2_TEAM[key] || VR.AV2_TEAM.generico; this.look = key; this.sprites = VR.av2Lazy(t[1]); }
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
