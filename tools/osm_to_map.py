@@ -520,6 +520,21 @@ def main(src, out, preview=None):
                 mx_ = int(row.max()) - 3
                 tiles[y1p - 1:y1p + 1, mx_:mx_ + 3] = MONUMENT
                 decals.append({'kind': 'mastiles', 'x': mx_, 'y': y1p - 1, 'w': 3, 'h': 2})
+                # "anfiteatro" (video de Leandro, 03/11/2026): gradas blancas de 3 escalones del lado oeste del sector
+                # de baldosas, mirando al este, a la Municipalidad; piso de cemento hundido; escenario bajo frente a la
+                # entrada; una fila de mástiles con banderas paraguayas del lado norte y guirnaldas por encima
+                pc_ = np.nonzero((area == pid).any(axis=0))[0]; Wp = int(pc_.max() - pc_.min() + 1)
+                ax0, ax1 = int(pc_.min() + 0.6 * Wp), mx_ - 2
+                ay0, ay1 = y1p - 6, y1p + 6
+                sx0 = ax1 - 2
+                box = (slice(ay0, ay1 + 1), slice(ax0, mx_))
+                tiles[box] = np.where(tiles[box] == MONUMENT, MONUMENT, PAVING)
+                trees[:] = [t for t in trees if not (ax0 - 1 <= t[0] <= mx_ + 3 and ay0 - 2 <= t[1] <= ay1 + 1)]
+                tiles[y1p - 3:y1p + 3, sx0 + 1:ax1 + 1] = MONUMENT  # escenario (sólido, bajito)
+                decals.append({'kind': 'anfiteatro', 'x': ax0, 'y': ay0, 'w': ax1 - ax0 + 1, 'h': ay1 - ay0 + 1, 'sx': sx0 - ax0, 'sy': y1p - 3 - ay0})
+                decals.append({'kind': 'banderas', 'x': ax0, 'y': ay0 - 1, 'w': mx_ - ax0, 'h': 1})
+                decals.append({'kind': 'guirnaldas', 'x': ax0, 'y': ay0, 'w': ax1 - ax0 + 1, 'h': ay1 - ay0 + 1})
+                print('anfiteatro: %d x %d baldosas' % (ax1 - ax0 + 1, ay1 - ay0 + 1))
         special['muni'] = muni + 1
         print('Municipalidad: edificio %dx%d tiles, manzana %d tiles' % (bx1 - bx0 + 1, bh, int(yard.sum())))
 

@@ -398,6 +398,26 @@ VR.decorOver = {
     if (d.style === 'universitaria') { for (let y = Y; y < Y + H; y += 10) { g.fillStyle = '#e8fbfb'; g.fillRect(X, y, 7, 2); } }
     if (d.style === 'gleu') { for (let y = Y + 2; y < Y + H; y += 8) { g.fillStyle = '#6a4a30'; g.fillRect(X + 1, y, 5, 5); } }
   },
+  anfiteatro(g, d) { // gradas blancas de 3 escalones (forma de U abierta al este), piso hundido y escenario bajo
+    const S = VR.TILE, X = d.x * S, Y = d.y * S, X1 = X + d.w * S, Y1 = Y + d.h * S;
+    const poly = (k) => { // contorno a k px hacia adentro, con las esquinas del oeste cortadas en diagonal
+      const c = Math.max(4, 22 - k * 0.6), x0 = X + k, y0 = Y + k, y1 = Y1 - k;
+      g.beginPath(); g.moveTo(X1, y0); g.lineTo(x0 + c, y0); g.lineTo(x0, y0 + c); g.lineTo(x0, y1 - c); g.lineTo(x0 + c, y1); g.lineTo(X1, y1); g.closePath(); g.fill();
+    };
+    g.fillStyle = 'rgba(0,0,0,.18)'; poly(-2);
+    for (let i = 0; i < 3; i++) { // escalón: cara de arriba clara y contrahuella en sombra
+      g.fillStyle = '#efebe3'; poly(i * 8); g.fillStyle = '#b9b3a7'; poly(i * 8 + 6);
+    }
+    g.fillStyle = '#d3cdc1'; poly(24); // piso de cemento
+    g.fillStyle = 'rgba(0,0,0,.08)';
+    for (let x = X + 40; x < X1; x += 24) g.fillRect(x, Y + 25, 1, d.h * S - 50); // juntas
+    // escenario: plataforma baja con escalón al oeste
+    const sx = X + d.sx * S, sy = Y + d.sy * S, sw = X1 - sx, sh = 6 * S;
+    g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(sx - 6, sy + 3, sw + 6, sh);
+    g.fillStyle = '#c9c3b7'; g.fillRect(sx - 6, sy + 6, 6, sh - 12);
+    g.fillStyle = '#e9e5dd'; g.fillRect(sx, sy, sw, sh);
+    g.fillStyle = '#b0aa9e'; g.fillRect(sx, sy, 3, sh); g.fillRect(sx, sy + sh - 3, sw, 3);
+  },
   terraza(g, d) { // mesas y sillas en el borde de la plaza, frente a la heladería, y tachos rojos
     const S = VR.TILE, X = d.x * S, Y = d.y * S;
     for (let k = 0; k < 4; k++) {
@@ -507,6 +527,19 @@ VR.decorTop = {
           const on = 0.75 + 0.25 * Math.sin(tw + k * 1.7 + y);
           g.fillStyle = `rgba(255,236,170,${0.25 * on})`; g.fillRect(Math.round(x) - 2, Math.round(yy) - 1, 5, 5);
           g.fillStyle = '#fff7d8'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
+        }
+      }
+    } }];
+  },
+  banderas(d) { // fila de mástiles con banderas paraguayas al norte del anfiteatro
+    const S = VR.TILE, X0 = d.x * S + 6, X1 = (d.x + d.w) * S - 4, Y = d.y * S + 10, t = performance.now() / 260;
+    return [{ sy: Y + 2, draw(g) {
+      for (let px = X0, n = 0; px <= X1; px += 15, n++) {
+        g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(px - 1, Y, 4, 2);
+        g.fillStyle = '#5a5852'; g.fillRect(px, Y - 46, 2, 46); g.fillStyle = '#e8e6e0'; g.fillRect(px, Y - 46, 1, 46);
+        for (let i = 0; i < 12; i++) {
+          const o = Math.round(Math.sin(t + i * 0.5 + n) * 1.2), x = px + 2 + i;
+          g.fillStyle = '#d0302a'; g.fillRect(x, Y - 46 + o, 1, 3); g.fillStyle = '#ffffff'; g.fillRect(x, Y - 43 + o, 1, 3); g.fillStyle = '#2050a8'; g.fillRect(x, Y - 40 + o, 1, 3);
         }
       }
     } }];
