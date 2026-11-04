@@ -25,6 +25,19 @@
   const traffic = prueba ? null : new VR.Traffic(world, { max: 34, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
+  const gpsNet = prueba ? null : new VR.GPS(world);
+  const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
+    onBusted: () => sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'),
+    onWasted: () => sentTo('💥 Explotó con vos adentro... te llevaron al hospital.') });
+  if (emer) emer.sound = VR.store.get('snd', true);
+  VR.emer = emer;
+  // te agarraron o volaste: aparecés en la plaza, sin estrellas
+  function sentTo(msg) {
+    if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); }
+    player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y;
+    if (emer) emer.clear();
+    toast(msg);
+  }
   const ME = { shirt: ['#d23c2c', '#9f2a20'], head: '#2a1b12' }; // así se ve el jugador arriba de la moto
   const sc = saved && saved.car;
   if (sc) {
@@ -41,12 +54,14 @@
   const nearCar = () => {
     let best = null, bd = 30;
     for (const c of world.carsIn(player.x - 40, player.y - 40, player.x + 40, player.y + 40, [])) {
+      if (c.wreck || c.burning) continue;
       const d = Math.hypot(c.x - player.x, c.y - (player.y - 4));
       if (d < bd) { bd = d; best = c; }
     }
     return best;
   };
   function enterCar(c) {
+    if (emer) emer.stolen(c);
     if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : '🚗 ¡Te llevaste el auto!'); }
     if (c.type === 'moto') c.rider = ME;
     car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
@@ -98,7 +113,7 @@
   // ---------- lógica ----------
   const SALUDOS = ["¡Mba'éichapa!", "¡Mba'e la porte!", 'Haku la ára, che...', "¡Jaha jaha!", 'Ndera, qué lindo día'];
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
-  let sayIdx = 0, hint = '', hintCar = null;
+  let sayIdx = 0, hint = '', hintCar = null, holdT = 0;
   function update(dt) {
     if (mapOpen) {
       if (['map', 'menu'].some((b) => VR.input.pressed(b))) closeMap();
@@ -110,7 +125,11 @@
     if (car) {
       car.update(dt, VR.input);
       player.px = player.x; player.py = player.y; player.x = car.x; player.y = car.y;
-      if (VR.input.pressed('action')) player.say(BOCINAS[sayIdx++ % BOCINAS.length], 1.2);
+      if (car.spec.emer) { // sirena (tocar) y, en el camión bomba, cañón de agua (mantener)
+        if (VR.input.down('action')) holdT += dt;
+        else { if (holdT > 0 && holdT <= 0.22) { car.siren = !car.siren; toast(car.siren ? '🚨 Sirena prendida' : 'Sirena apagada'); } holdT = 0; }
+        if (emer) emer.holdT = holdT;
+      } else if (VR.input.pressed('action')) player.say(BOCINAS[sayIdx++ % BOCINAS.length], 1.2);
       if (VR.input.pressed('car')) { if (Math.abs(car.v) < 45) exitCar(); else toast('Frená para bajarte'); }
       if (player.bubble) { player.bubble.t -= dt; if (player.bubble.t <= 0) player.bubble = null; }
     } else {
@@ -131,6 +150,7 @@
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
     if (peds) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
+    if (emer) { const sw = VR.screen.w, sh = VR.screen.h; emer.update(dt, player, car, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, VR.input); }
   }
 
   // ---------- dibujo ----------
@@ -146,12 +166,15 @@
     world.collectTall(cx, cy, sw, sh, tall);
     if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => player.draw(c, cx, cy, a) });
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
+    if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
     for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
+    if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), settings.hora);
     night.render(ctx, cx, cy, sw, sh, vis);
+    if (emer) emer.drawFlash(ctx, sw, sh);
     for (const l of world.labels) {
       const lx = l.x - cx, ly = l.y - cy;
       if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, l.small ? '#ffe9a8' : '#fff6d8', { center: true, shadow: '#1a1a1e', size: l.small ? 7 : 8 });
@@ -178,6 +201,8 @@
         barrio = b; $('hudTitle').textContent = b.toUpperCase();
       }
     }
+    if (emer) { const w = $('wanted'), L = emer.level, key = L + ':' + (emer.lost > 0.5 ? 1 : 0);
+      if (w._k !== key) { w._k = key; w.hidden = !L; w.innerHTML = '<b>' + '★'.repeat(L) + '</b>' + '☆'.repeat(5 - L); w.classList.toggle('lost', emer.lost > 0.5); } }
     const spd = $('speed');
     if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh(); } else if (!spd.hidden) spd.hidden = true;
     if (!settings.fps) { $('dbg').hidden = true; return; }
@@ -221,6 +246,7 @@
   seg('segHora', 'hora', () => {});
   seg('segPj', 'pj', () => player.setLook(settings.pj));
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
+  $('optSnd').checked = emer ? emer.sound : true; $('optSnd').onchange = (e) => { if (emer) emer.sound = e.target.checked; VR.store.set('snd', e.target.checked); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
   $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
 
@@ -323,7 +349,7 @@
   }
 
   // ---------- GPS ----------
-  const gps = prueba ? null : new VR.GPS(world);
+  const gps = gpsNet;
   let dest = null, route = null, routeLen = 0, gpsT = 0, gpsRe = 0;
   function setDest(d) {
     dest = d; route = null; gpsRe = 0;

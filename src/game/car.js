@@ -268,7 +268,7 @@ VR.Car = class {
     this.world = world; this.type = type; this.model = type === 'moto' ? (model || 'cub') : (model || 'mita'); this.tune = tune;
     this.spec = tune ? VR.tuneSpec(VR.vspec(type, this.model), tune) : VR.vspec(type, this.model);
     this.x = this.px = x; this.y = this.py = y; this.a = this.pa = angle;
-    this.v = 0; this.color = color; this.driven = false; this.hit = 0;
+    this.v = 0; this.color = color; this.driven = false; this.hit = 0; this.hp = 100;
     this.rider = null; // moto: {shirt, head} cuando alguien la maneja
     this.frames = VR.vframes(type, color, this.model, tune);
   }
@@ -433,7 +433,7 @@ VR.Car = class {
         }
       }
       this.w = VR.clamp(this.w, -6, 6);
-      if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); }
+      if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); }
       // no se mete en la pared: si el giro solo ya lo traba, no gira; y si quedó pegado, se separa un poco
       if (!this.contacts(this.x, this.y, na)) this.a = na;
       else if (this.contacts(this.x, this.y, this.a)) {
@@ -455,6 +455,13 @@ VR.Car = class {
       const R = VR.riderFrames(this.rider.shirt, this.rider.head), rh = R.S >> 1;
       const ro = this.spec.riderOff || 0;
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro));
+    }
+    if (this.siren && this.spec.lights) { // barra de luces titilando
+      const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : this.model === 'ambulancia' ? this.LEN * 0.22 : this.LEN * 0.1;
+      const bx = x + Math.sin(a) * f, by = y - Math.cos(a) * f, rx = Math.cos(a) * 3.5, ry = Math.sin(a) * 3.5;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const [s, col] of [[-1, L[on]], [1, L[1 - on]]]) { const gx = bx + rx * s, gy = by + ry * s, gr = ctx.createRadialGradient(gx, gy, 0, gx, gy, 9); gr.addColorStop(0, `rgba(${col},.95)`); gr.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = gr; ctx.fillRect(gx - 9, gy - 9, 18, 18); }
+      ctx.restore();
     }
   }
 };

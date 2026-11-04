@@ -58,6 +58,11 @@
       T.rr(x0 + 1.6, yG + 0.2, bw - 3.2, tail - yG - 0.6, 1, T.hg(x0, x1, [C, L, D]));
       st(yG + 0.2, tail - 0.6);
     }
+    if (c.stripe) { g.fillStyle = c.stripe; g.fillRect(x0 + 0.1, 2.4, 0.8, Ln - 5); g.fillRect(x1 - 0.9, 2.4, 0.8, Ln - 5); }
+    if (c.bar) for (const [by, k] of [[yW + 1.4, 0], ...(c.bar2 ? [[yR - 2.6, 1]] : [])]) { // barra de luces (se prende con la sirena)
+      T.rr(x0 + 2.4, by, bw - 4.8, 1.7, 0.6, '#26262c'); T.rr(x0 + 2.8, by + 0.25, (bw - 5.6) / 2 - 0.3, 1.2, 0.4, c.bar[0]); T.rr(mid + 0.3, by + 0.25, (bw - 5.6) / 2 - 0.3, 1.2, 0.4, c.bar[1]);
+      g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(x0 + 3, by + 0.35, bw - 6, 0.3);
+    }
     if (c.spare) { T.ell(mid, tail - 0.4, 2.9, 1.3, '#16161a'); T.ell(mid, tail - 0.6, 1.8, 0.7, c.spareC ? C : '#3a3a40'); }  // auxilio
     if (!c.bed) T.rr(mid - 1.6, tail - 1.6, 3.2, 0.9, 0.2, '#f2f0ea');                                   // patente
     T.rr(x0 + 0.4, tail - 2.4, 2.2, 1.8, 0.5, '#d8302a'); T.rr(x1 - 2.6, tail - 2.4, 2.2, 1.8, 0.5, '#d8302a');
@@ -169,10 +174,50 @@
     karumbe: { len: 40, wid: 14, S: 46, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, colors: [['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
       name: 'Karumbe', desc: 'Carro de caballo: lento, pero llega a todos lados. Ojo con el caballo.', side: 'karumbe', base: VR.drawKarumbe },
   };
+  // Camión de bomberos desde arriba: cabina, techo de la caja con escalera, devanadera de manguera y luces
+  VR.drawBomba = (pal) => VR.vbase(21, 58, (T) => {
+    const [C, D, L] = pal, g = T.g, W = 21, mid = 10.5, AL = ['#e8ecf2', '#9aa0aa', '#c8ccd4'];
+    for (const y of [9, 40, 47]) { T.tire(-0.1, y - 3.4, 2.6, 6.8); T.tire(W - 2.5, y - 3.4, 2.6, 6.8); }
+    T.rr(0.6, 0.3, W - 1.2, 14.4, [3, 3, 0.6, 0.6], T.hg(0.6, W - 0.6, [D, L, C, C, D]));              // cabina
+    T.rr(1.6, 0.6, W - 3.2, 1.4, 0.4, '#2a2a30'); T.rr(1.4, 0.5, 3.4, 1.3, 0.4, '#fff4c0'); T.rr(W - 4.8, 0.5, 3.4, 1.3, 0.4, '#fff4c0');
+    T.poly([[2.2, 2.6], [W - 2.2, 2.6], [W - 1.4, 5.6], [1.4, 5.6]], T.vg(2.6, 5.6, GL));                  // parabrisas
+    T.rr(-0.6, 3.6, 1.6, 1.4, 0.4, '#1e1e22'); T.rr(W - 1, 3.6, 1.6, 1.4, 0.4, '#1e1e22');                 // espejos
+    T.rr(2.2, 5.8, W - 4.4, 8.4, 1, T.hg(2.2, W - 2.2, [L, C, D]));                                         // techo de la cabina
+    T.rr(3, 6.4, W - 6, 1.8, 0.6, '#26262c'); T.rr(3.4, 6.7, (W - 7) / 2, 1.2, 0.4, '#e8302a'); T.rr(mid + 0.3, 6.7, (W - 7) / 2, 1.2, 0.4, '#e8302a'); // luces
+    T.rr(0.4, 15, W - 0.8, 42.6, 0.8, T.hg(0.4, W - 0.4, [D, C, L, C, D]));                                 // caja
+    g.fillStyle = 'rgba(0,0,0,.25)'; for (let y = 18; y < 56; y += 6.5) g.fillRect(0.6, y, W - 1.2, 0.35);
+    T.rr(2.4, 16.4, W - 4.8, 38, 0.6, '#5a5e66'); T.rr(3, 17, W - 6, 36.8, 0.4, '#6e727a');                   // techo de la caja
+    T.line(5.2, 17.4, 5.2, 53, 0.8, AL[0]); T.line(W - 5.2, 17.4, W - 5.2, 53, 0.8, AL[0]);                 // escalera
+    for (let y = 18.6; y < 53; y += 1.8) T.line(5.2, y, W - 5.2, y, 0.35, AL[2]);
+    T.ell(mid, 26, 4, 3.2, '#2a2a30'); T.ell(mid, 26, 3.2, 2.5, '#c8322a'); T.ell(mid, 26, 1, 0.8, AL[1]);   // devanadera de manguera
+    T.rr(mid - 1, 15.4, 2, 3.4, 0.6, AL[1]); T.ell(mid, 15.6, 1.2, 1.2, AL[0]);                              // monitor (cañón de agua)
+    T.rr(1, 56.4, 4, 1.2, 0.4, '#d8302a'); T.rr(W - 5, 56.4, 4, 1.2, 0.4, '#d8302a');
+  });
+
+  // Unidades de emergencia: no salen al azar en el tránsito común (las manda la central) salvo alguna patrullera
+  const WHITE = [['#f2f0ea', '#b9b6ae', '#ffffff']], ORANGE = [['#f0a018', '#b06e08', '#ffc850']], YELLOW = [['#f2c21a', '#b08a08', '#ffe06a']];
+  Object.assign(VR.CAR_MODELS, {
+    patrulla: { len: 35, wid: 16, S: 40, acc: 185, turn: 2.6, max: { road: 255, stone: 215, dirt: 175, side: 150, grass: 120 }, colors: WHITE, emer: 'policia', lights: ['255,40,40', '40,90,255'],
+      name: 'Patrullera', desc: 'Sedán de la Policía con barra de luces. Robarla te sube dos estrellas.', side: 'patrulla',
+      base: VR.drawAuto({ L: 35, W: 16, hood: 8.4, ws: 4, roof: 10.4, rg: 3.6, fa: 0.2, ra: 0.74, bar: ['#d8302a', '#2a5ad8'], stripe: '#1e3a8a' }) },
+    policam: { len: 41, wid: 18, S: 46, acc: 175, rev: 70, turn: 2.3, brake: 400, mass: 1.6, max: { road: 240, stone: 220, dirt: 210, side: 145, grass: 170 }, colors: WHITE, emer: 'policia', lights: ['255,40,40', '40,90,255'],
+      name: 'Camioneta de la Policía', desc: 'Doble cabina de la Policía: la que más patrulla la ciudad.', side: 'policam',
+      base: VR.drawAuto({ L: 41, W: 18, hood: 9.6, ws: 3.6, roof: 9.6, rg: 1.4, fa: 0.19, ra: 0.77, box: true, bed: true, rollbar: true, tireL: 6.4, grille: '#3a3a40', bar: ['#d8302a', '#2a5ad8'], stripe: '#1e3a8a' }) },
+    ambulancia: { len: 39, wid: 17, S: 44, acc: 170, rev: 60, turn: 2.4, brake: 400, mass: 1.4, max: { road: 235, stone: 205, dirt: 180, side: 140, grass: 140 }, colors: ORANGE, emer: 'ambulancia', lights: ['60,255,120', '255,40,40'],
+      name: 'Ambulancia', desc: 'Furgón de los bomberos voluntarios. Con la sirena te abren paso.', side: 'ambulancia',
+      base: VR.drawAuto({ L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#c8241a', tireL: 6 }),
+      sideShape: { body: [[3, 27], [3, 6], [5, 4], [44, 4], [52, 12], [60, 15], [61, 26], [55, 27], [53, 22], [43, 22], [41, 27], [20, 27], [18, 22], [8, 22], [6, 27]],
+        win: [[[45, 6], [47, 6], [51, 12.5], [45, 12.5]], [[34, 6], [42, 6], [42, 12.5], [34, 12.5]]], pillars: [43], yr: 4, rx0: 5, rx1: 44, belt: 12.5, sill: 27, doors: [43, 33], tailx: 3, tailTop: 7, nose: 61, hood: [52, 12], wheels: [13, 48], wr: 5 } },
+    bomba: { len: 58, wid: 21, S: 64, acc: 120, rev: 45, turn: 1.7, brake: 330, mass: 3.2, max: { road: 200, stone: 180, dirt: 165, side: 110, grass: 120 }, colors: YELLOW, emer: 'bomberos', lights: ['255,40,40', '255,255,255'],
+      name: 'Camión de bomberos', desc: 'Camión bomba: largo, pesado y con cañón de agua. Mantené ACCIÓN para mojar.', side: 'bomba', base: VR.drawBomba },
+  });
+  VR.CAR_MODELS.patrulla.sideShape = { ...VR.CAR_MODELS.sedan.sideShape };
+  VR.CAR_MODELS.policam.sideShape = { ...VR.CAR_MODELS.pickup.sideShape };
   // sorteo de auto: en el tránsito, a veces un karumbe; estacionados, no
   VR.pickCar = (rnd, parked) => {
     const r = rnd();
     if (!parked && r < 0.025) return 'karumbe';
+    if (!parked && r < 0.055) return rnd() < 0.7 ? 'policam' : 'patrulla'; // alguna patrullera recorriendo
     const q = rnd();
     return q < 0.24 ? 'mita' : q < 0.42 ? 'sedan' : q < 0.56 ? 'mono' : q < 0.74 ? 'pickup' : q < 0.84 ? 'suv' : q < 0.93 ? 'suvmed' : 'suvchico';
   };

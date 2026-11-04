@@ -21,7 +21,7 @@
     bottom: { jean: ['Jean', 110000], cargo: ['Pantalón cargo', 120000], jogging: ['Jogging', 70000], vestir: ['Pantalón de vestir', 130000], bermuda: ['Bermuda', 55000], cargoShort: ['Short cargo', 60000],
       short: ['Short', 40000], pollera: ['Pollera', 65000], calza: ['Calza', 50000] },
     shoes: { zapatillas: ['Zapatillas', 150000], botitas: ['Zapatillas altas', 180000], chinelas: ['Chinelas', 20000], zapatos: ['Zapatos', 200000], botines: ['Botines', 180000] },
-    hat: { ninguno: ['Sin gorra', 0], gorra: ['Gorra', 30000], gorraAtras: ['Gorra para atrás', 30000], gorro: ['Gorro de lana', 35000], piri: ['Sombrero piri', 45000] },
+    hat: { ninguno: ['Sin gorra', 0], gorra: ['Gorra', 30000], gorraAtras: ['Gorra para atrás', 30000], gorro: ['Gorro de lana', 35000], piri: ['Sombrero piri', 45000], casco: ['Casco', 120000] },
     extra: { lentes: ['Lentes de sol', 25000], anteojos: ['Anteojos', 90000], mochila: ['Mochila', 90000], termo: ['Termo de tereré', 60000], reloj: ['Reloj', 70000], cadenita: ['Cadenita', 40000] },
     beard: { no: ['Sin barba', 0], bigote: ['Bigote', 0], barba: ['Barba', 0], candado: ['Candado', 0], chivita: ['Chivita', 0] },
     build: { flaco: ['Flaco', 0], normal: ['Normal', 0], fornido: ['Fornido', 0], panza: ['Con panza', 0] },
@@ -41,6 +41,7 @@
     const L = { gender, skin: n(CAT.skin), build: pick(CAT.build), hair: pick(CAT.hair), hairColor: rnd() < 0.85 ? n(CAT.hairColor.slice(0, 5)) : n(CAT.hairColor), beard: rnd() < 0.3 ? pick(CAT.beard) : 'no',
       top: pick(CAT.top), topColor: n(CAT.cloth), topColor2: n(CAT.cloth), bottom: pick(CAT.bottom), bottomColor: n(CAT.cloth), shoes: pick(CAT.shoes), shoesColor: n(CAT.cloth),
       hat: rnd() < 0.3 ? pick(CAT.hat) : 'ninguno', hatColor: n(CAT.cloth), packColor: n(CAT.cloth), print: rnd() < 0.4 };
+    if (L.hat === 'casco') L.hat = 'gorra';
     for (const k in CAT.extra) L[k] = rnd() < 0.14;
     if (L.lentes && L.anteojos) L.anteojos = false;
     if (gender === 'f') { L.beard = 'no'; if (rnd() < 0.7) L.hair = ['largo', 'ondulado', 'colita', 'colitaLado', 'rodete', 'trenza'][(rnd() * 6) | 0]; }
@@ -510,6 +511,10 @@
         paint((g) => { g.beginPath(); g.ellipse(hx + (sideV ? -0.2 : 0), hy - 0.85, 2.2, 2.2, 0, Math.PI, Math.PI * 2); g.fill(); g.fillRect(hx - 2.2 + (sideV ? -0.2 : 0), hy - 0.9, 4.4, 0.4); }, hatC, { shade: SH(hatC, 0.75) });
         paint((g) => g.fillRect(hx - 2.25 + (sideV ? -0.2 : 0), hy - 0.75, 4.5, 0.85), SH(hatC, 0.85), { light: false });
         if (k >= 2) for (let x = -1.8; x <= 1.8; x += 0.7) pix(hx + x, hy - 1.9, SH(hatC, 0.82), P, Math.round(1.0 * k));
+      } else if (hat === 'casco') { // casco de bombero (o de policía, según el color): ala alrededor y frente
+        paint((g) => { g.beginPath(); g.ellipse(hx, hy - 0.5, sideV ? 3.0 : 2.75, sideV ? 0.6 : 0.65, 0, 0, 7); g.fill(); }, SH(hatC, 0.78), { light: false });
+        paint((g) => { g.beginPath(); g.ellipse(hx + (sideV ? -0.1 : 0), hy - 0.85, 2.35, 2.3, 0, Math.PI, Math.PI * 2); g.fill(); g.fillRect(hx - 2.35, hy - 0.9, 4.7, 0.45); }, hatC, { shade: SH(hatC, 0.7) });
+        if (k >= 2) { pix(hx - 0.1, hy - 3.0, SH(hatC, 1.25), P, Math.round(2.2 * k)); if (!back && !sideV) pix(hx - 0.55, hy - 2.0, '#f2efe6', Math.round(1.1 * k), Math.round(0.9 * k)); }
       } else if (hat === 'piri') { // sombrero de paja
         paint((g) => { g.beginPath(); g.ellipse(hx, hy - 0.55, sideV ? 3.4 : 3.3, sideV ? 0.55 : 0.7, 0, 0, 7); g.fill(); }, '#d8b870', { shade: '#a88a48' });
         paint((g) => { g.beginPath(); g.ellipse(hx, hy - 1.1, 1.9, 1.6, 0, Math.PI, Math.PI * 2); g.fill(); g.fillRect(hx - 1.9, hy - 1.15, 3.8, 0.55); }, '#e4c880', { shade: '#b09450' });

@@ -110,6 +110,7 @@ VR.Night = class {
       const fx = Math.sin(v.a), fy = -Math.cos(v.a);
       cones.push(v);
       vis.push([v.x - fx * v.LEN / 2, v.y - fy * v.LEN / 2, 10, '255,40,30', 0.9]); // luz trasera
+      if (v.siren && v.spec.lights) { const on = ((performance.now() / 130) | 0) % 2; vis.push([v.x, v.y, 34, v.spec.lights[on], 0.9]); }
       if (v.tune && v.tune.neon !== 'no') vis.push([v.x, v.y, Math.max(v.LEN, v.WID) * 0.9, VR.NEON[v.tune.neon], 0.6]); // neón
     }
     // 1) recortar la oscuridad

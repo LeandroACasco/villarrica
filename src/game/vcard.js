@@ -18,6 +18,7 @@ VR.drawSide = (kind, pal, t = {}) => {
   };
   if (t.neon && t.neon !== 'no' && VR.NEON) { const gr = g.createRadialGradient(32, 32, 1, 32, 32, 30); gr.addColorStop(0, `rgba(${VR.NEON[t.neon]},.85)`); gr.addColorStop(1, `rgba(${VR.NEON[t.neon]},0)`); g.save(); g.translate(0, 32); g.scale(1, 0.14); g.translate(0, -32); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); g.restore(); }
   const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
+  if (kind === 'bomba' && VR.drawSideHD) { g.imageSmoothingEnabled = true; g.drawImage(VR.drawSideHD(kind, pal, t, 64, 36), 0, 0); return c; }
   if (kind !== 'mita' && VR.CAR_MODELS && VR.CAR_MODELS[kind] && VR.CAR_MODELS[kind].sideShape || kind === 'karumbe') { VR.drawSideAuto(kind, pal, t, P, g, wheel, HL, S2); return c; }
   if (kind === 'car') {
     const lo = +t.bajo ? 2 : 0; g.save(); g.translate(0, lo);

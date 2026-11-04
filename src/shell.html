@@ -25,6 +25,10 @@
     height: 36px; min-width: 40px; padding: 0 10px; font-size: 16px; cursor: pointer; backdrop-filter: blur(4px); }
   .icon-btn:hover { background: rgba(40,40,48,.75); }
 
+  #wanted { position: fixed; top: calc(env(safe-area-inset-top) + 62px); left: calc(env(safe-area-inset-left) + 10px); z-index: 4; font: 700 18px system-ui, sans-serif; color: rgba(255,255,255,.35); letter-spacing: 1px; text-shadow: 0 1px 0 #000, 0 0 4px rgba(0,0,0,.6); pointer-events: none; }
+  #wanted b { color: #ffd75e; font-weight: 700; }
+  #wanted.lost b { animation: wblink .5s steps(2) infinite; }
+  @keyframes wblink { 50% { opacity: .25; } }
   #hud { position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: calc(env(safe-area-inset-left) + 8px); z-index: 4;
     background: rgba(12,12,16,.62); border-left: 3px solid var(--accent); padding: 4px 10px 5px 8px; border-radius: 0 8px 8px 0;
     display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
@@ -162,6 +166,7 @@
   <b id="ovGo" hidden>Tocá o apretá una tecla para empezar</b>
 </div>
 <div id="toast"></div>
+<div id="wanted" hidden></div>
 <div id="vcard"><canvas width="256" height="144"></canvas><div><b></b><span></span></div></div>
 <div id="mapView" hidden>
   <div id="mapBox"><div id="mapInner"><canvas id="mapCanvas"></canvas><svg id="mapRoute"><polyline id="routeBg" stroke="#0b2a36" stroke-width="7"/><polyline id="routeFg" stroke="#3fd3ff" stroke-width="4"/></svg><div id="mapLabels"></div><div id="mapDest" hidden>🏁</div><div id="mapMe"></div></div></div>
@@ -180,6 +185,7 @@
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
     <h3>Opciones</h3>
     <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
+    <label class="chk"><input type="checkbox" id="optSnd"> Sonido (sirenas)</label>
     <label class="chk"><input type="checkbox" id="optVib"> Vibración</label>
     <div class="row"><button class="btn" id="btnReset">📍 Volver a la Plaza de los Héroes</button></div>
     <h3>Teclado (PC)</h3>

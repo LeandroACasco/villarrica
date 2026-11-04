@@ -110,10 +110,50 @@
     if (c.bull) { b.strokeStyle = '#1e1e22'; b.lineWidth = 0.9; b.beginPath(); b.moveTo(c.nose + 0.2, c.sill - 2); b.lineTo(c.nose + 1, c.hood[1] + 2.5); b.lineTo(c.nose - 1, c.hood[1] + 1.8); b.stroke(); }
     if (t.aleron === 'chico' && !c.bed) { b.fillStyle = SH(C, 0.75); rrect(b, c.tailx - 0.6, c.tailTop - 1.8, 7, 1.6, 0.6); b.fill(); }
     if (t.aleron === 'grande' && !c.bed) { b.fillStyle = '#26262c'; b.fillRect(c.tailx + 1.6, c.tailTop - 4, 0.9, 4); b.fillStyle = lin(b, 0, c.tailTop - 6, 0, c.tailTop - 4, [L, C, D]); rrect(b, c.tailx - 2.5, c.tailTop - 6.2, 11, 2.2, 0.8); b.fill(); }
+    if (M.emer) {
+      const band = M.emer === 'policia' ? '#1e3a8a' : '#c8241a', x0 = c.tailx + 0.5, x1 = c.nose - 4.5;
+      b.globalCompositeOperation = 'source-atop';
+      b.fillStyle = band; b.fillRect(x0, c.belt + 5.2, x1 - x0, 1.5); b.fillStyle = M.emer === 'policia' ? '#5a8ad8' : '#f2f0ea'; b.fillRect(x0, c.belt + 6.7, x1 - x0, 0.45);
+      b.globalCompositeOperation = 'source-over';
+      b.fillStyle = band; b.font = '700 2.3px system-ui, sans-serif'; b.textAlign = 'center'; b.textBaseline = 'middle';
+      b.fillText(M.emer === 'policia' ? 'POLICÍA' : 'EMERGENCIAS', M.emer === 'policia' ? (c.doors[0] + c.doors[1]) / 2 - 2 : (c.tailx + c.doors[0]) / 2 + 3, c.belt + 3.2);
+      const lx = M.emer === 'ambulancia' ? c.rx1 - 9 : (c.rx0 + c.rx1) / 2 - 5, L2 = M.lights.map((q) => `rgb(${q})`);
+      b.fillStyle = '#1e1e24'; rrect(b, lx, c.yr - 1.8, 10, 1.9, 0.6); b.fill();
+      b.fillStyle = L2[0]; rrect(b, lx + 0.5, c.yr - 1.6, 4.3, 1.3, 0.5); b.fill(); b.fillStyle = L2[1]; rrect(b, lx + 5.2, c.yr - 1.6, 4.3, 1.3, 0.5); b.fill();
+      b.fillStyle = 'rgba(255,255,255,.55)'; b.fillRect(lx + 1, c.yr - 1.5, 8, 0.3);
+      if (M.emer === 'ambulancia') { b.fillStyle = L2[0]; rrect(b, c.tailx + 0.5, c.yr - 1.4, 3, 1.4, 0.4); b.fill(); b.fillStyle = '#e8ecf2'; b.fillRect(c.tailx + 1, c.yr + 3, 0.4, 8); }
+    }
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(lay, 0, 0); g.restore();
     // luz de los faros xenón
     if (t.faros === 'xenon') { const gr = g.createRadialGradient(c.nose, c.hood[1] + 2, 0, c.nose, c.hood[1] + 2, 6); gr.addColorStop(0, 'rgba(200,225,255,.6)'); gr.addColorStop(1, 'rgba(200,225,255,0)'); g.fillStyle = gr; g.fillRect(c.nose - 6, c.hood[1] - 4, 12, 12); }
     for (const x of c.wheels) wheelHD(g, x, 28, wr, LL, true);
+  };
+
+  // ---------- camión de bomberos ----------
+  const bombaHD = (g, pal) => {
+    const [C, D, L] = pal;
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(32, 33.4, 31, 1.2, 0, 0, Math.PI * 2); g.fill();
+    // caja con persianas
+    g.fillStyle = lin(g, 0, 6, 0, 27, [L, C, C, D]); rrect(g, 1, 6.5, 41, 19.5, 0.6); g.fill();
+    for (const [x, w] of [[3, 11], [15.5, 11], [28, 11]]) { g.fillStyle = lin(g, x, 0, x + w, 0, ['#c8ccd4', '#e8ecf2', '#9aa0aa']); rrect(g, x, 8.5, w, 12, 0.4); g.fill(); g.strokeStyle = '#7a7e88'; g.lineWidth = 0.18; for (let y = 9.3; y < 20.4; y += 0.8) { g.beginPath(); g.moveTo(x + 0.2, y); g.lineTo(x + w - 0.2, y); g.stroke(); } g.fillStyle = '#3a3a40'; g.fillRect(x + w / 2 - 1, 19.6, 2, 0.6); }
+    g.fillStyle = '#c8241a'; g.fillRect(1, 21.6, 41, 1.4); g.fillStyle = '#1a1a1e'; g.font = '700 2.4px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('BOMBEROS', 35, 24.4);
+    g.fillStyle = '#26262a'; g.fillRect(1, 26, 41, 1.4);
+    // escalera arriba y en la cola
+    g.strokeStyle = '#e8ecf2'; g.lineWidth = 0.5; g.beginPath(); g.moveTo(3, 4.4); g.lineTo(43, 4.4); g.moveTo(3, 5.8); g.lineTo(43, 5.8); g.stroke(); g.lineWidth = 0.3; for (let x = 4; x < 43; x += 1.8) { g.beginPath(); g.moveTo(x, 4.4); g.lineTo(x, 5.8); g.stroke(); }
+    g.fillStyle = '#9aa0aa'; g.fillRect(6, 5.8, 0.6, 0.8); g.fillRect(38, 5.8, 0.6, 0.8);
+    g.strokeStyle = '#d8dce4'; g.lineWidth = 0.4; g.beginPath(); g.moveTo(0.4, 7); g.lineTo(0.4, 25); g.moveTo(1.6, 7); g.lineTo(1.6, 25); g.stroke(); for (let y = 8; y < 25; y += 1.6) { g.beginPath(); g.moveTo(0.4, y); g.lineTo(1.6, y); g.stroke(); }
+    taillight(g, 1.2, 25.2, 1.6, 1.6);
+    // cabina
+    pathPts(g, [[42, 27], [42, 6], [53, 5.4], [57, 11], [61, 13.5], [62, 27]], 1.2); g.fillStyle = lin(g, 0, 5, 0, 27, [L, C, C, D]); g.fill();
+    pathPts(g, [[44, 7.2], [52.4, 7], [55.6, 12.6], [44, 12.6]], 0.6); g.fillStyle = lin(g, 0, 7, 0, 12.6, ['#c8dcec', '#4a6680', '#6c8aa8']); g.fill();
+    g.fillStyle = '#1a1a1e'; g.fillRect(48.6, 7, 0.9, 5.6); g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(49, 13, 0.3, 11);
+    g.fillStyle = SH(C, 0.7); rrect(g, 45, 14.6, 2.4, 0.7, 0.3); g.fill();
+    g.fillStyle = '#1e1e24'; rrect(g, 46, 3.2, 11, 2, 0.6); g.fill(); g.fillStyle = '#e8302a'; rrect(g, 46.5, 3.4, 4.6, 1.4, 0.5); g.fill(); g.fillStyle = '#ffffff'; rrect(g, 51.6, 3.4, 4.6, 1.4, 0.5); g.fill();
+    g.fillStyle = '#1a1a1e'; rrect(g, 60.6, 14.6, 1.8, 6, 0.4); g.fill(); headlight(g, 59, 14, 2.6, 2.6, false);
+    g.fillStyle = lin(g, 0, 25, 0, 28, ['#3a3a40', '#18181c']); rrect(g, 41, 25.4, 22.6, 2.6, 0.6); g.fill();
+    g.fillStyle = '#1e1e22'; g.fillRect(55.8, 9.6, 0.6, 3); g.beginPath(); g.ellipse(55.6, 9.2, 1, 1.4, 0, 0, Math.PI * 2); g.fill();
+    for (const x of [11, 19, 52]) { g.fillStyle = '#0e0e10'; g.beginPath(); g.arc(x, 28, 6.4, Math.PI, 0); g.fill(); }
+    for (const x of [11, 19, 52]) wheelHD(g, x, 28.4, 5.6, 'serie', true);
   };
 
   // ---------- karumbe ----------
@@ -252,6 +292,7 @@
     const c = VR.canvas(W, H), g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.scale(W / 64, H / 36);
     if (kind === 'car') kind = 'mita';
     if (kind === 'karumbe') karumbeHD(g);
+    else if (kind === 'bomba') bombaHD(g, pal);
     else if (VR.CAR_MODELS[kind]) carHD(g, kind, pal, t);
     else motoHD(g, kind, pal, t);
     return c;

@@ -66,6 +66,7 @@ VR.Peds = class {
       if (car && p.mode !== 'down' && cs > 30 && Math.hypot(p.x - car.x, p.y - 4 - car.y) < car.WID / 2 + 6) {
         p.mode = 'down'; p.t = 2.4; p.vx = car.vx * 0.7; p.vy = car.vy * 0.7;
         car.vx *= 0.82; car.vy *= 0.82; car.hit = 0.15;
+        if (VR.onPedHit) VR.onPedHit(p, cs);
         continue;
       }
       if (p.mode === 'down') {
@@ -73,6 +74,8 @@ VR.Peds = class {
         const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
         if (!this.world.hits(nx - 3, ny - 3, nx + 3, ny)) { p.x = nx; p.y = ny; } else { p.vx *= -0.3; p.vy *= -0.3; }
         p.vx *= k; p.vy *= k; p.t -= dt;
+        if (p.injured && p.t > 0) continue;
+        p.injured = false;
         if (p.t <= 0) { p.mode = 'flee'; p.t = 1.4; this.talk(p, 'hit'); if (!this.free(p.x, p.y)) this.toWalkable(p); this.awayFrom(p, car || focus); }
         continue;
       }
