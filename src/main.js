@@ -21,7 +21,7 @@
   const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 900, world.spawn);
   const cars = parked.cars;
   let car = null; // auto que estás manejando
-  const WALK_BASE = 270, DRIVE_BASE = 420;
+  const WALK_BASE = 190, DRIVE_BASE = 300; // arte grande (04/11/2026): cámara más cerca, como Gangstar
   const traffic = prueba ? null : new VR.Traffic(world, { max: 34, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
@@ -159,8 +159,8 @@
     player.drawBubble(ctx, cx, cy, a);
     drawMini(dt || 0);
     drawGpsArrow(ctx, cx, cy, a);
-    if (traffic) for (const v of traffic.list) if (v.honkT > 0) VR.gfx.text(ctx, v.honkTxt, Math.round(v.x - cx), Math.round(v.y - cy - 24), '#fff6d8', { center: true, shadow: '#1a1a1e' });
-    if (hint && hintCar) VR.gfx.text(ctx, hint, Math.round(hintCar.x - cx), Math.round(hintCar.y - cy - 26), '#ffd75e', { center: true, shadow: '#1a1a1e' });
+    if (traffic) for (const v of traffic.list) if (v.honkT > 0) VR.gfx.text(ctx, v.honkTxt, Math.round(v.x - cx), Math.round(v.y - cy - 30), '#fff6d8', { center: true, shadow: '#1a1a1e' });
+    if (hint && hintCar) VR.gfx.text(ctx, hint, Math.round(hintCar.x - cx), Math.round(hintCar.y - cy - 32), '#ffd75e', { center: true, shadow: '#1a1a1e' });
     drawHud();
   }
   let hudT = 0, zoneT = 0, zone = '', barrio = '';

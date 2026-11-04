@@ -19,9 +19,18 @@ VR.MOTO_COLORS = [
 ];
 VR.RIDER_SHIRTS = [['#d23c2c', '#9f2a20'], ['#2e6fc8', '#1f4c8c'], ['#f0ece2', '#b8b2a4'], ['#3b9a5a', '#286a3d'], ['#e8b830', '#a8841c'], ['#7a4ab0', '#563480'], ['#30303a', '#18181e']];
 
+// Arte grande (04/11/2026): los vehículos se dibujan ×1,3 respecto de la ciudad, como en los juegos de la época,
+// para que se vean y se distingan. Los dibujos están en una grilla chica y el pintor los agranda redondeando.
+VR.VK = 1.3;
+VR.vpaint = (w, h) => {
+  const k = VR.VK, c = VR.canvas(Math.round(w * k), Math.round(h * k)), x = c.getContext('2d');
+  const R = (v) => Math.round(v * k);
+  return [c, { ctx: x, r(px, py, pw, ph, col) { x.fillStyle = col; x.fillRect(R(px), R(py), Math.max(1, R(px + pw) - R(px)), Math.max(1, R(py + ph) - R(py))); },
+    p(px, py, col) { this.r(px, py, 1, 1, col); } }];
+};
 // Sprite base del compacto mirando hacia arriba (16×30): capó corto, parabrisas grande, techo, luneta y portón.
 VR.drawCarBase = (pal) => {
-  const [C, D, L] = pal, c = VR.canvas(16, 30), P = VR.gfx.painter(c);
+  const [C, D, L] = pal, [c, P] = VR.vpaint(16, 30);
   const GLASS = '#3b4d63', GLASS_L = '#6f8aa6', TIRE = '#121214';
   P.r(0, 5, 2, 6, TIRE); P.r(14, 5, 2, 6, TIRE); P.r(0, 21, 2, 6, TIRE); P.r(14, 21, 2, 6, TIRE);
   P.r(2, 1, 12, 28, C); P.r(1, 3, 14, 24, C);
@@ -42,7 +51,7 @@ VR.drawCarBase = (pal) => {
 // categoría (sin marcas ni modelos reales): moto de calle chica "cub", mini moto, moto de calle 150,
 // motocarga de tres ruedas y patineta eléctrica. Cada uno con su silueta para que se distingan de lejos.
 VR.drawMotoCub = (pal) => { // underbone 125: escudo delantero ancho, piso bajo, asiento largo (10×21)
-  const [C, D, L] = pal, c = VR.canvas(10, 21), P = VR.gfx.painter(c), TIRE = '#141416', CH = '#b8bcc4';
+  const [C, D, L] = pal, [c, P] = VR.vpaint(10, 21), TIRE = '#141416', CH = '#b8bcc4';
   P.r(4, 0, 2, 5, TIRE); P.r(4, 16, 2, 5, TIRE);
   P.r(4, 1, 2, 1, '#fff7c8');
   P.r(1, 2, 1, 2, CH); P.r(8, 2, 1, 2, CH);                          // espejos altos
@@ -56,7 +65,7 @@ VR.drawMotoCub = (pal) => { // underbone 125: escudo delantero ancho, piso bajo,
   return c;
 };
 VR.drawMotoMini = (pal) => { // mini moto: ruedas gordas, faro redondo, corta y ancha (10×17)
-  const [C, D, L] = pal, c = VR.canvas(10, 17), P = VR.gfx.painter(c), TIRE = '#141416';
+  const [C, D, L] = pal, [c, P] = VR.vpaint(10, 17), TIRE = '#141416';
   P.r(3, 0, 4, 4, TIRE); P.r(3, 13, 4, 4, TIRE); P.r(4, 0, 2, 1, '#2a2a2e'); P.r(4, 16, 2, 1, '#2a2a2e');
   P.r(3, 2, 4, 2, C); P.r(4, 2, 2, 1, '#fff7c8');                    // faro redondo
   P.r(1, 4, 8, 1, '#2a2a2e'); P.r(1, 4, 1, 1, '#b8bcc4'); P.r(8, 4, 1, 1, '#b8bcc4');
@@ -66,7 +75,7 @@ VR.drawMotoMini = (pal) => { // mini moto: ruedas gordas, faro redondo, corta y 
   return c;
 };
 VR.drawMotoCalle = (pal) => { // moto de calle 150: visera, tanque grande, parrilla atrás, escape largo cromado (10×22)
-  const [C, D, L] = pal, c = VR.canvas(10, 22), P = VR.gfx.painter(c), TIRE = '#141416', CH = '#c8ccd4';
+  const [C, D, L] = pal, [c, P] = VR.vpaint(10, 22), TIRE = '#141416', CH = '#c8ccd4';
   P.r(4, 0, 2, 5, TIRE); P.r(4, 17, 2, 5, TIRE);
   P.r(3, 2, 4, 3, '#1e1e22'); P.r(4, 2, 2, 1, '#fff7c8'); P.r(3, 4, 4, 1, C); // faro con visera
   P.r(0, 5, 10, 1, '#2a2a2e'); P.r(0, 5, 1, 1, CH); P.r(9, 5, 1, 1, CH);
@@ -78,7 +87,7 @@ VR.drawMotoCalle = (pal) => { // moto de calle 150: visera, tanque grande, parri
   return c;
 };
 VR.drawMotoCarga = (pal) => { // motocarga: moto adelante y caja de carga atrás con dos ruedas (18×34)
-  const [C, D, L] = pal, c = VR.canvas(18, 34), P = VR.gfx.painter(c), TIRE = '#141416', CH = '#b8bcc4';
+  const [C, D, L] = pal, [c, P] = VR.vpaint(18, 34), TIRE = '#141416', CH = '#b8bcc4';
   P.r(8, 0, 2, 5, TIRE); P.r(8, 1, 2, 1, '#fff7c8');
   P.r(4, 5, 10, 1, '#2a2a2e'); P.r(4, 5, 1, 1, CH); P.r(13, 5, 1, 1, CH);
   P.r(6, 6, 6, 3, C); P.r(6, 6, 1, 3, L); P.r(11, 6, 1, 3, D);       // tanque
@@ -92,7 +101,7 @@ VR.drawMotoCarga = (pal) => { // motocarga: moto adelante y caja de carga atrás
   return c;
 };
 VR.drawPati = (pal) => { // patineta eléctrica: manubrio en T, tabla angosta (6×14)
-  const [C, D] = pal, c = VR.canvas(6, 14), P = VR.gfx.painter(c), TIRE = '#141416';
+  const [C, D] = pal, [c, P] = VR.vpaint(6, 14), TIRE = '#141416';
   P.r(2, 0, 2, 3, TIRE); P.r(2, 11, 2, 3, TIRE);
   P.r(0, 2, 6, 1, '#2a2a2e'); P.r(0, 2, 1, 1, '#d8dce4'); P.r(5, 2, 1, 1, '#d8dce4');
   P.r(2, 3, 2, 1, C);
@@ -104,7 +113,7 @@ VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f 
 VR.drawMotoBase = VR.drawMotoCub;
 // Conductor de moto visto desde arriba (10×12): cabeza (pelo o casco), hombros y brazos al manubrio.
 VR.drawRiderBase = (shirt, head) => {
-  const c = VR.canvas(10, 20), P = VR.gfx.painter(c);
+  const [c, P] = VR.vpaint(10, 20);
   P.r(0, 5, 2, 3, shirt[1]); P.r(8, 5, 2, 3, shirt[1]);  // brazos
   P.r(1, 7, 8, 5, shirt[0]); P.r(7, 7, 2, 5, shirt[1]);  // hombros y espalda
   P.r(3, 5, 4, 4, head); P.r(3, 5, 2, 1, head === '#2a1b12' ? '#3d2a1c' : '#ffffff'); // cabeza
@@ -165,7 +174,19 @@ VR.pickMoto = (rnd, parked) => {
   if (parked) return r < 0.55 ? 'cub' : r < 0.78 ? 'calle' : r < 0.95 ? 'mini' : 'pati';
   return r < 0.46 ? 'cub' : r < 0.66 ? 'calle' : r < 0.78 ? 'mini' : r < 0.95 ? 'carga' : 'pati';
 };
-VR.vspec = (type, model) => type === 'moto' ? { ...VR.VSPEC.moto, ...VR.MOTO_MODELS[model || 'cub'] } : VR.VSPEC[type];
+VR.vspec = (() => {
+  const cache = new Map();
+  return (type, model) => {
+    const key = type + ':' + (model || '');
+    let sp = cache.get(key);
+    if (!sp) {
+      sp = type === 'moto' ? { ...VR.VSPEC.moto, ...VR.MOTO_MODELS[model || 'cub'] } : { ...VR.VSPEC[type] };
+      const k = VR.VK; sp.len = Math.round(sp.len * k); sp.wid = Math.round(sp.wid * k); sp.S = Math.round(sp.S * k) + 2; if (sp.riderOff) sp.riderOff = Math.round(sp.riderOff * k);
+      cache.set(key, sp);
+    }
+    return sp;
+  };
+})();
 VR.vframes = (() => {
   const cache = new Map();
   return (type, color, model) => {
@@ -180,7 +201,7 @@ VR.riderFrames = (() => {
   return (shirt, head) => {
     const key = shirt.join() + head;
     let f = cache.get(key);
-    if (!f) { f = VR.rotFrames(VR.drawRiderBase(shirt, head), 24); cache.set(key, f); }
+    if (!f) { f = VR.rotFrames(VR.drawRiderBase(shirt, head), Math.round(24 * VR.VK) + 2); cache.set(key, f); }
     return f;
   };
 })();
@@ -403,17 +424,17 @@ VR.parkCars = (world, n, near) => {
       while (curb(x0 - 1, ty - 1) && road(x0 - 1, ty)) x0--;
       while (curb(x1 + 1, ty - 1) && road(x1 + 1, ty)) x1++;
       x0 += 2; x1 -= 2;                                       // lejos de las esquinas
-      const yl = ty * S + 8, yr = (yb + 1) * S - 6;           // autos a 8 px del cordón norte, motos contra el cordón sur
+      const yl = ty * S + 11, yr = (yb + 1) * S - 6;           // autos a 8 px del cordón norte, motos contra el cordón sur
       const fx = (x0 + 1) * S;
       // autos en fila, mirando hacia el este (el sentido de la calle); el primero, rojo, frente a donde arrancás
       const slots = [];
-      for (let px = x0 * S + 16; px <= x1 * S - 16; px += 36) slots.push(px);
+      for (let px = x0 * S + 22; px <= x1 * S - 22; px += 47) slots.push(px);
       slots.sort((a, b) => Math.abs(a - near.x) - Math.abs(b - near.x));
       first = add(slots[0], yl, Math.PI / 2, 0);
       for (let i = 1; i < slots.length; i++) if (rnd() < 0.85) add(slots[i], yl, Math.PI / 2, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
       // motos en batería, la rueda trasera contra el cordón sur (miran hacia la calle), cada 11 px
-      for (let px = fx; px <= x1 * S - 8; px += 11) if (rnd() < 0.8)
-        add(px + ((rnd() * 2) | 0), yr - 8, (rnd() < 0.5 ? 0 : 0.12) - 0.06 + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+      for (let px = fx; px <= x1 * S - 10; px += 14) if (rnd() < 0.8)
+        add(px + ((rnd() * 2) | 0), yr - 11, (rnd() < 0.5 ? 0 : 0.12) - 0.06 + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
       world.parkingDemo = [{ x0: x0 * S, x1: x1 * S, y0: ty * S, y1: (yb + 1) * S }];
     }
     // --- y en General Díaz, del lado este de la plaza (mano única hacia el norte): autos a la izquierda
@@ -429,10 +450,10 @@ VR.parkCars = (world, n, near) => {
         let xa = bx1 + 1, lim2 = 10; while (lim2-- > 0 && !road(xa, my)) xa++;
         let xb = xa; while (road(xb + 1, my)) xb++;
         if (xb - xa >= 3) {
-          const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 8, xr = (xb + 1) * S - 6;
-          for (let py = ya * S + 16; py <= yz * S - 16; py += 36) if (rnd() < 0.85) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
-          for (let py = (ya + 1) * S; py <= yz * S - 8; py += 11) if (rnd() < 0.8)
-            add(xr - 8, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 11, xr = (xb + 1) * S - 6;
+          for (let py = ya * S + 22; py <= yz * S - 22; py += 47) if (rnd() < 0.85) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.8)
+            add(xr - 11, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           (world.parkingDemo = world.parkingDemo || []).push({ x0: xa * S, x1: (xb + 1) * S, y0: ya * S, y1: yz * S });
         }
         // Coronel Bogado, del lado oeste de la plaza (mano única hacia el sur): autos a la izquierda (este,
@@ -440,10 +461,10 @@ VR.parkCars = (world, n, near) => {
         let wb = bx0 - 1, lim3 = 10; while (lim3-- > 0 && !road(wb, my)) wb--;
         let wa = wb; while (road(wa - 1, my)) wa--;
         if (wb - wa >= 3) {
-          const ya = by0 + 3, yz = by1 - 3, xl = (wb + 1) * S - 8, xr = wa * S + 6;
-          for (let py = ya * S + 16; py <= yz * S - 16; py += 36) if (rnd() < 0.85) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
-          for (let py = (ya + 1) * S; py <= yz * S - 8; py += 11) if (rnd() < 0.8)
-            add(xr + 8, py + ((rnd() * 2) | 0), Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? -0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          const ya = by0 + 3, yz = by1 - 3, xl = (wb + 1) * S - 11, xr = wa * S + 6;
+          for (let py = ya * S + 22; py <= yz * S - 22; py += 47) if (rnd() < 0.85) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.8)
+            add(xr + 11, py + ((rnd() * 2) | 0), Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? -0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           world.parkingDemo.push({ x0: wa * S, x1: (wb + 1) * S, y0: ya * S, y1: yz * S });
         }
       }
@@ -474,11 +495,11 @@ VR.parkCars = (world, n, near) => {
     if (rnd() < 0.22) { // 2 o 3 motos en batería contra el cordón
       const [cx, cy, , dy, dx] = s, k = 2 + ((rnd() * 2) | 0);
       for (let i = 0; i < k; i++) {
-        const mx = dy ? cx - 11 + i * 11 : cx + dx * 4, my = dy ? cy + dy * 4 : cy - 11 + i * 11;
+        const mx = dy ? cx - 14 + i * 14 : cx + dx * 5, my = dy ? cy + dy * 5 : cy - 14 + i * 14;
         const a = dy ? (dy > 0 ? 0 : Math.PI) : (dx > 0 ? -Math.PI / 2 : Math.PI / 2);
-        if (free(mx, my, 6)) add(mx, my, a, (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+        if (free(mx, my, 8)) add(mx, my, a, (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
       }
-    } else if (free(s[0], s[1], 18)) add(s[0], s[1], s[2], 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+    } else if (free(s[0], s[1], 24)) add(s[0], s[1], s[2], 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
   }
   return { cars, first };
 };

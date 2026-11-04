@@ -90,11 +90,12 @@
     border: 1px solid var(--line); padding: 9px 16px; border-radius: 10px; opacity: 0; transition: opacity .25s; pointer-events: none;
     max-width: 80vw; z-index: 20; text-align: center; }
   #toast.show { opacity: 1; }
-  #vcard { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 104px); z-index: 6; display: flex; gap: 10px; align-items: center;
+  #vcard { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 12px); z-index: 6; display: flex; gap: 10px; align-items: center;
     background: rgba(28,28,34,.92); border: 2px solid #e8c45a; border-radius: 10px; padding: 8px 12px 8px 8px; max-width: min(440px, calc(100vw - 20px));
-    transform: translate(-50%, -16px); opacity: 0; transition: transform .35s ease, opacity .35s ease; pointer-events: none; color: #fff6d8; font: 12px/1.3 system-ui, sans-serif; }
+    transform: translate(-50%, 16px); opacity: 0; transition: transform .35s ease, opacity .35s ease; pointer-events: none; color: #fff6d8; font: 12px/1.3 system-ui, sans-serif; }
   #vcard.show { transform: translate(-50%, 0); opacity: 1; }
   #vcard canvas { width: 128px; height: 72px; image-rendering: pixelated; background: #3a3f4a; border-radius: 6px; flex: none; }
+  @media (max-height: 500px) { #vcard { max-width: min(360px, calc(100vw - 340px)); font-size: 11px; } #vcard canvas { width: 96px; height: 54px; } }
   #vcard b { display: block; font-size: 15px; color: #ffd75e; letter-spacing: .03em; margin-bottom: 2px; }
   #banner { position: fixed; left: 0; right: 0; top: 24%; z-index: 5; text-align: center; pointer-events: none; opacity: 0; transition: opacity .6s;
     font: 900 clamp(26px, 7vw, 52px)/1 system-ui, sans-serif; letter-spacing: .06em; color: #ffd75e; text-transform: uppercase;
@@ -198,7 +199,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 42fd5b7b · 2026-11-04</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d4073e31 · 2026-11-04</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -1423,41 +1424,83 @@ VR.makeTestMap = () => {
 };
 
 // ===== game/player.js =====
-// Jugador: sprite original de 16×24 generado por código, 4 direcciones × 4 cuadros de caminata.
-'use strict';
+// Personas: sprite original de 20×32 generado por código (arte grande, 04/11/2026), 4 direcciones × 4 cuadros.
+// Cabeza grande con cara (ojos con brillo, cejas, nariz, boca, orejas), pelo con volumen y estilos (corto,
+// largo, gorra, pelado), remera con cuello y sombra, brazos que se balancean con manos, cinto, pantalón o
+// pollera con pliegue y zapatillas con suela clara.
 VR.makePlayerSprites = (pal) => {
   const C = Object.assign({ skin: '#c98b5c', skinD: '#a76c42', hair: '#2a1b12', shirt: '#d23c2c', shirtD: '#9f2a20',
-    pants: '#2c3e6b', pantsD: '#1e2b4d', shoes: '#18181c', eye: '#1a1210' }, pal || {});
+    pants: '#2c3e6b', pantsD: '#1e2b4d', shoes: '#18181c', sole: '#e8e4da', eye: '#1a1210', style: 'corto', cap: '#2e6fc8', skirt: false }, pal || {});
+  const lite = (h, k) => VR.shadeHex(h, k);
+  const HAIRL = lite(C.hair, 1.6), SHIRTL = lite(C.shirt, 1.25), SKINL = lite(C.skin, 1.12);
   const STEP = [0, 1, 0, -1];
   const frame = (dir, f) => {
-    const c = VR.canvas(16, 24), P = VR.gfx.painter(c), s = STEP[f], bob = f % 2 ? 0 : 0;
+    const c = VR.canvas(20, 32), P = VR.gfx.painter(c), s = STEP[f], bob = s === 0 ? 0 : 1;
+    const r = (x, y, w, h, col) => P.r(x, y + bob, w, h, col);
     if (dir === 'down' || dir === 'up') {
       const front = dir === 'down';
-      // piernas
-      P.r(5, 15, 6, 2, C.pants);
-      P.r(5, 17, 2, 4 - (s < 0 ? 1 : 0), C.pants); P.r(5, 21 - (s < 0 ? 1 : 0), 2, 1, C.shoes);
-      P.r(9, 17, 2, 4 - (s > 0 ? 1 : 0), C.pantsD); P.r(9, 21 - (s > 0 ? 1 : 0), 2, 1, C.shoes);
-      // brazos (se balancean)
-      P.r(2, 10 + (s > 0 ? 1 : 0), 2, 4, C.shirtD); P.r(2, 14 + (s > 0 ? 1 : 0), 2, 1, C.skin);
-      P.r(12, 10 + (s < 0 ? 1 : 0), 2, 4, C.shirtD); P.r(12, 14 + (s < 0 ? 1 : 0), 2, 1, C.skin);
-      // torso
-      P.r(4, 9 + bob, 8, 6, C.shirt); P.r(4, 14, 8, 1, C.shirtD);
-      if (front) { P.r(7, 9, 2, 1, C.skinD); } // cuello
-      // cabeza
-      P.r(5, 2, 6, 7, C.skin);
-      if (front) {
-        P.r(5, 2, 6, 3, C.hair); P.r(5, 5, 1, 2, C.hair); P.r(10, 5, 1, 2, C.hair);
-        P.p(6, 6, C.eye); P.p(9, 6, C.eye); P.r(7, 8, 2, 1, C.skinD);
+      // piernas (una adelante, otra atrás al caminar) y zapatillas
+      const legL = s < 0 ? -1 : 0, legR = s > 0 ? -1 : 0;
+      if (C.skirt) {
+        r(6, 21, 3, 6 + legL, C.skin); r(11, 21, 3, 6 + legR, C.skinD);
+        r(5, 20, 10, 5, C.pants); r(5, 24, 10, 1, C.pantsD); r(10, 20, 1, 5, C.pantsD);
       } else {
-        P.r(5, 2, 6, 6, C.hair); P.r(6, 8, 4, 1, C.skinD);
+        r(5, 21, 10, 2, C.pants);
+        r(5, 23, 4, 4 + legL, C.pants); r(6, 23, 1, 4 + legL, lite(C.pants, 1.2));
+        r(11, 23, 4, 4 + legR, C.pantsD);
+        r(9, 21, 2, 2, C.pantsD);
       }
+      r(5, 27 + legL, 4, 2, C.shoes); r(5, 28 + legL, 4, 1, C.sole);
+      r(11, 27 + legR, 4, 2, C.shoes); r(11, 28 + legR, 4, 1, C.sole);
+      // brazos con manga y mano
+      const aL = s > 0 ? 1 : s < 0 ? -1 : 0, aR = -aL;
+      r(2, 12 + aL, 3, 4, C.shirt); r(2, 12 + aL, 1, 4, C.shirtD); r(2, 16 + aL, 3, 3, C.skin); r(2, 18 + aL, 3, 1, C.skinD);
+      r(15, 12 + aR, 3, 4, C.shirtD); r(15, 16 + aR, 3, 3, C.skinD);
+      // torso
+      r(5, 11, 10, 9, C.shirt); r(13, 11, 2, 9, C.shirtD); r(5, 11, 1, 9, SHIRTL);
+      r(5, 19, 10, 1, C.shirtD);
+      if (!C.skirt) { r(5, 20, 10, 1, '#2a2420'); r(9, 20, 2, 1, '#d8b04a'); } // cinto
+      if (front) { r(8, 11, 4, 1, C.skin); r(8, 12, 4, 1, C.shirtD); r(9, 12, 2, 1, C.skinD); } // cuello en V
+      // cabeza
+      r(5, 3, 10, 8, C.skin); r(6, 10, 8, 1, C.skin); r(13, 4, 2, 6, C.skinD);
+      r(4, 6, 1, 2, C.skin); r(15, 6, 1, 2, C.skinD); // orejas
+      if (front) {
+        r(7, 7, 2, 2, '#f6f2ea'); r(11, 7, 2, 2, '#f6f2ea'); r(8, 7, 1, 2, C.eye); r(12, 7, 1, 2, C.eye); // ojos
+        r(7, 6, 2, 1, C.hair); r(11, 6, 2, 1, C.hair);                       // cejas
+        r(10, 9, 1, 1, C.skinD); r(9, 10, 3, 1, lite(C.skinD, 0.9)); r(6, 8, 1, 1, SKINL); // nariz, boca, cachete
+      }
+      // pelo
+      if (C.style === 'gorra') {
+        r(5, 1, 10, 4, C.cap); r(6, 1, 6, 1, lite(C.cap, 1.3)); if (front) r(4, 5, 12, 1, lite(C.cap, 0.7)); else r(5, 5, 10, 2, C.hair);
+      } else if (C.style !== 'pelado') {
+        r(5, 1, 10, 3, C.hair); r(4, 2, 12, 3, C.hair); r(6, 1, 5, 1, HAIRL);
+        if (front) { r(4, 5, 1, 2, C.hair); r(15, 5, 1, 2, C.hair); r(6, 4, 3, 1, C.hair); }
+        else r(4, 4, 12, 6, C.hair), r(5, 9, 10, 1, C.hair), r(6, 3, 4, 1, HAIRL);
+        if (C.style === 'largo') { r(3, 5, 2, 9, C.hair); r(15, 5, 2, 9, C.hair); if (!front) r(4, 9, 12, 5, C.hair); }
+      } else { r(6, 2, 8, 1, C.skin); r(7, 2, 3, 1, SKINL); r(5, 3, 10, 1, C.skin); }
+      if (!front && C.style !== 'gorra' && C.style !== 'pelado') r(7, 10, 6, 1, C.skinD);
     } else { // perfil mirando a la derecha
-      P.r(7 - s, 15, 2, 6, C.pantsD); P.r(7 - s, 21, 3, 1, C.shoes);
-      P.r(6, 9, 5, 6, C.shirt); P.r(6, 14, 5, 1, C.shirtD);
-      P.r(7 + s, 15, 2, 6, C.pants); P.r(7 + s, 21, 3, 1, C.shoes);
-      P.r(7 + s, 10, 2, 4, C.shirtD); P.r(7 + s, 14, 2, 1, C.skin);
-      P.r(6, 2, 6, 7, C.skin); P.r(6, 2, 6, 3, C.hair); P.r(6, 5, 2, 2, C.hair);
-      P.p(10, 6, C.eye); P.p(12, 6, C.skin); P.r(9, 8, 2, 1, C.skinD);
+      const back = s, fwd = -s;
+      // pierna de atrás, torso, pierna de adelante
+      if (C.skirt) { r(8 + back * 2, 21, 3, 6, C.skinD); r(8 + fwd * 2, 21, 3, 6, C.skin); r(6, 20, 8, 5, C.pants); r(6, 24, 8, 1, C.pantsD); }
+      else {
+        r(8 + back * 2, 21, 3, 6, C.pantsD);
+        r(7, 20, 6, 2, C.pants); r(8 + fwd * 2, 21, 3, 6, C.pants); r(8 + fwd * 2, 21, 1, 6, lite(C.pants, 1.2));
+      }
+      r(8 + back * 2, 27, 5, 2, lite(C.shoes, 1.3)); r(8 + back * 2, 28, 5, 1, C.sole);
+      r(8 + fwd * 2, 27, 5, 2, C.shoes); r(8 + fwd * 2, 28, 5, 1, C.sole);
+      r(6, 11, 8, 9, C.shirt); r(6, 11, 2, 9, C.shirtD); r(6, 19, 8, 1, C.shirtD);
+      if (!C.skirt) r(6, 20, 8, 1, '#2a2420');
+      r(8 + fwd, 12, 3, 4, SHIRTL); r(8 + fwd, 16, 3, 3, C.skin); r(8 + fwd, 18, 3, 1, C.skinD); // brazo de adelante
+      // cabeza de perfil
+      r(6, 3, 9, 8, C.skin); r(15, 6, 1, 3, C.skin); r(7, 10, 7, 1, C.skin);
+      r(12, 7, 2, 2, '#f6f2ea'); r(13, 7, 1, 2, C.eye); r(12, 6, 2, 1, C.hair);
+      r(14, 10, 2, 1, C.skinD); r(8, 6, 2, 2, C.skinD); // boca y oreja
+      if (C.style === 'gorra') { r(5, 1, 10, 4, C.cap); r(14, 4, 4, 1, lite(C.cap, 0.7)); r(5, 5, 3, 3, C.hair); }
+      else if (C.style !== 'pelado') {
+        r(5, 1, 10, 3, C.hair); r(5, 4, 4, 2, C.hair); r(5, 4, 2, 5, C.hair); r(7, 1, 5, 1, HAIRL); r(13, 4, 2, 1, C.hair);
+        if (C.style === 'largo') r(4, 4, 4, 10, C.hair);
+      }
     }
     return VR.gfx.outline(c, '#140f0c');
   };
@@ -1466,6 +1509,7 @@ VR.makePlayerSprites = (pal) => {
   out.left = out.right.map((c) => VR.gfx.flipX(c));
   return out;
 };
+VR.SPR = { w: 20, h: 32, ox: 10, oy: 30 }; // tamaño del sprite de persona y punto de los pies
 
 VR.Player = class {
   constructor(world, x, y) {
@@ -1507,13 +1551,13 @@ VR.Player = class {
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
     const f = this.moving ? (Math.floor(this.anim) % 4) : 0;
-    ctx.drawImage(this.sprites[this.dir][f], x - 8, y - 23);
+    ctx.drawImage(this.sprites[this.dir][f], x - VR.SPR.ox, y - VR.SPR.oy);
   }
   drawBubble(ctx, camX, camY, a) {
     if (!this.bubble) return;
-    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 30;
+    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 38;
     const img = VR.gfx.textImg(this.bubble.text, '#1a1a1e', 9);
     const w = img.width + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2), by = y - h;
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(bx - 1, by, w + 2, h); ctx.fillRect(bx, by - 1, w, h + 2);
@@ -1546,9 +1590,18 @@ VR.MOTO_COLORS = [
 ];
 VR.RIDER_SHIRTS = [['#d23c2c', '#9f2a20'], ['#2e6fc8', '#1f4c8c'], ['#f0ece2', '#b8b2a4'], ['#3b9a5a', '#286a3d'], ['#e8b830', '#a8841c'], ['#7a4ab0', '#563480'], ['#30303a', '#18181e']];
 
+// Arte grande (04/11/2026): los vehículos se dibujan ×1,3 respecto de la ciudad, como en los juegos de la época,
+// para que se vean y se distingan. Los dibujos están en una grilla chica y el pintor los agranda redondeando.
+VR.VK = 1.3;
+VR.vpaint = (w, h) => {
+  const k = VR.VK, c = VR.canvas(Math.round(w * k), Math.round(h * k)), x = c.getContext('2d');
+  const R = (v) => Math.round(v * k);
+  return [c, { ctx: x, r(px, py, pw, ph, col) { x.fillStyle = col; x.fillRect(R(px), R(py), Math.max(1, R(px + pw) - R(px)), Math.max(1, R(py + ph) - R(py))); },
+    p(px, py, col) { this.r(px, py, 1, 1, col); } }];
+};
 // Sprite base del compacto mirando hacia arriba (16×30): capó corto, parabrisas grande, techo, luneta y portón.
 VR.drawCarBase = (pal) => {
-  const [C, D, L] = pal, c = VR.canvas(16, 30), P = VR.gfx.painter(c);
+  const [C, D, L] = pal, [c, P] = VR.vpaint(16, 30);
   const GLASS = '#3b4d63', GLASS_L = '#6f8aa6', TIRE = '#121214';
   P.r(0, 5, 2, 6, TIRE); P.r(14, 5, 2, 6, TIRE); P.r(0, 21, 2, 6, TIRE); P.r(14, 21, 2, 6, TIRE);
   P.r(2, 1, 12, 28, C); P.r(1, 3, 14, 24, C);
@@ -1569,7 +1622,7 @@ VR.drawCarBase = (pal) => {
 // categoría (sin marcas ni modelos reales): moto de calle chica "cub", mini moto, moto de calle 150,
 // motocarga de tres ruedas y patineta eléctrica. Cada uno con su silueta para que se distingan de lejos.
 VR.drawMotoCub = (pal) => { // underbone 125: escudo delantero ancho, piso bajo, asiento largo (10×21)
-  const [C, D, L] = pal, c = VR.canvas(10, 21), P = VR.gfx.painter(c), TIRE = '#141416', CH = '#b8bcc4';
+  const [C, D, L] = pal, [c, P] = VR.vpaint(10, 21), TIRE = '#141416', CH = '#b8bcc4';
   P.r(4, 0, 2, 5, TIRE); P.r(4, 16, 2, 5, TIRE);
   P.r(4, 1, 2, 1, '#fff7c8');
   P.r(1, 2, 1, 2, CH); P.r(8, 2, 1, 2, CH);                          // espejos altos
@@ -1583,7 +1636,7 @@ VR.drawMotoCub = (pal) => { // underbone 125: escudo delantero ancho, piso bajo,
   return c;
 };
 VR.drawMotoMini = (pal) => { // mini moto: ruedas gordas, faro redondo, corta y ancha (10×17)
-  const [C, D, L] = pal, c = VR.canvas(10, 17), P = VR.gfx.painter(c), TIRE = '#141416';
+  const [C, D, L] = pal, [c, P] = VR.vpaint(10, 17), TIRE = '#141416';
   P.r(3, 0, 4, 4, TIRE); P.r(3, 13, 4, 4, TIRE); P.r(4, 0, 2, 1, '#2a2a2e'); P.r(4, 16, 2, 1, '#2a2a2e');
   P.r(3, 2, 4, 2, C); P.r(4, 2, 2, 1, '#fff7c8');                    // faro redondo
   P.r(1, 4, 8, 1, '#2a2a2e'); P.r(1, 4, 1, 1, '#b8bcc4'); P.r(8, 4, 1, 1, '#b8bcc4');
@@ -1593,7 +1646,7 @@ VR.drawMotoMini = (pal) => { // mini moto: ruedas gordas, faro redondo, corta y 
   return c;
 };
 VR.drawMotoCalle = (pal) => { // moto de calle 150: visera, tanque grande, parrilla atrás, escape largo cromado (10×22)
-  const [C, D, L] = pal, c = VR.canvas(10, 22), P = VR.gfx.painter(c), TIRE = '#141416', CH = '#c8ccd4';
+  const [C, D, L] = pal, [c, P] = VR.vpaint(10, 22), TIRE = '#141416', CH = '#c8ccd4';
   P.r(4, 0, 2, 5, TIRE); P.r(4, 17, 2, 5, TIRE);
   P.r(3, 2, 4, 3, '#1e1e22'); P.r(4, 2, 2, 1, '#fff7c8'); P.r(3, 4, 4, 1, C); // faro con visera
   P.r(0, 5, 10, 1, '#2a2a2e'); P.r(0, 5, 1, 1, CH); P.r(9, 5, 1, 1, CH);
@@ -1605,7 +1658,7 @@ VR.drawMotoCalle = (pal) => { // moto de calle 150: visera, tanque grande, parri
   return c;
 };
 VR.drawMotoCarga = (pal) => { // motocarga: moto adelante y caja de carga atrás con dos ruedas (18×34)
-  const [C, D, L] = pal, c = VR.canvas(18, 34), P = VR.gfx.painter(c), TIRE = '#141416', CH = '#b8bcc4';
+  const [C, D, L] = pal, [c, P] = VR.vpaint(18, 34), TIRE = '#141416', CH = '#b8bcc4';
   P.r(8, 0, 2, 5, TIRE); P.r(8, 1, 2, 1, '#fff7c8');
   P.r(4, 5, 10, 1, '#2a2a2e'); P.r(4, 5, 1, 1, CH); P.r(13, 5, 1, 1, CH);
   P.r(6, 6, 6, 3, C); P.r(6, 6, 1, 3, L); P.r(11, 6, 1, 3, D);       // tanque
@@ -1619,7 +1672,7 @@ VR.drawMotoCarga = (pal) => { // motocarga: moto adelante y caja de carga atrás
   return c;
 };
 VR.drawPati = (pal) => { // patineta eléctrica: manubrio en T, tabla angosta (6×14)
-  const [C, D] = pal, c = VR.canvas(6, 14), P = VR.gfx.painter(c), TIRE = '#141416';
+  const [C, D] = pal, [c, P] = VR.vpaint(6, 14), TIRE = '#141416';
   P.r(2, 0, 2, 3, TIRE); P.r(2, 11, 2, 3, TIRE);
   P.r(0, 2, 6, 1, '#2a2a2e'); P.r(0, 2, 1, 1, '#d8dce4'); P.r(5, 2, 1, 1, '#d8dce4');
   P.r(2, 3, 2, 1, C);
@@ -1631,7 +1684,7 @@ VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f 
 VR.drawMotoBase = VR.drawMotoCub;
 // Conductor de moto visto desde arriba (10×12): cabeza (pelo o casco), hombros y brazos al manubrio.
 VR.drawRiderBase = (shirt, head) => {
-  const c = VR.canvas(10, 20), P = VR.gfx.painter(c);
+  const [c, P] = VR.vpaint(10, 20);
   P.r(0, 5, 2, 3, shirt[1]); P.r(8, 5, 2, 3, shirt[1]);  // brazos
   P.r(1, 7, 8, 5, shirt[0]); P.r(7, 7, 2, 5, shirt[1]);  // hombros y espalda
   P.r(3, 5, 4, 4, head); P.r(3, 5, 2, 1, head === '#2a1b12' ? '#3d2a1c' : '#ffffff'); // cabeza
@@ -1692,7 +1745,19 @@ VR.pickMoto = (rnd, parked) => {
   if (parked) return r < 0.55 ? 'cub' : r < 0.78 ? 'calle' : r < 0.95 ? 'mini' : 'pati';
   return r < 0.46 ? 'cub' : r < 0.66 ? 'calle' : r < 0.78 ? 'mini' : r < 0.95 ? 'carga' : 'pati';
 };
-VR.vspec = (type, model) => type === 'moto' ? { ...VR.VSPEC.moto, ...VR.MOTO_MODELS[model || 'cub'] } : VR.VSPEC[type];
+VR.vspec = (() => {
+  const cache = new Map();
+  return (type, model) => {
+    const key = type + ':' + (model || '');
+    let sp = cache.get(key);
+    if (!sp) {
+      sp = type === 'moto' ? { ...VR.VSPEC.moto, ...VR.MOTO_MODELS[model || 'cub'] } : { ...VR.VSPEC[type] };
+      const k = VR.VK; sp.len = Math.round(sp.len * k); sp.wid = Math.round(sp.wid * k); sp.S = Math.round(sp.S * k) + 2; if (sp.riderOff) sp.riderOff = Math.round(sp.riderOff * k);
+      cache.set(key, sp);
+    }
+    return sp;
+  };
+})();
 VR.vframes = (() => {
   const cache = new Map();
   return (type, color, model) => {
@@ -1707,7 +1772,7 @@ VR.riderFrames = (() => {
   return (shirt, head) => {
     const key = shirt.join() + head;
     let f = cache.get(key);
-    if (!f) { f = VR.rotFrames(VR.drawRiderBase(shirt, head), 24); cache.set(key, f); }
+    if (!f) { f = VR.rotFrames(VR.drawRiderBase(shirt, head), Math.round(24 * VR.VK) + 2); cache.set(key, f); }
     return f;
   };
 })();
@@ -1930,17 +1995,17 @@ VR.parkCars = (world, n, near) => {
       while (curb(x0 - 1, ty - 1) && road(x0 - 1, ty)) x0--;
       while (curb(x1 + 1, ty - 1) && road(x1 + 1, ty)) x1++;
       x0 += 2; x1 -= 2;                                       // lejos de las esquinas
-      const yl = ty * S + 8, yr = (yb + 1) * S - 6;           // autos a 8 px del cordón norte, motos contra el cordón sur
+      const yl = ty * S + 11, yr = (yb + 1) * S - 6;           // autos a 8 px del cordón norte, motos contra el cordón sur
       const fx = (x0 + 1) * S;
       // autos en fila, mirando hacia el este (el sentido de la calle); el primero, rojo, frente a donde arrancás
       const slots = [];
-      for (let px = x0 * S + 16; px <= x1 * S - 16; px += 36) slots.push(px);
+      for (let px = x0 * S + 22; px <= x1 * S - 22; px += 47) slots.push(px);
       slots.sort((a, b) => Math.abs(a - near.x) - Math.abs(b - near.x));
       first = add(slots[0], yl, Math.PI / 2, 0);
       for (let i = 1; i < slots.length; i++) if (rnd() < 0.85) add(slots[i], yl, Math.PI / 2, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
       // motos en batería, la rueda trasera contra el cordón sur (miran hacia la calle), cada 11 px
-      for (let px = fx; px <= x1 * S - 8; px += 11) if (rnd() < 0.8)
-        add(px + ((rnd() * 2) | 0), yr - 8, (rnd() < 0.5 ? 0 : 0.12) - 0.06 + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+      for (let px = fx; px <= x1 * S - 10; px += 14) if (rnd() < 0.8)
+        add(px + ((rnd() * 2) | 0), yr - 11, (rnd() < 0.5 ? 0 : 0.12) - 0.06 + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
       world.parkingDemo = [{ x0: x0 * S, x1: x1 * S, y0: ty * S, y1: (yb + 1) * S }];
     }
     // --- y en General Díaz, del lado este de la plaza (mano única hacia el norte): autos a la izquierda
@@ -1956,10 +2021,10 @@ VR.parkCars = (world, n, near) => {
         let xa = bx1 + 1, lim2 = 10; while (lim2-- > 0 && !road(xa, my)) xa++;
         let xb = xa; while (road(xb + 1, my)) xb++;
         if (xb - xa >= 3) {
-          const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 8, xr = (xb + 1) * S - 6;
-          for (let py = ya * S + 16; py <= yz * S - 16; py += 36) if (rnd() < 0.85) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
-          for (let py = (ya + 1) * S; py <= yz * S - 8; py += 11) if (rnd() < 0.8)
-            add(xr - 8, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 11, xr = (xb + 1) * S - 6;
+          for (let py = ya * S + 22; py <= yz * S - 22; py += 47) if (rnd() < 0.85) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.8)
+            add(xr - 11, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           (world.parkingDemo = world.parkingDemo || []).push({ x0: xa * S, x1: (xb + 1) * S, y0: ya * S, y1: yz * S });
         }
         // Coronel Bogado, del lado oeste de la plaza (mano única hacia el sur): autos a la izquierda (este,
@@ -1967,10 +2032,10 @@ VR.parkCars = (world, n, near) => {
         let wb = bx0 - 1, lim3 = 10; while (lim3-- > 0 && !road(wb, my)) wb--;
         let wa = wb; while (road(wa - 1, my)) wa--;
         if (wb - wa >= 3) {
-          const ya = by0 + 3, yz = by1 - 3, xl = (wb + 1) * S - 8, xr = wa * S + 6;
-          for (let py = ya * S + 16; py <= yz * S - 16; py += 36) if (rnd() < 0.85) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
-          for (let py = (ya + 1) * S; py <= yz * S - 8; py += 11) if (rnd() < 0.8)
-            add(xr + 8, py + ((rnd() * 2) | 0), Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? -0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          const ya = by0 + 3, yz = by1 - 3, xl = (wb + 1) * S - 11, xr = wa * S + 6;
+          for (let py = ya * S + 22; py <= yz * S - 22; py += 47) if (rnd() < 0.85) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.8)
+            add(xr + 11, py + ((rnd() * 2) | 0), Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? -0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           world.parkingDemo.push({ x0: wa * S, x1: (wb + 1) * S, y0: ya * S, y1: yz * S });
         }
       }
@@ -2001,11 +2066,11 @@ VR.parkCars = (world, n, near) => {
     if (rnd() < 0.22) { // 2 o 3 motos en batería contra el cordón
       const [cx, cy, , dy, dx] = s, k = 2 + ((rnd() * 2) | 0);
       for (let i = 0; i < k; i++) {
-        const mx = dy ? cx - 11 + i * 11 : cx + dx * 4, my = dy ? cy + dy * 4 : cy - 11 + i * 11;
+        const mx = dy ? cx - 14 + i * 14 : cx + dx * 5, my = dy ? cy + dy * 5 : cy - 14 + i * 14;
         const a = dy ? (dy > 0 ? 0 : Math.PI) : (dx > 0 ? -Math.PI / 2 : Math.PI / 2);
-        if (free(mx, my, 6)) add(mx, my, a, (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+        if (free(mx, my, 8)) add(mx, my, a, (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
       }
-    } else if (free(s[0], s[1], 18)) add(s[0], s[1], s[2], 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+    } else if (free(s[0], s[1], 24)) add(s[0], s[1], s[2], 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
   }
   return { cars, first };
 };
@@ -2086,10 +2151,10 @@ VR.Traffic = class {
       const e = this.edges[id];
       const s0 = Math.min(e.len * 0.5, 20);
       const [lx, ly, dx, dy] = this.lane(e, n, s0);
-      if (W.boxOverlap(lx - 18, ly - 18, lx + 18, ly + 18)) continue;
+      if (W.boxOverlap(lx - 24, ly - 24, lx + 24, ly + 24)) continue;
       const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', model = moto ? VR.pickMoto(this.rnd, false) : null;
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
-      if (W.boxOverlap(lx - 22, ly - 22, lx + 22, ly + 22) && model === 'carga') continue;
+      if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model);
       if (moto) v.rider = { shirt: VR.RIDER_SHIRTS[(this.rnd() * VR.RIDER_SHIRTS.length) | 0], head: this.rnd() < 0.45 ? '#2a1b12' : ['#1a1a1e', '#c8322a', '#f2f0ea', '#2f5fa8'][(this.rnd() * 4) | 0] };
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
@@ -2271,9 +2336,12 @@ VR.Peds = class {
     const SHIRT = [['#2e6fc8', '#1f4c8c'], ['#f0ece2', '#b8b2a4'], ['#3b9a5a', '#286a3d'], ['#e8b830', '#a8841c'], ['#7a4ab0', '#563480'], ['#30303a', '#18181e'], ['#e86aa0', '#b04876'], ['#e87a2a', '#a8561c'], ['#58b8c8', '#3a8a98']];
     const PANTS = [['#2c3e6b', '#1e2b4d'], ['#3a3a40', '#26262a'], ['#7a6a52', '#5a4c3a'], ['#2a5a8a', '#1c3e62'], ['#b8b0a0', '#8e8676']];
     this.sprites = [];
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 24; i++) {
       const [skin, skinD] = pick(SKIN), [shirt, shirtD] = pick(SHIRT), [pants, pantsD] = pick(PANTS);
-      this.sprites.push(VR.makePlayerSprites({ skin, skinD, hair: pick(HAIR), shirt, shirtD, pants, pantsD }));
+      const st = R(), skirt = R() < 0.25, style = skirt ? (R() < 0.7 ? 'largo' : 'corto') : st < 0.55 ? 'corto' : st < 0.75 ? 'gorra' : st < 0.9 ? 'largo' : 'pelado';
+      const SKIRT = [['#c8322a', '#8e1f1a'], ['#2c3e6b', '#1e2b4d'], ['#e8b830', '#a8841c'], ['#30303a', '#18181e']];
+      const [pa, paD] = skirt ? pick(SKIRT) : [pants, pantsD];
+      this.sprites.push(VR.makePlayerSprites({ skin, skinD, hair: pick(HAIR), shirt, shirtD, pants: pa, pantsD: paD, style, skirt, cap: pick(['#2e6fc8', '#c8322a', '#f0ece2', '#30303a', '#3b9a5a']), shoes: pick(['#18181c', '#f0ece2', '#2e6fc8', '#6a4424']) }));
     }
     this.flat = new Map(); // sprite "acostado" (cuando lo chocás)
   }
@@ -2373,8 +2441,8 @@ VR.Peds = class {
   lying(pal) {
     let c = this.flat.get(pal);
     if (!c) {
-      const s = this.sprites[pal].down[0]; c = VR.canvas(24, 16); const g = c.getContext('2d');
-      g.translate(12, 8); g.rotate(Math.PI / 2); g.drawImage(s, -8, -12); this.flat.set(pal, c);
+      const s = this.sprites[pal].down[0]; c = VR.canvas(32, 20); const g = c.getContext('2d');
+      g.translate(16, 10); g.rotate(Math.PI / 2); g.drawImage(s, -10, -16); this.flat.set(pal, c);
     }
     return c;
   }
@@ -2383,10 +2451,10 @@ VR.Peds = class {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -30 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
-        ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5, 2.2, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 12, y - 12);
-        else ctx.drawImage(this.sprites[p.pal][p.dir][p.mode === 'idle' ? 0 : Math.floor(p.anim) % 4], x - 8, y - 23);
-        if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 4, y: y + camY + 4 }, ctx, camX, camY, 1);
+        ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6.5, 2.8, 0, 0, Math.PI * 2); ctx.fill();
+        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 16, y - 14);
+        else ctx.drawImage(this.sprites[p.pal][p.dir][p.mode === 'idle' ? 0 : Math.floor(p.anim) % 4], x - VR.SPR.ox, y - VR.SPR.oy);
+        if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 12, y: y + camY + 12 }, ctx, camX, camY, 1);
       } });
     }
   }
@@ -2636,7 +2704,7 @@ VR.showVehicleCard = (v) => {
   const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 900, world.spawn);
   const cars = parked.cars;
   let car = null; // auto que estás manejando
-  const WALK_BASE = 270, DRIVE_BASE = 420;
+  const WALK_BASE = 190, DRIVE_BASE = 300; // arte grande (04/11/2026): cámara más cerca, como Gangstar
   const traffic = prueba ? null : new VR.Traffic(world, { max: 34, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
@@ -2774,8 +2842,8 @@ VR.showVehicleCard = (v) => {
     player.drawBubble(ctx, cx, cy, a);
     drawMini(dt || 0);
     drawGpsArrow(ctx, cx, cy, a);
-    if (traffic) for (const v of traffic.list) if (v.honkT > 0) VR.gfx.text(ctx, v.honkTxt, Math.round(v.x - cx), Math.round(v.y - cy - 24), '#fff6d8', { center: true, shadow: '#1a1a1e' });
-    if (hint && hintCar) VR.gfx.text(ctx, hint, Math.round(hintCar.x - cx), Math.round(hintCar.y - cy - 26), '#ffd75e', { center: true, shadow: '#1a1a1e' });
+    if (traffic) for (const v of traffic.list) if (v.honkT > 0) VR.gfx.text(ctx, v.honkTxt, Math.round(v.x - cx), Math.round(v.y - cy - 30), '#fff6d8', { center: true, shadow: '#1a1a1e' });
+    if (hint && hintCar) VR.gfx.text(ctx, hint, Math.round(hintCar.x - cx), Math.round(hintCar.y - cy - 32), '#ffd75e', { center: true, shadow: '#1a1a1e' });
     drawHud();
   }
   let hudT = 0, zoneT = 0, zone = '', barrio = '';

@@ -16,9 +16,12 @@ VR.Peds = class {
     const SHIRT = [['#2e6fc8', '#1f4c8c'], ['#f0ece2', '#b8b2a4'], ['#3b9a5a', '#286a3d'], ['#e8b830', '#a8841c'], ['#7a4ab0', '#563480'], ['#30303a', '#18181e'], ['#e86aa0', '#b04876'], ['#e87a2a', '#a8561c'], ['#58b8c8', '#3a8a98']];
     const PANTS = [['#2c3e6b', '#1e2b4d'], ['#3a3a40', '#26262a'], ['#7a6a52', '#5a4c3a'], ['#2a5a8a', '#1c3e62'], ['#b8b0a0', '#8e8676']];
     this.sprites = [];
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 24; i++) {
       const [skin, skinD] = pick(SKIN), [shirt, shirtD] = pick(SHIRT), [pants, pantsD] = pick(PANTS);
-      this.sprites.push(VR.makePlayerSprites({ skin, skinD, hair: pick(HAIR), shirt, shirtD, pants, pantsD }));
+      const st = R(), skirt = R() < 0.25, style = skirt ? (R() < 0.7 ? 'largo' : 'corto') : st < 0.55 ? 'corto' : st < 0.75 ? 'gorra' : st < 0.9 ? 'largo' : 'pelado';
+      const SKIRT = [['#c8322a', '#8e1f1a'], ['#2c3e6b', '#1e2b4d'], ['#e8b830', '#a8841c'], ['#30303a', '#18181e']];
+      const [pa, paD] = skirt ? pick(SKIRT) : [pants, pantsD];
+      this.sprites.push(VR.makePlayerSprites({ skin, skinD, hair: pick(HAIR), shirt, shirtD, pants: pa, pantsD: paD, style, skirt, cap: pick(['#2e6fc8', '#c8322a', '#f0ece2', '#30303a', '#3b9a5a']), shoes: pick(['#18181c', '#f0ece2', '#2e6fc8', '#6a4424']) }));
     }
     this.flat = new Map(); // sprite "acostado" (cuando lo chocás)
   }
@@ -118,8 +121,8 @@ VR.Peds = class {
   lying(pal) {
     let c = this.flat.get(pal);
     if (!c) {
-      const s = this.sprites[pal].down[0]; c = VR.canvas(24, 16); const g = c.getContext('2d');
-      g.translate(12, 8); g.rotate(Math.PI / 2); g.drawImage(s, -8, -12); this.flat.set(pal, c);
+      const s = this.sprites[pal].down[0]; c = VR.canvas(32, 20); const g = c.getContext('2d');
+      g.translate(16, 10); g.rotate(Math.PI / 2); g.drawImage(s, -10, -16); this.flat.set(pal, c);
     }
     return c;
   }
@@ -128,10 +131,10 @@ VR.Peds = class {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -30 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
-        ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5, 2.2, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 12, y - 12);
-        else ctx.drawImage(this.sprites[p.pal][p.dir][p.mode === 'idle' ? 0 : Math.floor(p.anim) % 4], x - 8, y - 23);
-        if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 4, y: y + camY + 4 }, ctx, camX, camY, 1);
+        ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6.5, 2.8, 0, 0, Math.PI * 2); ctx.fill();
+        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 16, y - 14);
+        else ctx.drawImage(this.sprites[p.pal][p.dir][p.mode === 'idle' ? 0 : Math.floor(p.anim) % 4], x - VR.SPR.ox, y - VR.SPR.oy);
+        if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 12, y: y + camY + 12 }, ctx, camX, camY, 1);
       } });
     }
   }

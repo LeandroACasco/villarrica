@@ -73,10 +73,10 @@ VR.Traffic = class {
       const e = this.edges[id];
       const s0 = Math.min(e.len * 0.5, 20);
       const [lx, ly, dx, dy] = this.lane(e, n, s0);
-      if (W.boxOverlap(lx - 18, ly - 18, lx + 18, ly + 18)) continue;
+      if (W.boxOverlap(lx - 24, ly - 24, lx + 24, ly + 24)) continue;
       const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', model = moto ? VR.pickMoto(this.rnd, false) : null;
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
-      if (W.boxOverlap(lx - 22, ly - 22, lx + 22, ly + 22) && model === 'carga') continue;
+      if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model);
       if (moto) v.rider = { shirt: VR.RIDER_SHIRTS[(this.rnd() * VR.RIDER_SHIRTS.length) | 0], head: this.rnd() < 0.45 ? '#2a1b12' : ['#1a1a1e', '#c8322a', '#f2f0ea', '#2f5fa8'][(this.rnd() * 4) | 0] };
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
