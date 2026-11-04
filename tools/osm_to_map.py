@@ -602,7 +602,8 @@ def main(src, out, preview=None):
             o = (b_id - 1) * 8
             bdata[o + 2] = fl; bdata[o + 5] = wc_; bdata[o + 6] = 1
             decals.append({'kind': 'frente', 'style': style, 'x': bx_ + 1, 'y': ya_, 'w': 2, 'h': yb_ - ya_ + 1})
-            labels.append({'text': name, 'x': (bx_ + 1) * 16 + 12, 'y': ((ya_ + yb_) // 2) * 16 + 6, 'small': 1})
+            if style == 'marimer':  # solo los nombres que ayudan a ubicarse (Leandro: no hace falta poner todos)
+                labels.append({'text': name, 'x': (bx_ + 1) * 16 + 12, 'y': ((ya_ + yb_) // 2) * 16 + 6, 'small': 1})
             rows_done.append((ya_, yb_, bx_, style))
         if rows_done:
             ya_ = min(r[0] for r in rows_done); yb_ = max(r[1] for r in rows_done); xe = max(r[2] for r in rows_done)
