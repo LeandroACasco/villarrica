@@ -12,7 +12,7 @@
   // ---------- catálogo de la tienda (precios en guaraníes) ----------
   const CAT = {
     skin: ['#f1c9a5', '#e0aa7e', '#c98b5c', '#b07850', '#8f5b38', '#6b4026'],
-    hairColor: ['#16110d', '#2a1b12', '#4a2e1a', '#7a4e24', '#c8a050', '#9c9890', '#8a2a22'],
+    hairColor: ['#16110d', '#2a1b12', '#4a2e1a', '#7a4e24', '#c8a050', '#9c9890', '#8a2a22', '#8a7868', '#e8d08a'],
     cloth: ['#c8322a', '#f2efe6', '#2e6fc8', '#2c2c34', '#3b9a5a', '#e8b830', '#7a4ab0', '#e86aa0', '#e87a2a', '#4aa8b8', '#8a6a48', '#6a7a3a', '#a8d0ec', '#1e3a6a', '#9a9aa2', '#5a2a2a'],
     denim: ['#2c4a7b', '#4a6a9a', '#2a2a32', '#6a6258', '#c8c0ae'],
     hair: { corto: ['Corto', 15000], degrade: ['Degradé', 25000], rapado: ['Rapado', 10000], peinadoAtras: ['Para atrás', 20000], flequillo: ['Flequillo', 20000],
@@ -412,7 +412,6 @@
       armDraw(S.elbF, S.wriF, false);
       legDraw(S.kneeF, S.ankF, false, S.footF);
       if (L.mochila) paint((g) => { g.beginPath(); g.roundRect(S.shoulder[0] - 3.6, 8 + b, 2.2, 6.2, 0.7); g.fill(); }, packC);
-      if (L.bottom === 'pollera') paint((g) => poly(g, [[8 - 1.8, 14.6 + b], [8 + 1.9, 14.6 + b], [8 + 3, 21 + b], [8 - 2.8, 21 + b]]), botC);
       const bulky = L.top === 'puffer' ? 0.55 : L.top === 'buzo' || OPEN ? 0.3 : 0;
       paint((g) => poly(g, torso(0)), skin, { shade: skinD });
       const tm = L.top === 'top' ? paint((g) => { const T = torso(0); poly(g, [[T[7][0], 8.6 + b], [T[2][0], 8.6 + b], [T[2][0], 12 + b], [T[7][0], 12 + b]]); }, topC)
@@ -423,6 +422,11 @@
       if (OPEN && k >= 2) pix(S.shoulder[0] + 1.0 + (L.top === 'puffer' ? 0.4 : 0), 8.6 + b, top2, Math.round(0.8 * k), Math.round(6 * k));
       if (legLen > 0 && L.bottom !== 'pollera') paint((g) => { const T = torso(0); g.fillRect(T[5][0], 14.8 + b, T[4][0] - T[5][0], 2); }, botC);
       legDraw(S.kneeN, S.ankN, true, S.footN);
+      if (L.bottom === 'pollera') { // la pollera va encima de las dos piernas y se abre hacia la pierna que avanza
+        const fw = Math.max(S.kneeN[0], S.kneeF[0]) - 8, bw = 8 - Math.min(S.kneeN[0], S.kneeF[0]);
+        paint((g) => poly(g, [[8 - 1.9, 14.6 + b], [8 + 2.0, 14.6 + b], [8 + 2.6 + Math.max(0, fw) * 0.35, 20.8 + b], [8 - 2.5 - Math.max(0, bw) * 0.35, 20.8 + b]]), botC);
+        if (k >= 2) for (const x of [-1.2, 0.3, 1.6]) pix(8 + x, 17.5 + b, SH(botC, 0.78), P, Math.round(3 * k));
+      }
       armDraw(S.elbN, S.wriN, true);
       if (L.reloj && k >= 2) pix(S.wriN[0] - 0.4, S.wriN[1] - 0.2, '#2a2a30', Math.round(1.1 * k), Math.max(1, Math.round(0.45 * k)));
       // cuello y cabeza de perfil
@@ -470,7 +474,8 @@
             if (longHair) { g.fillRect(hx - 2.35, hy - 0.6, 0.75, 4.8 + S.hair * 0.3); g.fillRect(hx + 1.6, hy - 0.6, 0.75, 4.8 + S.hair * 0.3); } }, H2, { shade: HD });
           if (st === 'peinadoAtras' && k >= 2) pix(hx - 1.2, hy - 1.9, SH(hair, 1.4), Math.round(2.4 * k), P);
           if (st === 'corto' && k >= 2) pix(hx - 1.5, hy - 1.7, SH(hair, 1.35), Math.round(1.2 * k), P);
-          if (midHair && k >= 2) { pix(hx - 0.05, hy - 2.25, SH(skin, 0.9), P, Math.round(0.6 * k)); pix(hx - 1.6, hy - 1.6, SH(hair, 1.6), Math.round(0.9 * k), P); pix(hx + 0.8, hy - 1.6, SH(hair, 1.6), Math.round(0.9 * k), P); }
+          if (midHair) paint((g) => { ell(g, hx, hy - 0.9, 2.3, 1.75); poly(g, [[hx - 2.1, hy - 1.3], [hx + 1.9, hy - 1.6], [hx + 1.7, hy - 0.75], [hx + 0.3, hy - 1.0], [hx - 1.0, hy - 0.6], [hx - 2.0, hy - 0.55]]); }, H2, { shade: HD });
+          if (midHair && k >= 2) { pix(hx - 1.6, hy - 2.0, SH(hair, 1.7), Math.round(1.4 * k), P); pix(hx + 0.4, hy - 1.2, SH(hair, 0.7), Math.round(0.9 * k), P); }
           if (st === 'rodete') paint((g) => ell(g, hx, hy - 2.55, 1.0, 0.75), H2, { shade: HD });
           if (wavy) paint((g) => { for (let i = 0; i < 6; i++) { const o = (i % 2) * 0.4; ell(g, hx - 2.35 - o, hy + 0.4 + i * 1.25 + S.hair * 0.3, 0.95, 0.9); ell(g, hx + 2.35 + o, hy + 0.4 + i * 1.25 + S.hair * 0.3, 0.95, 0.9); } }, H2, { shade: HD });
           if (st === 'colitaLado') paint((g) => { ell(g, hx - 2.1, hy + 0.9, 0.7, 0.7); cap(g, [hx - 2.2, hy + 1.2], [hx - 2.7, hy + 5.4 + S.hair * 0.3], 1.1, 0.7); }, H2, { shade: HD });
