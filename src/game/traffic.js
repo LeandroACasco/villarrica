@@ -85,7 +85,7 @@ VR.Traffic = class {
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
       v.ai.next = this.pickNext(e, to);
       v.v = v.ai.cruise * 0.6;
-      W.addBox(v); this.list.push(v);
+      v.tid = ++this.seq || (this.seq = 1); W.addBox(v); this.list.push(v);
       return v;
     }
     return null;
@@ -158,12 +158,13 @@ VR.Traffic = class {
       let blockedBy = null;
       for (let k = v.LEN / 2 + 4; k <= look && !blockedBy; k += 6) {
         const qx = v.x + fx * k, qy = v.y + fy * k;
-        const o = W.boxAt(qx, qy, v);
+        const rx = Math.cos(v.a) * (v.WID / 2 - 1), ry = Math.sin(v.a) * (v.WID / 2 - 1);
+        const o = W.boxAt(qx, qy, v) || W.boxAt(qx + rx, qy + ry, v) || W.boxAt(qx - rx, qy - ry, v);
         if (o) blockedBy = o;
         else if (playerBody && Math.abs(qx - playerBody.x) < 9 && Math.abs(qy - playerBody.y) < 9) blockedBy = playerBody;
       }
       if (ai.yield > 0) target = Math.min(target, 18);
-      if (ai.back > 0) { ai.back -= dt; v.v = -28; v.x += fx * v.v * dt; v.y += fy * v.v * dt; v.vx = fx * v.v; v.vy = fy * v.v; W.moveBox(v); continue; }
+      if (ai.back > 0) { ai.back -= dt; v.v = -28; const bx = v.x + fx * v.v * dt, by = v.y + fy * v.v * dt, bh = v.contacts(bx, by, v.a); if (bh && bh.other) { ai.back = 0; v.v = 0; } else { v.x = bx; v.y = by; } v.vx = fx * v.v; v.vy = fy * v.v; W.moveBox(v); continue; }
       if (blockedBy) {
         target = 0; ai.wait += dt;
         if ((blockedBy === playerBody || blockedBy.driven) && ai.wait > 1.2 && ai.honk <= 0) { ai.honk = 4 + this.rnd() * 3; onHonk && onHonk(v); }
@@ -181,7 +182,17 @@ VR.Traffic = class {
       } else if (!blockedBy) ai.triedBack = false;
       if (v.v < target) v.v = Math.min(target, v.v + (v.type === 'moto' ? 160 : 120) * dt);
       else v.v = Math.max(target, v.v - 380 * dt);
-      v.x += fx * v.v * dt; v.y += fy * v.v * dt;
+      // no atravesar a nadie (04/11/2026): si el paso lo mete en otro vehículo, no avanza ni gira
+      const nx = v.x + fx * v.v * dt, ny = v.y + fy * v.v * dt, hit = v.contacts(nx, ny, v.a);
+      const o2 = hit && hit.other;
+      // dos del tránsito trabados uno contra el otro (en un cruce): pasa primero el que llegó antes
+      const yieldsTo = o2 && !(o2.ai && o2.ai.jam > 0.5 && ai.jam > 0.5 && (v.tid || 0) < (o2.tid || 0));
+      if (o2 && yieldsTo && !v.contacts(v.x, v.y, v.pa)) {
+        v.a = v.pa; v.v = 0; ai.jam = (ai.jam || 0) + dt;
+        if (ai.jam > 1.2 && !(ai.dodge > 0)) ai.dodge = 2.2;
+        const off = v.x < view.x0 - 50 || v.x > view.x1 + 50 || v.y < view.y0 - 50 || v.y > view.y1 + 50;
+        if (ai.jam > 8 && off) { this.remove(v); break; }
+      } else { ai.jam = 0; v.x = nx; v.y = ny; }
       v.vx = fx * v.v; v.vy = fy * v.v; v.w = 0;
       W.moveBox(v);
     }

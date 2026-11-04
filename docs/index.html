@@ -221,7 +221,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión fd630173 · 2026-11-04</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 7f220613 · 2026-11-04</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -2753,6 +2753,9 @@ VR.parkCars = (world, n, near) => {
   const curb = (x, y) => { const t = world.get(x, y); return t === T.SIDEWALK || t === T.CHECKER; };
   const add = (x, y, a, color, type = 'car', model) => { const m = model || (type === 'moto' ? VR.pickMoto(rnd, true) : VR.pickCar(rnd, true)); const c = new VR.Car(world, x, y, a, m === 'pati' ? color % VR.PATI_COLORS.length : color, type, m); world.addBox(c); cars.push(c); return c; };
   let first = null;
+  // ¿entran motos en batería (de punta contra el cordón) y además los autos y un carril libre? Si la calle es
+  // angosta, las motos van en fila, paralelas al cordón (ocupan 9 px en vez de 24).
+  const battery = (tiles) => tiles * S >= 21 + 26 + 28;
 
   // --- el experimento: la cuadra al sur de la plaza ---
   if (near) {
@@ -2774,10 +2777,11 @@ VR.parkCars = (world, n, near) => {
       for (let px = x0 * S + 26; px <= x1 * S - 26; px += 54) slots.push(px);
       slots.sort((a, b) => Math.abs(a - near.x) - Math.abs(b - near.x));
       first = add(slots[0], yl, Math.PI / 2, 0, 'car', 'mita');
-      for (let i = 1; i < slots.length; i++) if (rnd() < 0.85) add(slots[i], yl, Math.PI / 2, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+      for (let i = 1; i < slots.length; i++) if (rnd() < 0.6) add(slots[i], yl, Math.PI / 2, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
       // motos en batería, la rueda trasera contra el cordón sur (miran hacia la calle), cada 11 px
-      for (let px = fx; px <= x1 * S - 10; px += 14) if (rnd() < 0.8)
-        add(px + ((rnd() * 2) | 0), yr - 11, (rnd() < 0.5 ? 0 : 0.12) - 0.06 + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+      if (battery(yb - ty + 1)) { for (let px = fx; px <= x1 * S - 10; px += 14) if (rnd() < 0.5)
+        add(px + ((rnd() * 2) | 0), yr - 11, (rnd() < 0.5 ? 0 : 0.12) - 0.06 + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto'); }
+      else for (let px = fx + 14; px <= x1 * S - 16; px += 32) if (rnd() < 0.55) add(px, (yb + 1) * S - 7, Math.PI / 2, (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
       world.parkingDemo = [{ x0: x0 * S, x1: x1 * S, y0: ty * S, y1: (yb + 1) * S }];
     }
     // --- y en General Díaz, del lado este de la plaza (mano única hacia el norte): autos a la izquierda
@@ -2794,9 +2798,10 @@ VR.parkCars = (world, n, near) => {
         let xb = xa; while (road(xb + 1, my)) xb++;
         if (xb - xa >= 3) {
           const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 11, xr = (xb + 1) * S - 6;
-          for (let py = ya * S + 26; py <= yz * S - 26; py += 54) if (rnd() < 0.85) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
-          for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.8)
-            add(xr - 11, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          for (let py = ya * S + 26; py <= yz * S - 26; py += 54) if (rnd() < 0.6) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          if (battery(xb - xa + 1)) { for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.5)
+            add(xr - 11, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto'); }
+          else for (let py = (ya + 1) * S + 14; py <= yz * S - 16; py += 32) if (rnd() < 0.55) add((xb + 1) * S - 7, py, 0, (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           (world.parkingDemo = world.parkingDemo || []).push({ x0: xa * S, x1: (xb + 1) * S, y0: ya * S, y1: yz * S });
         }
         // Coronel Bogado, del lado oeste de la plaza (mano única hacia el sur): autos a la izquierda (este,
@@ -2805,26 +2810,33 @@ VR.parkCars = (world, n, near) => {
         let wa = wb; while (road(wa - 1, my)) wa--;
         if (wb - wa >= 3) {
           const ya = by0 + 3, yz = by1 - 3, xl = (wb + 1) * S - 11, xr = wa * S + 6;
-          for (let py = ya * S + 26; py <= yz * S - 26; py += 54) if (rnd() < 0.85) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
-          for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.8)
-            add(xr + 11, py + ((rnd() * 2) | 0), Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? -0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          for (let py = ya * S + 26; py <= yz * S - 26; py += 54) if (rnd() < 0.6) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          if (battery(wb - wa + 1)) { for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.5)
+            add(xr + 11, py + ((rnd() * 2) | 0), Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? -0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto'); }
+          else for (let py = (ya + 1) * S + 14; py <= yz * S - 16; py += 32) if (rnd() < 0.55) add(wa * S + 7, py, Math.PI, (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           world.parkingDemo.push({ x0: wa * S, x1: (wb + 1) * S, y0: ya * S, y1: yz * S });
         }
       }
     }
   }
 
+  // Lugar para estacionar (04/11/2026, menos y mejor repartidos): solo en calles de 5 baldosas (10 m) o más,
+  // con cordón a lo largo de ~8 baldosas (lejos de las esquinas) y sin otro vehículo enfrente, así siempre
+  // queda lugar para que pasen dos autos.
+  const across = (x, y, dx, dy) => { let n = 0; while (n < 14 && road(x + dx * n, y + dy * n)) n++; return n; };
   const spot = (x, y) => {
     if (!road(x, y)) return null;
     for (const dy of [-1, 1]) {
+      if (!curb(x, y + dy) || across(x, y, 0, -dy) < 5) continue;
       let ok = true;
-      for (let i = -1; i <= 2 && ok; i++) ok = road(x + i, y) && road(x + i, y - dy) && curb(x + i, y + dy) && !world.line[y * world.w + x + i];
-      if (ok) return [x * S + 16, y * S + 8 - dy, rnd() < 0.5 ? Math.PI / 2 : -Math.PI / 2, dy, 0];
+      for (let i = -3; i <= 4 && ok; i++) ok = road(x + i, y) && road(x + i, y - dy) && curb(x + i, y + dy) && !world.line[y * world.w + x + i];
+      if (ok) { const w = across(x, y, 0, -dy); return [x * S + 16, y * S + 8 - dy, rnd() < 0.5 ? Math.PI / 2 : -Math.PI / 2, dy, 0, [x * S - 24, Math.min(y, y - dy * (w - 1)) * S, x * S + 56, (Math.max(y, y - dy * (w - 1)) + 1) * S]]; }
     }
     for (const dx of [-1, 1]) {
+      if (!curb(x + dx, y) || across(x, y, -dx, 0) < 5) continue;
       let ok = true;
-      for (let i = -1; i <= 2 && ok; i++) ok = road(x, y + i) && road(x - dx, y + i) && curb(x + dx, y + i) && !world.line[(y + i) * world.w + x];
-      if (ok) return [x * S + 8 - dx, y * S + 16, rnd() < 0.5 ? 0 : Math.PI, 0, dx];
+      for (let i = -3; i <= 4 && ok; i++) ok = road(x, y + i) && road(x - dx, y + i) && curb(x + dx, y + i) && !world.line[(y + i) * world.w + x];
+      if (ok) { const w = across(x, y, -dx, 0); return [x * S + 8 - dx, y * S + 16, rnd() < 0.5 ? 0 : Math.PI, 0, dx, [Math.min(x, x - dx * (w - 1)) * S, y * S - 24, (Math.max(x, x - dx * (w - 1)) + 1) * S, y * S + 56]]; }
     }
     return null;
   };
@@ -2835,7 +2847,8 @@ VR.parkCars = (world, n, near) => {
     const x = 2 + ((rnd() * (world.w - 4)) | 0), y = 2 + ((rnd() * (world.h - 4)) | 0);
     const s = spot(x, y);
     if (!s || inDemo(s[0], s[1])) continue;
-    if (rnd() < 0.22) { // 2 o 3 motos en batería contra el cordón
+    const band = s[5]; if (world.boxOverlap(band[0], band[1], band[2], band[3])) continue; // nada enfrente ni pegado
+    if (rnd() < 0.25) { // 2 o 3 motos en batería contra el cordón
       const [cx, cy, , dy, dx] = s, k = 2 + ((rnd() * 2) | 0);
       for (let i = 0; i < k; i++) {
         const mx = dy ? cx - 14 + i * 14 : cx + dx * 5, my = dy ? cy + dy * 5 : cy - 14 + i * 14;
@@ -3243,7 +3256,7 @@ VR.Traffic = class {
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
       v.ai.next = this.pickNext(e, to);
       v.v = v.ai.cruise * 0.6;
-      W.addBox(v); this.list.push(v);
+      v.tid = ++this.seq || (this.seq = 1); W.addBox(v); this.list.push(v);
       return v;
     }
     return null;
@@ -3316,12 +3329,13 @@ VR.Traffic = class {
       let blockedBy = null;
       for (let k = v.LEN / 2 + 4; k <= look && !blockedBy; k += 6) {
         const qx = v.x + fx * k, qy = v.y + fy * k;
-        const o = W.boxAt(qx, qy, v);
+        const rx = Math.cos(v.a) * (v.WID / 2 - 1), ry = Math.sin(v.a) * (v.WID / 2 - 1);
+        const o = W.boxAt(qx, qy, v) || W.boxAt(qx + rx, qy + ry, v) || W.boxAt(qx - rx, qy - ry, v);
         if (o) blockedBy = o;
         else if (playerBody && Math.abs(qx - playerBody.x) < 9 && Math.abs(qy - playerBody.y) < 9) blockedBy = playerBody;
       }
       if (ai.yield > 0) target = Math.min(target, 18);
-      if (ai.back > 0) { ai.back -= dt; v.v = -28; v.x += fx * v.v * dt; v.y += fy * v.v * dt; v.vx = fx * v.v; v.vy = fy * v.v; W.moveBox(v); continue; }
+      if (ai.back > 0) { ai.back -= dt; v.v = -28; const bx = v.x + fx * v.v * dt, by = v.y + fy * v.v * dt, bh = v.contacts(bx, by, v.a); if (bh && bh.other) { ai.back = 0; v.v = 0; } else { v.x = bx; v.y = by; } v.vx = fx * v.v; v.vy = fy * v.v; W.moveBox(v); continue; }
       if (blockedBy) {
         target = 0; ai.wait += dt;
         if ((blockedBy === playerBody || blockedBy.driven) && ai.wait > 1.2 && ai.honk <= 0) { ai.honk = 4 + this.rnd() * 3; onHonk && onHonk(v); }
@@ -3339,7 +3353,17 @@ VR.Traffic = class {
       } else if (!blockedBy) ai.triedBack = false;
       if (v.v < target) v.v = Math.min(target, v.v + (v.type === 'moto' ? 160 : 120) * dt);
       else v.v = Math.max(target, v.v - 380 * dt);
-      v.x += fx * v.v * dt; v.y += fy * v.v * dt;
+      // no atravesar a nadie (04/11/2026): si el paso lo mete en otro vehículo, no avanza ni gira
+      const nx = v.x + fx * v.v * dt, ny = v.y + fy * v.v * dt, hit = v.contacts(nx, ny, v.a);
+      const o2 = hit && hit.other;
+      // dos del tránsito trabados uno contra el otro (en un cruce): pasa primero el que llegó antes
+      const yieldsTo = o2 && !(o2.ai && o2.ai.jam > 0.5 && ai.jam > 0.5 && (v.tid || 0) < (o2.tid || 0));
+      if (o2 && yieldsTo && !v.contacts(v.x, v.y, v.pa)) {
+        v.a = v.pa; v.v = 0; ai.jam = (ai.jam || 0) + dt;
+        if (ai.jam > 1.2 && !(ai.dodge > 0)) ai.dodge = 2.2;
+        const off = v.x < view.x0 - 50 || v.x > view.x1 + 50 || v.y < view.y0 - 50 || v.y > view.y1 + 50;
+        if (ai.jam > 8 && off) { this.remove(v); break; }
+      } else { ai.jam = 0; v.x = nx; v.y = ny; }
       v.vx = fx * v.v; v.vy = fy * v.v; v.w = 0;
       W.moveBox(v);
     }
@@ -3903,7 +3927,10 @@ VR.Emergency = class {
     if (v.v < 2 && target > 0 && Math.abs(d) > 0.3) v.a += VR.clamp(d, -turn * 0.5, turn * 0.5);
     v.px = v.x; v.py = v.y; v.pa = v.a;
     if (Math.hypot(cx - v.x, cy - v.y) < Lk * 1.9) u.s += Math.max(0, v.v) * dt;
-    v.x += Math.sin(v.a) * v.v * dt; v.y += -Math.cos(v.a) * v.v * dt;
+    // no atravesar vehículos (salvo el tuyo cuando te encierran)
+    const nx = v.x + Math.sin(v.a) * v.v * dt, ny = v.y - Math.cos(v.a) * v.v * dt, hit = v.contacts(nx, ny, v.a);
+    if (hit && hit.other && !(ram && hit.other.driven) && !v.contacts(v.x, v.y, v.pa)) { v.a = v.pa; v.v = 0; u.block = (u.block || 0) + dt; if (u.block > 0.8 && !(u.dodge > 0)) { u.dodge = 1.8; u.side = -(u.side || 1); } }
+    else { v.x = nx; v.y = ny; }
     v.vx = Math.sin(v.a) * v.v; v.vy = -Math.cos(v.a) * v.v; v.w = 0;
     this.world.moveBox(v);
     return d0;
@@ -4700,7 +4727,7 @@ VR.showVehicleCard = (v) => {
   const player = new VR.Player(world, start.x, start.y);
   if (saved && saved.dir) player.dir = saved.dir;
   // ---------- autos estacionados (el primero, al lado del punto de partida) ----------
-  const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 900, world.spawn);
+  const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 320, world.spawn);
   const cars = parked.cars;
   let car = null; // auto que estás manejando
   const WALK_BASE = 270, DRIVE_BASE = 420; // Leandro prefirió la cámara de antes (04/11/2026)

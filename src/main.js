@@ -18,7 +18,7 @@
   const player = new VR.Player(world, start.x, start.y);
   if (saved && saved.dir) player.dir = saved.dir;
   // ---------- autos estacionados (el primero, al lado del punto de partida) ----------
-  const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 900, world.spawn);
+  const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 320, world.spawn);
   const cars = parked.cars;
   let car = null; // auto que estás manejando
   const WALK_BASE = 270, DRIVE_BASE = 420; // Leandro prefirió la cámara de antes (04/11/2026)

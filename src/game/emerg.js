@@ -196,7 +196,10 @@ VR.Emergency = class {
     if (v.v < 2 && target > 0 && Math.abs(d) > 0.3) v.a += VR.clamp(d, -turn * 0.5, turn * 0.5);
     v.px = v.x; v.py = v.y; v.pa = v.a;
     if (Math.hypot(cx - v.x, cy - v.y) < Lk * 1.9) u.s += Math.max(0, v.v) * dt;
-    v.x += Math.sin(v.a) * v.v * dt; v.y += -Math.cos(v.a) * v.v * dt;
+    // no atravesar vehículos (salvo el tuyo cuando te encierran)
+    const nx = v.x + Math.sin(v.a) * v.v * dt, ny = v.y - Math.cos(v.a) * v.v * dt, hit = v.contacts(nx, ny, v.a);
+    if (hit && hit.other && !(ram && hit.other.driven) && !v.contacts(v.x, v.y, v.pa)) { v.a = v.pa; v.v = 0; u.block = (u.block || 0) + dt; if (u.block > 0.8 && !(u.dodge > 0)) { u.dodge = 1.8; u.side = -(u.side || 1); } }
+    else { v.x = nx; v.y = ny; }
     v.vx = Math.sin(v.a) * v.v; v.vy = -Math.cos(v.a) * v.v; v.w = 0;
     this.world.moveBox(v);
     return d0;
