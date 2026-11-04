@@ -228,9 +228,10 @@
     const shoeC = CAT.cloth[L.shoesColor], hatC = CAT.cloth[L.hatColor], packC = CAT.cloth[L.packColor];
     const sw = S.sw, ww = S.ww;
     const OPEN = L.top === 'campera' || L.top === 'puffer' || L.top === 'hoodieAbierto';
+    const LONGTOP = OPEN || L.top === 'sueter' || L.top === 'buzo'; // prendas que tapan la cintura del pantalón
     const longSleeve = L.top === 'camisa' || L.top === 'buzo' || L.top === 'sueter' || OPEN;
     const sleeveLen = L.top === 'musculosa' || L.top === 'top' ? 0 : longSleeve ? 1 : 0.45;
-    const legLen = { short: 0.42, cargoShort: 0.46, bermuda: 0.62, pollera: 0, calza: 0.92 }[L.bottom] ?? 1;
+    const legLen = { short: 0.26, cargoShort: 0.28, bermuda: 0.58, pollera: 0, calza: 0.92 }[L.bottom] ?? 1;
     const wavy = L.hair === 'ondulado' || L.hair === 'onduladoFlequillo';
     const longHair = L.hair === 'largo' || L.hair === 'trenza' || wavy;
     const midHair = L.hair === 'medio';
@@ -282,15 +283,15 @@
       // torso
       const torsoPts = (ext) => {
         const b = S.bob, e = ext || 0, belly = L.build === 'panza' ? 0.6 : 0, nb = S.neckBase, f = S.fem;
-        const [L0, R0] = S.sh, wy = 13.6 + b, hy2 = 16.6 + b;
-        const wx = (f ? 1.85 : 2.3) * ww + belly, hx2 = (f ? 2.75 : 2.45) * ww;
+        const [L0, R0] = S.sh, wy = 13.6 + b, hy2 = (LONGTOP && ext >= 0 ? 17.5 : 16.6) + b;
+        const wx = (f ? 1.85 : 2.3) * ww + belly + (LONGTOP ? 0.2 : 0), hx2 = (f ? 2.75 : 2.45) * ww + (LONGTOP ? 0.35 : 0);
         return [[nb[0] - 1.0 - e * 0.3, nb[1]], [L0[0] + 1.0, L0[1] - 0.75 - e * 0.5], [L0[0] - 0.15 - e, L0[1] + 0.2], [L0[0] + 0.35 - e, L0[1] + 2.3], [8 - wx - e, wy], [8 - hx2 - e, hy2], [8 + hx2 + e, hy2], [8 + wx + e, wy],
           [R0[0] - 0.35 + e, R0[1] + 2.3], [R0[0] + 0.15 + e, R0[1] + 0.2], [R0[0] - 1.0, R0[1] - 0.75 - e * 0.5], [nb[0] + 1.0 + e * 0.3, nb[1]]];
       };
       const skinTorso = paint((g) => { poly(g, torsoPts(0)); }, skin, { shade: skinD });
       const hasTop = L.top !== 'top';
       let topMask = null;
-      const bulky = L.top === 'puffer' ? 0.6 : L.top === 'buzo' || OPEN ? 0.35 : 0;
+      const bulky = L.top === 'puffer' ? 0.6 : L.top === 'buzo' || OPEN ? 0.35 : L.top === 'sueter' ? 0.25 : 0;
       if (L.top === 'top') topMask = paint((g) => poly(g, [[8 - 2.7 * sw, 8.6 + S.bob], [8 + 2.7 * sw, 8.6 + S.bob], [8 + 2.5 * sw, 12 + S.bob], [8 - 2.5 * sw, 12 + S.bob]]), topC);
       else if (L.top === 'musculosa') topMask = paint((g) => { poly(g, torsoPts(0).map(([x, y], i) => i < 2 ? [8 + (x - 8) * 0.72, y + 0.3] : [x, y])); }, topC);
       else topMask = paint((g) => { poly(g, torsoPts(OPEN ? 0 : bulky)); }, OPEN ? top2 : topC);
@@ -302,7 +303,7 @@
         for (let i = half; i < n; i++) right.push(T[i]);
         paint((g) => { poly(g, [...left, [8 - gap, 16.0 + S.bob], [8 - gap * 0.8, T[0][1] + 0.3]]); }, topC);
         paint((g) => { poly(g, [[8 + gap * 0.8, T[n - 1][1] + 0.3], [8 + gap, 16.0 + S.bob], ...right]); }, topC);
-        if (L.top === 'puffer' && k >= 2) for (let y = 9; y <= 15.4; y += 1.25) { pix(8 - 3.0 * sw, y + S.bob, SH(topC, 0.62), Math.round((3.0 * sw - gap) * k), P); pix(8 + gap, y + S.bob, SH(topC, 0.62), Math.round((3.0 * sw - gap) * k), P); }
+        if (L.top === 'puffer' && k >= 2) for (let y = 9; y <= 16.6; y += 1.3) { for (const [x0, w] of [[8 - 3.2 * sw, 3.2 * sw - gap], [8 + gap, 3.2 * sw - gap]]) { pix(x0, y + S.bob, SH(topC, 0.55), Math.round(w * k), P); pix(x0 + 0.3, y + S.bob - 0.55, SH(topC, 1.45), Math.round((w - 0.6) * k), P); } }
         if (L.top === 'puffer') paint((g) => { g.fillRect(8 - 2.0, 6.7 + S.bob, 4.0, 0.9); }, SH(topC, 0.85), { light: false }); // cuello alto
         if (L.top === 'hoodieAbierto') { paint((g) => { ell(g, 8, 7.2 + S.bob, 2.3, 0.95); }, SH(topC, 0.82), { light: false }); if (k >= 2) { pix(8 - gap - 0.3, 7.9 + S.bob, '#f2efe6', P, Math.round(2.2 * k)); pix(8 + gap, 7.9 + S.bob, '#f2efe6', P, Math.round(2.2 * k)); } }
         if (L.top === 'campera' && k >= 2) { pix(8 - 1.3, 13 + S.bob, SH(topC, 0.7), Math.round(0.9 * k), P); pix(8 + 0.6, 13 + S.bob, SH(topC, 0.7), Math.round(0.9 * k), P); }
@@ -337,14 +338,14 @@
       if (L.cadenita && front && L.top !== 'buzo') { for (let t = -1; t <= 1; t += 0.25) pix(8 + t * 1.1, 7.6 + Math.abs(t) * -0.5 + 0.9 + S.bob, '#e8c860', P, P); }
       // brazos: piel, manga encima, mano
       for (const [s0, e0, w0, right] of [[sL, eL, wL, false], [sR, eR, wR, true]]) {
-        paint((g) => { cap(g, s0, e0, 1.75 * sw, 1.45); cap(g, e0, w0, 1.45, 1.2); }, skin, { shade: skinD });
+        paint((g) => { cap(g, s0, e0, 1.95 * sw, 1.6); cap(g, e0, w0, 1.6, 1.3); }, skin, { shade: skinD });
         if (sleeveLen > 0) {
           const end = sleeveLen >= 1 ? w0 : lerp(s0, e0, sleeveLen * 1.6);
           paint((g) => { cap(g, s0, sleeveLen >= 1 ? e0 : end, (2.05 + bulky) * sw, 1.85 + bulky); if (sleeveLen >= 1) cap(g, e0, w0, 1.7 + bulky, 1.5 + bulky); }, topC, { shade: SH(topC, 0.72) });
           if (sleeveLen >= 1 && k >= 2) pix(w0[0] - 0.75, w0[1] - 0.2, SH(topC, 0.78), Math.round(1.5 * k), P); // puño
           if (L.top === 'puffer' && k >= 2) for (let t = 0.2; t < 1; t += 0.22) { const q = lerp(s0, w0, t); pix(q[0] - 0.9, q[1], SH(topC, 0.62), Math.round(1.8 * k), P); }
         }
-        paint((g) => ell(g, w0[0], w0[1] + 0.75, 0.72, 0.85), skin, { shade: skinD });
+        paint((g) => { ell(g, w0[0], w0[1] + 0.8, 0.82, 0.95); }, skin, { shade: skinD });
         if (L.reloj && !right && k >= 2) pix(w0[0] - 0.6, w0[1] - 0.15, '#2a2a30', Math.round(1.2 * k), Math.max(1, Math.round(0.45 * k)));
         if (L.termo && right) {
           paint((g) => { g.beginPath(); g.roundRect(w0[0] - 0.6, w0[1] - 1.6, 1.2, 3.6, 0.3); g.fill(); }, '#2e6fc8');
@@ -382,7 +383,7 @@
       const torso = (ext) => { const e = ext || 0, belly = L.build === 'panza' ? 0.8 : 0, f = S.fem, sh0 = S.shoulder;
         const chest = f ? 2.15 : 1.95;
         return [[S.neck[0] - 0.9 - e, S.neck[1]], [S.neck[0] + 0.8 + e, S.neck[1] + 0.1], [sh0[0] + 1.5 * sw + e, sh0[1] + 0.4], [8 + lx * 5.5 + chest * sw + e, 10.9 + b], [8 + lx * 2.5 + (f ? 1.4 : 1.6) * ww + belly + e, 13.9 + b],
-          [8 + 1.7 * ww + e, 16.4 + b], [8 - (f ? 2.0 : 1.7) * ww - e, 16.6 + b], [8 + lx * 2 - (f ? 1.3 : 1.45) * ww - e, 13.6 + b], [8 + lx * 5 - 1.9 * sw - e, 10.4 + b], [sh0[0] - 1.6 * sw - e, sh0[1] + 0.2]]; };
+          [8 + (LONGTOP ? 2.0 : 1.7) * ww + e, (LONGTOP ? 17.3 : 16.4) + b], [8 - (f ? 2.0 : 1.7) * ww - (LONGTOP ? 0.3 : 0) - e, (LONGTOP ? 17.5 : 16.6) + b], [8 + lx * 2 - (f ? 1.3 : 1.45) * ww - e, 13.6 + b], [8 + lx * 5 - 1.9 * sw - e, 10.4 + b], [sh0[0] - 1.6 * sw - e, sh0[1] + 0.2]]; };
       const armDraw = (e, w, near) => {
         const sc = near ? 1 : 0.86, s0 = S.shoulder;
         paint((g) => { cap(g, s0, e, 1.6, 1.4); cap(g, e, w, 1.4, 1.2); }, near ? skin : skinD, { shade: SH(skin, 0.7) });
@@ -451,8 +452,8 @@
         if (st === 'degrade' || st === 'rapado') paint((g) => g.fillRect(hx - 1.6, hy + 0.9, 3.2, 1.1), SH(skin, 0.92), { light: false, sep: false });
         if (longHair) paint((g) => { poly(g, [[hx - 2.1, hy], [hx + 2.1, hy], [hx + 2.4, 10.6 + S.bob], [hx - 2.4, 10.6 + S.bob]]); }, H2, { shade: HD });
         if (st === 'trenza') paint((g) => { for (let i = 0; i < 5; i++) ell(g, hx, 9.8 + S.bob + i * 1.0, 0.7, 0.6); }, H2, { shade: HD });
-        if (st === 'medio') paint((g) => { g.fillRect(hx - 2.15, hy, 4.3, 2.9 + S.hair * 0.2); }, H2, { shade: HD });
-        if (wavy) paint((g) => { for (let i = 0; i < 5; i++) { ell(g, hx - 2.3 + (i % 2) * 0.3, hy + 1 + i * 1.6 + S.hair * 0.3, 0.75, 0.9); ell(g, hx + 2.3 - (i % 2) * 0.3, hy + 1 + i * 1.6 + S.hair * 0.3, 0.75, 0.9); } }, H2, { shade: HD });
+        if (st === 'medio') paint((g) => { g.beginPath(); g.roundRect(hx - 2.3, hy - 0.5, 4.6, 4.0 + S.hair * 0.2, 0.8); g.fill(); }, H2, { shade: HD });
+        if (wavy) paint((g) => { for (let i = 0; i < 6; i++) { const o = (i % 2) * 0.35; ell(g, hx - 2.4 + o, hy + 0.8 + i * 1.45 + S.hair * 0.3, 0.95, 0.95); ell(g, hx + 2.4 - o, hy + 0.8 + i * 1.45 + S.hair * 0.3, 0.95, 0.95); ell(g, hx, hy + 2 + i * 1.3, 1.9, 0.9); } }, H2, { shade: HD });
         if (st === 'colitaLado') paint((g) => cap(g, [hx + 1.6, hy + 0.8], [hx + 2.4, hy + 5.0 + S.hair * 0.3], 1.1, 0.7), H2, { shade: HD });
         if (st === 'colita') paint((g) => { ell(g, hx, hy + 2.1, 0.6, 0.6); cap(g, [hx, hy + 2.3], [hx + 0.2, hy + 5.2], 1.0, 0.6); }, H2, { shade: HD });
         if (st === 'rodete') paint((g) => ell(g, hx, hy - 1.9, 1.1, 0.9), H2, { shade: HD });
@@ -464,13 +465,14 @@
         else {
           paint((g) => { cap0(g, 0.05); if (st === 'flequillo') poly(g, [[hx - 2.0, hy - 0.8], [hx + 1.6, hy - 0.9], [hx + 0.6, hy - 0.05], [hx - 1.9, hy - 0.2]]);
             if (st === 'corto' || st === 'peinadoAtras' || st === 'colita' || st === 'rodete' || st === 'colitaLado') { g.fillRect(hx - 2.15, hy - 0.6, 0.55, 1.0); g.fillRect(hx + 1.6, hy - 0.6, 0.55, 1.0); }
-            if (st === 'onduladoFlequillo' || st === 'medio') poly(g, [[hx - 2.0, hy - 0.9], [hx + 2.0, hy - 0.9], [hx + 1.9, hy - 0.25], [hx + 0.6, hy - 0.45], [hx - 0.4, hy - 0.2], [hx - 1.9, hy - 0.35]]);
-            if (midHair) { g.fillRect(hx - 2.4, hy - 0.6, 0.85, 3.4 + S.hair * 0.2); g.fillRect(hx + 1.55, hy - 0.6, 0.85, 3.4 + S.hair * 0.2); }
+            if (st === 'onduladoFlequillo') poly(g, [[hx - 2.0, hy - 0.9], [hx + 2.0, hy - 0.9], [hx + 1.9, hy - 0.25], [hx + 0.6, hy - 0.45], [hx - 0.4, hy - 0.2], [hx - 1.9, hy - 0.35]]);
+            if (midHair) { poly(g, [[hx - 0.2, hy - 2.3], [hx - 2.0, hy - 1.0], [hx - 2.6, hy + 0.6], [hx - 2.5, hy + 3.4 + S.hair * 0.2], [hx - 1.5, hy + 3.2], [hx - 1.5, hy - 0.4], [hx - 0.6, hy - 1.2]]); poly(g, [[hx + 0.2, hy - 2.3], [hx + 2.0, hy - 1.0], [hx + 2.6, hy + 0.6], [hx + 2.5, hy + 3.4 + S.hair * 0.2], [hx + 1.5, hy + 3.2], [hx + 1.5, hy - 0.4], [hx + 0.6, hy - 1.2]]); }
             if (longHair) { g.fillRect(hx - 2.35, hy - 0.6, 0.75, 4.8 + S.hair * 0.3); g.fillRect(hx + 1.6, hy - 0.6, 0.75, 4.8 + S.hair * 0.3); } }, H2, { shade: HD });
           if (st === 'peinadoAtras' && k >= 2) pix(hx - 1.2, hy - 1.9, SH(hair, 1.4), Math.round(2.4 * k), P);
           if (st === 'corto' && k >= 2) pix(hx - 1.5, hy - 1.7, SH(hair, 1.35), Math.round(1.2 * k), P);
+          if (midHair && k >= 2) { pix(hx - 0.05, hy - 2.25, SH(skin, 0.9), P, Math.round(0.6 * k)); pix(hx - 1.6, hy - 1.6, SH(hair, 1.6), Math.round(0.9 * k), P); pix(hx + 0.8, hy - 1.6, SH(hair, 1.6), Math.round(0.9 * k), P); }
           if (st === 'rodete') paint((g) => ell(g, hx, hy - 2.55, 1.0, 0.75), H2, { shade: HD });
-          if (wavy) paint((g) => { for (let i = 0; i < 4; i++) { ell(g, hx - 2.2 - (i % 2) * 0.35, hy + 0.6 + i * 1.3 + S.hair * 0.3, 0.7, 0.85); ell(g, hx + 2.2 + (i % 2) * 0.35, hy + 0.6 + i * 1.3 + S.hair * 0.3, 0.7, 0.85); } }, H2, { shade: HD });
+          if (wavy) paint((g) => { for (let i = 0; i < 6; i++) { const o = (i % 2) * 0.4; ell(g, hx - 2.35 - o, hy + 0.4 + i * 1.25 + S.hair * 0.3, 0.95, 0.9); ell(g, hx + 2.35 + o, hy + 0.4 + i * 1.25 + S.hair * 0.3, 0.95, 0.9); } }, H2, { shade: HD });
           if (st === 'colitaLado') paint((g) => { ell(g, hx - 2.1, hy + 0.9, 0.7, 0.7); cap(g, [hx - 2.2, hy + 1.2], [hx - 2.7, hy + 5.4 + S.hair * 0.3], 1.1, 0.7); }, H2, { shade: HD });
         }
       } else {
@@ -481,12 +483,12 @@
           paint((g) => { g.beginPath(); g.ellipse(hx - 0.25, hy - 0.5, 2.15, 2.0, 0, Math.PI * 0.95, Math.PI * 2.02); g.fill(); g.fillRect(hx - 2.35, hy - 0.6, 1.9, st === 'degrade' ? 1.0 : 2.0);
             if (st === 'flequillo') poly(g, [[hx + 0.4, hy - 1.6], [hx + 2.0, hy - 0.9], [hx + 1.4, hy - 0.3]]);
             if (longHair) g.fillRect(hx - 2.5, hy - 0.4, 1.5, 4.6);
-            if (midHair) g.fillRect(hx - 2.55, hy - 0.4, 1.8, 3.2 + S.hair * 0.2);
-            if (st === 'onduladoFlequillo' || st === 'medio') poly(g, [[hx + 0.2, hy - 1.7], [hx + 2.0, hy - 1.0], [hx + 1.6, hy - 0.35], [hx + 0.5, hy - 0.7]]); }, H2, { shade: HD });
+            if (midHair) { g.beginPath(); g.roundRect(hx - 2.6, hy - 0.6, 2.2, 3.7 + S.hair * 0.2, 0.6); g.fill(); }
+            if (st === 'onduladoFlequillo') poly(g, [[hx + 0.2, hy - 1.7], [hx + 2.0, hy - 1.0], [hx + 1.6, hy - 0.35], [hx + 0.5, hy - 0.7]]); }, H2, { shade: HD });
           if (st === 'colita') paint((g) => cap(g, [hx - 2.2, hy + 0.2], [hx - 3.0 - S.lx * 4, hy + 3.0 + S.hair * 0.4], 1.0, 0.6), H2, { shade: HD });
           if (st === 'rodete') paint((g) => ell(g, hx - 1.4, hy - 2.0, 0.95, 0.8), H2, { shade: HD });
           if (st === 'trenza') paint((g) => { for (let i = 0; i < 4; i++) ell(g, hx - 2.0 - i * 0.15 - S.lx * 3, hy + 4.4 + i * 1.0 + S.hair * 0.3, 0.6, 0.55); }, H2, { shade: HD });
-          if (wavy) paint((g) => { for (let i = 0; i < 4; i++) ell(g, hx - 1.9 - (i % 2) * 0.4 - S.lx * 2, hy + 0.8 + i * 1.3 + S.hair * 0.3, 0.85, 0.85); }, H2, { shade: HD });
+          if (wavy) paint((g) => { for (let i = 0; i < 6; i++) ell(g, hx - 1.9 - (i % 2) * 0.45 - S.lx * 2.5, hy + 0.6 + i * 1.25 + S.hair * 0.3, 1.0, 0.95); }, H2, { shade: HD });
           if (st === 'colitaLado') paint((g) => cap(g, [hx - 1.4, hy + 0.8], [hx - 1.9 - S.lx * 3, hy + 5.0 + S.hair * 0.3], 1.0, 0.65), H2, { shade: HD });
         }
       }
