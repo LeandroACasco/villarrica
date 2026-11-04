@@ -1,6 +1,6 @@
 // Tiles generados por código (16×16), con 4 variantes cada uno para que el piso no se vea repetido.
 'use strict';
-VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8, STONE: 9, DIRTROAD: 10 };
+VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8, STONE: 9, DIRTROAD: 10, CHECKER: 11 };
 // calzadas: asfalto, empedrado y calle de tierra
 VR.ROADLIKE = new Uint8Array(16); VR.ROADLIKE[VR.T.ROAD] = 1; VR.ROADLIKE[VR.T.STONE] = 1; VR.ROADLIKE[VR.T.DIRTROAD] = 1;
 VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] = 1; VR.SOLID[VR.T.MONUMENT] = 1; VR.SOLID[VR.T.WATER] = 1;
@@ -8,7 +8,7 @@ VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] 
 VR.GROUND_OF = { [VR.T.TREE]: VR.T.GRASS, [VR.T.BUILDING]: VR.T.SIDEWALK, [VR.T.MONUMENT]: VR.T.PAVING };
 
 VR.tileset = (() => {
-  const S = VR.TILE, VARS = 4, TYPES = 11;
+  const S = VR.TILE, VARS = 4, TYPES = 12;
   const c = VR.canvas(S * VARS, S * TYPES), ctx = c.getContext('2d');
   const img = ctx.createImageData(c.width, c.height), d = img.data;
   const put = (x, y, r, g, b) => { const i = (y * c.width + x) * 4; d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255; };
@@ -61,6 +61,12 @@ VR.tileset = (() => {
         const k = (h - 0.5) * 10 | 0; r = 204 + k; g = 128 + k; b = 84 + k;
         if (h2 > 0.93) { r -= 34; g -= 26; b -= 18; } else if (h2 < 0.05) { r += 18; g += 16; b += 12; } // piedritas
         if ((y + v * 3) % 6 === 0 && h > 0.6) { r -= 14; g -= 10; b -= 6; } // marcas de ruedas
+        break;
+      }
+      case VR.T.CHECKER: { // baldosas en damero gris y blanco (veredas de la Municipalidad)
+        const k = (h - 0.5) * 8 | 0, w = (((x >> 2) + (y >> 2)) & 1) === 0;
+        r = (w ? 222 : 150) + k; g = (w ? 220 : 150) + k; b = (w ? 214 : 154) + k;
+        if (x % 4 === 0 || y % 4 === 0) { r -= 14; g -= 14; b -= 14; }
         break;
       }
       default: r = 255; g = 0; b = 255;

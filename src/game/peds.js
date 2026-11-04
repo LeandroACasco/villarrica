@@ -24,7 +24,7 @@ VR.Peds = class {
   }
   walkable(px, py) {
     const W = this.world, tx = Math.floor(px / VR.TILE), ty = Math.floor(py / VR.TILE), t = W.get(tx, ty), T = VR.T;
-    if (t === T.SIDEWALK || t === T.PAVING) return true;
+    if (t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER) return true;
     if ((t === T.GRASS || t === T.DIRT) && W.area[ty * W.w + tx]) return true; // pasto de plazas y parques
     return false;
   }

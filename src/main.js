@@ -220,7 +220,7 @@
 
   // ---------- mapa de la ciudad ----------
   let mapOpen = false, mapBuilt = false;
-  const MAPCOL = [[92, 158, 58], [70, 70, 78], [196, 188, 172], [196, 120, 92], [200, 150, 112], [52, 112, 44], [230, 230, 230], [168, 98, 64], [70, 130, 200], [124, 116, 104], [182, 104, 64]];
+  const MAPCOL = [[92, 158, 58], [70, 70, 78], [196, 188, 172], [196, 120, 92], [200, 150, 112], [52, 112, 44], [230, 230, 230], [168, 98, 64], [70, 130, 200], [124, 116, 104], [182, 104, 64], [190, 188, 184]];
   function buildMap() {
     const c = $('mapCanvas'); c.width = world.w; c.height = world.h;
     const x = c.getContext('2d'), img = x.createImageData(world.w, world.h), d = img.data;

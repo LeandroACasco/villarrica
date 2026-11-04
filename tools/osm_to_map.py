@@ -22,7 +22,7 @@ M_PER_TILE = 2.0
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BARRIOS = ROOT / 'data/barrios_ine.json'
 # tipos de tile (iguales a VR.T en src/world/tiles.js)
-GRASS, ROAD, SIDEWALK, BUILDING, PAVING, TREE, MONUMENT, DIRT, WATER, STONE, DIRTROAD = range(11)
+GRASS, ROAD, SIDEWALK, BUILDING, PAVING, TREE, MONUMENT, DIRT, WATER, STONE, DIRTROAD, CHECKER = range(12)
 # ancho de calzada y de vereda (en tiles) según el tipo de calle
 ROADS = {
     'trunk': (6, 2), 'primary': (6, 2), 'secondary': (5, 1.5), 'tertiary': (5, 1.5), 'trunk_link': (4, 1), 'tertiary_link': (4, 1),
@@ -496,7 +496,9 @@ def main(src, out, preview=None):
         # explanada del teatro al sur y camino hasta Mcal. Estigarribia
         tapron = yard & (gy_ > by1) & (gy_ <= by1 + 4) & (np.abs(gx_ - xtc) <= 5)
         tpath = yard & (gy_ > by1) & (np.abs(gx_ - xtc) <= 1)
-        tiles[apron | paths | tapron | tpath] = PAVING
+        tiles[apron | paths | tapron | tpath] = CHECKER
+        # veredas de la manzana: baldosas en damero gris y blanco (Street View, enero 2025)
+        tiles[dilate(yard, 3) & (tiles == SIDEWALK)] = CHECKER
         # palmeras en canteros a los dos lados del camino de la entrada principal
         palms = []
         for px_ in (bx0 - 2, bx0 - 5):
@@ -510,6 +512,14 @@ def main(src, out, preview=None):
         plant(cand, 0.7, 2, lambda x, y: (x, y, rnd.randint(12, 16), rnd.choice([0, 0, 1, 1, 2, 3])))
         decals.append({'kind': 'muni', 'x': bx0 - 8, 'y': by0, 'w': bw_ + 8, 'h': bh + 4, 'bx': bx0, 'bw': bw_, 'bh': bh, 'p1': y1p - by0, 'tx': xtc - bx0})
         tiles[y1p:y1p + 1, bx0 - 5:bx0 - 4] = MONUMENT  # pedestal del busto (sólido)
+        # en la plaza, frente a la entrada: base con dos mástiles y dos leones (foto de Leandro)
+        if 'Plaza de los Héroes' in area_names:
+            pid = area_names.index('Plaza de los Héroes') + 1
+            row = np.nonzero(area[y1p] == pid)[0]
+            if len(row):
+                mx_ = int(row.max()) - 3
+                tiles[y1p - 1:y1p + 1, mx_:mx_ + 3] = MONUMENT
+                decals.append({'kind': 'mastiles', 'x': mx_, 'y': y1p - 1, 'w': 3, 'h': 2})
         special['muni'] = muni + 1
         print('Municipalidad: edificio %dx%d tiles, manzana %d tiles' % (bx1 - bx0 + 1, bh, int(yard.sum())))
 
@@ -602,7 +612,7 @@ def main(src, out, preview=None):
 
     if preview:
         pal = np.array([(92, 158, 58), (120, 120, 128), (200, 192, 176), (200, 120, 90), (196, 146, 108),
-                        (40, 100, 40), (230, 230, 230), (168, 92, 58), (70, 130, 200), (96, 92, 90), (150, 84, 52)], np.uint8)
+                        (40, 100, 40), (230, 230, 230), (168, 92, 58), (70, 130, 200), (96, 92, 90), (150, 84, 52), (190, 188, 184)], np.uint8)
         img = pal[tiles]
         img[line > 0] = (226, 191, 69)
         Image.fromarray(img).save(preview)

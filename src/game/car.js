@@ -146,7 +146,7 @@ VR.Car = class {
     if (t === T.ROAD) return [m.road, 1];
     if (t === T.STONE) return [m.stone, 0.95];
     if (t === T.DIRTROAD || t === T.DIRT) return [m.dirt, 0.85];
-    if (t === T.SIDEWALK || t === T.PAVING) return [m.side, 0.9];
+    if (t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER) return [m.side, 0.9];
     return [m.grass, 0.7];
   }
   // Teclado y cruceta: arriba acelera, abajo frena/reversa, costados giran.
@@ -186,7 +186,7 @@ VR.Car = class {
     }
     // agarre lateral: menos en tierra y pasto, y casi nada si frenás fuerte doblando (derrape)
     const t = this.world.get(Math.floor(this.x / VR.TILE), Math.floor(this.y / VR.TILE)), T = VR.T;
-    let grip = t === T.ROAD ? 9 : t === T.STONE ? 7 : t === T.DIRTROAD || t === T.DIRT ? 4.5 : t === T.SIDEWALK || t === T.PAVING ? 7.5 : 3.5;
+    let grip = t === T.ROAD ? 9 : t === T.STONE ? 7 : t === T.DIRTROAD || t === T.DIRT ? 4.5 : t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER ? 7.5 : 3.5;
     if (this.type === 'moto') grip *= 1.4;
     if (brake && Math.abs(vf) > 70 && Math.abs(steer) > 0.2) grip *= 0.22;
     if (parked) grip = 6;
@@ -311,7 +311,7 @@ VR.Car = class {
 VR.parkCars = (world, n, near) => {
   const T = VR.T, rnd = VR.rng(2006), S = VR.TILE, cars = [];
   const road = (x, y) => { const t = world.get(x, y); return t === T.ROAD || t === T.STONE; };
-  const curb = (x, y) => world.get(x, y) === T.SIDEWALK;
+  const curb = (x, y) => { const t = world.get(x, y); return t === T.SIDEWALK || t === T.CHECKER; };
   const add = (x, y, a, color, type = 'car') => { const c = new VR.Car(world, x, y, a, color, type); world.addBox(c); cars.push(c); return c; };
   let first = null;
 
