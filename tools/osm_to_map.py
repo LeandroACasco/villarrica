@@ -538,6 +538,20 @@ def main(src, out, preview=None):
         special['muni'] = muni + 1
         print('Municipalidad: edificio %dx%d tiles, manzana %d tiles' % (bx1 - bx0 + 1, bh, int(yard.sum())))
 
+    # ---------- Centro: las casas llegan hasta la vereda (Leandro, 04/11/2026) ----------
+    # OSM dibuja los edificios un poco adentro de la línea municipal y la vereda queda angosta: el pasto entre la
+    # vereda y la fachada (o entre dos casas, contra la vereda) se vuelve vereda, así las esquinas no parecen patios.
+    if 'Centro' in barrio_names:
+        cen = barrio == barrio_names.index('Centro') + 1
+        gap_ = np.isin(tiles, (GRASS, DIRT)) & (area == 0) & cen
+        near_sw = dilate(tiles == SIDEWALK, 4)
+        near_b = dilate(tiles == BUILDING, 4)
+        fill = gap_ & near_sw & near_b
+        if special.get('muni'):
+            fill[max(0, by0 - 14):by1 + 15, max(0, bx0 - 14):bx1 + 15] = False  # la manzana arbolada de la Municipalidad queda como está
+        tiles[fill] = SIDEWALK
+        print('Centro: %d baldosas de pasto pasan a vereda' % int(fill.sum()))
+
     # ---------- árboles en montes y patios ----------
     busy = np.isin(tiles, (ROAD, STONE, DIRTROAD, SIDEWALK, BUILDING, WATER))
     busy = dilate(busy, 1)

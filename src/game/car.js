@@ -38,19 +38,70 @@ VR.drawCarBase = (pal) => {
   P.r(0, 9, 1, 2, D); P.r(15, 9, 1, 2, D);
   return c;
 };
-// Moto chica (tipo 110–150 cc) mirando hacia arriba (10×20): rueda, manubrio ancho, tanque, asiento, rueda.
-VR.drawMotoBase = (pal) => {
-  const [C, D, L] = pal, c = VR.canvas(10, 20), P = VR.gfx.painter(c);
-  const TIRE = '#141416', CHROME = '#b8bcc4';
-  P.r(4, 0, 2, 5, TIRE); P.r(4, 15, 2, 5, TIRE);          // ruedas
-  P.r(4, 1, 2, 1, '#fff7c8');                            // faro
-  P.r(0, 4, 10, 1, '#2a2a2e'); P.r(0, 4, 1, 1, CHROME); P.r(9, 4, 1, 1, CHROME); // manubrio
-  P.r(3, 5, 4, 4, C); P.r(3, 5, 1, 4, L); P.r(6, 5, 1, 4, D); // tanque / escudo
-  P.r(3, 9, 4, 6, '#26262a'); P.r(4, 9, 2, 5, '#3a3a40'); // asiento
-  P.r(3, 15, 4, 2, D); P.r(4, 17, 2, 1, '#e8302a');       // guardabarros y luz trasera
-  P.r(7, 13, 1, 4, CHROME);                               // escape
+// Motos y vehículos de dos (y tres) ruedas, vistos desde arriba mirando hacia arriba. Diseños propios por
+// categoría (sin marcas ni modelos reales): moto de calle chica "cub", mini moto, moto de calle 150,
+// motocarga de tres ruedas y patineta eléctrica. Cada uno con su silueta para que se distingan de lejos.
+VR.drawMotoCub = (pal) => { // underbone 125: escudo delantero ancho, piso bajo, asiento largo (10×21)
+  const [C, D, L] = pal, c = VR.canvas(10, 21), P = VR.gfx.painter(c), TIRE = '#141416', CH = '#b8bcc4';
+  P.r(4, 0, 2, 5, TIRE); P.r(4, 16, 2, 5, TIRE);
+  P.r(4, 1, 2, 1, '#fff7c8');
+  P.r(1, 2, 1, 2, CH); P.r(8, 2, 1, 2, CH);                          // espejos altos
+  P.r(0, 4, 10, 1, '#2a2a2e');                                       // manubrio
+  P.r(2, 5, 6, 1, C); P.r(1, 6, 8, 3, C); P.r(1, 6, 1, 3, L); P.r(8, 6, 1, 3, D); P.r(3, 5, 4, 1, L); // escudo
+  P.r(3, 9, 4, 2, '#3a3a40'); P.r(4, 9, 2, 2, '#26262a');           // piso
+  P.r(3, 11, 4, 6, '#26262a'); P.r(4, 11, 2, 5, '#3a3a40');         // asiento largo
+  P.r(2, 12, 1, 5, C); P.r(7, 12, 1, 5, D);                          // carenado lateral
+  P.r(3, 17, 4, 1, C); P.r(4, 18, 2, 1, '#e8302a');                 // cola y luz
+  P.r(8, 14, 1, 5, CH);                                              // escape
   return c;
 };
+VR.drawMotoMini = (pal) => { // mini moto: ruedas gordas, faro redondo, corta y ancha (10×17)
+  const [C, D, L] = pal, c = VR.canvas(10, 17), P = VR.gfx.painter(c), TIRE = '#141416';
+  P.r(3, 0, 4, 4, TIRE); P.r(3, 13, 4, 4, TIRE); P.r(4, 0, 2, 1, '#2a2a2e'); P.r(4, 16, 2, 1, '#2a2a2e');
+  P.r(3, 2, 4, 2, C); P.r(4, 2, 2, 1, '#fff7c8');                    // faro redondo
+  P.r(1, 4, 8, 1, '#2a2a2e'); P.r(1, 4, 1, 1, '#b8bcc4'); P.r(8, 4, 1, 1, '#b8bcc4');
+  P.r(2, 5, 6, 4, C); P.r(2, 5, 1, 4, L); P.r(7, 5, 1, 4, D); P.r(3, 5, 4, 1, L); // tanque gordo
+  P.r(2, 9, 6, 4, '#26262a'); P.r(3, 9, 4, 3, '#3a3a40');           // asiento plano y ancho
+  P.r(3, 13, 4, 1, C); P.r(4, 13, 2, 1, '#e8302a');
+  return c;
+};
+VR.drawMotoCalle = (pal) => { // moto de calle 150: visera, tanque grande, parrilla atrás, escape largo cromado (10×22)
+  const [C, D, L] = pal, c = VR.canvas(10, 22), P = VR.gfx.painter(c), TIRE = '#141416', CH = '#c8ccd4';
+  P.r(4, 0, 2, 5, TIRE); P.r(4, 17, 2, 5, TIRE);
+  P.r(3, 2, 4, 3, '#1e1e22'); P.r(4, 2, 2, 1, '#fff7c8'); P.r(3, 4, 4, 1, C); // faro con visera
+  P.r(0, 5, 10, 1, '#2a2a2e'); P.r(0, 5, 1, 1, CH); P.r(9, 5, 1, 1, CH);
+  P.r(2, 6, 6, 5, C); P.r(2, 7, 1, 3, L); P.r(7, 6, 1, 5, D); P.r(4, 6, 1, 5, L); // tanque con franja
+  P.r(3, 11, 4, 6, '#26262a'); P.r(4, 11, 2, 5, '#3a3a40');
+  P.r(3, 17, 4, 2, CH); P.r(3, 17, 1, 2, '#7a7e86'); P.r(5, 18, 1, 1, '#7a7e86'); // parrilla
+  P.r(4, 16, 2, 1, '#e8302a');
+  P.r(8, 9, 1, 11, CH); P.r(9, 12, 1, 6, '#9a9ea6');                 // escape largo
+  return c;
+};
+VR.drawMotoCarga = (pal) => { // motocarga: moto adelante y caja de carga atrás con dos ruedas (18×34)
+  const [C, D, L] = pal, c = VR.canvas(18, 34), P = VR.gfx.painter(c), TIRE = '#141416', CH = '#b8bcc4';
+  P.r(8, 0, 2, 5, TIRE); P.r(8, 1, 2, 1, '#fff7c8');
+  P.r(4, 5, 10, 1, '#2a2a2e'); P.r(4, 5, 1, 1, CH); P.r(13, 5, 1, 1, CH);
+  P.r(6, 6, 6, 3, C); P.r(6, 6, 1, 3, L); P.r(11, 6, 1, 3, D);       // tanque
+  P.r(6, 9, 6, 4, '#26262a'); P.r(7, 9, 4, 3, '#3a3a40');           // asiento
+  P.r(4, 13, 10, 1, C);                                              // respaldo / caño
+  P.r(0, 24, 2, 7, TIRE); P.r(16, 24, 2, 7, TIRE);                   // ruedas traseras
+  P.r(1, 14, 16, 20, D); P.r(2, 15, 14, 18, C);                      // caja
+  P.r(3, 16, 12, 16, VR.shadeHex(C, 0.72)); for (let y = 18; y < 32; y += 3) P.r(3, y, 12, 1, VR.shadeHex(C, 0.6)); // tablas del piso
+  P.r(1, 14, 1, 20, L); P.r(2, 33, 14, 1, '#e8302a');
+  P.r(1, 33, 2, 1, '#e8302a'); P.r(15, 33, 2, 1, '#e8302a');
+  return c;
+};
+VR.drawPati = (pal) => { // patineta eléctrica: manubrio en T, tabla angosta (6×14)
+  const [C, D] = pal, c = VR.canvas(6, 14), P = VR.gfx.painter(c), TIRE = '#141416';
+  P.r(2, 0, 2, 3, TIRE); P.r(2, 11, 2, 3, TIRE);
+  P.r(0, 2, 6, 1, '#2a2a2e'); P.r(0, 2, 1, 1, '#d8dce4'); P.r(5, 2, 1, 1, '#d8dce4');
+  P.r(2, 3, 2, 1, C);
+  P.r(1, 4, 4, 8, '#2a2a30'); P.r(1, 4, 1, 8, C); P.r(4, 4, 1, 8, D); P.r(2, 5, 2, 6, '#3c3c44');
+  P.r(2, 12, 2, 1, '#e8302a');
+  return c;
+};
+VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.max(0, Math.min(255, Math.round(v * k))).toString(16).padStart(2, '0'); return '#' + f(n >> 16) + f((n >> 8) & 255) + f(n & 255); }
+VR.drawMotoBase = VR.drawMotoCub;
 // Conductor de moto visto desde arriba (10×12): cabeza (pelo o casco), hombros y brazos al manubrio.
 VR.drawRiderBase = (shirt, head) => {
   const c = VR.canvas(10, 20), P = VR.gfx.painter(c);
@@ -86,18 +137,41 @@ VR.rotFrames = (base, S, outline = true) => {
 };
 
 // Datos de cada tipo: tamaño, sprites y manejo. max = velocidad tope por piso (px/s; 240 ≈ 108 km/h).
+// name/desc: nombre inventado y descripción para la tarjeta que aparece al subirte.
 VR.VSPEC = {
-  car: { len: 30, wid: 16, S: 36, colors: VR.CAR_COLORS, base: VR.drawCarBase, acc: 175, rev: 75, turn: 2.7, brake: 420,
-    max: { road: 240, stone: 205, dirt: 170, side: 150, grass: 115 } },
-  moto: { len: 18, wid: 8, S: 24, colors: VR.MOTO_COLORS, base: VR.drawMotoBase, acc: 230, rev: 25, turn: 3.5, brake: 460,
+  car: { len: 30, wid: 16, S: 36, colors: VR.CAR_COLORS, base: VR.drawCarBase, acc: 175, rev: 75, turn: 2.7, brake: 420, mass: 1,
+    max: { road: 240, stone: 205, dirt: 170, side: 150, grass: 115 },
+    name: 'Mitã 1.3', desc: 'Compacto de 5 puertas: chico, gasolero y fácil de estacionar.', side: 'car' },
+  moto: { len: 19, wid: 8, S: 24, colors: VR.MOTO_COLORS, base: VR.drawMotoCub, acc: 230, rev: 25, turn: 3.5, brake: 460, mass: 0.3,
     max: { road: 250, stone: 215, dirt: 205, side: 160, grass: 135 } },
 };
+VR.PATI_COLORS = [['#2c2c32', '#16161a', '#55555e'], ['#e8e6e0', '#a9a69e', '#ffffff'], ['#2f5fa8', '#1e3f74', '#5c8ad0']];
+VR.MOTO_MODELS = {
+  cub: { name: 'Mbojoaju 125', desc: 'La moto de todos los días: liviana, económica y con lugar para dos.', side: 'cub' },
+  mini: { len: 16, wid: 9, S: 22, base: VR.drawMotoMini, acc: 205, turn: 4.1, max: { road: 200, stone: 175, dirt: 170, side: 150, grass: 125 },
+    name: 'Tatu 110', desc: 'Mini moto de ruedas gordas: chiquita, divertida y dobla en un pañuelo.', side: 'mini' },
+  calle: { len: 21, wid: 8, S: 26, base: VR.drawMotoCalle, acc: 265, turn: 3.2, max: { road: 290, stone: 240, dirt: 215, side: 160, grass: 140 },
+    name: 'Yvytu GT 150', desc: 'Moto de calle con tanque grande y escape cromado: la más rápida.', side: 'calle' },
+  carga: { len: 32, wid: 16, S: 40, base: VR.drawMotoCarga, acc: 135, rev: 40, turn: 2.3, brake: 380, mass: 0.8,
+    max: { road: 185, stone: 165, dirt: 160, side: 120, grass: 105 },
+    name: 'Kárga Guasu 200', desc: 'Motocarga de tres ruedas: lenta, pesada y aguanta de todo atrás.', side: 'carga', riderOff: 8 },
+  pati: { len: 12, wid: 6, S: 16, base: VR.drawPati, colors: VR.PATI_COLORS, acc: 150, rev: 15, turn: 4.4, brake: 420, mass: 0.15,
+    max: { road: 115, stone: 85, dirt: 70, side: 110, grass: 60 },
+    name: 'Pati-e', desc: 'Patineta eléctrica: silenciosa y ágil, pero no le pidas mucho en el empedrado.', side: 'pati' },
+};
+// sorteo de modelo: en el tránsito hay motocargas; estacionadas en batería, no (no entran)
+VR.pickMoto = (rnd, parked) => {
+  const r = rnd();
+  if (parked) return r < 0.55 ? 'cub' : r < 0.78 ? 'calle' : r < 0.95 ? 'mini' : 'pati';
+  return r < 0.46 ? 'cub' : r < 0.66 ? 'calle' : r < 0.78 ? 'mini' : r < 0.95 ? 'carga' : 'pati';
+};
+VR.vspec = (type, model) => type === 'moto' ? { ...VR.VSPEC.moto, ...VR.MOTO_MODELS[model || 'cub'] } : VR.VSPEC[type];
 VR.vframes = (() => {
   const cache = new Map();
-  return (type, color) => {
-    const key = type + ':' + color;
+  return (type, color, model) => {
+    const key = type + ':' + (model || '') + ':' + color;
     let f = cache.get(key);
-    if (!f) { const sp = VR.VSPEC[type]; f = VR.rotFrames(sp.base(sp.colors[color % sp.colors.length]), sp.S); cache.set(key, f); }
+    if (!f) { const sp = VR.vspec(type, model); f = VR.rotFrames(sp.base(sp.colors[color % sp.colors.length]), sp.S); cache.set(key, f); }
     return f;
   };
 })();
@@ -112,12 +186,12 @@ VR.riderFrames = (() => {
 })();
 
 VR.Car = class {
-  constructor(world, x, y, angle, color, type = 'car') {
-    this.world = world; this.type = type; this.spec = VR.VSPEC[type];
+  constructor(world, x, y, angle, color, type = 'car', model = null) {
+    this.world = world; this.type = type; this.model = type === 'moto' ? (model || 'cub') : null; this.spec = VR.vspec(type, this.model);
     this.x = this.px = x; this.y = this.py = y; this.a = this.pa = angle;
     this.v = 0; this.color = color; this.driven = false; this.hit = 0;
     this.rider = null; // moto: {shirt, head} cuando alguien la maneja
-    this.frames = VR.vframes(type, color);
+    this.frames = VR.vframes(type, color, this.model);
   }
   get LEN() { return this.spec.len; }
   get WID() { return this.spec.wid; }
@@ -165,7 +239,7 @@ VR.Car = class {
     } else { throttle = -input.ay; steer = input.ax; }
     this.physics(dt, throttle, steer, brake);
   }
-  get mass() { return this.type === 'moto' ? 0.3 : 1; }
+  get mass() { return this.spec.mass; }
   // Física: velocidad como vector (vx, vy) además del rumbo, así el vehículo puede derrapar;
   // giro con velocidad angular (w) que también cambian los choques.
   physics(dt, throttle, steer, brake, parked = false) {
@@ -299,7 +373,8 @@ VR.Car = class {
     ctx.drawImage(F.img[k], x - h + shake, y - h);
     if (this.rider) {
       const R = VR.riderFrames(this.rider.shirt, this.rider.head), rh = R.S >> 1;
-      ctx.drawImage(R.img[k], x - rh + shake, y - rh - 1);
+      const ro = this.spec.riderOff || 0;
+      ctx.drawImage(R.img[k], x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro));
     }
   }
 };
@@ -312,7 +387,7 @@ VR.parkCars = (world, n, near) => {
   const T = VR.T, rnd = VR.rng(2006), S = VR.TILE, cars = [];
   const road = (x, y) => { const t = world.get(x, y); return t === T.ROAD || t === T.STONE; };
   const curb = (x, y) => { const t = world.get(x, y); return t === T.SIDEWALK || t === T.CHECKER; };
-  const add = (x, y, a, color, type = 'car') => { const c = new VR.Car(world, x, y, a, color, type); world.addBox(c); cars.push(c); return c; };
+  const add = (x, y, a, color, type = 'car') => { const m = type === 'moto' ? VR.pickMoto(rnd, true) : null; const c = new VR.Car(world, x, y, a, m === 'pati' ? color % VR.PATI_COLORS.length : color, type, m); world.addBox(c); cars.push(c); return c; };
   let first = null;
 
   // --- el experimento: la cuadra al sur de la plaza ---
