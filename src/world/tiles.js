@@ -85,6 +85,8 @@ VR.canopy = (() => {
     [[40, 94, 52], [62, 128, 64], [98, 166, 84]],
     [[70, 104, 36], [104, 140, 46], [150, 182, 70]], // lapacho sin flor / más amarillento
     [[150, 52, 120], [196, 82, 158], [236, 140, 200]], // lapacho rosado
+    [[60, 110, 40], [80, 140, 50], [110, 170, 60]], // 4 = palmera (se dibuja aparte)
+    [[178, 132, 18], [228, 186, 34], [252, 226, 96]], // 5 = tajy amarillo (lapacho amarillo, idea de Deisy)
   ];
   return (r, pal) => {
     const key = r + ':' + pal;

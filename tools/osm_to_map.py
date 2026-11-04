@@ -533,6 +533,9 @@ def main(src, out, preview=None):
         ys, xs = np.nonzero(m)
         order = np.random.default_rng(len(xs)).permutation(len(xs))
         plant(zip(xs[order], ys[order]), prob, spc, mk)
+    # tajy (lapachos): parte de los rosados pasan a ser amarillos (tajy sa'yju), y algunos árboles comunes
+    # de veredas y patios florecen en amarillo o rosado
+    trees = [(x, y, r, 5 if (pal == 3 and rnd.random() < 0.45) or (pal in (0, 1, 2) and rnd.random() < 0.035) else pal) for x, y, r, pal in trees]
     for x, y, _, _ in trees:
         tiles[y, x] = TREE
 
