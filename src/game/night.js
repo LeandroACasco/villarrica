@@ -56,7 +56,12 @@ VR.Night = class {
     // lugares dibujados a mano
     for (const d of W.decals) {
       const X = d.x * S, Y = d.y * S, w = d.w * S, h = d.h * S;
-      if (d.kind === 'frente') for (let y = Y + 8; y < Y + h; y += 28) this.put(X + 8, y, 44, CALIDO, d.style === 'marimer' ? 1 : 0.8);
+      if (d.kind === 'frente') {
+        const col = { credito: '120,255,170', lila: '230,120,255', banco: '170,190,255', universitaria: LED }[d.style] || CALIDO;
+        for (let y = Y + 8; y < Y + h; y += 28) this.put(X + 8, y, 44, col, d.style === 'marimer' ? 1 : 0.8);
+      }
+      else if (d.kind === 'cartel') for (let x = X + 12; x < X + w; x += 32) this.put(x, Y + S - 14, 40, d.style === 'banco' ? '170,190,255' : CALIDO, 0.9);
+      else if (d.kind === 'mesas') this.put(X + w / 2, Y + 8, 50, CALIDO, 0.7);
       else if (d.kind === 'terraza') this.put(X + 16, Y + h / 2, 60, CALIDO, 0.8);
       else if (d.kind === 'monumento') this.put(X + 16, Y + 16, 56, LED, 0.9);
       else if (d.kind === 'monumento_bajo') this.put(X + 16, Y + 16, 30, '120,190,255', 0.9);

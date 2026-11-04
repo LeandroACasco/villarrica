@@ -652,6 +652,51 @@ def main(src, out, preview=None):
         if e_: decals.append({'kind': 'guirnaldas', 'x': x1p, 'y': y0p, 'w': e_ + 1, 'h': y1p_ - y0p + 1})
         print('guirnaldas: N %d, S %d, O %d, E %d baldosas' % (n_, s_, w_, e_))
 
+        # ---------- esquina noroeste de la plaza: Mcal. López y Coronel Bogado (video de Leandro, 03/11/2026) ----------
+        # SO: casona blanca de esquina con cornisa y puertas en arco, negocio de créditos (cartel verde) y al lado
+        # un local chico con cartel lila; NO: banco moderno, blanco con vidrieras y cartel azul; NE: local beige con
+        # cafetería (luz cálida, mesitas de madera y plantas en la vereda) y al lado una casa blanca de 2 pisos con
+        # balcón. Sin nombres ni marcas: solo colores.
+        def corner_bid(xa, xb, ya, yb, px, py):
+            best, bd = 0, 1e9
+            for y in range(max(0, ya), min(H, yb)):
+                for x in range(max(0, xa), min(W, xb)):
+                    if bid[y, x] > 0:
+                        d = (x - px) ** 2 + (y - py) ** 2
+                        if d < bd: bd, best = d, int(bid[y, x])
+            return best
+        def bbox(b):
+            ys, xs = np.nonzero(bid[max(0, y0p - 60):y0p + 60, max(0, x0p - 60):x0p + 60] == b)
+            return int(xs.min()) + max(0, x0p - 60), int(xs.max()) + max(0, x0p - 60), int(ys.min()) + max(0, y0p - 60), int(ys.max()) + max(0, y0p - 60)
+        def setb(b, fl, wc, shop, awn):
+            o = (b - 1) * 8; bdata[o + 2] = fl; bdata[o + 5] = wc; bdata[o + 6] = shop; bdata[o + 7] = awn
+        xw, yn = x0p - w_, y0p - n_  # borde de las fachadas (oeste de Coronel Bogado, norte de Mcal. López)
+        done = []
+        so = corner_bid(xw - 10, xw, y0p - 1, y0p + 10, xw - 1, y0p)
+        if so:
+            x0_, x1_, y0_, y1_ = bbox(so); setb(so, 2, 8, 1, 2)
+            decals.append({'kind': 'frente', 'style': 'credito', 'x': x1_ + 1, 'y': y0_, 'w': 2, 'h': y1_ - y0_ + 1})
+            done.append('SO')
+            lila = corner_bid(xw - 4, xw, y1_ + 1, y1_ + 8, xw - 1, y1_ + 1)
+            if lila and lila != so:
+                a0, a1, b0, b1 = bbox(lila); setb(lila, 1, 8, 1, 0)
+                decals.append({'kind': 'frente', 'style': 'lila', 'x': a1 + 1, 'y': b0, 'w': 2, 'h': b1 - b0 + 1})
+        no = corner_bid(xw - 10, xw, yn - 10, yn, xw - 1, yn - 1)
+        if no:
+            x0_, x1_, y0_, y1_ = bbox(no); setb(no, 2, 9, 1, 1)
+            decals.append({'kind': 'cartel', 'style': 'banco', 'x': x0_, 'y': y1_, 'w': x1_ - x0_ + 1, 'h': 1})
+            decals.append({'kind': 'frente', 'style': 'banco', 'x': x1_ + 1, 'y': y0_, 'w': 2, 'h': y1_ - y0_ + 1})
+            done.append('NO')
+        ne = corner_bid(x0p - 1, x0p + 10, yn - 10, yn, x0p, yn - 1)
+        if ne:
+            x0_, x1_, y0_, y1_ = bbox(ne); setb(ne, 1, 13, 1, 3)
+            decals.append({'kind': 'cartel', 'style': 'cafe', 'x': x0_, 'y': y1_, 'w': x1_ - x0_ + 1, 'h': 1})
+            decals.append({'kind': 'mesas', 'x': x0_, 'y': y1_ + 1, 'w': x1_ - x0_ + 1, 'h': 1})
+            done.append('NE')
+            vec = corner_bid(x1_ + 1, x1_ + 6, y1_ - 3, y1_ + 1, x1_ + 1, y1_)
+            if vec and vec != ne: setb(vec, 2, 8, 0, 0)
+        print('esquina noroeste:', ' '.join(done))
+
     # ---------- punto de inicio: vereda al sur de la Plaza de los Héroes ----------
     spawn = {'x': W * 8, 'y': H * 8}
     for i, p in enumerate(parks):

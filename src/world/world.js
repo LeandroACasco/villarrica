@@ -248,7 +248,7 @@ VR.World = class {
 // ---------- paleta de edificios (los índices los usa tools/osm_to_map.py) ----------
 VR.BPAL = {
   walls: [[236, 222, 186], [230, 196, 140], [214, 164, 150], [176, 204, 214], [240, 236, 226], [190, 214, 170], [226, 182, 110], [200, 184, 214],
-    [246, 242, 230], [232, 230, 222], [234, 156, 132], [70, 64, 60], [230, 242, 242]], // 8 = catedral, 9 = públicos, 10 = salmón, 11 = gris oscuro (Gleu), 12 = blanco turquesa (Universitaria)
+    [246, 242, 230], [232, 230, 222], [234, 156, 132], [70, 64, 60], [230, 242, 242], [214, 192, 152]], // 8 = catedral, 9 = públicos, 10 = salmón, 11 = gris oscuro (Gleu), 12 = blanco turquesa (Universitaria), 13 = beige (café de la esquina)
   roofs: [
     [[178, 82, 52], [160, 70, 46], [190, 98, 60], [150, 60, 40], [200, 92, 58], [124, 52, 38]], // teja
     [[150, 156, 162], [124, 132, 140], [92, 110, 128], [176, 180, 186], [96, 140, 170], [62, 120, 86]], // chapa
@@ -388,7 +388,8 @@ VR.decorOver = {
   frente(g, d) {
     const S = VR.TILE, X = d.x * S, Y = d.y * S + 2, H = d.h * S - 4;
     const st = { antana: ['#1a1a1e', '#f04a2a', 'deportes'], gleu: ['#3a2c22', '#e8e0d0', 'pub'], marimer: ['#f4efe4', '#c8963a', 'heladeria'],
-      universitaria: ['#2a9aa0', '#ffffff', 'coop'], farma: ['#2e7fc8', '#3aa64a', 'farma'] }[d.style] || ['#888', '#fff', ''];
+      universitaria: ['#2a9aa0', '#ffffff', 'coop'], farma: ['#2e7fc8', '#3aa64a', 'farma'],
+      credito: ['#f2efe6', '#3cc87a', 'credito'], lila: ['#8a3aa8', '#e8a8f0', 'lila'], banco: ['#1f3f9a', '#e8eefc', 'banco'] }[d.style] || ['#888', '#fff', ''];
     g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(X, Y + 3, 9, H);
     g.fillStyle = st[0]; g.fillRect(X, Y, 7, H);                       // alero / cartel
     g.fillStyle = st[1]; g.fillRect(X + 2, Y + 3, 3, H - 6);
@@ -417,6 +418,25 @@ VR.decorOver = {
     g.fillStyle = '#c9c3b7'; g.fillRect(sx - 6, sy + 6, 6, sh - 12);
     g.fillStyle = '#e9e5dd'; g.fillRect(sx, sy, sw, sh);
     g.fillStyle = '#b0aa9e'; g.fillRect(sx, sy, 3, sh); g.fillRect(sx, sy + sh - 3, sw, 3);
+  },
+  cartel(g, d) { // cartel sobre la fachada sur (la que mira a la calle de abajo), entre la planta baja y el piso de arriba
+    const S = VR.TILE, X = d.x * S + 3, Y = (d.y + 1) * S - 22, W = d.w * S - 6;
+    if (d.style === 'banco') {
+      g.fillStyle = '#1f3f9a'; g.fillRect(X, Y, W, 6); g.fillStyle = '#e8eefc'; g.fillRect(X + 4, Y + 2, Math.min(28, W - 12), 2);
+      g.fillStyle = '#3aa64a'; g.fillRect(X + W - 7, Y + 1, 4, 4);
+    } else if (d.style === 'cafe') {
+      g.fillStyle = '#3a2c22'; g.fillRect(X + 4, Y - 1, Math.min(26, W - 8), 7); g.fillStyle = '#ffe2a0'; g.fillRect(X + 7, Y + 2, Math.min(20, W - 14), 1);
+      g.fillStyle = 'rgba(255,214,140,.35)'; g.fillRect(X, Y + 7, W, 3);
+    }
+  },
+  mesas(g, d) { // mesitas de madera y macetas en la vereda, frente al café
+    const S = VR.TILE, X = d.x * S, Y = d.y * S + 3;
+    for (let k = 0, x = X + 6; x < X + d.w * S - 14 && k < 3; x += 22, k++) {
+      g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(x + 1, Y + 2, 10, 8);
+      g.fillStyle = '#8a5a32'; g.fillRect(x, Y, 10, 8); g.fillStyle = '#a8703e'; g.fillRect(x, Y, 10, 2);
+      g.fillStyle = '#6a4424'; g.fillRect(x - 4, Y + 1, 3, 6); g.fillRect(x + 11, Y + 1, 3, 6);
+    }
+    for (const x of [X + 1, X + d.w * S - 8]) { g.fillStyle = '#7a4a2a'; g.fillRect(x, Y + 3, 7, 6); g.fillStyle = '#3f8a3a'; g.fillRect(x - 1, Y - 1, 9, 5); g.fillStyle = '#5aa84a'; g.fillRect(x + 1, Y - 2, 4, 3); }
   },
   terraza(g, d) { // mesas y sillas en el borde de la plaza, frente a la heladería, y tachos rojos
     const S = VR.TILE, X = d.x * S, Y = d.y * S;
