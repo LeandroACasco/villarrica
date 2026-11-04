@@ -610,11 +610,32 @@ def main(src, out, preview=None):
             rows_done.append((ya_, yb_, bx_, style))
         if rows_done:
             ya_ = min(r[0] for r in rows_done); yb_ = max(r[1] for r in rows_done); xe = max(r[2] for r in rows_done)
-            # guirnaldas de luces cruzando Coronel Bogado y mesas de la heladería en el borde de la plaza
-            decals.append({'kind': 'guirnaldas', 'x': xe + 1, 'y': ya_, 'w': px0 - xe + 2, 'h': yb_ - ya_ + 1})
+            # mesas de la heladería en el borde de la plaza (las guirnaldas van más abajo, en las 4 calles)
             ym = next(((r[0] + r[1]) // 2 for r in rows_done if r[3] == 'marimer'), ya_)
             decals.append({'kind': 'terraza', 'x': px0, 'y': ym - 4, 'w': 3, 'h': 9})
     print('frente oeste de la plaza: %d negocios' % len(rows_done))
+
+    # ---------- guirnaldas de luces en las 4 calles que rodean la Plaza de los Héroes (Leandro, 03/11/2026) ----------
+    if hero:
+        pr = np.nonzero((area == hero).any(axis=1))[0]; pc = np.nonzero((area == hero).any(axis=0))[0]
+        y0p, y1p_, x0p, x1p = int(pr.min()), int(pr.max()), int(pc.min()), int(pc.max())
+        STREETY = (ROAD, SIDEWALK, STONE, DIRTROAD)
+        def gap(xs, ys, dx, dy):  # ancho de la calle (con veredas) desde el borde de la plaza hacia afuera
+            out = []
+            for x, y in zip(xs, ys):
+                n = 0
+                while n < 30 and 0 <= x + dx * (n + 1) < W and 0 <= y + dy * (n + 1) < H and tiles[y + dy * (n + 1), x + dx * (n + 1)] in STREETY:
+                    n += 1
+                if 4 <= n < 30: out.append(n)
+            return int(np.median(out)) if out else 0
+        sx = list(range(x0p + 4, x1p - 3, 6)); sy_ = list(range(y0p + 4, y1p_ - 3, 6))
+        n_ = gap(sx, [y0p] * len(sx), 0, -1); s_ = gap(sx, [y1p_] * len(sx), 0, 1)
+        w_ = gap([x0p] * len(sy_), sy_, -1, 0); e_ = gap([x1p] * len(sy_), sy_, 1, 0)
+        if n_: decals.append({'kind': 'guirnaldas', 'dir': 'v', 'x': x0p, 'y': y0p - n_, 'w': x1p - x0p + 1, 'h': n_ + 1})
+        if s_: decals.append({'kind': 'guirnaldas', 'dir': 'v', 'x': x0p, 'y': y1p_, 'w': x1p - x0p + 1, 'h': s_ + 1})
+        if w_: decals.append({'kind': 'guirnaldas', 'x': x0p - w_, 'y': y0p, 'w': w_ + 1, 'h': y1p_ - y0p + 1})
+        if e_: decals.append({'kind': 'guirnaldas', 'x': x1p, 'y': y0p, 'w': e_ + 1, 'h': y1p_ - y0p + 1})
+        print('guirnaldas: N %d, S %d, O %d, E %d baldosas' % (n_, s_, w_, e_))
 
     # ---------- punto de inicio: vereda al sur de la Plaza de los Héroes ----------
     spawn = {'x': W * 8, 'y': H * 8}

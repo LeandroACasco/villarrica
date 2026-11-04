@@ -189,7 +189,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión bbdf268a · 2026-11-03</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 98a69937 · 2026-11-03</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -1178,14 +1178,18 @@ VR.decorOver = {
   },
 };
 VR.decorTop = {
-  guirnaldas(d) { // luces colgadas en zigzag sobre Coronel Bogado, entre los negocios y la plaza
+  guirnaldas(d) { // luces colgadas en zigzag sobre las 4 calles que rodean la Plaza de los Héroes
     const S = VR.TILE, X0 = d.x * S, X1 = (d.x + d.w) * S, Y0 = d.y * S, Y1 = (d.y + d.h) * S;
     return [{ sy: Y1 + 400, draw(g) {
-      const tw = performance.now() / 500;
-      for (let y = Y0; y < Y1; y += 48) {
-        g.strokeStyle = 'rgba(30,30,30,.55)'; g.lineWidth = 1; g.beginPath(); g.moveTo(X0, y); g.lineTo(X1, y + 24); g.stroke();
+      const tw = performance.now() / 500, V = d.dir === 'v';
+      // 'v': cruzan una calle este-oeste (de norte a sur); si no, una calle norte-sur (de oeste a este)
+      for (let u = V ? X0 : Y0; u < (V ? X1 : Y1); u += 48) {
+        const pt = (k) => { const f = k / 12, sag = Math.sin(f * Math.PI) * 4; return V ? [u + 24 * f + sag, Y0 + (Y1 - Y0) * f] : [X0 + (X1 - X0) * f, u + 24 * f + sag]; };
+        g.strokeStyle = 'rgba(30,30,30,.55)'; g.lineWidth = 1; g.beginPath();
+        for (let k = 0; k <= 12; k++) { const [x, y] = pt(k); k ? g.lineTo(x, y + 1) : g.moveTo(x, y + 1); }
+        g.stroke();
         for (let k = 0; k <= 12; k++) {
-          const x = X0 + (X1 - X0) * k / 12, yy = y + 24 * k / 12 + Math.sin(k / 12 * Math.PI) * 4;
+          const [x, yy] = pt(k), y = u;
           const on = 0.75 + 0.25 * Math.sin(tw + k * 1.7 + y);
           g.fillStyle = `rgba(255,236,170,${0.25 * on})`; g.fillRect(Math.round(x) - 2, Math.round(yy) - 1, 5, 5);
           g.fillStyle = '#fff7d8'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
