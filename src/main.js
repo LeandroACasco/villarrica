@@ -29,7 +29,7 @@
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];
-    if (!c || c.type !== (sc.type || 'car') || (sc.model && c.model !== sc.model)) { c = new VR.Car(world, sc.x, sc.y, sc.a, sc.color || 0, sc.type || 'car', sc.model); cars.push(c); }
+    if (!c || c.type !== (sc.type || 'car') || (sc.model && c.model !== sc.model)) { c = new VR.Car(world, sc.x, sc.y, sc.a, sc.color || 0, sc.type || 'car', sc.model, sc.tune || null); cars.push(c); }
     world.removeBox(c); c.x = c.px = sc.x; c.y = c.py = sc.y; c.a = c.pa = sc.a; world.addBox(c);
     if (sc.in && c.type === 'moto') c.rider = ME;
     if (sc.in) { car = c; c.driven = true; player.x = player.px = c.x; player.y = player.py = c.y; VR.screen.setBase(DRIVE_BASE); setTimeout(() => driveLabels(true)); }
@@ -455,7 +455,7 @@
     if (car) lastCar = car;
     const c = lastCar, i = c ? cars.indexOf(c) : -1;
     VR.store.set('pos:' + world.id, { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir,
-      car: c ? { i, type: c.type, model: c.model, color: c.color, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
+      car: c ? { i, type: c.type, model: c.model, color: c.color, tune: c.tune || null, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
   };
   setInterval(savePos, 3000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } });

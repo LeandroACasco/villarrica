@@ -204,7 +204,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 117e6e40 · 2026-11-04</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 056850e0 · 2026-11-04</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -2203,72 +2203,93 @@ VR.vbase = (w, h, fn) => {
 };
 const GL = ['#22344a', '#3b5470', '#8fb0cc'], CHR = ['#7a7e86', '#e8ecf2', '#9aa0a8'];
 // Compacto de 5 puertas mirando hacia arriba (16×30 unidades)
-VR.drawCarBase = (pal) => VR.vbase(16, 30, (T) => {
-  const [C, D, L] = pal, g = T.g;
+VR.drawCarBase = (pal, t = {}) => VR.vbase(16, 30, (T) => {
+  const [C, D, L] = pal, g = T.g, S2 = VR.tunePal ? VR.tunePal(t.color2 ?? 11)[0] : '#f2f0ea';
+  const gl = t.polarizado == 2 ? ['#0c1018', '#161e28', '#34404e'] : t.polarizado == 1 ? ['#18222e', '#2c3c50', '#5e7690'] : GL;
+  const HL = t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0';
+  const st = (y0, y1) => { // franjas sobre la parte que se acaba de dibujar
+    g.fillStyle = S2;
+    if (t.franja === 'carrera') { g.fillRect(5.7, y0, 1.3, y1 - y0); g.fillRect(9, y0, 1.3, y1 - y0); }
+    else if (t.franja === 'centro') g.fillRect(6.6, y0, 2.8, y1 - y0);
+  };
+  if (t.escape === 'deportivo') { T.rr(3.2, 28.6, 1.3, 1.4, 0.5, CHR[1]); T.rr(4.8, 28.6, 1.3, 1.4, 0.5, CHR[1]); }
   T.tire(-0.1, 5, 2.2, 5.2); T.tire(13.9, 5, 2.2, 5.2); T.tire(-0.1, 20.5, 2.2, 5.2); T.tire(13.9, 20.5, 2.2, 5.2);
+  if (t.llantas && t.llantas !== 'serie') { const rc = VR.RIMS[t.llantas]; for (const [x, y] of [[-0.1, 6.4], [15.3, 6.4], [-0.1, 21.9], [15.3, 21.9]]) T.rr(x, y, 0.8, 2.4, 0.3, rc); }
   T.rr(0.7, 0.3, 14.6, 29.4, [4.2, 4.2, 3, 3], T.hg(0.7, 15.3, [D, L, C, C, D]));         // carrocería
+  if (t.franja === 'costado') { g.fillStyle = S2; g.fillRect(0.9, 3, 0.7, 24); g.fillRect(14.4, 3, 0.7, 24); }
   T.rr(1.6, 1, 12.8, 6.8, [3.4, 3.4, 1, 1], T.hg(1.6, 14.4, [C, L, C, D]));               // capó
   T.line(5.2, 1.6, 5.6, 7.4, 0.25, VR.shadeHex(C, 0.82)); T.line(10.8, 1.6, 10.4, 7.4, 0.25, VR.shadeHex(C, 0.82));
+  st(0.5, 8);
   T.ell(5.5, 3.2, 1.6, 0.7, 'rgba(255,255,255,.35)');                                    // brillo del capó
-  T.rr(1.5, 0.7, 3, 1.3, 0.6, '#fff4c0'); T.rr(11.5, 0.7, 3, 1.3, 0.6, '#fff4c0');       // faros
+  T.rr(1.5, 0.7, 3, 1.3, 0.6, HL); T.rr(11.5, 0.7, 3, 1.3, 0.6, HL);                     // faros
   T.rr(2, 0.9, 1.2, 0.8, 0.3, '#ffffff'); T.rr(12.8, 0.9, 1.2, 0.8, 0.3, '#ffffff');
   T.rr(5.6, 0.4, 4.8, 0.9, 0.4, '#2a2a30');                                              // parrilla
-  T.poly([[2.6, 8], [13.4, 8], [14.4, 12.2], [1.6, 12.2]], T.vg(8, 12.2, GL));             // parabrisas
+  T.poly([[2.6, 8], [13.4, 8], [14.4, 12.2], [1.6, 12.2]], T.vg(8, 12.2, gl));             // parabrisas
   T.poly([[4, 8.6], [5.6, 8.6], [3.6, 11.6], [2.4, 11.6]], 'rgba(255,255,255,.35)');
   T.rr(0, 8.6, 1.4, 1.2, 0.4, D); T.rr(14.6, 8.6, 1.4, 1.2, 0.4, D);                      // espejos
-  T.rr(2.6, 12.2, 10.8, 9.6, 1.2, T.hg(2.6, 13.4, [L, C, C, D]));                         // techo
+  const R = t.techo === 'negro' ? ['#4a4a52', '#2c2c32', '#2c2c32', '#1a1a1e'] : [L, C, C, D];
+  T.rr(2.6, 12.2, 10.8, 9.6, 1.2, T.hg(2.6, 13.4, R));                                   // techo
+  if (t.techo !== 'negro') st(12.2, 21.8);
   T.rr(4, 13.2, 5, 1, 0.5, 'rgba(255,255,255,.3)');
-  T.rr(1.2, 12.4, 1.2, 4.4, 0.4, T.vg(12, 17, GL)); T.rr(13.6, 12.4, 1.2, 4.4, 0.4, T.vg(12, 17, GL)); // ventanillas
-  T.rr(1.2, 17.2, 1.2, 4.2, 0.4, T.vg(17, 21, GL)); T.rr(13.6, 17.2, 1.2, 4.2, 0.4, T.vg(17, 21, GL));
-  T.poly([[2.8, 21.8], [13.2, 21.8], [12.6, 25], [3.4, 25]], T.vg(21.8, 25, GL));          // luneta
+  if (t.techo === 'parrilla') { T.line(3.6, 13, 3.6, 21, 0.45, '#2a2a30'); T.line(12.4, 13, 12.4, 21, 0.45, '#2a2a30'); for (const y of [14, 17, 20]) T.line(3.6, y, 12.4, y, 0.35, '#45454c'); }
+  T.rr(1.2, 12.4, 1.2, 4.4, 0.4, T.vg(12, 17, gl)); T.rr(13.6, 12.4, 1.2, 4.4, 0.4, T.vg(12, 17, gl)); // ventanillas
+  T.rr(1.2, 17.2, 1.2, 4.2, 0.4, T.vg(17, 21, gl)); T.rr(13.6, 17.2, 1.2, 4.2, 0.4, T.vg(17, 21, gl));
+  T.poly([[2.8, 21.8], [13.2, 21.8], [12.6, 25], [3.4, 25]], T.vg(21.8, 25, gl));          // luneta
   T.rr(3.4, 25.2, 9.2, 3.6, 1, T.hg(3.4, 12.6, [C, L, D]));                               // portón
+  st(25.2, 28.6);
   T.rr(6.4, 28.3, 3.2, 0.9, 0.2, '#f2f0ea');                                             // patente
   T.rr(1.2, 27.6, 2.4, 1.6, 0.6, '#d8302a'); T.rr(12.4, 27.6, 2.4, 1.6, 0.6, '#d8302a'); // luces traseras
   g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0.8, 12.6, 0.5, 9); g.fillRect(14.7, 12.6, 0.5, 9);
+  if (t.aleron === 'chico') { T.rr(3, 25.4, 10, 1, 0.4, D); T.rr(3.2, 25.4, 9.6, 0.4, 0.2, L); }
+  if (t.aleron === 'grande') { T.rr(5, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(10.2, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(0.8, 26.2, 14.4, 1.7, 0.5, T.hg(0.8, 15.2, [D, L, C, D])); T.rr(1, 26.3, 14, 0.5, 0.2, 'rgba(255,255,255,.25)'); }
 });
 // Motos y vehículos de dos (y tres) ruedas, vistos desde arriba mirando hacia arriba. Diseños propios por
 // categoría (sin marcas ni modelos reales): moto "cub", mini moto, moto de calle 150, motocarga y patineta.
-VR.drawMotoCub = (pal) => VR.vbase(10, 21, (T) => { // escudo delantero ancho, piso bajo, asiento largo
-  const [C, D, L] = pal;
+VR.drawMotoCub = (pal, t = {}) => VR.vbase(10, 21, (T) => { // escudo delantero ancho, piso bajo, asiento largo
+  const [C, D, L] = pal, S2 = VR.tunePal ? VR.tunePal(t.color2 ?? 11)[0] : '#fff', HL = t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0';
   T.tire(4.1, 0.1, 1.8, 5.2); T.tire(4.1, 15.6, 1.8, 5.3);
   T.rr(3.9, 2.6, 2.2, 1.6, 0.6, C);                                                       // guardabarros
-  T.rr(3.6, 0.9, 2.8, 1.3, 0.6, '#fff4c0');                                              // faro
+  T.rr(3.6, 0.9, 2.8, 1.3, 0.6, HL);                                                    // faro
   T.line(0.7, 4.7, 9.3, 4.7, 0.75, '#2a2a2e'); T.line(0.7, 4.7, 1.8, 4.7, 0.9, '#55555c'); T.line(8.2, 4.7, 9.3, 4.7, 0.9, '#55555c');
   T.line(2.1, 4.5, 1.4, 2.7, 0.3, CHR[0]); T.line(7.9, 4.5, 8.6, 2.7, 0.3, CHR[0]); T.ell(1.4, 2.6, 0.7, 0.5, CHR[1]); T.ell(8.6, 2.6, 0.7, 0.5, CHR[1]); // espejos
   T.poly([[2.6, 5.2], [7.4, 5.2], [8.7, 8.8], [1.3, 8.8]], T.hg(1.3, 8.7, [L, C, C, D]));  // escudo
   T.ell(4, 6.4, 1, 0.5, 'rgba(255,255,255,.35)');
   T.rr(3.2, 8.8, 3.6, 2, 0.4, '#3a3a40'); for (let x = 3.6; x < 6.6; x += 0.7) T.rr(x, 9, 0.3, 1.6, 0, '#2a2a2e'); // piso con estrías
   T.rr(2, 11.2, 6, 5.8, 1.2, T.hg(2, 8, [L, C, D]));                                     // tapas laterales
+  if (t.franja && t.franja !== 'no') { T.rr(2.1, 12, 0.6, 4.4, 0.2, S2); T.rr(7.3, 12, 0.6, 4.4, 0.2, S2); T.rr(4.2, 5.4, 1.6, 3.2, 0.3, S2); }
   T.rr(3, 10.6, 4, 6.6, 1.6, T.hg(3, 7, ['#3a3a40', '#26262a', '#1a1a1e']));               // asiento largo
   T.line(5, 11.2, 5, 16.6, 0.15, '#4a4a52');
   T.rr(3.2, 17, 3.6, 1.4, 0.6, C); T.rr(4, 18.1, 2, 0.6, 0.3, '#e8302a');                 // cola y luz
-  T.rr(7.6, 12.6, 1, 5.8, 0.5, T.hg(7.6, 8.6, CHR));                                     // escape
+  T.rr(7.6, 12.6, t.escape === 'deportivo' ? 1.4 : 1, t.escape === 'deportivo' ? 7.4 : 5.8, 0.6, T.hg(7.6, 9, CHR));  // escape
 });
-VR.drawMotoMini = (pal) => VR.vbase(10, 17, (T) => { // ruedas gordas, faro redondo, corta y ancha
-  const [C, D, L] = pal;
+VR.drawMotoMini = (pal, t = {}) => VR.vbase(10, 17, (T) => { // ruedas gordas, faro redondo, corta y ancha
+  const [C, D, L] = pal, S2 = VR.tunePal ? VR.tunePal(t.color2 ?? 11)[0] : '#fff', HL = t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0';
   T.tire(2.9, 0, 4.2, 4.2); T.tire(2.9, 12.8, 4.2, 4.2);
-  T.ell(5, 2.6, 1.9, 1.5, C); T.ell(5, 2.4, 1.2, 0.9, '#fff4c0'); T.ell(4.7, 2.2, 0.5, 0.35, '#ffffff'); // faro redondo
+  T.ell(5, 2.6, 1.9, 1.5, C); T.ell(5, 2.4, 1.2, 0.9, HL); T.ell(4.7, 2.2, 0.5, 0.35, '#ffffff'); // faro redondo
   T.line(1.2, 4.4, 8.8, 4.4, 0.8, '#2a2a2e'); T.ell(1.3, 4.4, 0.6, 0.55, '#55555c'); T.ell(8.7, 4.4, 0.6, 0.55, '#55555c');
   T.rr(2, 5, 6, 4.2, 1.8, T.hg(2, 8, [L, C, C, D])); T.ell(3.8, 6, 0.9, 0.6, 'rgba(255,255,255,.4)'); // tanque gordo
+  if (t.franja && t.franja !== 'no') { if (t.franja === 'carrera') { T.rr(3.6, 5.2, 0.8, 3.8, 0.3, S2); T.rr(5.6, 5.2, 0.8, 3.8, 0.3, S2); } else T.rr(4.2, 5.1, 1.6, 4, 0.4, S2); }
+  if (t.escape === 'deportivo') { T.rr(7.4, 9.4, 1.4, 5, 0.6, T.hg(7.4, 8.8, CHR)); }
   T.rr(2.2, 8.8, 5.6, 4.6, 1.4, T.hg(2.2, 7.8, ['#3a3a40', '#26262a', '#1a1a1e'])); T.line(2.8, 10.2, 7.2, 10.2, 0.15, '#4a4a52'); T.line(2.8, 12, 7.2, 12, 0.15, '#4a4a52');
   T.rr(3.2, 13.2, 3.6, 1, 0.5, C); T.rr(4.2, 13.5, 1.6, 0.5, 0.25, '#e8302a');
 });
-VR.drawMotoCalle = (pal) => VR.vbase(10, 22, (T) => { // visera, tanque grande, parrilla, escape largo cromado
-  const [C, D, L] = pal;
+VR.drawMotoCalle = (pal, t = {}) => VR.vbase(10, 22, (T) => { // visera, tanque grande, parrilla, escape largo cromado
+  const [C, D, L] = pal, S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : L, HL = t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0';
   T.tire(4.15, 0, 1.7, 5.3); T.tire(4.1, 16.7, 1.8, 5.3);
-  T.rr(3.4, 1.6, 3.2, 3.2, 1, '#1e1e22'); T.ell(5, 2.6, 1.1, 0.8, '#fff4c0'); T.rr(3.4, 3.8, 3.2, 1, 0.4, C); // faro con visera
+  T.rr(3.4, 1.6, 3.2, 3.2, 1, '#1e1e22'); T.ell(5, 2.6, 1.1, 0.8, HL); T.rr(3.4, 3.8, 3.2, 1, 0.4, C); // faro con visera
   T.line(0.4, 5.4, 9.6, 5.4, 0.7, '#2a2a2e'); T.ell(0.6, 5.4, 0.55, 0.5, '#55555c'); T.ell(9.4, 5.4, 0.55, 0.5, '#55555c');
   T.line(2, 5.2, 1.3, 3.4, 0.28, CHR[0]); T.line(8, 5.2, 8.7, 3.4, 0.28, CHR[0]); T.rr(0.7, 2.7, 1.3, 0.9, 0.3, '#1e1e22'); T.rr(8, 2.7, 1.3, 0.9, 0.3, '#1e1e22');
   T.rr(1.8, 6, 6.4, 5.4, [2.4, 2.4, 1.2, 1.2], T.hg(1.8, 8.2, [D, L, C, D]));              // tanque grande
-  T.rr(4.5, 6.3, 1, 5, 0.4, L); T.ell(3.4, 7.4, 0.8, 0.6, 'rgba(255,255,255,.45)'); T.ell(5, 7.6, 0.9, 0.7, '#2a2a2e'); T.ell(5, 7.6, 0.5, 0.4, CHR[1]); // franja y tapa
+  if (t.franja === 'carrera') { T.rr(3.6, 6.3, 0.8, 5, 0.3, S2); T.rr(5.6, 6.3, 0.8, 5, 0.3, S2); } else T.rr(t.franja === 'centro' ? 4.1 : 4.5, 6.3, t.franja === 'centro' ? 1.8 : 1, 5, 0.4, S2); T.ell(3.4, 7.4, 0.8, 0.6, 'rgba(255,255,255,.45)'); T.ell(5, 7.6, 0.9, 0.7, '#2a2a2e'); T.ell(5, 7.6, 0.5, 0.4, CHR[1]); // franja y tapa
   T.rr(3, 11.2, 4, 6, 1.2, T.hg(3, 7, ['#3a3a40', '#26262a', '#1a1a1e'])); T.line(5, 11.6, 5, 16.8, 0.15, '#4a4a52');
   T.rr(3, 17, 4, 2.4, 0.4, 'rgba(0,0,0,0)'); for (let y = 17.2; y < 19.4; y += 0.8) T.line(3.2, y, 6.8, y, 0.3, CHR[1]); T.line(3.2, 17, 3.2, 19.4, 0.35, CHR[0]); T.line(6.8, 17, 6.8, 19.4, 0.35, CHR[0]); // parrilla
   T.rr(4, 16.2, 2, 0.7, 0.3, '#e8302a');
   T.rr(7.7, 9, 1.1, 11.4, 0.55, T.hg(7.7, 8.8, CHR)); T.rr(8.4, 12, 1, 6.4, 0.5, T.hg(8.4, 9.4, CHR)); // escape largo
+  if (t.escape === 'deportivo') T.rr(0.9, 12, 1.1, 8, 0.55, T.hg(0.9, 2, CHR));
 });
-VR.drawMotoCarga = (pal) => VR.vbase(18, 34, (T) => { // moto adelante y caja de carga atrás con dos ruedas
-  const [C, D, L] = pal, g = T.g;
-  T.tire(8.1, 0, 1.8, 5.2); T.rr(7.6, 0.8, 2.8, 1.3, 0.6, '#fff4c0');
+VR.drawMotoCarga = (pal, t = {}) => VR.vbase(18, 34, (T) => { // moto adelante y caja de carga atrás con dos ruedas
+  const [C, D, L] = pal, g = T.g, S2 = VR.tunePal ? VR.tunePal(t.color2 ?? 11)[0] : '#fff';
+  T.tire(8.1, 0, 1.8, 5.2); T.rr(7.6, 0.8, 2.8, 1.3, 0.6, t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0');
   T.line(3.8, 5.3, 14.2, 5.3, 0.8, '#2a2a2e'); T.ell(4, 5.3, 0.6, 0.55, '#55555c'); T.ell(14, 5.3, 0.6, 0.55, '#55555c');
   T.rr(6, 5.8, 6, 3.6, 1.4, T.hg(6, 12, [L, C, D])); T.ell(7.6, 6.6, 0.8, 0.5, 'rgba(255,255,255,.4)');
   T.rr(6.2, 9, 5.6, 4.4, 1.2, T.hg(6.2, 11.8, ['#3a3a40', '#26262a', '#1a1a1e']));
@@ -2277,13 +2298,14 @@ VR.drawMotoCarga = (pal) => VR.vbase(18, 34, (T) => { // moto adelante y caja de
   T.rr(1, 14, 16, 20, 0.8, D); T.rr(1.6, 14.6, 14.8, 18.8, 0.5, T.hg(1.6, 16.4, [L, C, C, D])); // caja
   T.rr(2.6, 15.6, 12.8, 16.8, 0.3, VR.shadeHex(C, 0.68));
   for (let y = 16.8; y < 32; y += 2.4) { g.fillStyle = VR.shadeHex(C, 0.55); g.fillRect(2.6, y, 12.8, 0.3); g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(2.6, y + 0.3, 12.8, 0.3); }
+  if (t.franja && t.franja !== 'no') { g.fillStyle = S2; g.fillRect(1.1, 14.4, 0.6, 19); g.fillRect(16.3, 14.4, 0.6, 19); g.fillRect(1.6, 32.6, 14.8, 0.6); }
   T.rr(1.4, 33.1, 2.2, 0.8, 0.3, '#e8302a'); T.rr(14.4, 33.1, 2.2, 0.8, 0.3, '#e8302a');
 });
-VR.drawPati = (pal) => VR.vbase(6, 14, (T) => { // manubrio en T, tabla angosta
+VR.drawPati = (pal, t = {}) => VR.vbase(6, 14, (T) => { // manubrio en T, tabla angosta
   const [C, D] = pal;
   T.tire(2, 0, 2, 3); T.tire(2, 11, 2, 3);
   T.line(0.4, 2.4, 5.6, 2.4, 0.7, '#2a2a2e'); T.ell(0.5, 2.4, 0.5, 0.45, '#d8dce4'); T.ell(5.5, 2.4, 0.5, 0.45, '#d8dce4');
-  T.ell(3, 3.1, 0.7, 0.6, C); T.ell(3, 2.4, 0.4, 0.3, '#fff4c0');
+  T.ell(3, 3.1, 0.7, 0.6, C); T.ell(3, 2.4, 0.4, 0.3, t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0');
   T.rr(1, 4, 4, 8, 1.2, T.hg(1, 5, [C, '#2a2a30', '#2a2a30', D])); T.rr(1.7, 4.7, 2.6, 6.6, 0.8, '#3c3c44');
   for (let y = 5.2; y < 11; y += 0.9) T.line(2, y, 4, y, 0.2, '#2c2c32');
   T.rr(2.2, 12, 1.6, 0.6, 0.3, '#e8302a');
@@ -2383,10 +2405,10 @@ VR.vspec = (() => {
 })();
 VR.vframes = (() => {
   const cache = new Map();
-  return (type, color, model) => {
-    const key = type + ':' + (model || '') + ':' + color;
+  return (type, color, model, tune) => {
+    const key = type + ':' + (model || '') + ':' + (tune ? 't' + VR.tuneKey(tune) : color);
     let f = cache.get(key);
-    if (!f) { const sp = VR.vspec(type, model); f = VR.rotFrames(sp.base(sp.colors[color % sp.colors.length]), sp.S); cache.set(key, f); }
+    if (!f) { const sp = VR.vspec(type, model); f = VR.rotFrames(sp.base(tune ? VR.tunePal(tune.color) : sp.colors[color % sp.colors.length], tune || {}), sp.S); cache.set(key, f); }
     return f;
   };
 })();
@@ -2401,12 +2423,13 @@ VR.riderFrames = (() => {
 })();
 
 VR.Car = class {
-  constructor(world, x, y, angle, color, type = 'car', model = null) {
-    this.world = world; this.type = type; this.model = type === 'moto' ? (model || 'cub') : null; this.spec = VR.vspec(type, this.model);
+  constructor(world, x, y, angle, color, type = 'car', model = null, tune = null) {
+    this.world = world; this.type = type; this.model = type === 'moto' ? (model || 'cub') : null; this.tune = tune;
+    this.spec = tune ? VR.tuneSpec(VR.vspec(type, this.model), tune) : VR.vspec(type, this.model);
     this.x = this.px = x; this.y = this.py = y; this.a = this.pa = angle;
     this.v = 0; this.color = color; this.driven = false; this.hit = 0;
     this.rider = null; // moto: {shirt, head} cuando alguien la maneja
-    this.frames = VR.vframes(type, color, this.model);
+    this.frames = VR.vframes(type, color, this.model, tune);
   }
   get LEN() { return this.spec.len; }
   get WID() { return this.spec.wid; }
@@ -2584,6 +2607,7 @@ VR.Car = class {
     const a = this.pa + Math.atan2(Math.sin(this.a - this.pa), Math.cos(this.a - this.pa)) * al;
     const k = this.frame(a), F = this.frames, h = F.S >> 1;
     const shake = this.hit > 0 ? ((this.hit * 60) | 0) % 2 : 0;
+    if (this.tune && this.tune.neon !== 'no' && (this.driven || this.ai)) VR.drawNeon(ctx, x, y, a, this.LEN, this.WID, VR.NEON[this.tune.neon], VR.night ? 0.35 + VR.night.level * 0.65 : 0.4);
     ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3);
     ctx.drawImage(F.get(k), x - h + shake, y - h);
     if (this.rider) {
@@ -2698,6 +2722,82 @@ VR.parkCars = (world, n, near) => {
   return { cars, first };
 };
 
+// ===== game/tune.js =====
+// Taller de tuning (04/11/2026): colores, franjas, llantas, polarizado, alerón, techo, escape, faros xenón,
+// suspensión baja y neón para el auto y las motos. Todo dibujado por código, sin marcas. Lo usan el probador de
+// vehículos, algunos vehículos del tránsito y (más adelante) el taller del juego.
+'use strict';
+VR.TUNE_COLORS = [
+  ['Rojo', '#c8322a'], ['Bordó', '#7a2a48'], ['Naranja', '#d87a1a'], ['Amarillo', '#d8a02a'], ['Lima', '#7ab83a'], ['Verde', '#3f7f4a'],
+  ['Turquesa', '#2a9a9a'], ['Celeste', '#4a9ad8'], ['Azul', '#2f5fa8'], ['Violeta', '#6a4ab0'], ['Rosa', '#d85a9a'], ['Blanco', '#f2f0ea'],
+  ['Plateado', '#c9ccd1'], ['Gris', '#6a6e76'], ['Negro', '#2c2c32'], ['Dorado', '#c8a040'],
+];
+VR.tunePal = (i) => { const c = VR.TUNE_COLORS[i % VR.TUNE_COLORS.length][1]; return [c, VR.shadeHex(c, 0.66), VR.shadeHex(c, 1.28)]; };
+VR.NEON = { celeste: '80,220,255', rosa: '255,80,200', verde: '90,255,120', violeta: '170,90,255', naranja: '255,150,40', rojo: '255,50,50' };
+VR.RIMS = { serie: '#8a8e96', deportivas: '#c8ccd4', cromadas: '#eef2f8', negras: '#2e2e34', doradas: '#d8b040' };
+// precio de cada pieza (guaraníes); en motos y patinetas se cobra una parte (k)
+VR.TUNE_PARTS = {
+  color: { name: 'Pintura', price: 2200000 },
+  franja: { name: 'Franjas', opts: { no: ['Sin franjas', 0], carrera: ['De carrera', 650000], centro: ['Central ancha', 500000], costado: ['A los costados', 450000] } },
+  color2: { name: 'Color de las franjas', price: 0 },
+  llantas: { name: 'Llantas', opts: { serie: ['De serie', 0], deportivas: ['Deportivas', 2400000], cromadas: ['Cromadas', 3100000], negras: ['Negras', 2600000], doradas: ['Doradas', 3400000] } },
+  polarizado: { name: 'Polarizado', opts: { 0: ['Sin polarizar', 0], 1: ['Medio', 380000], 2: ['Total', 650000] } },
+  aleron: { name: 'Alerón', opts: { no: ['Sin alerón', 0], chico: ['Chico', 900000], grande: ['Grande', 1700000] } },
+  techo: { name: 'Techo', opts: { serie: ['Del color', 0], negro: ['Negro', 700000], parrilla: ['Con parrilla', 550000] } },
+  escape: { name: 'Escape', opts: { serie: ['De serie', 0], deportivo: ['Deportivo doble', 850000] } },
+  faros: { name: 'Faros', opts: { normal: ['Normales', 0], xenon: ['Xenón', 650000] } },
+  bajo: { name: 'Suspensión', opts: { 0: ['De serie', 0], 1: ['Baja', 1800000] } },
+  neon: { name: 'Neón', opts: { no: ['Sin neón', 0], celeste: ['Celeste', 1200000], rosa: ['Rosa', 1200000], verde: ['Verde', 1200000], violeta: ['Violeta', 1200000], naranja: ['Naranja', 1200000], rojo: ['Rojo', 1200000] } },
+};
+// qué se le puede poner a cada vehículo, precio base, cuánto de los precios de piezas paga y color de serie
+VR.TUNE_MODELS = {
+  car: { parts: ['color', 'franja', 'color2', 'llantas', 'polarizado', 'aleron', 'techo', 'escape', 'faros', 'bajo', 'neon'], price: 48000000, k: 1, serie: 0 },
+  cub: { parts: ['color', 'franja', 'color2', 'llantas', 'escape', 'faros', 'neon'], price: 9500000, k: 0.35, serie: 0 },
+  mini: { parts: ['color', 'franja', 'color2', 'llantas', 'escape', 'faros', 'neon'], price: 7800000, k: 0.35, serie: 2 },
+  calle: { parts: ['color', 'franja', 'color2', 'llantas', 'escape', 'faros', 'neon'], price: 14900000, k: 0.4, serie: 8 },
+  carga: { parts: ['color', 'franja', 'color2', 'llantas', 'faros', 'neon'], price: 23500000, k: 0.5, serie: 8 },
+  pati: { parts: ['color', 'llantas', 'faros', 'neon'], price: 3400000, k: 0.15, serie: 14 },
+};
+VR.tuneDefault = (m) => ({ color: VR.TUNE_MODELS[m].serie, color2: 11, franja: 'no', llantas: 'serie', polarizado: 0, aleron: 'no', techo: 'serie', escape: 'serie', faros: 'normal', bajo: 0, neon: 'no' });
+// precio de una pieza elegida (0 si es la de serie)
+VR.tunePartPrice = (m, part, t) => {
+  const M = VR.TUNE_MODELS[m], P = VR.TUNE_PARTS[part];
+  if (part === 'color') return t.color === M.serie ? 0 : Math.round(P.price * M.k / 1000) * 1000;
+  if (!P.opts) return 0;
+  const o = P.opts[t[part]]; if (!o) return 0;
+  return part === 'neon' ? o[1] : Math.round(o[1] * M.k / 1000) * 1000;
+};
+VR.tunePrice = (m, t) => VR.TUNE_MODELS[m].parts.reduce((s, p) => s + VR.tunePartPrice(m, p, t), 0);
+// algunas piezas cambian un poco el manejo (arcade)
+VR.tuneSpec = (sp, t) => {
+  if (!t) return sp;
+  const o = { ...sp, max: { ...sp.max } };
+  if (t.escape === 'deportivo') o.acc *= 1.06;
+  if (+t.bajo) { o.turn *= 1.06; o.max.dirt *= 0.9; o.max.grass *= 0.9; }
+  if (t.aleron === 'grande') o.max.road *= 1.03;
+  if (t.llantas !== 'serie') o.turn *= 1.02;
+  return o;
+};
+// un tuneo al azar (para el tránsito y la galería del probador)
+VR.tuneRandom = (m, rnd = Math.random) => {
+  const t = VR.tuneDefault(m), M = VR.TUNE_MODELS[m], pick = (o) => { const k = Object.keys(o); return k[(rnd() * k.length) | 0]; };
+  t.color = (rnd() * VR.TUNE_COLORS.length) | 0; t.color2 = (rnd() * VR.TUNE_COLORS.length) | 0;
+  if (t.color2 === t.color) t.color2 = t.color === 11 ? 14 : 11;
+  for (const p of M.parts) if (VR.TUNE_PARTS[p].opts && rnd() < 0.55) t[p] = pick(VR.TUNE_PARTS[p].opts);
+  if (rnd() < 0.5) t.neon = 'no';
+  t.polarizado = +t.polarizado; t.bajo = +t.bajo;
+  return t;
+};
+VR.tuneKey = (t) => t ? [t.color, t.color2, t.franja, t.llantas, t.polarizado, t.aleron, t.techo, t.escape, t.faros, t.bajo].join('|') : '';
+// neón debajo del vehículo (en px de pantalla); fuerte de noche, suave de día
+VR.drawNeon = (ctx, x, y, a, len, wid, rgb, k = 1) => {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.globalCompositeOperation = 'lighter';
+  const r = Math.max(len, wid) * 0.75, gr = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+  gr.addColorStop(0, `rgba(${rgb},${0.55 * k})`); gr.addColorStop(0.6, `rgba(${rgb},${0.22 * k})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.scale((wid + 8) / (r * 2), (len + 8) / (r * 2)); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+};
+
 // ===== game/traffic.js =====
 // Tránsito: autos y motos que circulan por la red de calles (exportada por tools/osm_to_map.py),
 // por el carril derecho, respetando las calles de mano única. Cada vehículo sigue una "zanahoria"
@@ -2778,7 +2878,8 @@ VR.Traffic = class {
       const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', model = moto ? VR.pickMoto(this.rnd, false) : null;
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
-      const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model);
+      const tune = this.rnd() < 0.1 ? VR.tuneRandom(model || 'car', this.rnd) : null; // algunos vienen tuneados
+      const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model, tune);
       if (moto) v.rider = { shirt: VR.RIDER_SHIRTS[(this.rnd() * VR.RIDER_SHIRTS.length) | 0], head: this.rnd() < 0.45 ? '#2a1b12' : ['#1a1a1e', '#c8322a', '#f2f0ea', '#2f5fa8'][(this.rnd() * 4) | 0] };
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
       v.ai.next = this.pickNext(e, to);
@@ -3187,6 +3288,7 @@ VR.Night = class {
       const fx = Math.sin(v.a), fy = -Math.cos(v.a);
       cones.push(v);
       vis.push([v.x - fx * v.LEN / 2, v.y - fy * v.LEN / 2, 10, '255,40,30', 0.9]); // luz trasera
+      if (v.tune && v.tune.neon !== 'no') vis.push([v.x, v.y, Math.max(v.LEN, v.WID) * 0.9, VR.NEON[v.tune.neon], 0.6]); // neón
     }
     // 1) recortar la oscuridad
     g.globalCompositeOperation = 'destination-out';
@@ -3217,23 +3319,39 @@ VR.Night = class {
 // Tarjeta del vehículo: al subirte aparece un dibujito de costado con el nombre (inventado) y una línea
 // que lo describe. Los dibujos son propios, por categoría, sin marcas ni modelos reales.
 'use strict';
-VR.drawSide = (kind, pal) => {
+VR.drawSide = (kind, pal, t = {}) => {
   const [C, D, L] = pal, c = VR.canvas(64, 36), g = c.getContext('2d'), P = VR.gfx.painter(c);
-  const TIRE = '#16161a', RIM = '#8a8e96', CH = '#c8ccd4', SEAT = '#26262a';
+  const TIRE = '#16161a', CH = '#c8ccd4', SEAT = '#26262a', LL = t.llantas || 'serie', RIM = VR.RIMS ? VR.RIMS[LL] : '#8a8e96';
+  const S2 = VR.tunePal ? VR.tunePal(t.color2 ?? 11)[0] : '#f2f0ea', HL = t.faros === 'xenon' ? '#e6f2ff' : '#fff7c8', FR = t.franja && t.franja !== 'no';
+  const GLS = t.polarizado == 2 ? '#14181e' : t.polarizado == 1 ? '#27323e' : '#3b4d63';
   const wheel = (cx, cy, r, fat) => {
+    const spoke = LL === 'deportivas' || LL === 'doradas' || LL === 'negras';
     for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
-      const d = Math.hypot(x, y);
-      if (d <= r + 0.3) P.r(cx + x, cy + y, 1, 1, d > r - (fat ? 2.6 : 1.6) ? TIRE : d < 1.5 ? CH : d < r - (fat ? 3.5 : 2.5) ? '#2c2c32' : RIM);
+      const d = Math.hypot(x, y), an = Math.atan2(y, x);
+      let col = d > r - (fat ? 2.6 : 1.6) ? TIRE : d < 1.5 ? CH : d < r - (fat ? 3.5 : 2.5) ? '#2c2c32' : RIM;
+      if (spoke && d >= 1.5 && d <= r - (fat ? 2.6 : 1.6)) col = Math.cos(5 * an) > 0.15 ? RIM : '#1e1e22';
+      if (LL === 'cromadas' && d >= 1.5 && d <= r - (fat ? 2.6 : 1.6)) col = (x + y) % 3 === 0 ? '#ffffff' : RIM;
+      if (d <= r + 0.3) P.r(cx + x, cy + y, 1, 1, col);
     }
   };
+  if (t.neon && t.neon !== 'no' && VR.NEON) { const gr = g.createRadialGradient(32, 32, 1, 32, 32, 30); gr.addColorStop(0, `rgba(${VR.NEON[t.neon]},.85)`); gr.addColorStop(1, `rgba(${VR.NEON[t.neon]},0)`); g.save(); g.translate(0, 32); g.scale(1, 0.14); g.translate(0, -32); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); g.restore(); }
   const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
   if (kind === 'car') {
-    wheel(16, 28, 5, true); wheel(48, 28, 5, true);
+    const lo = +t.bajo ? 2 : 0; g.save(); g.translate(0, lo);
+    if (t.escape === 'deportivo') { P.r(1, 24, 5, 2, CH); P.r(1, 24, 5, 1, '#ffffff'); }
     poly([[4, 27], [4, 18], [10, 15], [20, 7], [42, 6], [52, 15], [60, 17], [61, 26], [55, 27], [53, 23], [43, 23], [41, 27], [23, 27], [21, 23], [11, 23], [9, 27]], C);
-    poly([[21, 9], [32, 8], [32, 15], [14, 15]], '#3b4d63'); poly([[34, 8], [41, 8], [49, 15], [34, 15]], '#3b4d63');
-    P.r(22, 9, 3, 1, '#6f8aa6'); P.r(35, 9, 3, 1, '#6f8aa6');
+    poly([[21, 9], [32, 8], [32, 15], [14, 15]], GLS); poly([[34, 8], [41, 8], [49, 15], [34, 15]], GLS);
+    if (t.polarizado != 2) { P.r(22, 9, 3, 1, '#6f8aa6'); P.r(35, 9, 3, 1, '#6f8aa6'); }
+    if (t.techo === 'negro') P.r(20, 6, 22, 2, '#2a2a30');
+    if (t.techo === 'parrilla') { P.r(22, 4, 19, 1, '#2a2a30'); P.r(23, 5, 1, 1, '#2a2a30'); P.r(39, 5, 1, 1, '#2a2a30'); }
     P.r(5, 19, 56, 1, L); P.r(33, 8, 1, 18, D); P.r(4, 25, 57, 2, D);
-    P.r(58, 18, 3, 2, '#fff7c8'); P.r(4, 18, 2, 3, '#e8302a');
+    if (FR && t.franja === 'costado') { P.r(5, 21, 56, 2, S2); }
+    else if (FR) { P.r(21, 6, 21, 1, S2); P.r(43, 7, 7, 1, S2); P.r(50, 14, 9, 2, S2); P.r(4, 17, 6, 1, S2); }
+    if (t.aleron === 'chico') { P.r(3, 15, 7, 2, D); }
+    if (t.aleron === 'grande') { P.r(5, 13, 2, 4, '#2a2a30'); P.r(1, 11, 11, 2, C); P.r(1, 11, 11, 1, L); P.r(1, 13, 11, 1, D); }
+    P.r(58, 18, 3, 2, HL); P.r(4, 18, 2, 3, '#e8302a');
+    g.restore();
+    wheel(16, 28, 5, true); wheel(48, 28, 5, true);
   } else if (kind === 'cub') {
     wheel(12, 28, 6); wheel(50, 28, 6);
     P.r(9, 26, 28, 2, '#2a2a2e');                                            // basculante
@@ -3242,9 +3360,10 @@ VR.drawSide = (kind, pal) => {
     poly([[38, 24], [46, 10], [50, 9], [51, 12], [44, 25]], C);               // escudo delantero
     P.r(36, 22, 9, 3, '#2a2a2e');                                            // piso
     P.r(48, 8, 2, 20, CH); P.r(44, 6, 8, 2, '#2a2a2e'); P.r(45, 2, 1, 4, CH); P.r(45, 1, 2, 2, '#3a3a40'); // horquilla, manubrio, espejo
-    P.r(51, 9, 3, 3, '#fff7c8'); P.r(5, 18, 3, 2, '#e8302a');
+    P.r(51, 9, 3, 3, HL); P.r(5, 18, 3, 2, '#e8302a');
     P.r(14, 24, 16, 2, CH); P.r(28, 21, 8, 4, '#9a9ea6');                   // escape y motor
-    P.r(15, 17, 18, 1, L); P.r(20, 19, 10, 1, '#f2f0ea');                     // franjas
+    if (t.escape === 'deportivo') { P.r(6, 22, 12, 3, CH); P.r(6, 22, 12, 1, '#ffffff'); }
+    P.r(15, 17, 18, 1, FR ? S2 : L); P.r(20, 19, 10, 1, FR ? S2 : '#f2f0ea');                     // franjas
   } else if (kind === 'mini') {
     wheel(13, 27, 7, true); wheel(49, 27, 7, true);
     P.r(13, 24, 20, 3, '#2a2a2e');
@@ -3252,43 +3371,45 @@ VR.drawSide = (kind, pal) => {
     P.r(26, 21, 14, 5, '#3a3a40'); P.r(28, 22, 10, 3, '#2c2c32');            // motor a la vista
     P.r(8, 12, 22, 4, SEAT); P.r(9, 12, 20, 1, '#3a3a40'); poly([[5, 14], [9, 12], [9, 17], [5, 17]], C); // asiento plano y cola
     P.r(45, 10, 2, 18, '#2a2a2e'); P.r(43, 5, 6, 2, '#2a2a2e'); P.r(44, 2, 1, 3, CH);
-    for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) if (Math.hypot(x, y) <= 3.2) P.r(50 + x, 11 + y, 1, 1, Math.hypot(x, y) < 1.8 ? '#fff7c8' : C); // faro redondo
-    P.r(4, 15, 2, 2, '#e8302a'); P.r(27, 14, 12, 1, L);
+    for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) if (Math.hypot(x, y) <= 3.2) P.r(50 + x, 11 + y, 1, 1, Math.hypot(x, y) < 1.8 ? HL : C); // faro redondo
+    P.r(4, 15, 2, 2, '#e8302a'); P.r(27, 14, 12, 1, FR ? S2 : L); if (FR) P.r(27, 17, 14, 1, S2);
+    if (t.escape === 'deportivo') { P.r(6, 21, 18, 3, CH); P.r(6, 21, 18, 1, '#ffffff'); }
   } else if (kind === 'calle') {
     wheel(12, 27, 7); wheel(51, 27, 7);
     P.r(12, 25, 22, 2, '#2a2a2e');
-    poly([[28, 9], [44, 8], [46, 14], [30, 16]], C); P.r(31, 10, 12, 1, L);  // tanque grande
+    poly([[28, 9], [44, 8], [46, 14], [30, 16]], C); P.r(31, 10, 12, 1, L); if (FR) { P.r(30, 12, 15, 2, S2); }  // tanque grande
     P.r(31, 16, 12, 8, '#9a9ea6'); P.r(33, 17, 8, 5, '#c8ccd4'); for (let y = 17; y < 23; y += 2) P.r(33, y, 8, 1, '#7a7e86'); // motor con aletas
     P.r(12, 12, 18, 3, SEAT); P.r(13, 12, 16, 1, '#3a3a40'); poly([[4, 14], [12, 12], [14, 17], [6, 17]], C); // asiento y colín
     P.r(4, 10, 10, 2, CH); P.r(4, 10, 1, 4, CH);                             // parrilla
     P.r(8, 22, 26, 3, CH); P.r(8, 22, 26, 1, '#ffffff');                     // escape largo cromado
     P.r(47, 6, 2, 22, CH); P.r(44, 4, 7, 2, '#2a2a2e'); P.r(45, 1, 1, 3, CH);
-    poly([[49, 6], [55, 6], [56, 13], [50, 13]], D); P.r(52, 8, 3, 3, '#fff7c8'); // faro con visera
+    poly([[49, 6], [55, 6], [56, 13], [50, 13]], D); P.r(52, 8, 3, 3, HL); // faro con visera
+    if (t.escape === 'deportivo') { P.r(4, 19, 22, 2, CH); P.r(4, 19, 22, 1, '#ffffff'); }
     P.r(4, 15, 2, 2, '#e8302a');
   } else if (kind === 'carga') {
     wheel(12, 29, 5, true); wheel(55, 29, 5, true);
     poly([[1, 8], [35, 8], [35, 24], [1, 24]], D); P.r(2, 9, 32, 14, C);      // caja
     for (let x = 4; x < 34; x += 6) P.r(x, 4, 1, 5, D); P.r(1, 3, 34, 2, D); // barandas
-    P.r(4, 15, 28, 1, VR.shadeHex(C, 0.75)); P.r(2, 22, 32, 2, VR.shadeHex(C, 0.6));
+    P.r(4, 15, 28, 1, VR.shadeHex(C, 0.75)); P.r(2, 22, 32, 2, VR.shadeHex(C, 0.6)); if (FR) P.r(2, 18, 32, 2, S2);
     P.r(34, 2, 2, 22, D);                                                     // respaldo alto
     P.r(36, 15, 12, 3, SEAT); poly([[40, 14], [50, 12], [50, 18], [42, 18]], C); // asiento y tanque
     P.r(38, 19, 10, 6, '#9a9ea6'); P.r(35, 25, 18, 2, '#2a2a2e');
-    P.r(52, 9, 2, 20, CH); P.r(49, 7, 7, 2, '#2a2a2e'); P.r(55, 10, 3, 3, '#fff7c8');
+    P.r(52, 9, 2, 20, CH); P.r(49, 7, 7, 2, '#2a2a2e'); P.r(55, 10, 3, 3, HL);
   } else if (kind === 'pati') {
     wheel(12, 29, 4, true); wheel(50, 29, 4, true);
     P.r(12, 26, 38, 3, '#2a2a30'); P.r(14, 26, 32, 1, C);                   // tabla
     P.r(49, 4, 2, 24, '#3a3a40'); P.r(48, 4, 1, 22, C);                      // columna
     P.r(43, 2, 12, 2, '#2a2a2e'); P.r(43, 2, 2, 2, '#d8dce4'); P.r(53, 2, 2, 2, '#d8dce4');
-    P.r(51, 9, 2, 2, '#fff7c8'); P.r(10, 25, 3, 2, '#e8302a');
+    P.r(51, 9, 2, 2, HL); P.r(10, 25, 3, 2, '#e8302a');
   }
   return c;
 };
 VR.showVehicleCard = (v) => {
   const el = document.getElementById('vcard'); if (!el) return;
-  const sp = v.spec, pal = sp.colors[v.color % sp.colors.length];
+  const sp = v.spec, pal = v.tune ? VR.tunePal(v.tune.color) : sp.colors[v.color % sp.colors.length];
   const cv = el.querySelector('canvas'), g = cv.getContext('2d');
   g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false;
-  g.drawImage(VR.drawSide(sp.side || 'cub', pal), 0, 0);
+  g.drawImage(VR.drawSide(sp.side || 'cub', pal, v.tune || {}), 0, 0);
   el.querySelector('b').textContent = sp.name || '';
   el.querySelector('span').textContent = sp.desc || '';
   el.classList.add('show'); clearTimeout(el._h); el._h = setTimeout(() => el.classList.remove('show'), 4200);
@@ -3326,7 +3447,7 @@ VR.showVehicleCard = (v) => {
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];
-    if (!c || c.type !== (sc.type || 'car') || (sc.model && c.model !== sc.model)) { c = new VR.Car(world, sc.x, sc.y, sc.a, sc.color || 0, sc.type || 'car', sc.model); cars.push(c); }
+    if (!c || c.type !== (sc.type || 'car') || (sc.model && c.model !== sc.model)) { c = new VR.Car(world, sc.x, sc.y, sc.a, sc.color || 0, sc.type || 'car', sc.model, sc.tune || null); cars.push(c); }
     world.removeBox(c); c.x = c.px = sc.x; c.y = c.py = sc.y; c.a = c.pa = sc.a; world.addBox(c);
     if (sc.in && c.type === 'moto') c.rider = ME;
     if (sc.in) { car = c; c.driven = true; player.x = player.px = c.x; player.y = player.py = c.y; VR.screen.setBase(DRIVE_BASE); setTimeout(() => driveLabels(true)); }
@@ -3752,7 +3873,7 @@ VR.showVehicleCard = (v) => {
     if (car) lastCar = car;
     const c = lastCar, i = c ? cars.indexOf(c) : -1;
     VR.store.set('pos:' + world.id, { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir,
-      car: c ? { i, type: c.type, model: c.model, color: c.color, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
+      car: c ? { i, type: c.type, model: c.model, color: c.color, tune: c.tune || null, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
   };
   setInterval(savePos, 3000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } });
