@@ -31,13 +31,28 @@ VR.Traffic = class {
     for (let i = 0; i < N; i++) if (this.out[i].length) this.cand.push(i);
   }
   // punto del carril derecho, a distancia s desde `from` sobre el tramo e
-  lane(e, from, s) {
+  lane(e, from, s, raw) {
     const to = from === e.a ? e.b : e.a;
     const dx = (this.nx[to] - this.nx[from]) / e.len, dy = (this.ny[to] - this.ny[from]) / e.len;
     // mano única: por el medio (deja lugar a los estacionados de los dos lados); doble mano: carril derecho,
     // pero sin pegarse al cordón, donde hay autos estacionados
-    const off = e.ow ? 0 : e.w * 0.17;
+    const off = raw || e.ow ? 0 : Math.min(e.w * 0.17, 11); // a lo sumo 11 px del medio: no pisa a los estacionados
     return [this.nx[from] + dx * s - dy * off, this.ny[from] + dy * s + dx * off, dx, dy];
+  }
+  // Carril medido (04/11/2026): la línea de OSM no siempre va por el medio de la calle dibujada, y los
+  // estacionados ocupan un costado. Mide el lugar libre a cada lado (hasta el cordón o un estacionado) y devuelve
+  // el desplazamiento desde la línea: en mano única, el medio del hueco; en doble mano, el medio de la mitad derecha.
+  measureLane(v, ai, L) {
+    const ai2 = { ...ai, lat: 0, off: 0 }, [qx, qy, dx, dy] = this.carrot(ai2, L), nx = -dy, ny = dx, W = this.world, T = VR.T, S = VR.TILE;
+    const free = (x, y) => { const t = W.get(Math.floor(x / S), Math.floor(y / S)); if (t !== T.ROAD && t !== T.STONE && t !== T.DIRTROAD) return false; const o = W.boxAt(x, y, v); return !o || !!o.ai || !!o.unit || o.driven; };
+    const scan = (sg) => { let d = 0; while (d < 56 && free(qx + nx * (d + 2) * sg, qy + ny * (d + 2) * sg)) d += 2; return d; };
+    const R = scan(1), Lf = scan(-1), hw = v.WID / 2 + 1.5;
+    if (R + Lf < 6) return ai.lat || 0; // en un cruce o fuera de la calle: lo que tenía
+    let lat;
+    if (ai.e.ow) lat = (R - Lf) / 2;
+    else { lat = Math.max(hw, R / 2); if (lat > R - hw) lat = Math.max(-Lf + hw, R - hw); lat = Math.min(lat, Math.max(hw, R - hw)); }
+    ai.room = { R: R - lat - hw, L: Lf + lat - hw };
+    return lat;
   }
   pickNext(e, to) {
     const outs = this.out[to].filter(([id]) => id !== e.id);
@@ -59,8 +74,9 @@ VR.Traffic = class {
   carrot(ai, ahead) {
     let s = ai.s + ahead, e = ai.e, from = ai.from;
     if (s > e.len && ai.next) { s -= e.len; const ne = this.edges[ai.next[0]], to = from === e.a ? e.b : e.a; e = ne; from = to; }
-    const p = this.lane(e, from, Math.min(s, e.len));
-    if (ai.off) { p[0] -= p[3] * ai.off; p[1] += p[2] * ai.off; } // corrido hacia el cordón (+) o para pasar (−)
+    const p = this.lane(e, from, Math.min(s, e.len), ai.lat !== undefined);
+    const o = (ai.lat || 0) + (ai.off || 0); // carril medido (lat) + corrido hacia el cordón (+) o para pasar (−)
+    if (o) { p[0] -= p[3] * o; p[1] += p[2] * o; }
     return p;
   }
   spawn(px, py, view) {
@@ -81,6 +97,7 @@ VR.Traffic = class {
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       const tune = this.rnd() < 0.1 && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model, tune);
+      { const h = v.contacts(lx, ly, v.a); if (h && h.other) continue; } // no aparecer encima de nadie
       if (moto) v.rider = { shirt: VR.RIDER_SHIRTS[(this.rnd() * VR.RIDER_SHIRTS.length) | 0], head: this.rnd() < 0.45 ? '#2a1b12' : ['#1a1a1e', '#c8322a', '#f2f0ea', '#2f5fa8'][(this.rnd() * 4) | 0] };
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
       v.ai.next = this.pickNext(e, to);
@@ -132,9 +149,13 @@ VR.Traffic = class {
         ai.e = this.edges[ai.next[0]]; ai.from = to;
         ai.next = this.pickNext(ai.e, ai.next[1]);
       }
+      ai.latT = (ai.latT || 0) - dt;
+      if (ai.latT <= 0) { ai.latT = 0.12; ai.latW = this.measureLane(v, ai, L + 6); if (ai.lat === undefined) ai.lat = ai.latW; }
+      ai.lat += VR.clamp(ai.latW - ai.lat, -26 * dt, 26 * dt);
       [cx, cy] = this.carrot(ai, L);
-      // abrir paso / esquivar: el carril se corre de a poco hacia el lado que corresponde
-      const offT = ai.yield > 0 ? Math.min(10, ai.e.w * 0.3) : ai.dodge > 0 ? -Math.min(11, ai.e.w * 0.32) : 0;
+      // abrir paso / esquivar: el carril se corre de a poco hacia el lado que tenga lugar
+      const rm = ai.room || { R: 6, L: 6 };
+      const offT = ai.yield > 0 ? Math.max(0, Math.min(10, rm.R)) : ai.dodge > 0 ? (rm.L >= rm.R ? -Math.min(11, Math.max(0, rm.L)) : Math.min(11, Math.max(0, rm.R))) : 0;
       ai.off = (ai.off || 0) + VR.clamp(offT - (ai.off || 0), -18 * dt, 18 * dt);
       if (ai.yield > 0) ai.yield -= dt;
       if (ai.dodge > 0) ai.dodge -= dt;
@@ -190,9 +211,12 @@ VR.Traffic = class {
       if (o2 && yieldsTo && !v.contacts(v.x, v.y, v.pa)) {
         v.a = v.pa; v.v = 0; ai.jam = (ai.jam || 0) + dt;
         if (ai.jam > 1.2 && !(ai.dodge > 0)) ai.dodge = 2.2;
+        if (ai.jam > 2.5 && !ai.jamBack) { ai.jamBack = true; ai.back = 0.8; ai.dodge = 2.6; } // un poco atrás y probar por el costado
+        // una moto o patineta estacionada que quedó en el camino: la corre despacito con el paragolpes
+        if (ai.jam > 1.5 && !o2.ai && !o2.unit && !o2.driven && o2.spec.mass < 0.5) { const d = Math.hypot(o2.x - v.x, o2.y - v.y) || 1; if (o2.vx === undefined) { o2.vx = 0; o2.vy = 0; o2.w = 0; } o2.vx += (o2.x - v.x) / d * 30; o2.vy += (o2.y - v.y) / d * 30; W.wake(o2, 20); }
         const off = v.x < view.x0 - 50 || v.x > view.x1 + 50 || v.y < view.y0 - 50 || v.y > view.y1 + 50;
         if (ai.jam > 8 && off) { this.remove(v); break; }
-      } else { ai.jam = 0; v.x = nx; v.y = ny; }
+      } else { ai.jam = 0; ai.jamBack = false; v.x = nx; v.y = ny; }
       v.vx = fx * v.v; v.vy = fy * v.v; v.w = 0;
       W.moveBox(v);
     }

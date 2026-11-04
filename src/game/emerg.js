@@ -55,7 +55,7 @@ VR.Emergency = class {
 
   // ---------- daño, fuego y explosiones ----------
   damage(c, imp, o) {
-    const hurt = (v, k) => { if (v.wreck) return; const m = (v.spec.mass > 2 ? 0.45 : 1) * (v.unit ? 0.35 : 1); v.hp = (v.hp ?? 100) - (imp - 50) * 0.13 * k * m; if (v.hp <= 0 && !v.burning) this.ignite(v); };
+    const hurt = (v, k) => { if (v.wreck || v.spec.noFire) return; const m = (v.spec.mass > 2 ? 0.45 : 1) * (v.unit ? 0.35 : 1); v.hp = (v.hp ?? 100) - (imp - 50) * 0.13 * k * m; if (v.hp <= 0 && !v.burning) this.ignite(v); };
     hurt(c, 1); if (o && o.spec) hurt(o, 0.8);
     VR.audio.crash(c.x, c.y, imp);
     if (c.driven && imp > 110) this.reckless(c.x, c.y);
@@ -69,6 +69,7 @@ VR.Emergency = class {
     if (best) { const L = VR.PED_TALK.reckless; best.say = { text: L[(this.rnd() * L.length) | 0], t: 2.6 }; this.cool.reck = this.t + 5; }
   }
   ignite(v) {
+    if (v.spec.noFire) return; // el karumbe es de madera y un caballo: no tiene motor ni nafta que se prenda
     v.burning = true; v.burnT = 0; v.hp = 0; this.burning.add(v);
     if (v.ai && this.traffic) this.traffic.release(v);
     if (v.driven) this.toast('🔥 ¡Se prende fuego! ¡Bajate ya!');
@@ -84,7 +85,7 @@ VR.Emergency = class {
     for (let i = 0; i < 6; i++) this.world.mark(v.x + (this.rnd() - 0.5) * 14, v.y + (this.rnd() - 0.5) * 14, 'rgba(20,16,12,.7)');
     // onda expansiva
     for (const o of this.world.carsIn(v.x - 60, v.y - 60, v.x + 60, v.y + 60, [])) {
-      if (o === v) continue; const d = Math.hypot(o.x - v.x, o.y - v.y); if (d > 60) continue;
+      if (o === v) continue; const d = Math.hypot(o.x - v.x, o.y - v.y); if (d > 60) continue; if (o.spec.noFire) { if (o.ai && this.traffic) o.ai.stun = 1.5; continue; }
       const k = 1 - d / 60; o.hp = (o.hp ?? 100) - 75 * k; if (o.hp <= 0 && !o.burning && !o.wreck) this.ignite(o);
       if (o.vx === undefined) { o.vx = 0; o.vy = 0; o.w = 0; } o.vx += (o.x - v.x) / (d || 1) * 160 * k / o.mass; o.vy += (o.y - v.y) / (d || 1) * 160 * k / o.mass; o.w += (this.rnd() - 0.5) * 4 * k; this.world.wake(o, 200);
     }

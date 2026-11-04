@@ -221,7 +221,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 7f220613 · 2026-11-04</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 8a56f322 · 2026-11-04</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -2552,7 +2552,7 @@ VR.Car = class {
   get LEN() { return this.spec.len; }
   get WID() { return this.spec.wid; }
   box() {
-    const hl = this.spec.len / 2 - 1, hw = this.spec.wid / 2 - 1, c = Math.abs(Math.cos(this.a)), s = Math.abs(Math.sin(this.a));
+    const hl = this.spec.len / 2, hw = this.spec.wid / 2, c = Math.abs(Math.cos(this.a)), s = Math.abs(Math.sin(this.a));
     const ex = hw * c + hl * s, ey = hw * s + hl * c;
     return { x0: this.x - ex, y0: this.y - ey, x1: this.x + ex, y1: this.y + ey, car: this };
   }
@@ -2642,15 +2642,25 @@ VR.Car = class {
     wheels.forEach((p, i) => { const q = last ? last[i] : p; this.world.markLine(q[0], q[1], p[0], p[1], col); });
     this._sk = wheels; this._skT = performance.now();
   }
-  // ¿qué toca el vehículo en esta posición? puntos bloqueados y el primer vehículo tocado
+  // ¿qué toca el vehículo en esta posición? Paredes: 8 puntos del contorno. Otros vehículos (04/11/2026):
+  // rectángulo contra rectángulo con su tamaño entero (antes eran puntos contra la caja alineada, y una moto
+  // podía meterse entre dos puntos del costado de un auto). Devuelve los puntos tocados y el primer vehículo.
   contacts(x, y, a) {
     const W = this.world, S = VR.TILE, pts = [];
+    for (const [px, py] of this.points(x, y, a)) if (W.solid(Math.floor(px / S), Math.floor(py / S))) pts.push(px, py);
     let other = null;
-    for (const [px, py] of this.points(x, y, a)) {
-      if (W.solid(Math.floor(px / S), Math.floor(py / S))) { pts.push(px, py); continue; }
-      const o = W.boxAt(px, py, this);
-      if (o) { pts.push(px, py); other = other || o; }
+    const A = VR.obb(x, y, a, this.spec.len / 2, this.spec.wid / 2), r = A.ex + 2;
+    for (const o of W.carsIn(x - r - 30, y - r - 30, x + r + 30, y + r + 30, VR._near || (VR._near = []))) {
+      if (o === this) continue;
+      const B = VR.obb(o.x, o.y, o.a, o.spec.len / 2, o.spec.wid / 2);
+      if (!VR.obbHit(A, B)) continue;
+      other = other || o;
+      let n = 0;
+      for (const [px, py] of VR.obbCorners(A)) if (VR.obbIn(B, px, py)) { pts.push(px, py); n++; }
+      for (const [px, py] of VR.obbCorners(B)) if (VR.obbIn(A, px, py)) { pts.push(px, py); n++; }
+      if (!n) pts.push((x + o.x) / 2, (y + o.y) / 2);
     }
+    VR._near.length = 0;
     return pts.length ? { pts, other } : null;
   }
   // mover en pasos chicos; al chocar: rebote (según el ángulo), roce contra la pared, giro por el golpe
@@ -2860,6 +2870,21 @@ VR.parkCars = (world, n, near) => {
   return { cars, first };
 };
 
+// rectángulos girados (vehículos): separación por ejes
+VR.obb = (x, y, a, hl, hw) => { const fx = Math.sin(a), fy = -Math.cos(a); return { x, y, fx, fy, rx: -fy, ry: fx, hl, hw, ex: Math.hypot(hl, hw) }; };
+VR.obbHit = (A, B) => {
+  const dx = B.x - A.x, dy = B.y - A.y;
+  if (Math.hypot(dx, dy) > A.ex + B.ex) return false;
+  for (const [ax, ay] of [[A.fx, A.fy], [A.rx, A.ry], [B.fx, B.fy], [B.rx, B.ry]]) {
+    const ra = A.hl * Math.abs(A.fx * ax + A.fy * ay) + A.hw * Math.abs(A.rx * ax + A.ry * ay);
+    const rb = B.hl * Math.abs(B.fx * ax + B.fy * ay) + B.hw * Math.abs(B.rx * ax + B.ry * ay);
+    if (Math.abs(dx * ax + dy * ay) > ra + rb) return false;
+  }
+  return true;
+};
+VR.obbIn = (A, px, py) => { const dx = px - A.x, dy = py - A.y; return Math.abs(dx * A.fx + dy * A.fy) <= A.hl && Math.abs(dx * A.rx + dy * A.ry) <= A.hw; };
+VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x + A.fx * A.hl * l + A.rx * A.hw * w, A.y + A.fy * A.hl * l + A.ry * A.hw * w]);
+
 // ===== game/autos.js =====
 // Más autos (04/11/2026): los tipos más comunes en las calles de Villarrica, con diseño propio por categoría
 // (sin marcas ni copias de modelos reales) y nombres inventados: sedán familiar, monovolumen chico, camioneta
@@ -3034,7 +3059,7 @@ VR.parkCars = (world, n, near) => {
       base: VR.drawAuto({ L: 28, W: 16, hood: 7.2, ws: 3.4, roof: 11.6, rg: 1.6, fa: 0.21, ra: 0.75, box: true, spare: true, doors3: true, tireL: 5.6, rails: true }),
       sideShape: side({ body: [[8, 27], [8, 7], [10, 5], [36, 5], [42, 13], [56, 14], [57, 26], [51, 27], [49, 22], [39, 22], [37, 27], [24, 27], [22, 22], [12, 22], [10, 27]],
         win: [[[10, 7], [20, 7], [20, 13], [10, 13]], [[22, 7], [35, 7], [40, 13], [22, 13]]], pillars: [21], yr: 5, rx0: 10, rx1: 36, belt: 13, sill: 27, doors: [21, 40], tailx: 8, tailTop: 9, nose: 57, hood: [42, 13], rails: true, spare: 18, wheels: [17, 44], wr: 6 }) },
-    karumbe: { len: 40, wid: 14, S: 46, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, colors: [['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
+    karumbe: { len: 40, wid: 14, S: 46, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, noFire: true, colors: [['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
       name: 'Karumbe', desc: 'Carro de caballo: lento, pero llega a todos lados. Ojo con el caballo.', side: 'karumbe', base: VR.drawKarumbe },
   };
   // Camión de bomberos desde arriba: cabina, techo de la caja con escalera, devanadera de manguera y luces
@@ -3202,13 +3227,28 @@ VR.Traffic = class {
     for (let i = 0; i < N; i++) if (this.out[i].length) this.cand.push(i);
   }
   // punto del carril derecho, a distancia s desde `from` sobre el tramo e
-  lane(e, from, s) {
+  lane(e, from, s, raw) {
     const to = from === e.a ? e.b : e.a;
     const dx = (this.nx[to] - this.nx[from]) / e.len, dy = (this.ny[to] - this.ny[from]) / e.len;
     // mano única: por el medio (deja lugar a los estacionados de los dos lados); doble mano: carril derecho,
     // pero sin pegarse al cordón, donde hay autos estacionados
-    const off = e.ow ? 0 : e.w * 0.17;
+    const off = raw || e.ow ? 0 : Math.min(e.w * 0.17, 11); // a lo sumo 11 px del medio: no pisa a los estacionados
     return [this.nx[from] + dx * s - dy * off, this.ny[from] + dy * s + dx * off, dx, dy];
+  }
+  // Carril medido (04/11/2026): la línea de OSM no siempre va por el medio de la calle dibujada, y los
+  // estacionados ocupan un costado. Mide el lugar libre a cada lado (hasta el cordón o un estacionado) y devuelve
+  // el desplazamiento desde la línea: en mano única, el medio del hueco; en doble mano, el medio de la mitad derecha.
+  measureLane(v, ai, L) {
+    const ai2 = { ...ai, lat: 0, off: 0 }, [qx, qy, dx, dy] = this.carrot(ai2, L), nx = -dy, ny = dx, W = this.world, T = VR.T, S = VR.TILE;
+    const free = (x, y) => { const t = W.get(Math.floor(x / S), Math.floor(y / S)); if (t !== T.ROAD && t !== T.STONE && t !== T.DIRTROAD) return false; const o = W.boxAt(x, y, v); return !o || !!o.ai || !!o.unit || o.driven; };
+    const scan = (sg) => { let d = 0; while (d < 56 && free(qx + nx * (d + 2) * sg, qy + ny * (d + 2) * sg)) d += 2; return d; };
+    const R = scan(1), Lf = scan(-1), hw = v.WID / 2 + 1.5;
+    if (R + Lf < 6) return ai.lat || 0; // en un cruce o fuera de la calle: lo que tenía
+    let lat;
+    if (ai.e.ow) lat = (R - Lf) / 2;
+    else { lat = Math.max(hw, R / 2); if (lat > R - hw) lat = Math.max(-Lf + hw, R - hw); lat = Math.min(lat, Math.max(hw, R - hw)); }
+    ai.room = { R: R - lat - hw, L: Lf + lat - hw };
+    return lat;
   }
   pickNext(e, to) {
     const outs = this.out[to].filter(([id]) => id !== e.id);
@@ -3230,8 +3270,9 @@ VR.Traffic = class {
   carrot(ai, ahead) {
     let s = ai.s + ahead, e = ai.e, from = ai.from;
     if (s > e.len && ai.next) { s -= e.len; const ne = this.edges[ai.next[0]], to = from === e.a ? e.b : e.a; e = ne; from = to; }
-    const p = this.lane(e, from, Math.min(s, e.len));
-    if (ai.off) { p[0] -= p[3] * ai.off; p[1] += p[2] * ai.off; } // corrido hacia el cordón (+) o para pasar (−)
+    const p = this.lane(e, from, Math.min(s, e.len), ai.lat !== undefined);
+    const o = (ai.lat || 0) + (ai.off || 0); // carril medido (lat) + corrido hacia el cordón (+) o para pasar (−)
+    if (o) { p[0] -= p[3] * o; p[1] += p[2] * o; }
     return p;
   }
   spawn(px, py, view) {
@@ -3252,6 +3293,7 @@ VR.Traffic = class {
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       const tune = this.rnd() < 0.1 && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model, tune);
+      { const h = v.contacts(lx, ly, v.a); if (h && h.other) continue; } // no aparecer encima de nadie
       if (moto) v.rider = { shirt: VR.RIDER_SHIRTS[(this.rnd() * VR.RIDER_SHIRTS.length) | 0], head: this.rnd() < 0.45 ? '#2a1b12' : ['#1a1a1e', '#c8322a', '#f2f0ea', '#2f5fa8'][(this.rnd() * 4) | 0] };
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
       v.ai.next = this.pickNext(e, to);
@@ -3303,9 +3345,13 @@ VR.Traffic = class {
         ai.e = this.edges[ai.next[0]]; ai.from = to;
         ai.next = this.pickNext(ai.e, ai.next[1]);
       }
+      ai.latT = (ai.latT || 0) - dt;
+      if (ai.latT <= 0) { ai.latT = 0.12; ai.latW = this.measureLane(v, ai, L + 6); if (ai.lat === undefined) ai.lat = ai.latW; }
+      ai.lat += VR.clamp(ai.latW - ai.lat, -26 * dt, 26 * dt);
       [cx, cy] = this.carrot(ai, L);
-      // abrir paso / esquivar: el carril se corre de a poco hacia el lado que corresponde
-      const offT = ai.yield > 0 ? Math.min(10, ai.e.w * 0.3) : ai.dodge > 0 ? -Math.min(11, ai.e.w * 0.32) : 0;
+      // abrir paso / esquivar: el carril se corre de a poco hacia el lado que tenga lugar
+      const rm = ai.room || { R: 6, L: 6 };
+      const offT = ai.yield > 0 ? Math.max(0, Math.min(10, rm.R)) : ai.dodge > 0 ? (rm.L >= rm.R ? -Math.min(11, Math.max(0, rm.L)) : Math.min(11, Math.max(0, rm.R))) : 0;
       ai.off = (ai.off || 0) + VR.clamp(offT - (ai.off || 0), -18 * dt, 18 * dt);
       if (ai.yield > 0) ai.yield -= dt;
       if (ai.dodge > 0) ai.dodge -= dt;
@@ -3361,9 +3407,12 @@ VR.Traffic = class {
       if (o2 && yieldsTo && !v.contacts(v.x, v.y, v.pa)) {
         v.a = v.pa; v.v = 0; ai.jam = (ai.jam || 0) + dt;
         if (ai.jam > 1.2 && !(ai.dodge > 0)) ai.dodge = 2.2;
+        if (ai.jam > 2.5 && !ai.jamBack) { ai.jamBack = true; ai.back = 0.8; ai.dodge = 2.6; } // un poco atrás y probar por el costado
+        // una moto o patineta estacionada que quedó en el camino: la corre despacito con el paragolpes
+        if (ai.jam > 1.5 && !o2.ai && !o2.unit && !o2.driven && o2.spec.mass < 0.5) { const d = Math.hypot(o2.x - v.x, o2.y - v.y) || 1; if (o2.vx === undefined) { o2.vx = 0; o2.vy = 0; o2.w = 0; } o2.vx += (o2.x - v.x) / d * 30; o2.vy += (o2.y - v.y) / d * 30; W.wake(o2, 20); }
         const off = v.x < view.x0 - 50 || v.x > view.x1 + 50 || v.y < view.y0 - 50 || v.y > view.y1 + 50;
         if (ai.jam > 8 && off) { this.remove(v); break; }
-      } else { ai.jam = 0; v.x = nx; v.y = ny; }
+      } else { ai.jam = 0; ai.jamBack = false; v.x = nx; v.y = ny; }
       v.vx = fx * v.v; v.vy = fy * v.v; v.w = 0;
       W.moveBox(v);
     }
@@ -3786,7 +3835,7 @@ VR.Emergency = class {
 
   // ---------- daño, fuego y explosiones ----------
   damage(c, imp, o) {
-    const hurt = (v, k) => { if (v.wreck) return; const m = (v.spec.mass > 2 ? 0.45 : 1) * (v.unit ? 0.35 : 1); v.hp = (v.hp ?? 100) - (imp - 50) * 0.13 * k * m; if (v.hp <= 0 && !v.burning) this.ignite(v); };
+    const hurt = (v, k) => { if (v.wreck || v.spec.noFire) return; const m = (v.spec.mass > 2 ? 0.45 : 1) * (v.unit ? 0.35 : 1); v.hp = (v.hp ?? 100) - (imp - 50) * 0.13 * k * m; if (v.hp <= 0 && !v.burning) this.ignite(v); };
     hurt(c, 1); if (o && o.spec) hurt(o, 0.8);
     VR.audio.crash(c.x, c.y, imp);
     if (c.driven && imp > 110) this.reckless(c.x, c.y);
@@ -3800,6 +3849,7 @@ VR.Emergency = class {
     if (best) { const L = VR.PED_TALK.reckless; best.say = { text: L[(this.rnd() * L.length) | 0], t: 2.6 }; this.cool.reck = this.t + 5; }
   }
   ignite(v) {
+    if (v.spec.noFire) return; // el karumbe es de madera y un caballo: no tiene motor ni nafta que se prenda
     v.burning = true; v.burnT = 0; v.hp = 0; this.burning.add(v);
     if (v.ai && this.traffic) this.traffic.release(v);
     if (v.driven) this.toast('🔥 ¡Se prende fuego! ¡Bajate ya!');
@@ -3815,7 +3865,7 @@ VR.Emergency = class {
     for (let i = 0; i < 6; i++) this.world.mark(v.x + (this.rnd() - 0.5) * 14, v.y + (this.rnd() - 0.5) * 14, 'rgba(20,16,12,.7)');
     // onda expansiva
     for (const o of this.world.carsIn(v.x - 60, v.y - 60, v.x + 60, v.y + 60, [])) {
-      if (o === v) continue; const d = Math.hypot(o.x - v.x, o.y - v.y); if (d > 60) continue;
+      if (o === v) continue; const d = Math.hypot(o.x - v.x, o.y - v.y); if (d > 60) continue; if (o.spec.noFire) { if (o.ai && this.traffic) o.ai.stun = 1.5; continue; }
       const k = 1 - d / 60; o.hp = (o.hp ?? 100) - 75 * k; if (o.hp <= 0 && !o.burning && !o.wreck) this.ignite(o);
       if (o.vx === undefined) { o.vx = 0; o.vy = 0; o.w = 0; } o.vx += (o.x - v.x) / (d || 1) * 160 * k / o.mass; o.vy += (o.y - v.y) / (d || 1) * 160 * k / o.mass; o.w += (this.rnd() - 0.5) * 4 * k; this.world.wake(o, 200);
     }
@@ -4259,6 +4309,7 @@ VR.Weapons = class {
     if (this.emer) this.emer.dispatch('ambulancia', p);
   }
   hitCar(c, dmg, vx, vy, burn) {
+    if (c.spec.noFire) { if (!c.horseT || c.horseT < this.t) { c.horseT = this.t + 2; if (this.peds) { c.honkT = 1.4; c.honkTxt = '¡Hiiii!'; } } return; } // el caballo se asusta, pero no se prende
     c.hp = (c.hp ?? 100) - dmg * (c.unit ? 0.6 : 1); c.byPlayer = true; c.hitByPlayer = this.emer ? this.emer.t : 0;
     if (vx || vy) { if (c.vx === undefined) { c.vx = 0; c.vy = 0; c.w = 0; } c.vx += vx * 0.02 / (c.mass || 1); c.vy += vy * 0.02 / (c.mass || 1); this.world.wake(c, 30); }
     if (c.hp <= 0 && !c.burning && this.emer) this.emer.ignite(c);
@@ -4731,7 +4782,7 @@ VR.showVehicleCard = (v) => {
   const cars = parked.cars;
   let car = null; // auto que estás manejando
   const WALK_BASE = 270, DRIVE_BASE = 420; // Leandro prefirió la cámara de antes (04/11/2026)
-  const traffic = prueba ? null : new VR.Traffic(world, { max: 34, motoShare: 0.45 });
+  const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
   const gpsNet = prueba ? null : new VR.GPS(world);

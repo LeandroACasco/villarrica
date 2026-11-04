@@ -275,7 +275,7 @@ VR.Car = class {
   get LEN() { return this.spec.len; }
   get WID() { return this.spec.wid; }
   box() {
-    const hl = this.spec.len / 2 - 1, hw = this.spec.wid / 2 - 1, c = Math.abs(Math.cos(this.a)), s = Math.abs(Math.sin(this.a));
+    const hl = this.spec.len / 2, hw = this.spec.wid / 2, c = Math.abs(Math.cos(this.a)), s = Math.abs(Math.sin(this.a));
     const ex = hw * c + hl * s, ey = hw * s + hl * c;
     return { x0: this.x - ex, y0: this.y - ey, x1: this.x + ex, y1: this.y + ey, car: this };
   }
@@ -365,15 +365,25 @@ VR.Car = class {
     wheels.forEach((p, i) => { const q = last ? last[i] : p; this.world.markLine(q[0], q[1], p[0], p[1], col); });
     this._sk = wheels; this._skT = performance.now();
   }
-  // ¿qué toca el vehículo en esta posición? puntos bloqueados y el primer vehículo tocado
+  // ¿qué toca el vehículo en esta posición? Paredes: 8 puntos del contorno. Otros vehículos (04/11/2026):
+  // rectángulo contra rectángulo con su tamaño entero (antes eran puntos contra la caja alineada, y una moto
+  // podía meterse entre dos puntos del costado de un auto). Devuelve los puntos tocados y el primer vehículo.
   contacts(x, y, a) {
     const W = this.world, S = VR.TILE, pts = [];
+    for (const [px, py] of this.points(x, y, a)) if (W.solid(Math.floor(px / S), Math.floor(py / S))) pts.push(px, py);
     let other = null;
-    for (const [px, py] of this.points(x, y, a)) {
-      if (W.solid(Math.floor(px / S), Math.floor(py / S))) { pts.push(px, py); continue; }
-      const o = W.boxAt(px, py, this);
-      if (o) { pts.push(px, py); other = other || o; }
+    const A = VR.obb(x, y, a, this.spec.len / 2, this.spec.wid / 2), r = A.ex + 2;
+    for (const o of W.carsIn(x - r - 30, y - r - 30, x + r + 30, y + r + 30, VR._near || (VR._near = []))) {
+      if (o === this) continue;
+      const B = VR.obb(o.x, o.y, o.a, o.spec.len / 2, o.spec.wid / 2);
+      if (!VR.obbHit(A, B)) continue;
+      other = other || o;
+      let n = 0;
+      for (const [px, py] of VR.obbCorners(A)) if (VR.obbIn(B, px, py)) { pts.push(px, py); n++; }
+      for (const [px, py] of VR.obbCorners(B)) if (VR.obbIn(A, px, py)) { pts.push(px, py); n++; }
+      if (!n) pts.push((x + o.x) / 2, (y + o.y) / 2);
     }
+    VR._near.length = 0;
     return pts.length ? { pts, other } : null;
   }
   // mover en pasos chicos; al chocar: rebote (según el ángulo), roce contra la pared, giro por el golpe
@@ -582,3 +592,18 @@ VR.parkCars = (world, n, near) => {
   }
   return { cars, first };
 };
+
+// rectángulos girados (vehículos): separación por ejes
+VR.obb = (x, y, a, hl, hw) => { const fx = Math.sin(a), fy = -Math.cos(a); return { x, y, fx, fy, rx: -fy, ry: fx, hl, hw, ex: Math.hypot(hl, hw) }; };
+VR.obbHit = (A, B) => {
+  const dx = B.x - A.x, dy = B.y - A.y;
+  if (Math.hypot(dx, dy) > A.ex + B.ex) return false;
+  for (const [ax, ay] of [[A.fx, A.fy], [A.rx, A.ry], [B.fx, B.fy], [B.rx, B.ry]]) {
+    const ra = A.hl * Math.abs(A.fx * ax + A.fy * ay) + A.hw * Math.abs(A.rx * ax + A.ry * ay);
+    const rb = B.hl * Math.abs(B.fx * ax + B.fy * ay) + B.hw * Math.abs(B.rx * ax + B.ry * ay);
+    if (Math.abs(dx * ax + dy * ay) > ra + rb) return false;
+  }
+  return true;
+};
+VR.obbIn = (A, px, py) => { const dx = px - A.x, dy = py - A.y; return Math.abs(dx * A.fx + dy * A.fy) <= A.hl && Math.abs(dx * A.rx + dy * A.ry) <= A.hw; };
+VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x + A.fx * A.hl * l + A.rx * A.hw * w, A.y + A.fy * A.hl * l + A.ry * A.hw * w]);

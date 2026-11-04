@@ -104,6 +104,7 @@ VR.Weapons = class {
     if (this.emer) this.emer.dispatch('ambulancia', p);
   }
   hitCar(c, dmg, vx, vy, burn) {
+    if (c.spec.noFire) { if (!c.horseT || c.horseT < this.t) { c.horseT = this.t + 2; if (this.peds) { c.honkT = 1.4; c.honkTxt = '¡Hiiii!'; } } return; } // el caballo se asusta, pero no se prende
     c.hp = (c.hp ?? 100) - dmg * (c.unit ? 0.6 : 1); c.byPlayer = true; c.hitByPlayer = this.emer ? this.emer.t : 0;
     if (vx || vy) { if (c.vx === undefined) { c.vx = 0; c.vy = 0; c.w = 0; } c.vx += vx * 0.02 / (c.mass || 1); c.vy += vy * 0.02 / (c.mass || 1); this.world.wake(c, 30); }
     if (c.hp <= 0 && !c.burning && this.emer) this.emer.ignite(c);

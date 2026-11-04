@@ -22,7 +22,7 @@
   const cars = parked.cars;
   let car = null; // auto que estás manejando
   const WALK_BASE = 270, DRIVE_BASE = 420; // Leandro prefirió la cámara de antes (04/11/2026)
-  const traffic = prueba ? null : new VR.Traffic(world, { max: 34, motoShare: 0.45 });
+  const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
   const gpsNet = prueba ? null : new VR.GPS(world);
