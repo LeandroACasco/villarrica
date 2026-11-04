@@ -64,6 +64,10 @@
   .tb.a { right: 0; bottom: 18px; width: 84px; height: 84px; background: rgba(214,72,52,.55); }
   .tb.b { right: 96px; bottom: 0; width: 64px; height: 64px; background: rgba(60,120,210,.5); }
   .tb.c { right: 78px; bottom: 96px; width: 58px; height: 58px; background: rgba(70,70,82,.55); }
+  .tb.d { right: 4px; bottom: 112px; width: 62px; height: 62px; background: rgba(230,120,30,.6); font-size: 10px; }
+  #weapon { position: fixed; top: calc(env(safe-area-inset-top) + 86px); left: calc(env(safe-area-inset-left) + 8px); z-index: 4; background: rgba(12,12,16,.7);
+    border: 1px solid rgba(255,140,60,.7); color: #ffd7a8; border-radius: 8px; padding: 4px 10px; font: 700 13px system-ui, sans-serif; cursor: pointer; touch-action: none; }
+  #weapon small { color: var(--muted); font-weight: 500; margin-left: 6px; }
 
   #mapView { position: fixed; inset: 0; z-index: 8; background: #14161a; }
   #mapBox { position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: grab; }
@@ -146,6 +150,7 @@
     <button class="tb a" data-b="action"><span class="ico">✋</span>ACCIÓN</button>
     <button class="tb b" data-b="run"><span class="ico">»</span>CORRER</button>
     <button class="tb c" data-b="car"><span class="ico">🚗</span>AUTO</button>
+    <button class="tb d" data-b="fire" hidden><span class="ico">💥</span>DISPARAR</button>
   </div>
 </div>
 
@@ -167,6 +172,7 @@
 </div>
 <div id="toast"></div>
 <div id="wanted" hidden></div>
+<button id="weapon" hidden></button>
 <div id="vcard"><canvas width="256" height="144"></canvas><div><b></b><span></span></div></div>
 <div id="mapView" hidden>
   <div id="mapBox"><div id="mapInner"><canvas id="mapCanvas"></canvas><svg id="mapRoute"><polyline id="routeBg" stroke="#0b2a36" stroke-width="7"/><polyline id="routeFg" stroke="#3fd3ff" stroke-width="4"/></svg><div id="mapLabels"></div><div id="mapDest" hidden>🏁</div><div id="mapMe"></div></div></div>
@@ -187,6 +193,11 @@
     <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
     <label class="chk"><input type="checkbox" id="optSnd"> Sonido (sirenas)</label>
     <label class="chk"><input type="checkbox" id="optVib"> Vibración</label>
+    <h3>Desarrollador</h3>
+    <label class="chk"><input type="checkbox" id="optArmas"> Armas (pistola y lanzallamas)</label>
+    <div class="seg" id="segArma"><button data-v="pistola">🔫 Pistola</button><button data-v="lanzallamas">🔥 Lanzallamas</button></div>
+    <label class="chk"><input type="checkbox" id="optSinEstrellas"> Las armas no suman estrellas</label>
+    <p>Disparar: <kbd>E</kbd> (o <kbd>L</kbd>) · cambiar de arma: <kbd>Q</kbd> · control: <kbd>RB</kbd>/<kbd>Y</kbd> dispara, <kbd>LB</kbd> cambia · táctil: botón DISPARAR y tocar el arma arriba a la izquierda.</p>
     <div class="row"><button class="btn" id="btnReset">📍 Volver a la Plaza de los Héroes</button></div>
     <h3>Teclado (PC)</h3>
     <table>

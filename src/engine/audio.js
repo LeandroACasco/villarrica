@@ -44,14 +44,16 @@ VR.audio = {
   crash(x, y, imp) { const v = this.near(x, y) * Math.min(0.35, imp / 900); if (v <= 0.01) return; this.noise(0.25 + imp / 1500, { vol: v, lp: 900 + imp * 2 }); this.tone(90, 0.12, { type: 'sine', vol: v * 0.8, f2: 45 }); if (imp > 160) this.noise(0.18, { vol: v * 0.35, lp: 6000, hp: 2500, at: 0.03 }); },
   boom(x, y) { const v = this.near(x, y, 900) * 0.5; if (v <= 0.01) return; this.noise(1.6, { vol: v, lp: 700 }); this.tone(70, 0.8, { type: 'sine', vol: v, f2: 28 }); this.noise(0.5, { vol: v * 0.3, lp: 4000, at: 0.05 }); },
   ouch(x, y) { const v = this.near(x, y, 300) * 0.05; if (v <= 0) return; const f = 300 + Math.random() * 180; this.tone(f, 0.18, { type: 'triangle', vol: v, f2: f * 0.6 }); },
-  // ---- sonidos continuos: motor y agua ----
+  shot(x, y) { const v = this.near(x, y, 600) * 0.32; if (v <= 0.01) return; this.noise(0.16, { vol: v, lp: 3200, hp: 300 }); this.tone(160, 0.08, { type: 'square', vol: v * 0.5, f2: 60 }); },
+  // ---- sonidos continuos: motor, agua y lanzallamas ----
   loop(name) {
     const ac = this.ctx(); if (!ac) return null;
     this.loops = this.loops || {};
     if (this.loops[name]) return this.loops[name];
     const g = ac.createGain(); g.gain.value = 0; g.connect(this.master);
     let L;
-    if (name === 'water') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.6; s.connect(f); f.connect(g); s.start(); L = { g }; }
+    if (name === 'flame') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 700; s.connect(f); f.connect(g); s.start(); L = { g }; }
+    else if (name === 'water') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.6; s.connect(f); f.connect(g); s.start(); L = { g }; }
     else { // motor: diente de sierra + sub, por un pasabajos; la frecuencia sigue a las vueltas
       const o = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(); o.type = 'sawtooth'; o2.type = 'square'; f.type = 'lowpass'; f.frequency.value = 600; f.Q.value = 2;
       const g2 = ac.createGain(); g2.gain.value = 0.4; o.connect(f); o2.connect(g2); g2.connect(f); f.connect(g); o.start(); o2.start(); L = { g, o, o2, f };
@@ -70,5 +72,6 @@ VR.audio = {
     L.f.frequency.setTargetAtTime(380 + rpm * (moto ? 1600 : 1100), t, 0.06);
     L.g.gain.setTargetAtTime(0.035 + rpm * 0.03, t, 0.06);
   },
+  flame(on) { const L = this.loop('flame'); if (L) L.g.gain.setTargetAtTime(on && this.on ? 0.14 : 0, this.ac.currentTime, 0.06); },
   water(on) { const L = this.loop('water'); if (L) L.g.gain.setTargetAtTime(on && this.on ? 0.05 : 0, this.ac.currentTime, 0.05); },
 };

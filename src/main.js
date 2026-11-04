@@ -31,6 +31,8 @@
     onWasted: () => sentTo('💥 Explotó con vos adentro... te llevaron al hospital.') });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
+  const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
+  VR.weapons = weapons;
   VR.audio.setOn(VR.store.get('snd', true));
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg) {
@@ -152,6 +154,7 @@
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
     if (peds) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
+    if (weapons) weapons.update(dt, player, car, VR.input);
     if (emer) { const sw = VR.screen.w, sh = VR.screen.h; emer.update(dt, player, car, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, VR.input); }
   }
 
@@ -166,13 +169,14 @@
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
-    if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => player.draw(c, cx, cy, a) });
+    if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
     for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
+    if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), settings.hora);
     night.render(ctx, cx, cy, sw, sh, vis);
@@ -205,6 +209,8 @@
     }
     if (emer) { const w = $('wanted'), L = emer.level, key = L + ':' + (emer.lost > 0.5 ? 1 : 0);
       if (w._k !== key) { w._k = key; w.hidden = !L; w.innerHTML = '<b>' + '★'.repeat(L) + '</b>' + '☆'.repeat(5 - L); w.classList.toggle('lost', emer.lost > 0.5); } }
+    if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
+      if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
     if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh(); } else if (!spd.hidden) spd.hidden = true;
     if (!settings.fps) { $('dbg').hidden = true; return; }
@@ -250,6 +256,14 @@
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
   $('optSnd').checked = emer ? emer.sound : true; $('optSnd').onchange = (e) => { if (emer) emer.sound = e.target.checked; VR.audio.setOn(e.target.checked); VR.store.set('snd', e.target.checked); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
+  if (weapons) {
+    const paintArma = () => $('segArma').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === weapons.cur));
+    $('optArmas').checked = weapons.enabled; $('optArmas').onchange = (e) => weapons.setEnabled(e.target.checked);
+    $('optSinEstrellas').checked = weapons.noStars; $('optSinEstrellas').onchange = (e) => { weapons.noStars = e.target.checked; VR.store.set('dev:sinEstrellas', weapons.noStars); };
+    $('segArma').querySelectorAll('button').forEach((b) => b.onclick = () => { weapons.select(b.dataset.v); paintArma(); });
+    paintArma(); menu.addEventListener('close', () => { paintArma(); }); 
+    $('weapon').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); weapons.next(); paintArma(); });
+  }
   $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
 
   // ---------- mapa de la ciudad ----------
@@ -494,5 +508,5 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { world, player, cam, settings, cars, traffic, peds, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { world, player, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();

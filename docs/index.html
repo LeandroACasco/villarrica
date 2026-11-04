@@ -64,6 +64,10 @@
   .tb.a { right: 0; bottom: 18px; width: 84px; height: 84px; background: rgba(214,72,52,.55); }
   .tb.b { right: 96px; bottom: 0; width: 64px; height: 64px; background: rgba(60,120,210,.5); }
   .tb.c { right: 78px; bottom: 96px; width: 58px; height: 58px; background: rgba(70,70,82,.55); }
+  .tb.d { right: 4px; bottom: 112px; width: 62px; height: 62px; background: rgba(230,120,30,.6); font-size: 10px; }
+  #weapon { position: fixed; top: calc(env(safe-area-inset-top) + 86px); left: calc(env(safe-area-inset-left) + 8px); z-index: 4; background: rgba(12,12,16,.7);
+    border: 1px solid rgba(255,140,60,.7); color: #ffd7a8; border-radius: 8px; padding: 4px 10px; font: 700 13px system-ui, sans-serif; cursor: pointer; touch-action: none; }
+  #weapon small { color: var(--muted); font-weight: 500; margin-left: 6px; }
 
   #mapView { position: fixed; inset: 0; z-index: 8; background: #14161a; }
   #mapBox { position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: grab; }
@@ -149,6 +153,7 @@
     <button class="tb a" data-b="action"><span class="ico">✋</span>ACCIÓN</button>
     <button class="tb b" data-b="run"><span class="ico">»</span>CORRER</button>
     <button class="tb c" data-b="car"><span class="ico">🚗</span>AUTO</button>
+    <button class="tb d" data-b="fire" hidden><span class="ico">💥</span>DISPARAR</button>
   </div>
 </div>
 
@@ -170,6 +175,7 @@
 </div>
 <div id="toast"></div>
 <div id="wanted" hidden></div>
+<button id="weapon" hidden></button>
 <div id="vcard"><canvas width="256" height="144"></canvas><div><b></b><span></span></div></div>
 <div id="mapView" hidden>
   <div id="mapBox"><div id="mapInner"><canvas id="mapCanvas"></canvas><svg id="mapRoute"><polyline id="routeBg" stroke="#0b2a36" stroke-width="7"/><polyline id="routeFg" stroke="#3fd3ff" stroke-width="4"/></svg><div id="mapLabels"></div><div id="mapDest" hidden>🏁</div><div id="mapMe"></div></div></div>
@@ -190,6 +196,11 @@
     <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
     <label class="chk"><input type="checkbox" id="optSnd"> Sonido (sirenas)</label>
     <label class="chk"><input type="checkbox" id="optVib"> Vibración</label>
+    <h3>Desarrollador</h3>
+    <label class="chk"><input type="checkbox" id="optArmas"> Armas (pistola y lanzallamas)</label>
+    <div class="seg" id="segArma"><button data-v="pistola">🔫 Pistola</button><button data-v="lanzallamas">🔥 Lanzallamas</button></div>
+    <label class="chk"><input type="checkbox" id="optSinEstrellas"> Las armas no suman estrellas</label>
+    <p>Disparar: <kbd>E</kbd> (o <kbd>L</kbd>) · cambiar de arma: <kbd>Q</kbd> · control: <kbd>RB</kbd>/<kbd>Y</kbd> dispara, <kbd>LB</kbd> cambia · táctil: botón DISPARAR y tocar el arma arriba a la izquierda.</p>
     <div class="row"><button class="btn" id="btnReset">📍 Volver a la Plaza de los Héroes</button></div>
     <h3>Teclado (PC)</h3>
     <table>
@@ -210,7 +221,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 94889512 · 2026-11-04</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión fd630173 · 2026-11-04</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -395,7 +406,7 @@ VR.loop = {
 // El juego solo lee VR.input.ax / ay (de -1 a 1), down(b) y pressed(b).
 'use strict';
 VR.input = (() => {
-  const BTN = ['action', 'run', 'car', 'menu', 'map'];
+  const BTN = ['action', 'run', 'car', 'menu', 'map', 'fire', 'weapon'];
   const kb = { u: 0, d: 0, l: 0, r: 0 };
   const kbBtn = {}, touchBtn = {}, padBtn = {}, latch = {};
   let prev = {}, cur = {}, pressedNow = {}, consumed = false;
@@ -403,7 +414,7 @@ VR.input = (() => {
   const api = { ax: 0, ay: 0, source: 'kb', vibrate: true, onAny: null, enabled: true };
 
   const dirKeys = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
-  const btnKeys = { Space: 'action', KeyJ: 'action', Enter: 'action', ShiftLeft: 'run', ShiftRight: 'run', KeyF: 'car', KeyK: 'car', Escape: 'menu', KeyP: 'menu', KeyM: 'map', Tab: 'map' };
+  const btnKeys = { Space: 'action', KeyJ: 'action', Enter: 'action', ShiftLeft: 'run', ShiftRight: 'run', KeyF: 'car', KeyK: 'car', Escape: 'menu', KeyP: 'menu', KeyM: 'map', Tab: 'map', KeyE: 'fire', KeyL: 'fire', KeyQ: 'weapon' };
 
   const any = () => { if (api.onAny) api.onAny(); };
   addEventListener('keydown', (e) => {
@@ -470,7 +481,7 @@ VR.input = (() => {
   };
 
   // ---- control de consola (mapeo estándar) ----
-  const PADMAP = { 0: 'action', 1: 'run', 7: 'run', 2: 'car', 9: 'menu', 8: 'map' };
+  const PADMAP = { 0: 'action', 1: 'run', 7: 'run', 2: 'car', 9: 'menu', 8: 'map', 5: 'fire', 3: 'fire', 4: 'weapon' };
   let padName = null;
   addEventListener('gamepadconnected', (e) => { padName = (e.gamepad && e.gamepad.id) || 'control'; if (api.onPad) api.onPad(padName, true); });
   addEventListener('gamepaddisconnected', () => { if (api.onPad) api.onPad(padName, false); });
@@ -650,14 +661,16 @@ VR.audio = {
   crash(x, y, imp) { const v = this.near(x, y) * Math.min(0.35, imp / 900); if (v <= 0.01) return; this.noise(0.25 + imp / 1500, { vol: v, lp: 900 + imp * 2 }); this.tone(90, 0.12, { type: 'sine', vol: v * 0.8, f2: 45 }); if (imp > 160) this.noise(0.18, { vol: v * 0.35, lp: 6000, hp: 2500, at: 0.03 }); },
   boom(x, y) { const v = this.near(x, y, 900) * 0.5; if (v <= 0.01) return; this.noise(1.6, { vol: v, lp: 700 }); this.tone(70, 0.8, { type: 'sine', vol: v, f2: 28 }); this.noise(0.5, { vol: v * 0.3, lp: 4000, at: 0.05 }); },
   ouch(x, y) { const v = this.near(x, y, 300) * 0.05; if (v <= 0) return; const f = 300 + Math.random() * 180; this.tone(f, 0.18, { type: 'triangle', vol: v, f2: f * 0.6 }); },
-  // ---- sonidos continuos: motor y agua ----
+  shot(x, y) { const v = this.near(x, y, 600) * 0.32; if (v <= 0.01) return; this.noise(0.16, { vol: v, lp: 3200, hp: 300 }); this.tone(160, 0.08, { type: 'square', vol: v * 0.5, f2: 60 }); },
+  // ---- sonidos continuos: motor, agua y lanzallamas ----
   loop(name) {
     const ac = this.ctx(); if (!ac) return null;
     this.loops = this.loops || {};
     if (this.loops[name]) return this.loops[name];
     const g = ac.createGain(); g.gain.value = 0; g.connect(this.master);
     let L;
-    if (name === 'water') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.6; s.connect(f); f.connect(g); s.start(); L = { g }; }
+    if (name === 'flame') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 700; s.connect(f); f.connect(g); s.start(); L = { g }; }
+    else if (name === 'water') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.6; s.connect(f); f.connect(g); s.start(); L = { g }; }
     else { // motor: diente de sierra + sub, por un pasabajos; la frecuencia sigue a las vueltas
       const o = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(); o.type = 'sawtooth'; o2.type = 'square'; f.type = 'lowpass'; f.frequency.value = 600; f.Q.value = 2;
       const g2 = ac.createGain(); g2.gain.value = 0.4; o.connect(f); o2.connect(g2); g2.connect(f); f.connect(g); o.start(); o2.start(); L = { g, o, o2, f };
@@ -676,6 +689,7 @@ VR.audio = {
     L.f.frequency.setTargetAtTime(380 + rpm * (moto ? 1600 : 1100), t, 0.06);
     L.g.gain.setTargetAtTime(0.035 + rpm * 0.03, t, 0.06);
   },
+  flame(on) { const L = this.loop('flame'); if (L) L.g.gain.setTargetAtTime(on && this.on ? 0.14 : 0, this.ac.currentTime, 0.06); },
   water(on) { const L = this.loop('water'); if (L) L.g.gain.setTargetAtTime(on && this.on ? 0.05 : 0, this.ac.currentTime, 0.05); },
 };
 
@@ -4111,6 +4125,156 @@ VR.burntFrames = (F) => {
   return { S: F.S, get: (k) => c.get(k) || (c.set(k, make(k)), c.get(k)), getShadow: (k) => c.get('s' + k) || (c.set('s' + k, make(k, true)), c.get('s' + k)) };
 };
 
+// ===== game/weapons.js =====
+// Armas (modo desarrollador, 04/11/2026): pistola y lanzallamas para probar la Policía, los bomberos, la
+// ambulancia y el daño de los vehículos. Se prenden y apagan en el menú → Desarrollador (apagadas por defecto).
+// Sin sangre: la gente herida queda en el piso hasta que llega la ambulancia, como con los atropellos.
+// Teclado: E (o L) dispara, Q cambia de arma. Control: RB o Y dispara, LB cambia. Táctil: botón DISPARAR y la
+// etiqueta del arma (tocar para cambiar).
+'use strict';
+VR.WEAPONS = {
+  pistola: { name: 'Pistola', ico: '🔫', cool: 0.28, speed: 560, range: 280, carDmg: 14, stars: 1 },
+  lanzallamas: { name: 'Lanzallamas', ico: '🔥', range: 78, cone: 0.42, carDmg: 55, stars: 1 },
+};
+VR.WEAPON_ORDER = ['pistola', 'lanzallamas'];
+VR.PED_TALK.shots = ['¡Oñembokapu!', '¡Jadipara!', '¡Corran!', '¡Ay, Dios!', '¡Pepete epytá!'];
+VR.PED_TALK.fire = ['¡Tata!', '¡Ojapo tata!', '¡Fuego, fuego!', '¡Socorro!'];
+
+VR.Weapons = class {
+  constructor(world, opts) {
+    this.world = world; this.peds = opts.peds; this.emer = opts.emer; this.night = opts.night; this.toast = opts.toast;
+    this.enabled = VR.store.get('dev:armas', false);
+    this.noStars = VR.store.get('dev:sinEstrellas', false);
+    this.cur = VR.store.get('dev:arma', 'pistola'); if (!VR.WEAPONS[this.cur]) this.cur = 'pistola';
+    this.shots = []; this.cool = 0; this.flash = 0; this.flaming = false; this.rnd = VR.rng(4471); this.aim = Math.PI; this.t = 0;
+  }
+  setEnabled(on) { this.enabled = on; VR.store.set('dev:armas', on); if (!on) { this.flaming = false; VR.audio.flame(false); } }
+  select(k) { if (!VR.WEAPONS[k]) return; this.cur = k; VR.store.set('dev:arma', k); }
+  next() { const L = VR.WEAPON_ORDER; this.select(L[(L.indexOf(this.cur) + 1) % L.length]); const W = VR.WEAPONS[this.cur]; this.toast(W.ico + ' ' + W.name); }
+  get weapon() { return VR.WEAPONS[this.cur]; }
+
+  // hacia dónde apunta: lo que marca el joystick, si no hacia donde mira; con un poco de ayuda para apuntar
+  aimAngle(player, input) {
+    let a;
+    if (Math.abs(input.ax) + Math.abs(input.ay) > 0.2) a = Math.atan2(input.ax, -input.ay);
+    else a = ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
+    const W = this.weapon, R = W.range || 200, ox = player.x, oy = player.y - 12;
+    let best = null, bs = 0.35;
+    const look = (x, y) => { const d = Math.hypot(x - ox, y - oy); if (d > R || d < 4) return; let da = Math.atan2(x - ox, -(y - oy)) - a; da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da))); if (da < bs) { bs = da; best = Math.atan2(x - ox, -(y - oy)); } };
+    if (this.peds) for (const p of this.peds.list) if (p.mode !== 'down') look(p.x, p.y - 12);
+    for (const c of this.world.carsIn(ox - R, oy - R, ox + R, oy + R, [])) if (!c.wreck) look(c.x, c.y);
+    return best ?? a;
+  }
+
+  update(dt, player, car, input) {
+    this.t += dt; if (this.cool > 0) this.cool -= dt; if (this.flash > 0) this.flash -= dt;
+    let flaming = false;
+    if (this.enabled && !car) {
+      if (input.pressed('weapon')) this.next();
+      const W = this.weapon;
+      if (this.cur === 'pistola' && input.down('fire') && this.cool <= 0) { this.aim = this.aimAngle(player, input); this.shoot(player); this.cool = W.cool; }
+      if (this.cur === 'lanzallamas' && input.down('fire')) { this.aim = this.aimAngle(player, input); flaming = true; this.flame(dt, player); }
+      if (input.down('fire')) { player.dir = Math.abs(Math.sin(this.aim)) > Math.abs(Math.cos(this.aim)) ? (Math.sin(this.aim) > 0 ? 'right' : 'left') : (Math.cos(this.aim) > 0 ? 'up' : 'down'); }
+    } else if (input.pressed('weapon') && !this.enabled && !car) this.toast('Las armas están apagadas (Menú → Desarrollador)');
+    if (flaming !== this.flaming) { this.flaming = flaming; VR.audio.flame(flaming); }
+    this.updateShots(dt);
+  }
+
+  // ---------- pistola ----------
+  muzzle(player) { const a = this.aim; return [player.x + Math.sin(a) * 9, player.y - 13 - Math.cos(a) * 9]; }
+  shoot(player) {
+    const W = VR.WEAPONS.pistola, [x, y] = this.muzzle(player), a = this.aim + (this.rnd() - 0.5) * 0.04;
+    this.shots.push({ x, y, px: x, py: y, vx: Math.sin(a) * W.speed, vy: -Math.cos(a) * W.speed, left: W.range });
+    this.flash = 0.06; VR.audio.shot(x, y); if (VR.input.buzz) VR.input.buzz(12);
+    this.scare(x, y, 170, 'shots');
+    this.crime('disparo', x, y);
+  }
+  updateShots(dt) {
+    const W = VR.WEAPONS.pistola;
+    for (let i = this.shots.length - 1; i >= 0; i--) {
+      const s = this.shots[i]; s.px = s.x; s.py = s.y;
+      const steps = 4, sx = s.vx * dt / steps, sy = s.vy * dt / steps;
+      let gone = false;
+      for (let k = 0; k < steps && !gone; k++) {
+        s.x += sx; s.y += sy; s.left -= Math.hypot(sx, sy);
+        if (s.left <= 0) { gone = true; break; }
+        const c = this.world.boxAt(s.x, s.y, null);
+        if (c && !c.driven) { this.hitCar(c, W.carDmg, s.vx, s.vy); this.spark(s.x, s.y); gone = true; break; }
+        if (this.peds) for (const p of this.peds.list) if (p.mode !== 'down' && Math.abs(p.x - s.x) < 5 && s.y > p.y - 26 && s.y < p.y + 2) { this.hurtPed(p, s.vx, s.vy, 'shot'); gone = true; break; }
+        if (!gone && this.world.hits(s.x - 1, s.y - 1, s.x + 1, s.y + 1)) { this.spark(s.x, s.y); gone = true; }
+      }
+      if (gone) this.shots.splice(i, 1);
+    }
+  }
+  spark(x, y) { if (!this.emer) return; for (let i = 0; i < 4; i++) { const a = this.rnd() * Math.PI * 2; this.emer.fx.push({ k: 'fire', x, y, vx: Math.cos(a) * 60, vy: Math.sin(a) * 60, life: 0.15, max: 0.3, r: 1.2 }); } }
+
+  // ---------- lanzallamas ----------
+  flame(dt, player) {
+    const W = VR.WEAPONS.lanzallamas, [x, y] = this.muzzle(player), a = this.aim;
+    if (this.emer) for (let i = 0; i < 3; i++) {
+      const aa = a + (this.rnd() - 0.5) * W.cone, sp = 170 + this.rnd() * 90;
+      this.emer.fx.push({ k: 'fire', x, y, vx: Math.sin(aa) * sp, vy: -Math.cos(aa) * sp, life: 0.42, max: 0.5, r: 2 + this.rnd() * 3 });
+    }
+    if (this.night) this.night.add(x + Math.sin(a) * 30, y - Math.cos(a) * 30, 60, '255,150,50', 0.9);
+    const inCone = (px, py, extra = 0) => { const d = Math.hypot(px - x, py - y); if (d > W.range + extra) return false; let da = Math.atan2(px - x, -(py - y)) - a; da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da))); return da < W.cone * 0.75 || d < 10 + extra; };
+    if (this.peds) for (const p of this.peds.list) if (p.mode !== 'down' && inCone(p.x, p.y - 10)) this.hurtPed(p, Math.sin(a) * 60, -Math.cos(a) * 60, 'fire');
+    for (const c of this.world.carsIn(x - W.range - 20, y - W.range - 20, x + W.range + 20, y + W.range + 20, [])) if (!c.wreck && !c.driven && inCone(c.x, c.y, Math.min(c.LEN, c.WID) / 2)) this.hitCar(c, W.carDmg * dt, 0, 0, true);
+    if (this.rnd() < dt * 3) this.world.mark(x + Math.sin(a) * W.range * 0.6, y - Math.cos(a) * W.range * 0.6, 'rgba(30,24,20,.5)');
+    this.scare(x, y, 140, 'fire');
+    this.crime('fuego', x, y);
+  }
+
+  // ---------- efectos sobre la gente y los vehículos ----------
+  hurtPed(p, vx, vy, how) {
+    p.mode = 'down'; p.vx = vx * 0.25; p.vy = vy * 0.25; p.injured = true; p.t = 40; p.say = null;
+    VR.audio.ouch(p.x, p.y);
+    if (how === 'fire' && this.emer) for (let i = 0; i < 6; i++) this.emer.fx.push({ k: 'smoke', x: p.x + (this.rnd() - 0.5) * 10, y: p.y - 6, vx: (this.rnd() - 0.5) * 10, vy: -18, life: 1.4, max: 1.4, r: 3 + this.rnd() * 2 });
+    if (this.emer) this.emer.dispatch('ambulancia', p);
+  }
+  hitCar(c, dmg, vx, vy, burn) {
+    c.hp = (c.hp ?? 100) - dmg * (c.unit ? 0.6 : 1); c.byPlayer = true; c.hitByPlayer = this.emer ? this.emer.t : 0;
+    if (vx || vy) { if (c.vx === undefined) { c.vx = 0; c.vy = 0; c.w = 0; } c.vx += vx * 0.02 / (c.mass || 1); c.vy += vy * 0.02 / (c.mass || 1); this.world.wake(c, 30); }
+    if (c.hp <= 0 && !c.burning && this.emer) this.emer.ignite(c);
+    else if (burn && c.hp < 30 && !c.burning && this.emer) this.emer.ignite(c);
+    if (c.spec && c.spec.emer === 'policia') this.crime('ataque_policia', c.x, c.y, true);
+  }
+  scare(x, y, r, kind) {
+    if (!this.peds || (this.scareT || 0) > this.t) return; this.scareT = this.t + 0.3;
+    for (const p of this.peds.list) {
+      if (p.mode === 'down' || p.mode === 'flee' && p.t > 0.5) continue;
+      if (Math.hypot(p.x - x, p.y - y) > r) continue;
+      p.mode = 'flee'; p.t = 3 + this.rnd() * 2; this.peds.awayFrom(p, { x, y });
+      if (!p.say && this.rnd() < 0.35) this.peds.talk(p, kind, 1.6);
+    }
+  }
+  crime(kind, x, y, sure) { if (!this.noStars && this.emer) this.emer.crime(kind, VR.WEAPONS[this.cur].stars, x, y, sure); }
+
+  // ---------- dibujo ----------
+  // el arma en la mano (se dibuja encima del personaje)
+  drawHeld(ctx, player, cx, cy, al) {
+    if (!this.enabled) return;
+    const x = VR.lerp(player.px, player.x, al) - cx, y = VR.lerp(player.py, player.y, al) - cy - 13;
+    const firing = VR.input.down('fire'), a = firing ? this.aim : ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
+    if (player.dir === 'up' && !firing) return; // de espaldas no se ve
+    ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(a);
+    if (this.cur === 'pistola') { ctx.fillStyle = '#16161a'; ctx.fillRect(-1, -8, 2, 6); ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1, -4, 2, 3); }
+    else { ctx.fillStyle = '#2a2a30'; ctx.fillRect(-1.5, -11, 3, 9); ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-1, -12, 2, 2); ctx.fillStyle = '#c23a28'; ctx.fillRect(-2, -3, 4, 3); }
+    ctx.restore();
+    if (this.flash > 0 && this.cur === 'pistola') {
+      const [mx, my] = this.muzzle({ x: VR.lerp(player.px, player.x, al), y: VR.lerp(player.py, player.y, al) });
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(mx - cx, my - cy, 0, mx - cx, my - cy, 6);
+      g.addColorStop(0, 'rgba(255,250,200,1)'); g.addColorStop(1, 'rgba(255,160,40,0)'); ctx.fillStyle = g; ctx.fillRect(mx - cx - 6, my - cy - 6, 12, 12); ctx.restore();
+      if (this.night) this.night.add(mx, my, 40, '255,220,140', 0.9);
+    }
+  }
+  drawShots(ctx, cx, cy, al) {
+    if (!this.shots.length) return;
+    ctx.save(); ctx.strokeStyle = 'rgba(255,236,160,.95)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    for (const s of this.shots) { const x = VR.lerp(s.px, s.x, al) - cx, y = VR.lerp(s.py, s.y, al) - cy; ctx.beginPath(); ctx.moveTo(x - s.vx * 0.012, y - s.vy * 0.012); ctx.lineTo(x, y); ctx.stroke(); }
+    ctx.restore();
+  }
+};
+
 // ===== game/vcard.js =====
 // Tarjeta del vehículo: al subirte aparece un dibujito de costado con el nombre (inventado) y una línea
 // que lo describe. Los dibujos son propios, por categoría, sin marcas ni modelos reales.
@@ -4549,6 +4713,8 @@ VR.showVehicleCard = (v) => {
     onWasted: () => sentTo('💥 Explotó con vos adentro... te llevaron al hospital.') });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
+  const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
+  VR.weapons = weapons;
   VR.audio.setOn(VR.store.get('snd', true));
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg) {
@@ -4670,6 +4836,7 @@ VR.showVehicleCard = (v) => {
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
     if (peds) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
+    if (weapons) weapons.update(dt, player, car, VR.input);
     if (emer) { const sw = VR.screen.w, sh = VR.screen.h; emer.update(dt, player, car, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, VR.input); }
   }
 
@@ -4684,13 +4851,14 @@ VR.showVehicleCard = (v) => {
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
-    if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => player.draw(c, cx, cy, a) });
+    if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
     for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
+    if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), settings.hora);
     night.render(ctx, cx, cy, sw, sh, vis);
@@ -4723,6 +4891,8 @@ VR.showVehicleCard = (v) => {
     }
     if (emer) { const w = $('wanted'), L = emer.level, key = L + ':' + (emer.lost > 0.5 ? 1 : 0);
       if (w._k !== key) { w._k = key; w.hidden = !L; w.innerHTML = '<b>' + '★'.repeat(L) + '</b>' + '☆'.repeat(5 - L); w.classList.toggle('lost', emer.lost > 0.5); } }
+    if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
+      if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
     if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh(); } else if (!spd.hidden) spd.hidden = true;
     if (!settings.fps) { $('dbg').hidden = true; return; }
@@ -4768,6 +4938,14 @@ VR.showVehicleCard = (v) => {
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
   $('optSnd').checked = emer ? emer.sound : true; $('optSnd').onchange = (e) => { if (emer) emer.sound = e.target.checked; VR.audio.setOn(e.target.checked); VR.store.set('snd', e.target.checked); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
+  if (weapons) {
+    const paintArma = () => $('segArma').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === weapons.cur));
+    $('optArmas').checked = weapons.enabled; $('optArmas').onchange = (e) => weapons.setEnabled(e.target.checked);
+    $('optSinEstrellas').checked = weapons.noStars; $('optSinEstrellas').onchange = (e) => { weapons.noStars = e.target.checked; VR.store.set('dev:sinEstrellas', weapons.noStars); };
+    $('segArma').querySelectorAll('button').forEach((b) => b.onclick = () => { weapons.select(b.dataset.v); paintArma(); });
+    paintArma(); menu.addEventListener('close', () => { paintArma(); }); 
+    $('weapon').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); weapons.next(); paintArma(); });
+  }
   $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
 
   // ---------- mapa de la ciudad ----------
@@ -5012,7 +5190,7 @@ VR.showVehicleCard = (v) => {
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { world, player, cam, settings, cars, traffic, peds, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { world, player, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();
 
 </script>
