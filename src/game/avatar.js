@@ -25,15 +25,17 @@
       jogging: { name: 'Jogging', price: 70000 }, pollera: { name: 'Pollera', price: 65000 },
     },
     shoes: { zapatillas: { name: 'Zapatillas', price: 150000 }, chinelas: { name: 'Chinelas', price: 20000 }, botines: { name: 'Botines', price: 180000 } },
-    hat: { ninguno: { name: 'Sin gorra', price: 0 }, gorra: { name: 'Gorra', price: 30000 }, gorraAtras: { name: 'Gorra para atrás', price: 30000 } },
+    hat: { ninguno: { name: 'Sin gorra', price: 0 }, gorra: { name: 'Gorra', price: 30000 }, gorraAtras: { name: 'Gorra para atrás', price: 30000 }, gorro: { name: 'Gorro de lana', price: 35000 } },
+    eyes: { puntos: { name: 'Puntitos' }, felices: { name: 'Felices' }, redondos: { name: 'Grandes' } },
+    style: { kiut: { name: 'Kiut (estilo Sofía)' }, clasico: { name: 'Clásico' } },
     extra: { lentes: { name: 'Lentes de sol', price: 25000 }, mochila: { name: 'Mochila', price: 90000 }, termo: { name: 'Termo de tereré', price: 60000 } },
     cloth: [['#d23c2c', '#9f2a20'], ['#f2efe6', '#c4beb0'], ['#2e6fc8', '#1f4c8c'], ['#30303a', '#18181e'], ['#3b9a5a', '#286a3d'], ['#e8b830', '#a8841c'],
-      ['#7a4ab0', '#563480'], ['#e86aa0', '#b04876'], ['#e87a2a', '#a8561c'], ['#58b8c8', '#3a8a98'], ['#8a6a48', '#644c32'], ['#6a7a3a', '#4c5a28']],
+      ['#7a4ab0', '#563480'], ['#e86aa0', '#b04876'], ['#e87a2a', '#a8561c'], ['#58b8c8', '#3a8a98'], ['#8a6a48', '#644c32'], ['#6a7a3a', '#4c5a28'], ['#a8d8f0', '#80b4d4'], ['#f4a8c8', '#d888a8']],
     denim: [['#2c4a7b', '#1e3358'], ['#4a6a9a', '#34507a'], ['#2a2a32', '#18181e'], ['#6a6258', '#4c463e'], ['#b8b0a0', '#8e8676']],
   };
   VR.AVATAR_CAT = CAT;
   VR.AVATAR_DEFAULT = { skin: 2, hair: 'corto', hairColor: 1, top: 'remera', topColor: 0, topColor2: 1, bottom: 'jean', bottomColor: 0, shoes: 'zapatillas', shoesColor: 1,
-    hat: 'ninguno', hatColor: 2, lentes: false, mochila: false, termo: false, extraColor: 4 };
+    hat: 'ninguno', hatColor: 2, lentes: false, mochila: false, termo: false, extraColor: 4, eyes: 'puntos', style: 'kiut' };
 
   // ---------- cabezas (dibujadas a mano) ----------
   // S piel, s sombra de piel, W blanco del ojo, E pupila, M boca, N nariz
@@ -213,7 +215,7 @@
       // cabeza, pelo, gorra, lentes
       stamp(HEAD[D], 0, 0 + b);
       const hs = HAIR[look.hair][D];
-      if (look.hat !== 'ninguno') { stamp(hs.slice(3), 0, 3 + b); stamp(HAT[look.hat][D], 0, b); }
+      if (look.hat !== 'ninguno') { stamp(hs.slice(3), 0, 3 + b); stamp((HAT[look.hat] || HAT.gorra)[D], 0, b); }
       else stamp(hs, 0, b);
       if (look.lentes && front) { for (let x = 4; x <= 11; x++) put(x, 4 + b, x === 7 || x === 8 ? 'o' : 'O'); }
     } else {
@@ -246,7 +248,7 @@
       hand = arm(P.ha[0], P.ha[1], true);
       stamp(HEAD.side, ln, b);
       const hs = HAIR[look.hair].side;
-      if (look.hat !== 'ninguno') { stamp(hs.slice(3), ln, 3 + b); stamp(HAT[look.hat].side, ln, b); }
+      if (look.hat !== 'ninguno') { stamp(hs.slice(3), ln, 3 + b); stamp((HAT[look.hat] || HAT.gorra).side, ln, b); }
       else stamp(hs, ln, b);
       if (look.lentes) { put(10 + ln, 4 + b, 'O'); put(11 + ln, 4 + b, 'O'); put(12 + ln, 4 + b, 'O'); put(9 + ln, 4 + b, 'o'); }
     }
@@ -256,6 +258,147 @@
       for (let y = 0; y < 4; y++) { put(hx + (side ? 1 : 0), hy - 1 + y, y === 0 ? 'r' : 'R'); }
       put(hx + (side ? 1 : 0), hy + 3, 'r');
     }
+    if (dir === 'left') g.forEach((r) => r.reverse());
+    return g;
+  }
+
+
+  // =====================================================================================================
+  // Estilo Kiut (como los dibujos de Sofía para Kiut Studio): cabeza grande y redonda (casi la mitad del
+  // cuerpo), cara simple con ojitos (puntitos, felices o grandes), cachetes rosados, cuerpo chiquito con
+  // bracitos y piernitas cortas, colores planos y contorno oscuro parejo. Misma grilla de 16×24.
+  // =====================================================================================================
+  const KHEAD = [
+    '................', '................',
+    '.....SSSSSS.....', '...SSSSSSSSSS...', '..SSSSSSSSSSSS..', '..SSSSSSSSSSSS..', '..SSSSSSSSSSSS..',
+    '..SSSSSSSSSSSS..', '..SSSSSSSSSSSS..', '..SSSSSSSSSSSS..', '...SSSSSSSSSS...', '.....SSSSSS.....',
+  ];
+  const KHAIR = {
+    corto: {
+      down: ['....HHHHHHHH....', '..HHHHHHHHHHHH..', '.HHHHHHLLHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHH.HHHH.HHHH.', '.HH..........HH.', '.HH..........HH.', '.H............H.'],
+      up: ['....HHHHHHHH....', '..HHHHHHHHHHHH..', '.HHHHHHLLHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '..HHHHHHHHHHHH..', '...hHHHHHHHHh...'],
+      side: ['....HHHHHHH.....', '..HHHHHHHHHHH...', '.HHHHHHLLHHHHH..', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHH.HHH..', '.HHHHHHH........', '.HHHHHH.........', '.HHHHH..........', '..HHH...........'],
+    },
+    largo: {
+      down: ['....HHHHHHHH....', '..HHHHHHHHHHHH..', '.HHHHHHLLHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHH.HHHH.HHHH.', 'HHH..........HHH', 'HHH..........HHH', '.HH..........HH.', 'HHH..........HHH',
+        'HH............HH', 'HHH..........HHH', '.HHH........HHH.', 'HHH..........HHH', '.HH..........HH.', 'HH............HH', '.h............h.'],
+      up: ['....HHHHHHHH....', '..HHHHHHHHHHHH..', '.HHHHHHLLHHHHHH.', 'HHHHHHHHHHHHHHHH', 'HHHHHHHHHHHHHHHH', '.HHHHHHHHHHHHHH.', 'HHHHHHHHHHHHHHHH', 'HHHHHHHHHHHHHHHH', '.HHHHHHHHHHHHHH.', 'HHHHHHHHHHHHHHHH',
+        'HHHHHHHHHHHHHHHH', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', 'HHHHHHHHHHHHHHH.', '.HHHHHHHHHHHHH..', 'HHHHHHHHHHHHHH..', '.hHhhHhhHhhHh...'],
+      side: ['....HHHHHHH.....', '..HHHHHHHHHHH...', '.HHHHHHLLHHHHH..', 'HHHHHHHHHHHHHHH.', 'HHHHHHHHHHHHHHH.', 'HHHHHHHHHH.HHH..', 'HHHHHHHH........', 'HHHHHHH.........', '.HHHHHH.........', 'HHHHHH..........',
+        'HHHHH...........', '.HHHHH..........', 'HHHHH...........', '.HHHH...........', 'HHHH............', '.HH.............', '.h..............'],
+    },
+    colita: {
+      down: ['....HHHHHHHH....', '..HHHHHHHHHHHH..', '.HHHHHHLLHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHH.HHHHHH.HHH.', '.HH..........HH.', 'HHH..........HH.', 'HHH...........H.', 'HH..............', 'HHH.............', '.HH.............', '.HH.............', '..h.............'],
+      up: ['....HHHHHHHH....', '..HHHHHHHHHHHH..', '.HHHHHHLLHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', 'HHHHHHHHHHHHHHH.', 'HHHHHHHHHHHHHHH.', 'HHHHHHHHHHHHHH..', 'HHHhHHHHHHHHh...', '..HH............', '..HH............', '...h............'],
+      side: ['....HHHHHHH.....', '..HHHHHHHHHHH...', '.HHHHHHLLHHHHH..', '.HHHHHHHHHHHHHH.', '.HHHHHHHHHHHHHH.', '.HHHHHHHHH.HHH..', '.HHHHHHH........', 'HHHHHH..........', 'HHHHH...........', 'HHH.............', 'HHH.............', '.HH.............', '.h..............'],
+    },
+    rulos: {
+      down: ['...HHLHHHHLH....', '.HHHHHHHHHHHHHH.', 'HHHHLHHHHHHLHHHH', 'HHHHHHHHHHHHHHHH', 'HHHHHHHHHHHHHHHH', 'HHHHHHHHHHHHHHHH', 'HHH..H....H..HHH', 'HH............HH', 'HHH..........HHH', '.HH..........HH.', '.H............H.'],
+      up: ['...HHLHHHHLH....', '.HHHHHHHHHHHHHH.', 'HHHHLHHHHHHLHHHH', 'HHHHHHHHHHHHHHHH', 'HHHHHHHLHHHHHHHH', 'HHHHHHHHHHHHHHHH', 'HHHHLHHHHHHLHHHH', 'HHHHHHHHHHHHHHHH', 'HHHHHHHHHHHHHHHH', '.HHHHHHHHHHHHHH.', '..hHHHHHHHHHHh..'],
+      side: ['...HHLHHHHLH....', '.HHHHHHHHHHHHH..', 'HHHHLHHHHHHLHHH.', 'HHHHHHHHHHHHHHHH', 'HHHHHHHHHHHHHHHH', 'HHHHHHHHHH.HHH..', 'HHHHHHHH........', 'HHHHHHH.........', 'HHHHHHH.........', '.HHHHH..........', '..hh............'],
+    },
+    rapado: {
+      down: ['................', '.....hhhhhh.....', '...hhhhhhhhhh...', '..hhhhhhhhhhhh..', '..h..........h..'],
+      up: ['................', '.....hhhhhh.....', '...hhhhhhhhhh...', '..hhhhhhhhhhhh..', '..hhhhhhhhhhhh..', '..hhhhhhhhhhhh..', '..hhhhhhhhhhhh..', '..hhhhhhhhhhhh..', '...hhhhhhhhhh...'],
+      side: ['................', '.....hhhhhh.....', '...hhhhhhhhhh...', '..hhhhhhhhhhhh..', '..hhhhhh........', '..hhhhh.........', '..hhhh..........', '...hh...........'],
+    },
+  };
+  KHAIR.cresta = KHAIR.corto;
+  KHAIR.pelado = { down: [], up: [], side: [] };
+  const KHAT = {
+    gorra: { down: ['....CCCCCCCC....', '..CCCCCCCCCCCC..', '.CCCCCCLCCCCCCC.', '.CCCCCCCCCCCCCC.', 'vvvvvvvvvvvvvvvv'],
+      up: ['....CCCCCCCC....', '..CCCCCCCCCCCC..', '.CCCCCCLCCCCCCC.', '.CCCCCCCCCCCCCC.', '.cCCCCCCCCCCCCc.', '.......cc.......'],
+      side: ['....CCCCCCC.....', '..CCCCCCCCCCC...', '.CCCCCCLCCCCCC..', '.CCCCCCCCCCCCCC.', '.cCCCCCCCvvvvvvv'] },
+    gorro: { down: ['......CCCC......', '...CCCCCCCCCC...', '..CCCCCCCCCCCC..', '.CCCCCCCCCCCCCC.', '.cccccccccccccc.'],
+      up: ['......CCCC......', '...CCCCCCCCCC...', '..CCCCCCCCCCCC..', '.CCCCCCCCCCCCCC.', '.cccccccccccccc.'],
+      side: ['.....CCCC.......', '...CCCCCCCCC....', '..CCCCCCCCCCC...', '.CCCCCCCCCCCCC..', '.ccccccccccccc..'] },
+  };
+  KHAT.gorraAtras = { down: KHAT.gorra.up, up: KHAT.gorra.down.slice(0, 4).concat(['vvvvvvvvvvvvvvvv']), side: ['....CCCCCCC.....', '..CCCCCCCCCCC...', '.CCCCCCLCCCCCC..', '.CCCCCCCCCCCCCC.', 'vvvvvvvCCCCCCCc.'] };
+  const KPOSE = {
+    idle: [{ l: 0, r: 0, al: 0, ar: 0, bob: 0 }],
+    walk: [{ l: 0, r: 0, al: 0, ar: 0, bob: 0 }, { l: 0, r: 1, al: 1, ar: -1, bob: -1 }, { l: 0, r: 0, al: 0, ar: 0, bob: 0 }, { l: 1, r: 0, al: -1, ar: 1, bob: -1 }],
+    run: [{ l: 0, r: 2, al: 2, ar: -1, bob: 0, sp: 1 }, { l: 1, r: 1, al: 1, ar: 1, bob: -1, sp: 0 }, { l: 2, r: 0, al: -1, ar: 2, bob: 0, sp: -1 }, { l: 1, r: 1, al: 1, ar: 1, bob: -1, sp: 0 }],
+  };
+  const KSIDE = {
+    idle: [{ a: 0, b: 0, la: 0, lb: 0, h: 0, bob: 0, lean: 0 }],
+    walk: [{ a: 1, b: -1, la: 0, lb: 0, h: -1, bob: 0, lean: 0 }, { a: 0, b: 0, la: 0, lb: 1, h: 0, bob: -1, lean: 0 }, { a: -1, b: 1, la: 0, lb: 0, h: 1, bob: 0, lean: 0 }, { a: 0, b: 0, la: 1, lb: 0, h: 0, bob: -1, lean: 0 }],
+    run: [{ a: 2, b: -2, la: 1, lb: 0, h: -2, bob: 0, lean: 1 }, { a: 1, b: -1, la: 1, lb: 2, h: 0, bob: -1, lean: 1 }, { a: -2, b: 2, la: 0, lb: 1, h: 2, bob: 0, lean: 1 }, { a: -1, b: 1, la: 2, lb: 1, h: 0, bob: -1, lean: 1 }],
+  };
+  function composeKiut(look, dir, anim, f) {
+    const g = Array.from({ length: H }, () => new Array(W).fill('.'));
+    const put = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < W && y < H) g[y][x] = c; };
+    const stamp = (rows, dx, dy) => rows.forEach((r, y) => [...r].forEach((c, x) => { if (c !== '.') put(x + dx, y + dy, c); }));
+    const side = dir === 'left' || dir === 'right', D = side ? 'side' : dir, front = D === 'down';
+    const top = look.top, bot = look.bottom, longSleeve = top === 'camisa' || top === 'buzo', noSleeve = top === 'musculosa';
+    const skirt = bot === 'pollera', shorts = bot === 'short' || bot === 'bermuda' || skirt;
+    let hand = null;
+    const face = (dx, b, sideFace) => {
+      const ex = sideFace ? [10] : [5, 10];
+      for (const x of ex) {
+        const X = x + dx;
+        if (look.eyes === 'felices') { put(X - 1, 8 + b, 'E'); put(X, 7 + b, 'E'); put(X + 1, 8 + b, 'E'); }
+        else if (look.eyes === 'redondos') { const x0 = X - 1; put(x0 + 1, 5 + b, 'E'); put(x0 + 2, 5 + b, 'E'); put(x0, 6 + b, 'E'); put(x0 + 3, 6 + b, 'E'); put(x0, 7 + b, 'E'); put(x0 + 3, 7 + b, 'E'); put(x0 + 1, 8 + b, 'E'); put(x0 + 2, 8 + b, 'E'); put(x0 + 1, 6 + b, 'W'); put(x0 + 2, 6 + b, 'W'); put(x0 + 1, 7 + b, 'W'); put(x0 + 2, 7 + b, 'E'); }
+        else { put(X, 7 + b, 'E'); put(X, 8 + b, 'E'); }
+      }
+      if (sideFace) { put(11 + dx, 9 + b, 'K'); put(12 + dx, 9 + b, 'K'); put(12 + dx, 10 + b, 'M'); }
+      else { put(3 + dx, 9 + b, 'K'); put(4 + dx, 9 + b, 'K'); put(11 + dx, 9 + b, 'K'); put(12 + dx, 9 + b, 'K'); put(7 + dx, 10 + b, 'M'); put(8 + dx, 10 + b, 'M'); }
+      if (look.lentes) { const r = 7 + b; if (sideFace) { put(9 + dx, r, 'O'); put(10 + dx, r, 'O'); put(11 + dx, r, 'O'); } else for (const x of [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) put(x + dx, r, x === 7 || x === 8 ? 'o' : 'O'); }
+    };
+    if (!side) {
+      const P = KPOSE[anim][f % KPOSE[anim].length], b = P.bob, sp = P.sp || 0;
+      // piernitas
+      for (const [x0, lift, dx] of [[5, P.l, -Math.abs(sp)], [9, P.r, Math.abs(sp)]]) {
+        const yb = 20 - lift;
+        for (let y = 17; y <= yb; y++) for (let x = x0; x < x0 + 2; x++) put(x + (y > 18 ? dx : 0), y, shorts && y >= 18 ? 'D' : 'U');
+        for (let x = x0 - (x0 < 8 ? 1 : 0); x < x0 + 2 + (x0 > 8 ? 1 : 0); x++) { put(x + dx, yb + 1, 'F'); put(x + dx, yb + 2, 'f'); }
+      }
+      for (let x = 5; x <= 10; x++) put(x, 17, 'U');
+      if (skirt) { for (let x = 4; x <= 11; x++) put(x, 16 + b, 'U'); for (let x = 3; x <= 12; x++) { put(x, 17 + b, 'U'); put(x, 18 + b, x > 9 ? 'u' : 'U'); } }
+      // cuerpito
+      stamp(['.....TTTTTT.....', '....TTTTTTTT....', '....TTTTTTTT....', '....TTTTTTTT....', '.....TTTTTT.....'], 0, 12 + b);
+      if (front) {
+        if (top === 'polo' || top === 'camisa') { put(6, 12 + b, 'k'); put(9, 12 + b, 'k'); }
+        if (top === 'camisa') for (let y = 12; y <= 16; y++) { put(7, y + b, 'k'); put(8, y + b, 'k'); }
+        if (top === 'buzo') { for (let x = 5; x <= 10; x++) put(x, 15 + b, 't'); put(7, 13 + b, 'k'); put(8, 13 + b, 'k'); }
+        if (look.print && top === 'remera') { put(7, 14 + b, 'k'); put(8, 14 + b, 'k'); }
+      } else if (top === 'buzo') for (let x = 5; x <= 10; x++) put(x, 12 + b, 't');
+      if (top === 'camiseta') for (let y = 12; y <= 16; y++) for (const x of [5, 8, 10]) if (g[y + b][x] === 'T') put(x, y + b, 'k');
+      if (noSleeve) { put(4, 13 + b, 'S'); put(11, 13 + b, 'S'); }
+      // bracitos
+      for (const [x, o, out] of [[3, P.al, -1], [12, P.ar, 1]]) {
+        const up = anim === 'run' ? -1 : 0, A = noSleeve ? 'S' : 'A', a = longSleeve ? 'A' : 'S';
+        put(x, 13 + b + up, A); put(x, 14 + b + o + up, a); put(x + (anim === 'run' ? out : 0), 15 + b + o + up, 'G');
+        if (x === 12) hand = [x, 15 + b + o + up];
+      }
+      if (look.mochila) { if (front) { put(5, 13 + b, 'p'); put(10, 13 + b, 'p'); put(5, 14 + b, 'p'); put(10, 14 + b, 'p'); } else stamp(['.....PPPPPP.....', '.....PPPPPP.....', '.....PPkkPP.....', '.....pPPPPp.....'], 0, 12 + b); }
+      stamp(KHEAD, 0, b);
+      if (front) face(0, b, false);
+      const hs = KHAIR[look.hair][D];
+      stamp(hs, 0, b);
+      if (look.hat !== 'ninguno') stamp((KHAT[look.hat] || KHAT.gorra)[D], 0, b);
+    } else {
+      const P = KSIDE[anim][f % KSIDE[anim].length], b = P.bob, ln = P.lean;
+      // pierna lejana, cuerpo, pierna cercana
+      const leg = (dx, lift, c, cl) => {
+        const yb = 20 - lift;
+        for (let y = 17; y <= yb; y++) { put(7 + (y > 18 ? dx : 0), y, shorts && y >= 18 ? cl : c); put(8 + (y > 18 ? dx : 0), y, shorts && y >= 18 ? cl : c); }
+        for (let x = 7; x <= 9; x++) { put(x + dx, yb + 1, 'F'); put(x + dx, yb + 2, 'f'); }
+      };
+      leg(P.b, P.lb, 'u', 'd');
+      if (look.mochila) stamp(['...PPP', '...PPP', '...PkP', '...pPp'].map((r) => r.padEnd(16, '.')), ln, 12 + b);
+      stamp(['......TTTT......', '.....TTTTTT.....', '.....TTTTTT.....', '.....TTTTTT.....', '......TTTT......'], ln, 12 + b);
+      if (top === 'camiseta') for (let y = 12; y <= 16; y++) put(8 + ln, y + b, 'k');
+      if (skirt) { for (let x = 5; x <= 10; x++) put(x + ln, 16 + b, 'U'); for (let x = 4; x <= 11; x++) { put(x + ln, 17 + b, 'U'); put(x + ln, 18 + b, 'U'); } }
+      leg(P.a, P.la, 'U', 'D');
+      // bracito de adelante
+      const A = noSleeve ? 'S' : 'A', a = longSleeve ? 'A' : 'S', hx = 8 + ln + P.h, up = anim === 'run' ? -1 : 0;
+      put(8 + ln, 13 + b, A); put(8 + ln + Math.sign(P.h), 14 + b + up, a); put(hx, 15 + b + up, 'G'); hand = [hx, 15 + b + up];
+      stamp(KHEAD, ln, b);
+      face(ln, b, true);
+      stamp(KHAIR[look.hair].side, ln, b);
+      if (look.hat !== 'ninguno') stamp((KHAT[look.hat] || KHAT.gorra).side, ln, b);
+    }
+    if (look.termo && hand) { const [hx, hy] = hand; put(hx, hy - 2, 'r'); put(hx, hy - 1, 'R'); put(hx, hy, 'R'); put(hx, hy + 1, 'R'); }
     if (dir === 'left') g.forEach((r) => r.reverse());
     return g;
   }
@@ -274,7 +417,7 @@
       T: tp, t: tpD, k: t2, A: tp, Q: tpD,
       G: sk, g: skD, B: look.bottom === 'jogging' || look.bottom === 'pollera' ? bc[0] : '#2a2420',
       U: bc[0], u: bc[1], D: bc[0], d: bc[1],
-      C: hc, c: hcD, v: hcD, O: '#18181e', o: '#3a3a44', P: xc, p: xcD, R: '#2e6fc8', r: '#d8dce4',
+      C: hc, c: hcD, v: hcD, O: '#18181e', o: '#3a3a44', P: xc, p: xcD, R: '#2e6fc8', r: '#d8dce4', K: '#f4a0b0',
     };
     if (look.bottom === 'short' || look.bottom === 'bermuda' || look.bottom === 'pollera') { P.D = sk; P.d = skD; }
     if (look.shoes === 'zapatillas') { P.F = sh; P.f = '#f2efe6'; }
@@ -285,7 +428,7 @@
   }
 
   // ---------- pintar con contorno selectivo (más oscuro que el color vecino) ----------
-  function paint(grid, pal) {
+  function paint(grid, pal, solid) {
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const x = c.getContext('2d'), img = x.createImageData(W, H), d = img.data;
     const col = {}; for (const k in pal) col[k] = hex(pal[k]);
@@ -295,12 +438,21 @@
       if (ch !== '.') { const [r, g2, b] = col[ch] || [255, 0, 255]; d[o] = r; d[o + 1] = g2; d[o + 2] = b; d[o + 3] = 255; continue; }
       let nb = null;
       for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { const n = at(xx + dx, y + dy); if (n !== '.') { nb = n; break; } }
-      if (nb) { const [r, g2, b] = mul(col[nb] || [40, 30, 30], 0.32); d[o] = r + 8; d[o + 1] = g2 + 6; d[o + 2] = b + 8; d[o + 3] = 255; }
+      if (nb) { const [r, g2, b] = solid ? [30, 26, 32] : mul(col[nb] || [40, 30, 30], 0.32); d[o] = r + (solid ? 0 : 8); d[o + 1] = g2 + (solid ? 0 : 6); d[o + 2] = b + (solid ? 0 : 8); d[o + 3] = 255; }
     }
     x.putImageData(img, 0, 0);
     return c;
   }
 
+  // el equipo de Kiut Studio, como los dibujó Sofía
+  VR.AVATAR_PRESETS = {
+    Leandro: { style: 'kiut', skin: 0, hair: 'corto', hairColor: 0, eyes: 'felices', top: 'polo', topColor: 3, topColor2: 3, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 },
+    Sofi: { style: 'kiut', skin: 0, hair: 'largo', hairColor: 2, eyes: 'felices', top: 'remera', topColor: 1, bottom: 'pollera', bottomColor: 12, shoes: 'zapatillas', shoesColor: 1 },
+    'Sofi con buzo': { style: 'kiut', skin: 0, hair: 'largo', hairColor: 3, eyes: 'felices', top: 'buzo', topColor: 13, topColor2: 1, bottom: 'pollera', bottomColor: 12, shoes: 'zapatillas', shoesColor: 12, hat: 'gorro', hatColor: 13 },
+    Deisy: { style: 'kiut', skin: 0, hair: 'colita', hairColor: 4, eyes: 'felices', top: 'camisa', topColor: 13, topColor2: 12, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 },
+    Cinthia: { style: 'kiut', skin: 0, hair: 'largo', hairColor: 5, eyes: 'redondos', top: 'remera', topColor: 12, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 },
+    Nora: { style: 'kiut', skin: 3, hair: 'largo', hairColor: 5, eyes: 'redondos', top: 'remera', topColor: 12, bottom: 'short', bottomColor: 3, shoes: 'zapatillas', shoesColor: 3 },
+  };
   VR.ANIMS = { idle: 1, walk: 4, run: 4 };
   // hoja completa del avatar: { down|up|left|right: { idle: [c], walk: [c×4], run: [c×4] } }
   VR.makeAvatar = (look) => {
@@ -308,7 +460,8 @@
     const pal = palette(look), out = {};
     for (const dir of ['down', 'up', 'right', 'left']) {
       out[dir] = {};
-      for (const an in VR.ANIMS) out[dir][an] = Array.from({ length: VR.ANIMS[an] }, (_, f) => paint(compose(look, dir, an, f), pal));
+      const kiut = look.style === 'kiut';
+      for (const an in VR.ANIMS) out[dir][an] = Array.from({ length: VR.ANIMS[an] }, (_, f) => paint((kiut ? composeKiut : compose)(look, dir, an, f), pal, kiut));
     }
     return out;
   };
@@ -321,6 +474,6 @@
     const pick = (o) => { const k = Object.keys(o); return k[(rnd() * k.length) | 0]; }, n = (a) => (rnd() * a.length) | 0;
     return { skin: n(CAT.skin), hair: pick(CAT.hair), hairColor: rnd() < 0.8 ? n(CAT.hairColor.slice(0, 5)) : n(CAT.hairColor), top: pick(CAT.top), topColor: n(CAT.cloth), topColor2: n(CAT.cloth),
       bottom: pick(CAT.bottom), bottomColor: n(CAT.cloth), shoes: pick(CAT.shoes), shoesColor: n(CAT.cloth), hat: rnd() < 0.3 ? pick(CAT.hat) : 'ninguno', hatColor: n(CAT.cloth),
-      lentes: rnd() < 0.2, mochila: rnd() < 0.2, termo: rnd() < 0.15, extraColor: n(CAT.cloth), print: rnd() < 0.4 };
+      lentes: rnd() < 0.15, mochila: rnd() < 0.2, termo: rnd() < 0.15, extraColor: n(CAT.cloth), print: rnd() < 0.4, eyes: pick(CAT.eyes) };
   };
 })();
