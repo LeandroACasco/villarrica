@@ -27,7 +27,7 @@
     shoes: { zapatillas: { name: 'Zapatillas', price: 150000 }, chinelas: { name: 'Chinelas', price: 20000 }, botines: { name: 'Botines', price: 180000 } },
     hat: { ninguno: { name: 'Sin gorra', price: 0 }, gorra: { name: 'Gorra', price: 30000 }, gorraAtras: { name: 'Gorra para atrás', price: 30000 }, gorro: { name: 'Gorro de lana', price: 35000 } },
     eyes: { puntos: { name: 'Puntitos' }, felices: { name: 'Felices' }, redondos: { name: 'Grandes' } },
-    style: { kiut: { name: 'Kiut (estilo Sofía)' }, clasico: { name: 'Clásico' } },
+    style: { urbano: { name: 'Urbano (adulto)' }, clasico: { name: 'Clásico' }, kiut: { name: 'Kiut (estilo Sofía)' } },
     extra: { lentes: { name: 'Lentes de sol', price: 25000 }, mochila: { name: 'Mochila', price: 90000 }, termo: { name: 'Termo de tereré', price: 60000 } },
     cloth: [['#d23c2c', '#9f2a20'], ['#f2efe6', '#c4beb0'], ['#2e6fc8', '#1f4c8c'], ['#30303a', '#18181e'], ['#3b9a5a', '#286a3d'], ['#e8b830', '#a8841c'],
       ['#7a4ab0', '#563480'], ['#e86aa0', '#b04876'], ['#e87a2a', '#a8561c'], ['#58b8c8', '#3a8a98'], ['#8a6a48', '#644c32'], ['#6a7a3a', '#4c5a28'], ['#a8d8f0', '#80b4d4'], ['#f4a8c8', '#d888a8']],
@@ -35,7 +35,7 @@
   };
   VR.AVATAR_CAT = CAT;
   VR.AVATAR_DEFAULT = { skin: 2, hair: 'corto', hairColor: 1, top: 'remera', topColor: 0, topColor2: 1, bottom: 'jean', bottomColor: 0, shoes: 'zapatillas', shoesColor: 1,
-    hat: 'ninguno', hatColor: 2, lentes: false, mochila: false, termo: false, extraColor: 4, eyes: 'puntos', style: 'kiut' };
+    hat: 'ninguno', hatColor: 2, lentes: false, mochila: false, termo: false, extraColor: 4, eyes: 'puntos', style: 'urbano' };
 
   // ---------- cabezas (dibujadas a mano) ----------
   // S piel, s sombra de piel, W blanco del ojo, E pupila, M boca, N nariz
@@ -403,6 +403,157 @@
     return g;
   }
 
+
+  // =====================================================================================================
+  // Estilo Urbano (04/11/2026): cuerpo de adulto con toque realista, como los juegos de celular de calle de
+  // esa época. 16×28: cabeza chica (unas 5,5 cabezas de alto), hombros anchos, cintura, piernas largas con
+  // rodilla, brazos de 2 píxeles con codo y mano, ropa con luz, sombra y pliegues. Todo original.
+  // Códigos extra: X luz de la ropa, Y sombra profunda, V luz del pantalón, Z sombra de piel.
+  // =====================================================================================================
+  const UH = 28;
+  const UHEAD = {
+    down: ['................', '.....SSSSSs.....', '.....SSSSSs.....', '....sSESSEss....', '.....SSSNSs.....', '.....sSMMSZ.....', '......ZSSZ......'],
+    up: ['................', '.....SSSSSs.....', '.....SSSSSs.....', '....sSSSSSss....', '.....SSSSSs.....', '.....sSSSSZ.....', '......ZSSZ......'],
+    side: ['................', '......SSSSS.....', '......SSSSSS....', '......SsSSES....', '......SSSSSSN...', '......ZSSSMS....', '.......ZSSZ.....'],
+  };
+  const UHAIR = {
+    corto: { down: ['.....HHHHHH.....', '....HHHLHHHh....', '....h......h....'], up: ['.....HHHHHH.....', '....HHHLHHHh....', '....HHHHHHHh....', '.....HHHHHh.....', '.....hHHHHh.....'], side: ['......HHHHH.....', '.....HHHLHHH....', '.....HHHH.......', '.....HHh........', '......h.........'] },
+    rapado: { down: ['................', '.....hhhhhh.....', '....h......h....'], up: ['................', '.....hhhhhh.....', '....hhhhhhhh....', '.....hhhhhh.....', '.....h....h.....'], side: ['................', '......hhhhh.....', '.....hhhh.......', '.....hh.........'] },
+    largo: { down: ['.....HHHHHH.....', '....HHHLHHHh....', '....HH....hh....', '....HH....hh....', '....HH....hh....', '...HHh.....hh...', '...Hh.......h...', '...h............'],
+      up: ['.....HHHHHH.....', '....HHHLHHHh....', '....HHHHHHHh....', '....HHHHHHHh....', '....HHHHHHHh....', '....HHHHHHHh....', '....hHHHHHhh....', '.....hHHHhh.....', '......hhh.......'],
+      side: ['......HHHHH.....', '.....HHHLHHH....', '.....HHHH.......', '.....HHHh.......', '....HHHH........', '....HHHh........', '....HHh.........', '....hh..........'] },
+    rulos: { down: ['....HHLHHLH.....', '...HHHHHHHHHH...', '...HH......Hh...', '...h........h...'], up: ['....HHLHHLH.....', '...HHHHHHHHHH...', '...HHHLHHHHHh...', '...HHHHHHHHHh...', '....HHHHHHHh....', '.....hHHHHh.....'], side: ['.....HHLHHL.....', '....HHHHHHHHH...', '....HHHHH.......', '....HHHH........', '....hHH.........'] },
+    colita: { down: ['.....LHHHHH.....', '....HHHHHHHh....', '....h......h....'], up: ['.....LHHHHH.....', '....HHHHHHHh....', '....HHHHHHHh....', '.....HHHHHh.....', '......HHh.......', '......HHh.......', '.......h........'], side: ['......LHHHH.....', '.....HHHHHHH....', '.....HHHH.......', '....HHH.........', '...HHh..........', '...Hh...........'] },
+    cresta: { down: ['.......HH.......', '......HLHh......', '.....h....h.....'], up: ['.......HH.......', '......HLHh......', '......HHHh......', '.......Hh.......'], side: ['.......HHH......', '......HLHHH.....', '.....hhh........'] },
+    pelado: { down: [], up: [], side: [] },
+  };
+  const UHAT = {
+    gorra: { down: ['.....CCCCCC.....', '....CCCLCCCc....', '....vvvvvvvv....'], up: ['.....CCCCCC.....', '....CCCCCCCc....', '....cCCCCCCc....', '.......cc.......'], side: ['......CCCCC.....', '.....CCCLCCCc...', '.....cCCCCvvvv..'] },
+    gorraAtras: { down: ['.....CCCCCC.....', '....CCCLCCCc....', '....cCCCCCCc....'], up: ['.....CCCCCC.....', '....CCCCCCCc....', '....vvvvvvvv....'], side: ['......CCCCC.....', '.....CCCLCCCc...', '..vvvCCCCCCc....'] },
+    gorro: { down: ['......CCCC......', '....CCCCCCCc....', '....cccccccc....'], up: ['......CCCC......', '....CCCCCCCc....', '....cccccccc....'], side: ['.......CCCC.....', '.....CCCCCCCc...', '.....ccccccccc..'] },
+  };
+  // frente/espalda: piernas que se acortan (pie levantado), brazos que se balancean; correr: brazos doblados
+  const UPF = {
+    idle: [{ l: 0, r: 0, al: 0, ar: 0, bob: 0 }],
+    walk: [{ l: 0, r: 0, al: 0, ar: 0, bob: 0 }, { l: 0, r: 1, al: 1, ar: -1, bob: -1 }, { l: 0, r: 0, al: 0, ar: 0, bob: 0 }, { l: 1, r: 0, al: -1, ar: 1, bob: -1 }],
+    run: [{ l: 0, r: 4, al: 1, ar: -1, bob: 0, bent: 1 }, { l: 2, r: 2, al: 0, ar: 0, bob: -1, bent: 1 }, { l: 4, r: 0, al: -1, ar: 1, bob: 0, bent: 1 }, { l: 2, r: 2, al: 0, ar: 0, bob: -1, bent: 1 }],
+  };
+  // perfil: cadera en (7.5, 14); rodilla y tobillo de cada pierna; codo y mano de cada brazo (hombro en 7.5, 8)
+  const UPS = {
+    idle: [{ a: [[8, 20], [8, 25]], b: [[7, 20], [7, 25]], ea: [7, 11], ha: [7, 14], eb: [8, 11], hb: [8, 14], bob: 0, lean: 0 }],
+    walk: [
+      { a: [[9, 20], [10, 25]], b: [[7, 20], [5, 25]], ea: [6, 11], ha: [5, 14], eb: [9, 11], hb: [10, 14], bob: 0, lean: 0 },
+      { a: [[8, 20], [8, 25]], b: [[8, 20], [7, 24]], ea: [7, 11], ha: [7, 14], eb: [8, 11], hb: [8, 14], bob: -1, lean: 0 },
+      { a: [[7, 20], [5, 25]], b: [[9, 20], [10, 25]], ea: [9, 11], ha: [10, 14], eb: [6, 11], hb: [5, 14], bob: 0, lean: 0 },
+      { a: [[8, 20], [7, 24]], b: [[8, 20], [8, 25]], ea: [8, 11], ha: [8, 14], eb: [7, 11], hb: [7, 14], bob: -1, lean: 0 },
+    ],
+    run: [
+      { a: [[11, 18], [12, 23]], b: [[6, 20], [3, 22]], ea: [5, 11], ha: [4, 8], eb: [10, 11], hb: [12, 9], bob: 0, lean: 1 },
+      { a: [[10, 18], [9, 23]], b: [[7, 19], [4, 20]], ea: [7, 11], ha: [9, 10], eb: [8, 11], hb: [7, 10], bob: -1, lean: 1 },
+      { a: [[6, 20], [3, 22]], b: [[11, 18], [12, 23]], ea: [10, 11], ha: [12, 9], eb: [5, 11], hb: [4, 8], bob: 0, lean: 1 },
+      { a: [[7, 19], [4, 20]], b: [[10, 18], [9, 23]], ea: [8, 11], ha: [7, 10], eb: [7, 11], hb: [9, 10], bob: -1, lean: 1 },
+    ],
+  };
+  function composeUrb(look, dir, anim, f) {
+    const g = Array.from({ length: UH }, () => new Array(W).fill('.'));
+    const put = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < W && y < UH) g[y][x] = c; };
+    const stamp = (rows, dx, dy) => rows.forEach((r, y) => [...r].forEach((c, x) => { if (c !== '.') put(x + dx, y + dy, c); }));
+    const seg = (p, q, cs, w = 2) => { // trazo de 2 px con luz del lado izquierdo y sombra del derecho
+      const n = Math.max(Math.abs(q[0] - p[0]), Math.abs(q[1] - p[1]), 1);
+      for (let i = 0; i <= n; i++) { const x = p[0] + (q[0] - p[0]) * i / n, y = p[1] + (q[1] - p[1]) * i / n; for (let k = 0; k < w; k++) put(x + k, y, typeof cs === 'function' ? cs(y, k) : cs); }
+    };
+    const side = dir === 'left' || dir === 'right', D = side ? 'side' : dir, front = D === 'down';
+    const top = look.top, bot = look.bottom, longSleeve = top === 'camisa' || top === 'buzo', noSleeve = top === 'musculosa';
+    const skirt = bot === 'pollera', knee = bot === 'short' ? 19 : bot === 'bermuda' ? 21 : skirt ? 19 : 99;
+    const legC = (y, k, near) => y >= knee ? (k ? 'Z' : 's') : near ? (k ? 'u' : 'U') : (k ? 'u' : 'u');
+    let hand = null;
+    if (!side) {
+      const P = UPF[anim][f % UPF[anim].length], b = P.bob;
+      // piernas: muslo, rodilla y pantorrilla; zapato de 4 px
+      for (const [x0, lift, far] of [[5, P.l, false], [8, P.r, true]]) {
+        const foot = 25 - lift;
+        for (let y = 14; y <= foot; y++) for (let k = 0; k < 3; k++) {
+          const low = y >= knee, edgeL = k === 0, edgeR = k === 2;
+          put(x0 + k, y, low ? (edgeR || far ? 's' : 'S') : edgeR ? 'u' : edgeL && !far ? 'V' : far ? 'u' : 'U');
+        }
+        if (knee > 25 && lift === 0) put(x0 + 1, 20, far ? 'u' : 'u'); // pliegue de la rodilla
+        for (let k = -(far ? 0 : 1); k < 3 + (far ? 1 : 0); k++) { put(x0 + k, foot + 1, 'F'); put(x0 + k, foot + 2, 'f'); }
+        if (look.shoes === 'zapatillas') put(x0 + (far ? 2 : 0), foot + 1, 'k');
+      }
+      for (let x = 5; x <= 10; x++) put(x, 14, x > 8 ? 'u' : 'U');
+      if (skirt) for (let y = 13; y <= 18; y++) for (let x = 5 - (y > 15 ? 1 : 0); x <= 10 + (y > 15 ? 1 : 0); x++) put(x, y, x >= 9 ? 'u' : x <= 5 ? 'V' : 'U');
+      // torso con hombros, pecho y cintura
+      stamp(['....XTTTTTTt....', '...XXTTTTTTtt...', '....XTTTTTTt....', '....XTTTTTTt....', '.....TTTTTt.....', '.....TTTTTt.....', '.....BBBBBB.....'], 0, 7 + b);
+      for (let y = 9; y <= 11; y++) put(8, y + b, 't'); // pliegue
+      if (front) {
+        if (top === 'remera' || top === 'camiseta' || top === 'musculosa') { put(7, 7 + b, 'Z'); put(8, 7 + b, 'Z'); }
+        if (top === 'polo' || top === 'camisa') { put(6, 7 + b, 'k'); put(9, 7 + b, 'k'); put(7, 7 + b, 'Z'); put(8, 7 + b, 'Z'); }
+        if (top === 'camisa') for (let y = 8; y <= 12; y++) put(7, y + b, y % 2 ? 'k' : 't');
+        if (top === 'buzo') { put(6, 7 + b, 'Y'); put(9, 7 + b, 'Y'); put(7, 8 + b, 'k'); put(8, 8 + b, 'k'); for (let x = 5; x <= 10; x++) put(x, 11 + b, 't'); for (let x = 5; x <= 10; x++) put(x, 13 + b, 'T'); }
+        if (top === 'remera' && look.print) { put(6, 9 + b, 'k'); put(7, 9 + b, 'k'); put(6, 10 + b, 'k'); }
+      } else { if (top === 'buzo') { for (let x = 5; x <= 10; x++) put(x, 7 + b, 'Y'); put(6, 6 + b, 'Y'); put(9, 6 + b, 'Y'); for (let x = 5; x <= 10; x++) put(x, 13 + b, 'T'); } }
+      if (top === 'camiseta') for (let y = 7; y <= 12; y++) for (const x of [5, 7, 9]) if ('XTt'.includes(g[y + b][x])) put(x, y + b, 'k');
+      if (noSleeve) { put(4, 7 + b, 'S'); put(11, 7 + b, 's'); }
+      // brazos de 2 px: hombro, codo, mano
+      for (const [x, o, sh] of [[2, P.al, false], [12, P.ar, true]]) {
+        const sleeve = (y, k) => noSleeve ? (k || sh ? 's' : 'S') : (k || sh ? 't' : 'T');
+        const fore = (y, k) => longSleeve ? (k || sh ? 't' : 'T') : (k || sh ? 's' : 'S');
+        if (P.bent) {
+          const up = o > 0 ? 2 : 0;
+          seg([x, 7 + b], [x, 9 + b], sleeve);
+          seg([x, 10 + b], [x + (sh ? -1 : 1) * (up ? 1 : 0), 11 + b - up], fore);
+          const hx = x + (sh ? -1 : 1) * (up ? 1 : 0), hy = 12 + b - up;
+          put(hx, hy, sh ? 's' : 'S'); put(hx + 1, hy, 's');
+          if (sh) hand = [hx, hy];
+        } else {
+          seg([x, 7 + b], [x, (noSleeve ? 9 : 8) + b + Math.min(0, o)], sleeve);
+          seg([x, 9 + b + Math.min(0, o)], [x, 12 + b + o], fore);
+          put(x, 13 + b + o, sh ? 's' : 'S'); put(x + 1, 13 + b + o, 's');
+          if (sh) hand = [x, 13 + b + o];
+        }
+      }
+      if (look.mochila) { if (front) for (let y = 7; y <= 11; y++) { put(5, y + b, 'p'); put(10, y + b, 'p'); } else stamp(['.....PPPPPP.....', '.....PPPPPPp....', '.....PPkkPPp....', '.....PPPPPPp....', '.....pPPPPpp....'], 0, 7 + b); }
+      stamp(UHEAD[D], 0, b);
+      const hs = UHAIR[look.hair][D];
+      if (look.hat !== 'ninguno') { stamp(hs.slice(2), 0, 2 + b); stamp((UHAT[look.hat] || UHAT.gorra)[D], 0, b); } else stamp(hs, 0, b);
+      if (look.lentes && front) for (let x = 5; x <= 10; x++) put(x, 3 + b, x === 7 || x === 8 ? 'o' : 'O');
+      if (front && look.hair !== 'pelado' && look.hair !== 'rapado' && look.hat === 'ninguno') { put(6, 2 + b, 'h'); put(9, 2 + b, 'h'); } // cejas
+    } else {
+      const P = UPS[anim][f % UPS[anim].length], b = P.bob, ln = P.lean;
+      const hip = [7, 14];
+      const leg = (kn, an, near) => {
+        const c = (y, k) => legC(y, k, near);
+        seg([hip[0] + ln * 0, hip[1]], kn, c); seg(kn, an, c);
+        for (let k = 0; k < 4; k++) { put(an[0] + k, an[1] + 1, 'F'); put(an[0] + k, an[1] + 2, 'f'); }
+      };
+      const arm = (e, h2, near) => {
+        const sh = [7 + ln, 8 + b], E = [e[0] + ln, e[1] + b], Hh = [h2[0] + ln, h2[1] + b];
+        const sl = (y, k) => noSleeve ? (near && !k ? 'S' : 's') : (near && !k ? 'T' : 't');
+        const fo = (y, k) => longSleeve ? (near && !k ? 'T' : 't') : (near && !k ? 'S' : 's');
+        seg(sh, E, sl); seg(E, Hh, fo); put(Hh[0], Hh[1], near ? 'S' : 's'); put(Hh[0] + 1, Hh[1], 's');
+        return Hh;
+      };
+      arm(P.eb, P.hb, false);
+      leg(P.b[0], P.b[1], false);
+      if (look.mochila) stamp(['...PPP', '...PPP', '...PkP', '...PPP', '...pPp'].map((r) => r.padEnd(16, '.')), ln, 7 + b);
+      stamp(['......XTTt......', '.....XTTTTt.....', '.....XTTTTt.....', '.....XTTTTt.....', '......TTTt......', '......TTTt......', '......BBBB......'], ln, 7 + b);
+      if (top === 'buzo') { put(5 + ln, 6 + b, 'Y'); put(5 + ln, 7 + b, 'Y'); for (let x = 6; x <= 9; x++) put(x + ln, 13 + b, 'T'); }
+      if (top === 'camiseta') for (let y = 7; y <= 12; y++) put(8 + ln, y + b, 'k');
+      if (top === 'polo' || top === 'camisa') { put(9 + ln, 7 + b, 'k'); put(10 + ln, 7 + b, 'k'); }
+      if (skirt) for (let y = 13; y <= 18; y++) for (let x = 5 - (y > 15 ? 1 : 0); x <= 10 + (y > 15 ? 1 : 0); x++) put(x + ln, y, x >= 9 ? 'u' : 'U');
+      leg(P.a[0], P.a[1], true);
+      hand = arm(P.ea, P.ha, true);
+      stamp(UHEAD.side, ln, b);
+      const hs = UHAIR[look.hair].side;
+      if (look.hat !== 'ninguno') { stamp(hs.slice(2), ln, 2 + b); stamp((UHAT[look.hat] || UHAT.gorra).side, ln, b); } else stamp(hs, ln, b);
+      if (look.lentes) { put(9 + ln, 3 + b, 'o'); put(10 + ln, 3 + b, 'O'); put(11 + ln, 3 + b, 'O'); }
+      if (look.hair !== 'pelado' && look.hat === 'ninguno') put(10 + ln, 2 + b, 'h');
+    }
+    if (look.termo && hand) { const [hx, hy] = hand; put(hx + 1, hy - 3, 'r'); for (let y = -2; y <= 1; y++) put(hx + 1, hy + y, 'R'); put(hx + 2, hy - 2, 'R'); put(hx + 2, hy - 1, 'R'); }
+    if (dir === 'left') g.forEach((r) => r.reverse());
+    return g;
+  }
+
   // ---------- colores ----------
   const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   const mul = (c, k) => c.map((v) => Math.max(0, Math.min(255, Math.round(v * k))));
@@ -417,7 +568,7 @@
       T: tp, t: tpD, k: t2, A: tp, Q: tpD,
       G: sk, g: skD, B: look.bottom === 'jogging' || look.bottom === 'pollera' ? bc[0] : '#2a2420',
       U: bc[0], u: bc[1], D: bc[0], d: bc[1],
-      C: hc, c: hcD, v: hcD, O: '#18181e', o: '#3a3a44', P: xc, p: xcD, R: '#2e6fc8', r: '#d8dce4', K: '#f4a0b0',
+      C: hc, c: hcD, v: hcD, O: '#18181e', o: '#3a3a44', P: xc, p: xcD, R: '#2e6fc8', r: '#d8dce4', K: '#f4a0b0', X: VR.shadeHex(tp, 1.22), Y: VR.shadeHex(tpD, 0.7), V: VR.shadeHex(bc[0], 1.2), Z: VR.shadeHex(skD, 0.85),
     };
     if (look.bottom === 'short' || look.bottom === 'bermuda' || look.bottom === 'pollera') { P.D = sk; P.d = skD; }
     if (look.shoes === 'zapatillas') { P.F = sh; P.f = '#f2efe6'; }
@@ -429,11 +580,11 @@
 
   // ---------- pintar con contorno selectivo (más oscuro que el color vecino) ----------
   function paint(grid, pal, solid) {
-    const c = document.createElement('canvas'); c.width = W; c.height = H;
-    const x = c.getContext('2d'), img = x.createImageData(W, H), d = img.data;
+    const Hh = grid.length, c = document.createElement('canvas'); c.width = W; c.height = Hh;
+    const x = c.getContext('2d'), img = x.createImageData(W, Hh), d = img.data;
     const col = {}; for (const k in pal) col[k] = hex(pal[k]);
-    const at = (px, py) => (px < 0 || py < 0 || px >= W || py >= H) ? '.' : grid[py][px];
-    for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) {
+    const at = (px, py) => (px < 0 || py < 0 || px >= W || py >= Hh) ? '.' : grid[py][px];
+    for (let y = 0; y < Hh; y++) for (let xx = 0; xx < W; xx++) {
       const ch = grid[y][xx], o = (y * W + xx) * 4;
       if (ch !== '.') { const [r, g2, b] = col[ch] || [255, 0, 255]; d[o] = r; d[o + 1] = g2; d[o + 2] = b; d[o + 3] = 255; continue; }
       let nb = null;
@@ -460,8 +611,8 @@
     const pal = palette(look), out = {};
     for (const dir of ['down', 'up', 'right', 'left']) {
       out[dir] = {};
-      const kiut = look.style === 'kiut';
-      for (const an in VR.ANIMS) out[dir][an] = Array.from({ length: VR.ANIMS[an] }, (_, f) => paint((kiut ? composeKiut : compose)(look, dir, an, f), pal, kiut));
+      const kiut = look.style === 'kiut', fn = kiut ? composeKiut : look.style === 'urbano' ? composeUrb : compose;
+      for (const an in VR.ANIMS) out[dir][an] = Array.from({ length: VR.ANIMS[an] }, (_, f) => paint(fn(look, dir, an, f), pal, kiut));
     }
     return out;
   };
