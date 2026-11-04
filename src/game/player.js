@@ -1,89 +1,99 @@
-// Personas: sprite original de 20×32 generado por código (arte grande, 04/11/2026), 4 direcciones × 4 cuadros.
-// Cabeza grande con cara (ojos con brillo, cejas, nariz, boca, orejas), pelo con volumen y estilos (corto,
-// largo, gorra, pelado), remera con cuello y sombra, brazos que se balancean con manos, cinto, pantalón o
-// pollera con pliegue y zapatillas con suela clara.
+// Personas: sprite original de 16×26 (04/11/2026, segunda versión). Se dibuja con formas suaves al cuádruple
+// (cabeza ovalada, hombros que se angostan hacia la cintura, brazos y piernas finos con articulaciones) y se
+// achica con suavizado, para que parezca una persona y no un muñeco de bloques. 4 direcciones × 4 cuadros.
 VR.makePlayerSprites = (pal) => {
   const C = Object.assign({ skin: '#c98b5c', skinD: '#a76c42', hair: '#2a1b12', shirt: '#d23c2c', shirtD: '#9f2a20',
     pants: '#2c3e6b', pantsD: '#1e2b4d', shoes: '#18181c', sole: '#e8e4da', eye: '#1a1210', style: 'corto', cap: '#2e6fc8', skirt: false }, pal || {});
   const lite = (h, k) => VR.shadeHex(h, k);
-  const HAIRL = lite(C.hair, 1.6), SHIRTL = lite(C.shirt, 1.25), SKINL = lite(C.skin, 1.12);
+  const W = 16, H = 26, Q = 4;
   const STEP = [0, 1, 0, -1];
   const frame = (dir, f) => {
-    const c = VR.canvas(20, 32), P = VR.gfx.painter(c), s = STEP[f], bob = s === 0 ? 0 : 1;
-    const r = (x, y, w, h, col) => P.r(x, y + bob, w, h, col);
+    const big = VR.canvas(W * Q, H * Q), g = big.getContext('2d'); g.scale(Q, Q);
+    const s = STEP[f], bob = s ? 0.35 : 0;
+    const ell = (x, y, rx, ry, col) => { g.fillStyle = col; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill(); };
+    const limb = (x0, y0, x1, y1, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); };
+    const path = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
+    const grad = (x0, x1, a, b) => { const gr = g.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, a); gr.addColorStop(1, b); return gr; };
+    g.translate(0, -bob);
     if (dir === 'down' || dir === 'up') {
       const front = dir === 'down';
-      // piernas (una adelante, otra atrás al caminar) y zapatillas
-      const legL = s < 0 ? -1 : 0, legR = s > 0 ? -1 : 0;
+      // piernas: la que va adelante se ve un poco más corta (pie levantado)
+      const lf = s < 0 ? 0.9 : 0, rf = s > 0 ? 0.9 : 0;
       if (C.skirt) {
-        r(6, 21, 3, 6 + legL, C.skin); r(11, 21, 3, 6 + legR, C.skinD);
-        r(5, 20, 10, 5, C.pants); r(5, 24, 10, 1, C.pantsD); r(10, 20, 1, 5, C.pantsD);
+        limb(6.6, 15.5, 6.6, 22.6 - lf, 1.5, C.skin); limb(9.4, 15.5, 9.4, 22.6 - rf, 1.5, C.skinD);
+        path([[5.2, 13.6], [10.8, 13.6], [11.8, 18.2], [4.2, 18.2]], C.pants); path([[8, 13.6], [10.8, 13.6], [11.8, 18.2], [8.6, 18.2]], C.pantsD);
       } else {
-        r(5, 21, 10, 2, C.pants);
-        r(5, 23, 4, 4 + legL, C.pants); r(6, 23, 1, 4 + legL, lite(C.pants, 1.2));
-        r(11, 23, 4, 4 + legR, C.pantsD);
-        r(9, 21, 2, 2, C.pantsD);
+        limb(6.5, 14.6, 6.4, 22.4 - lf, 2.3, C.pants); limb(9.5, 14.6, 9.6, 22.4 - rf, 2.3, C.pantsD);
+        path([[5.1, 13.4], [10.9, 13.4], [10.9, 15.6], [5.1, 15.6]], C.pants);
       }
-      r(5, 27 + legL, 4, 2, C.shoes); r(5, 28 + legL, 4, 1, C.sole);
-      r(11, 27 + legR, 4, 2, C.shoes); r(11, 28 + legR, 4, 1, C.sole);
-      // brazos con manga y mano
-      const aL = s > 0 ? 1 : s < 0 ? -1 : 0, aR = -aL;
-      r(2, 12 + aL, 3, 4, C.shirt); r(2, 12 + aL, 1, 4, C.shirtD); r(2, 16 + aL, 3, 3, C.skin); r(2, 18 + aL, 3, 1, C.skinD);
-      r(15, 12 + aR, 3, 4, C.shirtD); r(15, 16 + aR, 3, 3, C.skinD);
-      // torso
-      r(5, 11, 10, 9, C.shirt); r(13, 11, 2, 9, C.shirtD); r(5, 11, 1, 9, SHIRTL);
-      r(5, 19, 10, 1, C.shirtD);
-      if (!C.skirt) { r(5, 20, 10, 1, '#2a2420'); r(9, 20, 2, 1, '#d8b04a'); } // cinto
-      if (front) { r(8, 11, 4, 1, C.skin); r(8, 12, 4, 1, C.shirtD); r(9, 12, 2, 1, C.skinD); } // cuello en V
-      // cabeza
-      r(5, 3, 10, 8, C.skin); r(6, 10, 8, 1, C.skin); r(13, 4, 2, 6, C.skinD);
-      r(4, 6, 1, 2, C.skin); r(15, 6, 1, 2, C.skinD); // orejas
+      ell(6.3, 23.3 - lf, 1.5, 0.95, C.shoes); ell(9.7, 23.3 - rf, 1.5, 0.95, C.shoes);
+      g.fillStyle = C.sole; g.fillRect(4.9, 23.7 - lf, 2.8, 0.45); g.fillRect(8.3, 23.7 - rf, 2.8, 0.45);
+      // brazos: se balancean al revés de las piernas
+      const sw = s * 0.9;
+      limb(4.2, 8.6, 3.6, 11.4 + sw, 1.7, C.shirtD); limb(3.6, 11.2 + sw, 3.5, 13.6 + sw, 1.35, C.skinD);
+      limb(11.8, 8.6, 12.4, 11.4 - sw, 1.7, C.shirtD); limb(12.4, 11.2 - sw, 12.5, 13.6 - sw, 1.35, C.skinD);
+      ell(3.5, 14 + sw, 0.75, 0.8, C.skin); ell(12.5, 14 - sw, 0.75, 0.8, C.skinD);
+      // torso: hombros redondeados que se angostan a la cintura
+      g.fillStyle = grad(4, 12, lite(C.shirt, 1.18), C.shirtD);
+      g.beginPath(); g.moveTo(5.4, 7.6); g.quadraticCurveTo(3.7, 7.9, 3.9, 9.6); g.lineTo(5, 14); g.lineTo(11, 14); g.lineTo(12.1, 9.6); g.quadraticCurveTo(12.3, 7.9, 10.6, 7.6); g.closePath(); g.fill();
+      if (!C.skirt) { g.fillStyle = '#2a2420'; g.fillRect(5, 13.2, 6, 0.8); g.fillStyle = '#d8b04a'; g.fillRect(7.5, 13.2, 1, 0.8); }
+      if (front) { path([[6.9, 7.6], [9.1, 7.6], [8, 9.3]], C.skinD); g.fillStyle = lite(C.shirt, 0.8); g.fillRect(5.4, 9.8, 0.4, 3.4); }
+      // cuello y cabeza ovalada
+      g.fillStyle = C.skinD; g.fillRect(7.1, 6.4, 1.8, 1.6);
+      g.fillStyle = grad(5, 11, lite(C.skin, 1.1), C.skinD); g.beginPath(); g.ellipse(8, 4.3, 2.75, 3.15, 0, 0, Math.PI * 2); g.fill();
+      ell(5.25, 4.6, 0.55, 0.8, C.skin); ell(10.75, 4.6, 0.55, 0.8, C.skinD); // orejas
       if (front) {
-        r(7, 7, 2, 2, '#f6f2ea'); r(11, 7, 2, 2, '#f6f2ea'); r(8, 7, 1, 2, C.eye); r(12, 7, 1, 2, C.eye); // ojos
-        r(7, 6, 2, 1, C.hair); r(11, 6, 2, 1, C.hair);                       // cejas
-        r(10, 9, 1, 1, C.skinD); r(9, 10, 3, 1, lite(C.skinD, 0.9)); r(6, 8, 1, 1, SKINL); // nariz, boca, cachete
+        ell(6.9, 4.6, 0.5, 0.55, '#f6f2ea'); ell(9.1, 4.6, 0.5, 0.55, '#f6f2ea');
+        ell(7, 4.65, 0.32, 0.42, C.eye); ell(9.2, 4.65, 0.32, 0.42, C.eye);
+        g.fillStyle = C.hair; g.fillRect(6.3, 3.6, 1.3, 0.35); g.fillRect(8.5, 3.6, 1.3, 0.35);
+        g.fillStyle = C.skinD; g.fillRect(7.8, 5.2, 0.5, 0.7);
+        g.fillStyle = lite(C.skinD, 0.8); g.fillRect(7.3, 6.25, 1.5, 0.3);
       }
       // pelo
       if (C.style === 'gorra') {
-        r(5, 1, 10, 4, C.cap); r(6, 1, 6, 1, lite(C.cap, 1.3)); if (front) r(4, 5, 12, 1, lite(C.cap, 0.7)); else r(5, 5, 10, 2, C.hair);
+        g.fillStyle = C.cap; g.beginPath(); g.ellipse(8, 2.6, 2.95, 2, 0, Math.PI, 0); g.fill(); g.fillRect(5.05, 2.4, 5.9, 0.9);
+        if (front) ell(8, 3.3, 3.3, 0.6, lite(C.cap, 0.75)); else { g.fillStyle = C.hair; g.fillRect(5.6, 3.3, 4.8, 2.6); }
       } else if (C.style !== 'pelado') {
-        r(5, 1, 10, 3, C.hair); r(4, 2, 12, 3, C.hair); r(6, 1, 5, 1, HAIRL);
-        if (front) { r(4, 5, 1, 2, C.hair); r(15, 5, 1, 2, C.hair); r(6, 4, 3, 1, C.hair); }
-        else r(4, 4, 12, 6, C.hair), r(5, 9, 10, 1, C.hair), r(6, 3, 4, 1, HAIRL);
-        if (C.style === 'largo') { r(3, 5, 2, 9, C.hair); r(15, 5, 2, 9, C.hair); if (!front) r(4, 9, 12, 5, C.hair); }
-      } else { r(6, 2, 8, 1, C.skin); r(7, 2, 3, 1, SKINL); r(5, 3, 10, 1, C.skin); }
-      if (!front && C.style !== 'gorra' && C.style !== 'pelado') r(7, 10, 6, 1, C.skinD);
+        g.fillStyle = C.hair; g.beginPath(); g.ellipse(8, 3.2, 3, 2.35, 0, Math.PI * 0.95, Math.PI * 2.05); g.fill();
+        if (front) { g.beginPath(); g.ellipse(7, 2.4, 2.1, 1.3, -0.3, 0, Math.PI * 2); g.fill(); g.fillRect(5, 3, 0.7, 2); g.fillRect(10.3, 3, 0.7, 2); }
+        else { g.beginPath(); g.ellipse(8, 4, 2.95, 3, 0, 0, Math.PI * 2); g.fill(); }
+        ell(7.1, 1.8, 1.1, 0.45, lite(C.hair, 1.7));
+        if (C.style === 'largo') { limb(5.2, 4, 4.9, 9.4, 1.5, C.hair); limb(10.8, 4, 11.1, 9.4, 1.5, C.hair); if (!front) path([[5.2, 5], [10.8, 5], [11, 9.6], [5, 9.6]], C.hair); }
+      } else ell(7.2, 2.1, 1.2, 0.6, lite(C.skin, 1.2));
     } else { // perfil mirando a la derecha
-      const back = s, fwd = -s;
-      // pierna de atrás, torso, pierna de adelante
-      if (C.skirt) { r(8 + back * 2, 21, 3, 6, C.skinD); r(8 + fwd * 2, 21, 3, 6, C.skin); r(6, 20, 8, 5, C.pants); r(6, 24, 8, 1, C.pantsD); }
-      else {
-        r(8 + back * 2, 21, 3, 6, C.pantsD);
-        r(7, 20, 6, 2, C.pants); r(8 + fwd * 2, 21, 3, 6, C.pants); r(8 + fwd * 2, 21, 1, 6, lite(C.pants, 1.2));
-      }
-      r(8 + back * 2, 27, 5, 2, lite(C.shoes, 1.3)); r(8 + back * 2, 28, 5, 1, C.sole);
-      r(8 + fwd * 2, 27, 5, 2, C.shoes); r(8 + fwd * 2, 28, 5, 1, C.sole);
-      r(6, 11, 8, 9, C.shirt); r(6, 11, 2, 9, C.shirtD); r(6, 19, 8, 1, C.shirtD);
-      if (!C.skirt) r(6, 20, 8, 1, '#2a2420');
-      r(8 + fwd, 12, 3, 4, SHIRTL); r(8 + fwd, 16, 3, 3, C.skin); r(8 + fwd, 18, 3, 1, C.skinD); // brazo de adelante
-      // cabeza de perfil
-      r(6, 3, 9, 8, C.skin); r(15, 6, 1, 3, C.skin); r(7, 10, 7, 1, C.skin);
-      r(12, 7, 2, 2, '#f6f2ea'); r(13, 7, 1, 2, C.eye); r(12, 6, 2, 1, C.hair);
-      r(14, 10, 2, 1, C.skinD); r(8, 6, 2, 2, C.skinD); // boca y oreja
-      if (C.style === 'gorra') { r(5, 1, 10, 4, C.cap); r(14, 4, 4, 1, lite(C.cap, 0.7)); r(5, 5, 3, 3, C.hair); }
+      const sw = s * 1.6;
+      // pierna y brazo de atrás, más oscuros
+      limb(8, 14.6, 8 - sw, 22.5, 2.2, C.skirt ? C.skinD : C.pantsD); ell(8.4 - sw, 23.3, 1.6, 0.9, lite(C.shoes, 1.3));
+      limb(8.2, 8.8, 8.2 - sw * 0.7, 13.4, 1.5, C.shirtD); ell(8.2 - sw * 0.7, 13.8, 0.7, 0.75, C.skinD);
+      // torso de perfil
+      g.fillStyle = grad(5.5, 10.5, C.shirtD, lite(C.shirt, 1.12));
+      g.beginPath(); g.moveTo(6.4, 7.6); g.quadraticCurveTo(5.3, 8.4, 5.6, 10.2); g.lineTo(6.2, 14); g.lineTo(9.8, 14); g.lineTo(10.4, 10); g.quadraticCurveTo(10.4, 7.8, 9.4, 7.6); g.closePath(); g.fill();
+      if (C.skirt) path([[5.8, 13.4], [10, 13.4], [11, 18], [5.2, 18]], C.pants);
+      else { g.fillStyle = '#2a2420'; g.fillRect(6, 13.2, 4, 0.8); }
+      // pierna y brazo de adelante
+      limb(8, 14.6, 8 + sw, 22.5, 2.2, C.skirt ? C.skin : C.pants); ell(8.6 + sw, 23.3, 1.7, 0.95, C.shoes); g.fillStyle = C.sole; g.fillRect(6.9 + sw, 23.75, 3.4, 0.45);
+      limb(8, 8.8, 8 + sw * 0.7, 11.4, 1.7, lite(C.shirt, 1.1)); limb(8 + sw * 0.7, 11.3, 8.2 + sw * 0.8, 13.4, 1.35, C.skin); ell(8.2 + sw * 0.8, 13.8, 0.75, 0.8, C.skin);
+      // cuello, cabeza de perfil con nariz
+      g.fillStyle = C.skinD; g.fillRect(7.2, 6.4, 1.8, 1.6);
+      g.fillStyle = grad(5.5, 11, C.skinD, lite(C.skin, 1.08)); g.beginPath(); g.ellipse(8.2, 4.3, 2.6, 3.1, 0, 0, Math.PI * 2); g.fill();
+      path([[10.6, 4.3], [11.5, 5.4], [10.6, 5.7]], C.skin);
+      ell(9.8, 4.5, 0.42, 0.5, '#f6f2ea'); ell(9.95, 4.55, 0.28, 0.4, C.eye); g.fillStyle = C.hair; g.fillRect(9.2, 3.6, 1.2, 0.35);
+      ell(7.4, 4.8, 0.55, 0.8, C.skinD); g.fillStyle = lite(C.skinD, 0.8); g.fillRect(9.9, 6.3, 0.9, 0.3);
+      if (C.style === 'gorra') { g.fillStyle = C.cap; g.beginPath(); g.ellipse(8.1, 2.6, 2.8, 2, 0, Math.PI, 0); g.fill(); g.fillRect(5.3, 2.4, 5.6, 0.9); path([[10.6, 2.6], [12.8, 3.1], [10.6, 3.5]], lite(C.cap, 0.75)); }
       else if (C.style !== 'pelado') {
-        r(5, 1, 10, 3, C.hair); r(5, 4, 4, 2, C.hair); r(5, 4, 2, 5, C.hair); r(7, 1, 5, 1, HAIRL); r(13, 4, 2, 1, C.hair);
-        if (C.style === 'largo') r(4, 4, 4, 10, C.hair);
+        g.fillStyle = C.hair; g.beginPath(); g.ellipse(7.8, 3.1, 2.85, 2.3, 0, Math.PI * 0.9, Math.PI * 2.0); g.fill();
+        g.beginPath(); g.ellipse(6.6, 4.2, 1.5, 2.4, 0, 0, Math.PI * 2); g.fill(); ell(7.4, 1.7, 1.1, 0.45, lite(C.hair, 1.7));
+        if (C.style === 'largo') limb(6, 4.5, 5.6, 9.6, 2, C.hair);
       }
     }
-    return VR.gfx.outline(c, '#140f0c');
+    return VR.gfx.down(VR.gfx.softOutline(big, 'rgba(20,15,12,.9)', Q * 0.75), W, H);
   };
   const out = {};
   for (const d of ['down', 'up', 'right']) out[d] = [0, 1, 2, 3].map((f) => frame(d, f));
   out.left = out.right.map((c) => VR.gfx.flipX(c));
   return out;
 };
-VR.SPR = { w: 20, h: 32, ox: 10, oy: 30 }; // tamaño del sprite de persona y punto de los pies
+VR.SPR = { w: 16, h: 26, ox: 8, oy: 25 }; // tamaño del sprite de persona y punto de los pies
 
 VR.Player = class {
   constructor(world, x, y) {
@@ -125,13 +135,13 @@ VR.Player = class {
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
     const f = this.moving ? (Math.floor(this.anim) % 4) : 0;
     ctx.drawImage(this.sprites[this.dir][f], x - VR.SPR.ox, y - VR.SPR.oy);
   }
   drawBubble(ctx, camX, camY, a) {
     if (!this.bubble) return;
-    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 38;
+    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 30;
     const img = VR.gfx.textImg(this.bubble.text, '#1a1a1e', 9);
     const w = img.width + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2), by = y - h;
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(bx - 1, by, w + 2, h); ctx.fillRect(bx, by - 1, w, h + 2);

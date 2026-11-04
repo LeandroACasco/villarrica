@@ -121,8 +121,8 @@ VR.Peds = class {
   lying(pal) {
     let c = this.flat.get(pal);
     if (!c) {
-      const s = this.sprites[pal].down[0]; c = VR.canvas(32, 20); const g = c.getContext('2d');
-      g.translate(16, 10); g.rotate(Math.PI / 2); g.drawImage(s, -10, -16); this.flat.set(pal, c);
+      const s = this.sprites[pal].down[0]; c = VR.canvas(28, 18); const g = c.getContext('2d');
+      g.translate(14, 9); g.rotate(Math.PI / 2); g.drawImage(s, -8, -13); this.flat.set(pal, c);
     }
     return c;
   }
@@ -131,10 +131,10 @@ VR.Peds = class {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -30 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
-        ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6.5, 2.8, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 16, y - 14);
+        ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
+        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 14, y - 12);
         else ctx.drawImage(this.sprites[p.pal][p.dir][p.mode === 'idle' ? 0 : Math.floor(p.anim) % 4], x - VR.SPR.ox, y - VR.SPR.oy);
-        if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 12, y: y + camY + 12 }, ctx, camX, camY, 1);
+        if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
     }
   }

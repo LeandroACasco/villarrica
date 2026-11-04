@@ -25,6 +25,17 @@ VR.gfx = {
     ctx.putImageData(img, 0, 0);
     return c;
   },
+  // contorno suave: la silueta en color, corrida r px en 8 direcciones, detrás del dibujo (para sprites suavizados)
+  softOutline(c, col, r = 1) {
+    const w = c.width, h = c.height, sil = VR.canvas(w, h), s = sil.getContext('2d');
+    s.drawImage(c, 0, 0); s.globalCompositeOperation = 'source-in'; s.fillStyle = col; s.fillRect(0, 0, w, h);
+    const out = VR.canvas(w, h), o = out.getContext('2d');
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; o.drawImage(sil, Math.round(Math.cos(a) * r), Math.round(Math.sin(a) * r)); }
+    o.drawImage(c, 0, 0);
+    return out;
+  },
+  // achica un dibujo hecho al doble (o más) con suavizado: bordes y detalles finos sin escalones
+  down(c, w, h) { const o = VR.canvas(w, h), x = o.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, w, h); return o; },
   flipX(c) {
     const o = VR.canvas(c.width, c.height), x = o.getContext('2d');
     x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(c, 0, 0);

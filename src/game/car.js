@@ -19,125 +19,154 @@ VR.MOTO_COLORS = [
 ];
 VR.RIDER_SHIRTS = [['#d23c2c', '#9f2a20'], ['#2e6fc8', '#1f4c8c'], ['#f0ece2', '#b8b2a4'], ['#3b9a5a', '#286a3d'], ['#e8b830', '#a8841c'], ['#7a4ab0', '#563480'], ['#30303a', '#18181e']];
 
-// Arte grande (04/11/2026): los vehículos se dibujan ×1,3 respecto de la ciudad, como en los juegos de la época,
-// para que se vean y se distingan. Los dibujos están en una grilla chica y el pintor los agranda redondeando.
-VR.VK = 1.3;
-VR.vpaint = (w, h) => {
-  const k = VR.VK, c = VR.canvas(Math.round(w * k), Math.round(h * k)), x = c.getContext('2d');
-  const R = (v) => Math.round(v * k);
-  return [c, { ctx: x, r(px, py, pw, ph, col) { x.fillStyle = col; x.fillRect(R(px), R(py), Math.max(1, R(px + pw) - R(px)), Math.max(1, R(py + ph) - R(py))); },
-    p(px, py, col) { this.r(px, py, 1, 1, col); } }];
-};
-// Sprite base del compacto mirando hacia arriba (16×30): capó corto, parabrisas grande, techo, luneta y portón.
-VR.drawCarBase = (pal) => {
-  const [C, D, L] = pal, [c, P] = VR.vpaint(16, 30);
-  const GLASS = '#3b4d63', GLASS_L = '#6f8aa6', TIRE = '#121214';
-  P.r(0, 5, 2, 6, TIRE); P.r(14, 5, 2, 6, TIRE); P.r(0, 21, 2, 6, TIRE); P.r(14, 21, 2, 6, TIRE);
-  P.r(2, 1, 12, 28, C); P.r(1, 3, 14, 24, C);
-  P.r(3, 0, 10, 1, C); P.r(3, 29, 10, 1, D);
-  P.r(13, 3, 2, 24, D); P.r(1, 3, 1, 24, L);
-  P.r(4, 2, 7, 1, L); P.r(4, 3, 2, 4, L);
-  P.r(3, 8, 10, 4, GLASS); P.r(2, 10, 12, 2, GLASS); P.r(4, 8, 3, 1, GLASS_L); P.r(3, 9, 2, 1, GLASS_L);
-  P.r(3, 12, 10, 9, C); P.r(12, 12, 1, 9, D); P.r(4, 13, 6, 1, L);
-  P.r(1, 12, 1, 9, GLASS); P.r(14, 12, 1, 9, GLASS);
-  P.r(3, 21, 10, 4, GLASS); P.r(4, 21, 3, 1, GLASS_L);
-  P.r(3, 25, 10, 3, D); P.r(4, 25, 8, 1, C);
-  P.r(2, 1, 3, 1, '#fff7c8'); P.r(11, 1, 3, 1, '#fff7c8');
-  P.r(2, 28, 2, 1, '#e8302a'); P.r(12, 28, 2, 1, '#e8302a');
-  P.r(0, 9, 1, 2, D); P.r(15, 9, 1, 2, D);
+VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.max(0, Math.min(255, Math.round(v * k))).toString(16).padStart(2, '0'); return '#' + f(n >> 16) + f((n >> 8) & 255) + f(n & 255); };
+// Vehículos con más detalle (04/11/2026, segunda versión): se dibujan con formas suaves y degradés al cuádruple
+// de su tamaño en pantalla y se achican con suavizado al rotarlos, así se ven brillos del capó, reflejos en los
+// vidrios, faros, espejos, llantas y costuras del asiento aunque sean chicos. Se dibujan ×1,3 respecto de la
+// ciudad (como en los juegos de la época), para que se vean y se distingan. Diseños propios, sin marcas.
+VR.VK = 1.3; VR.VSS = 4;
+VR.vbase = (w, h, fn) => {
+  const k = VR.VK * VR.VSS, c = VR.canvas(Math.round(w * k), Math.round(h * k)), g = c.getContext('2d');
+  g.scale(k, k);
+  const T = {
+    g,
+    rr(x, y, w, h, r, fill) { g.fillStyle = fill; g.beginPath(); g.roundRect(x, y, w, h, r); g.fill(); },
+    ell(x, y, rx, ry, fill) { g.fillStyle = fill; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill(); },
+    poly(pts, fill) { g.fillStyle = fill; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); },
+    line(x0, y0, x1, y1, w, col) { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); },
+    hg(x0, x1, stops) { const gr = g.createLinearGradient(x0, 0, x1, 0); stops.forEach((c, i) => gr.addColorStop(i / (stops.length - 1), c)); return gr; },
+    vg(y0, y1, stops) { const gr = g.createLinearGradient(0, y0, 0, y1); stops.forEach((c, i) => gr.addColorStop(i / (stops.length - 1), c)); return gr; },
+    tire(x, y, w, h) { T.rr(x, y, w, h, Math.min(w, h) * 0.45, '#141416'); g.fillStyle = 'rgba(255,255,255,.12)'; for (let t = y + 0.5; t < y + h - 0.3; t += 0.9) g.fillRect(x + w * 0.2, t, w * 0.6, 0.3); },
+  };
+  fn(T);
+  c.ss = k / VR.VK; // cuánto más grande está dibujado respecto del sprite final
   return c;
 };
+const GL = ['#22344a', '#3b5470', '#8fb0cc'], CHR = ['#7a7e86', '#e8ecf2', '#9aa0a8'];
+// Compacto de 5 puertas mirando hacia arriba (16×30 unidades)
+VR.drawCarBase = (pal) => VR.vbase(16, 30, (T) => {
+  const [C, D, L] = pal, g = T.g;
+  T.tire(-0.1, 5, 2.2, 5.2); T.tire(13.9, 5, 2.2, 5.2); T.tire(-0.1, 20.5, 2.2, 5.2); T.tire(13.9, 20.5, 2.2, 5.2);
+  T.rr(0.7, 0.3, 14.6, 29.4, [4.2, 4.2, 3, 3], T.hg(0.7, 15.3, [D, L, C, C, D]));         // carrocería
+  T.rr(1.6, 1, 12.8, 6.8, [3.4, 3.4, 1, 1], T.hg(1.6, 14.4, [C, L, C, D]));               // capó
+  T.line(5.2, 1.6, 5.6, 7.4, 0.25, VR.shadeHex(C, 0.82)); T.line(10.8, 1.6, 10.4, 7.4, 0.25, VR.shadeHex(C, 0.82));
+  T.ell(5.5, 3.2, 1.6, 0.7, 'rgba(255,255,255,.35)');                                    // brillo del capó
+  T.rr(1.5, 0.7, 3, 1.3, 0.6, '#fff4c0'); T.rr(11.5, 0.7, 3, 1.3, 0.6, '#fff4c0');       // faros
+  T.rr(2, 0.9, 1.2, 0.8, 0.3, '#ffffff'); T.rr(12.8, 0.9, 1.2, 0.8, 0.3, '#ffffff');
+  T.rr(5.6, 0.4, 4.8, 0.9, 0.4, '#2a2a30');                                              // parrilla
+  T.poly([[2.6, 8], [13.4, 8], [14.4, 12.2], [1.6, 12.2]], T.vg(8, 12.2, GL));             // parabrisas
+  T.poly([[4, 8.6], [5.6, 8.6], [3.6, 11.6], [2.4, 11.6]], 'rgba(255,255,255,.35)');
+  T.rr(0, 8.6, 1.4, 1.2, 0.4, D); T.rr(14.6, 8.6, 1.4, 1.2, 0.4, D);                      // espejos
+  T.rr(2.6, 12.2, 10.8, 9.6, 1.2, T.hg(2.6, 13.4, [L, C, C, D]));                         // techo
+  T.rr(4, 13.2, 5, 1, 0.5, 'rgba(255,255,255,.3)');
+  T.rr(1.2, 12.4, 1.2, 4.4, 0.4, T.vg(12, 17, GL)); T.rr(13.6, 12.4, 1.2, 4.4, 0.4, T.vg(12, 17, GL)); // ventanillas
+  T.rr(1.2, 17.2, 1.2, 4.2, 0.4, T.vg(17, 21, GL)); T.rr(13.6, 17.2, 1.2, 4.2, 0.4, T.vg(17, 21, GL));
+  T.poly([[2.8, 21.8], [13.2, 21.8], [12.6, 25], [3.4, 25]], T.vg(21.8, 25, GL));          // luneta
+  T.rr(3.4, 25.2, 9.2, 3.6, 1, T.hg(3.4, 12.6, [C, L, D]));                               // portón
+  T.rr(6.4, 28.3, 3.2, 0.9, 0.2, '#f2f0ea');                                             // patente
+  T.rr(1.2, 27.6, 2.4, 1.6, 0.6, '#d8302a'); T.rr(12.4, 27.6, 2.4, 1.6, 0.6, '#d8302a'); // luces traseras
+  g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0.8, 12.6, 0.5, 9); g.fillRect(14.7, 12.6, 0.5, 9);
+});
 // Motos y vehículos de dos (y tres) ruedas, vistos desde arriba mirando hacia arriba. Diseños propios por
-// categoría (sin marcas ni modelos reales): moto de calle chica "cub", mini moto, moto de calle 150,
-// motocarga de tres ruedas y patineta eléctrica. Cada uno con su silueta para que se distingan de lejos.
-VR.drawMotoCub = (pal) => { // underbone 125: escudo delantero ancho, piso bajo, asiento largo (10×21)
-  const [C, D, L] = pal, [c, P] = VR.vpaint(10, 21), TIRE = '#141416', CH = '#b8bcc4';
-  P.r(4, 0, 2, 5, TIRE); P.r(4, 16, 2, 5, TIRE);
-  P.r(4, 1, 2, 1, '#fff7c8');
-  P.r(1, 2, 1, 2, CH); P.r(8, 2, 1, 2, CH);                          // espejos altos
-  P.r(0, 4, 10, 1, '#2a2a2e');                                       // manubrio
-  P.r(2, 5, 6, 1, C); P.r(1, 6, 8, 3, C); P.r(1, 6, 1, 3, L); P.r(8, 6, 1, 3, D); P.r(3, 5, 4, 1, L); // escudo
-  P.r(3, 9, 4, 2, '#3a3a40'); P.r(4, 9, 2, 2, '#26262a');           // piso
-  P.r(3, 11, 4, 6, '#26262a'); P.r(4, 11, 2, 5, '#3a3a40');         // asiento largo
-  P.r(2, 12, 1, 5, C); P.r(7, 12, 1, 5, D);                          // carenado lateral
-  P.r(3, 17, 4, 1, C); P.r(4, 18, 2, 1, '#e8302a');                 // cola y luz
-  P.r(8, 14, 1, 5, CH);                                              // escape
-  return c;
-};
-VR.drawMotoMini = (pal) => { // mini moto: ruedas gordas, faro redondo, corta y ancha (10×17)
-  const [C, D, L] = pal, [c, P] = VR.vpaint(10, 17), TIRE = '#141416';
-  P.r(3, 0, 4, 4, TIRE); P.r(3, 13, 4, 4, TIRE); P.r(4, 0, 2, 1, '#2a2a2e'); P.r(4, 16, 2, 1, '#2a2a2e');
-  P.r(3, 2, 4, 2, C); P.r(4, 2, 2, 1, '#fff7c8');                    // faro redondo
-  P.r(1, 4, 8, 1, '#2a2a2e'); P.r(1, 4, 1, 1, '#b8bcc4'); P.r(8, 4, 1, 1, '#b8bcc4');
-  P.r(2, 5, 6, 4, C); P.r(2, 5, 1, 4, L); P.r(7, 5, 1, 4, D); P.r(3, 5, 4, 1, L); // tanque gordo
-  P.r(2, 9, 6, 4, '#26262a'); P.r(3, 9, 4, 3, '#3a3a40');           // asiento plano y ancho
-  P.r(3, 13, 4, 1, C); P.r(4, 13, 2, 1, '#e8302a');
-  return c;
-};
-VR.drawMotoCalle = (pal) => { // moto de calle 150: visera, tanque grande, parrilla atrás, escape largo cromado (10×22)
-  const [C, D, L] = pal, [c, P] = VR.vpaint(10, 22), TIRE = '#141416', CH = '#c8ccd4';
-  P.r(4, 0, 2, 5, TIRE); P.r(4, 17, 2, 5, TIRE);
-  P.r(3, 2, 4, 3, '#1e1e22'); P.r(4, 2, 2, 1, '#fff7c8'); P.r(3, 4, 4, 1, C); // faro con visera
-  P.r(0, 5, 10, 1, '#2a2a2e'); P.r(0, 5, 1, 1, CH); P.r(9, 5, 1, 1, CH);
-  P.r(2, 6, 6, 5, C); P.r(2, 7, 1, 3, L); P.r(7, 6, 1, 5, D); P.r(4, 6, 1, 5, L); // tanque con franja
-  P.r(3, 11, 4, 6, '#26262a'); P.r(4, 11, 2, 5, '#3a3a40');
-  P.r(3, 17, 4, 2, CH); P.r(3, 17, 1, 2, '#7a7e86'); P.r(5, 18, 1, 1, '#7a7e86'); // parrilla
-  P.r(4, 16, 2, 1, '#e8302a');
-  P.r(8, 9, 1, 11, CH); P.r(9, 12, 1, 6, '#9a9ea6');                 // escape largo
-  return c;
-};
-VR.drawMotoCarga = (pal) => { // motocarga: moto adelante y caja de carga atrás con dos ruedas (18×34)
-  const [C, D, L] = pal, [c, P] = VR.vpaint(18, 34), TIRE = '#141416', CH = '#b8bcc4';
-  P.r(8, 0, 2, 5, TIRE); P.r(8, 1, 2, 1, '#fff7c8');
-  P.r(4, 5, 10, 1, '#2a2a2e'); P.r(4, 5, 1, 1, CH); P.r(13, 5, 1, 1, CH);
-  P.r(6, 6, 6, 3, C); P.r(6, 6, 1, 3, L); P.r(11, 6, 1, 3, D);       // tanque
-  P.r(6, 9, 6, 4, '#26262a'); P.r(7, 9, 4, 3, '#3a3a40');           // asiento
-  P.r(4, 13, 10, 1, C);                                              // respaldo / caño
-  P.r(0, 24, 2, 7, TIRE); P.r(16, 24, 2, 7, TIRE);                   // ruedas traseras
-  P.r(1, 14, 16, 20, D); P.r(2, 15, 14, 18, C);                      // caja
-  P.r(3, 16, 12, 16, VR.shadeHex(C, 0.72)); for (let y = 18; y < 32; y += 3) P.r(3, y, 12, 1, VR.shadeHex(C, 0.6)); // tablas del piso
-  P.r(1, 14, 1, 20, L); P.r(2, 33, 14, 1, '#e8302a');
-  P.r(1, 33, 2, 1, '#e8302a'); P.r(15, 33, 2, 1, '#e8302a');
-  return c;
-};
-VR.drawPati = (pal) => { // patineta eléctrica: manubrio en T, tabla angosta (6×14)
-  const [C, D] = pal, [c, P] = VR.vpaint(6, 14), TIRE = '#141416';
-  P.r(2, 0, 2, 3, TIRE); P.r(2, 11, 2, 3, TIRE);
-  P.r(0, 2, 6, 1, '#2a2a2e'); P.r(0, 2, 1, 1, '#d8dce4'); P.r(5, 2, 1, 1, '#d8dce4');
-  P.r(2, 3, 2, 1, C);
-  P.r(1, 4, 4, 8, '#2a2a30'); P.r(1, 4, 1, 8, C); P.r(4, 4, 1, 8, D); P.r(2, 5, 2, 6, '#3c3c44');
-  P.r(2, 12, 2, 1, '#e8302a');
-  return c;
-};
-VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.max(0, Math.min(255, Math.round(v * k))).toString(16).padStart(2, '0'); return '#' + f(n >> 16) + f((n >> 8) & 255) + f(n & 255); }
-VR.drawMotoBase = VR.drawMotoCub;
-// Conductor de moto visto desde arriba (10×12): cabeza (pelo o casco), hombros y brazos al manubrio.
-VR.drawRiderBase = (shirt, head) => {
-  const [c, P] = VR.vpaint(10, 20);
-  P.r(0, 5, 2, 3, shirt[1]); P.r(8, 5, 2, 3, shirt[1]);  // brazos
-  P.r(1, 7, 8, 5, shirt[0]); P.r(7, 7, 2, 5, shirt[1]);  // hombros y espalda
-  P.r(3, 5, 4, 4, head); P.r(3, 5, 2, 1, head === '#2a1b12' ? '#3d2a1c' : '#ffffff'); // cabeza
-  P.r(3, 12, 4, 2, '#2c3e6b');                           // piernas
-  return c;
-};
+// categoría (sin marcas ni modelos reales): moto "cub", mini moto, moto de calle 150, motocarga y patineta.
+VR.drawMotoCub = (pal) => VR.vbase(10, 21, (T) => { // escudo delantero ancho, piso bajo, asiento largo
+  const [C, D, L] = pal;
+  T.tire(4.1, 0.1, 1.8, 5.2); T.tire(4.1, 15.6, 1.8, 5.3);
+  T.rr(3.9, 2.6, 2.2, 1.6, 0.6, C);                                                       // guardabarros
+  T.rr(3.6, 0.9, 2.8, 1.3, 0.6, '#fff4c0');                                              // faro
+  T.line(0.7, 4.7, 9.3, 4.7, 0.75, '#2a2a2e'); T.line(0.7, 4.7, 1.8, 4.7, 0.9, '#55555c'); T.line(8.2, 4.7, 9.3, 4.7, 0.9, '#55555c');
+  T.line(2.1, 4.5, 1.4, 2.7, 0.3, CHR[0]); T.line(7.9, 4.5, 8.6, 2.7, 0.3, CHR[0]); T.ell(1.4, 2.6, 0.7, 0.5, CHR[1]); T.ell(8.6, 2.6, 0.7, 0.5, CHR[1]); // espejos
+  T.poly([[2.6, 5.2], [7.4, 5.2], [8.7, 8.8], [1.3, 8.8]], T.hg(1.3, 8.7, [L, C, C, D]));  // escudo
+  T.ell(4, 6.4, 1, 0.5, 'rgba(255,255,255,.35)');
+  T.rr(3.2, 8.8, 3.6, 2, 0.4, '#3a3a40'); for (let x = 3.6; x < 6.6; x += 0.7) T.rr(x, 9, 0.3, 1.6, 0, '#2a2a2e'); // piso con estrías
+  T.rr(2, 11.2, 6, 5.8, 1.2, T.hg(2, 8, [L, C, D]));                                     // tapas laterales
+  T.rr(3, 10.6, 4, 6.6, 1.6, T.hg(3, 7, ['#3a3a40', '#26262a', '#1a1a1e']));               // asiento largo
+  T.line(5, 11.2, 5, 16.6, 0.15, '#4a4a52');
+  T.rr(3.2, 17, 3.6, 1.4, 0.6, C); T.rr(4, 18.1, 2, 0.6, 0.3, '#e8302a');                 // cola y luz
+  T.rr(7.6, 12.6, 1, 5.8, 0.5, T.hg(7.6, 8.6, CHR));                                     // escape
+});
+VR.drawMotoMini = (pal) => VR.vbase(10, 17, (T) => { // ruedas gordas, faro redondo, corta y ancha
+  const [C, D, L] = pal;
+  T.tire(2.9, 0, 4.2, 4.2); T.tire(2.9, 12.8, 4.2, 4.2);
+  T.ell(5, 2.6, 1.9, 1.5, C); T.ell(5, 2.4, 1.2, 0.9, '#fff4c0'); T.ell(4.7, 2.2, 0.5, 0.35, '#ffffff'); // faro redondo
+  T.line(1.2, 4.4, 8.8, 4.4, 0.8, '#2a2a2e'); T.ell(1.3, 4.4, 0.6, 0.55, '#55555c'); T.ell(8.7, 4.4, 0.6, 0.55, '#55555c');
+  T.rr(2, 5, 6, 4.2, 1.8, T.hg(2, 8, [L, C, C, D])); T.ell(3.8, 6, 0.9, 0.6, 'rgba(255,255,255,.4)'); // tanque gordo
+  T.rr(2.2, 8.8, 5.6, 4.6, 1.4, T.hg(2.2, 7.8, ['#3a3a40', '#26262a', '#1a1a1e'])); T.line(2.8, 10.2, 7.2, 10.2, 0.15, '#4a4a52'); T.line(2.8, 12, 7.2, 12, 0.15, '#4a4a52');
+  T.rr(3.2, 13.2, 3.6, 1, 0.5, C); T.rr(4.2, 13.5, 1.6, 0.5, 0.25, '#e8302a');
+});
+VR.drawMotoCalle = (pal) => VR.vbase(10, 22, (T) => { // visera, tanque grande, parrilla, escape largo cromado
+  const [C, D, L] = pal;
+  T.tire(4.15, 0, 1.7, 5.3); T.tire(4.1, 16.7, 1.8, 5.3);
+  T.rr(3.4, 1.6, 3.2, 3.2, 1, '#1e1e22'); T.ell(5, 2.6, 1.1, 0.8, '#fff4c0'); T.rr(3.4, 3.8, 3.2, 1, 0.4, C); // faro con visera
+  T.line(0.4, 5.4, 9.6, 5.4, 0.7, '#2a2a2e'); T.ell(0.6, 5.4, 0.55, 0.5, '#55555c'); T.ell(9.4, 5.4, 0.55, 0.5, '#55555c');
+  T.line(2, 5.2, 1.3, 3.4, 0.28, CHR[0]); T.line(8, 5.2, 8.7, 3.4, 0.28, CHR[0]); T.rr(0.7, 2.7, 1.3, 0.9, 0.3, '#1e1e22'); T.rr(8, 2.7, 1.3, 0.9, 0.3, '#1e1e22');
+  T.rr(1.8, 6, 6.4, 5.4, [2.4, 2.4, 1.2, 1.2], T.hg(1.8, 8.2, [D, L, C, D]));              // tanque grande
+  T.rr(4.5, 6.3, 1, 5, 0.4, L); T.ell(3.4, 7.4, 0.8, 0.6, 'rgba(255,255,255,.45)'); T.ell(5, 7.6, 0.9, 0.7, '#2a2a2e'); T.ell(5, 7.6, 0.5, 0.4, CHR[1]); // franja y tapa
+  T.rr(3, 11.2, 4, 6, 1.2, T.hg(3, 7, ['#3a3a40', '#26262a', '#1a1a1e'])); T.line(5, 11.6, 5, 16.8, 0.15, '#4a4a52');
+  T.rr(3, 17, 4, 2.4, 0.4, 'rgba(0,0,0,0)'); for (let y = 17.2; y < 19.4; y += 0.8) T.line(3.2, y, 6.8, y, 0.3, CHR[1]); T.line(3.2, 17, 3.2, 19.4, 0.35, CHR[0]); T.line(6.8, 17, 6.8, 19.4, 0.35, CHR[0]); // parrilla
+  T.rr(4, 16.2, 2, 0.7, 0.3, '#e8302a');
+  T.rr(7.7, 9, 1.1, 11.4, 0.55, T.hg(7.7, 8.8, CHR)); T.rr(8.4, 12, 1, 6.4, 0.5, T.hg(8.4, 9.4, CHR)); // escape largo
+});
+VR.drawMotoCarga = (pal) => VR.vbase(18, 34, (T) => { // moto adelante y caja de carga atrás con dos ruedas
+  const [C, D, L] = pal, g = T.g;
+  T.tire(8.1, 0, 1.8, 5.2); T.rr(7.6, 0.8, 2.8, 1.3, 0.6, '#fff4c0');
+  T.line(3.8, 5.3, 14.2, 5.3, 0.8, '#2a2a2e'); T.ell(4, 5.3, 0.6, 0.55, '#55555c'); T.ell(14, 5.3, 0.6, 0.55, '#55555c');
+  T.rr(6, 5.8, 6, 3.6, 1.4, T.hg(6, 12, [L, C, D])); T.ell(7.6, 6.6, 0.8, 0.5, 'rgba(255,255,255,.4)');
+  T.rr(6.2, 9, 5.6, 4.4, 1.2, T.hg(6.2, 11.8, ['#3a3a40', '#26262a', '#1a1a1e']));
+  T.rr(3.6, 13, 10.8, 1, 0.5, T.hg(3.6, 14.4, CHR));                                     // respaldo
+  T.tire(-0.1, 23.6, 2.2, 7.4); T.tire(15.9, 23.6, 2.2, 7.4);                            // ruedas traseras
+  T.rr(1, 14, 16, 20, 0.8, D); T.rr(1.6, 14.6, 14.8, 18.8, 0.5, T.hg(1.6, 16.4, [L, C, C, D])); // caja
+  T.rr(2.6, 15.6, 12.8, 16.8, 0.3, VR.shadeHex(C, 0.68));
+  for (let y = 16.8; y < 32; y += 2.4) { g.fillStyle = VR.shadeHex(C, 0.55); g.fillRect(2.6, y, 12.8, 0.3); g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(2.6, y + 0.3, 12.8, 0.3); }
+  T.rr(1.4, 33.1, 2.2, 0.8, 0.3, '#e8302a'); T.rr(14.4, 33.1, 2.2, 0.8, 0.3, '#e8302a');
+});
+VR.drawPati = (pal) => VR.vbase(6, 14, (T) => { // manubrio en T, tabla angosta
+  const [C, D] = pal;
+  T.tire(2, 0, 2, 3); T.tire(2, 11, 2, 3);
+  T.line(0.4, 2.4, 5.6, 2.4, 0.7, '#2a2a2e'); T.ell(0.5, 2.4, 0.5, 0.45, '#d8dce4'); T.ell(5.5, 2.4, 0.5, 0.45, '#d8dce4');
+  T.ell(3, 3.1, 0.7, 0.6, C); T.ell(3, 2.4, 0.4, 0.3, '#fff4c0');
+  T.rr(1, 4, 4, 8, 1.2, T.hg(1, 5, [C, '#2a2a30', '#2a2a30', D])); T.rr(1.7, 4.7, 2.6, 6.6, 0.8, '#3c3c44');
+  for (let y = 5.2; y < 11; y += 0.9) T.line(2, y, 4, y, 0.2, '#2c2c32');
+  T.rr(2.2, 12, 1.6, 0.6, 0.3, '#e8302a');
+});
+// Conductor visto desde arriba (10×20 unidades): casco o pelo, hombros con sombra, brazos al manubrio, rodillas.
+VR.drawRiderBase = (shirt, head) => VR.vbase(10, 20, (T) => {
+  const helmet = head !== '#2a1b12';
+  T.line(2, 9, 1, 5.4, 1.4, shirt[1]); T.line(8, 9, 9, 5.4, 1.4, shirt[1]);              // brazos
+  T.ell(1, 5.1, 0.6, 0.6, '#a76c42'); T.ell(9, 5.1, 0.6, 0.6, '#a76c42');                // manos
+  T.ell(2.6, 12.6, 1.1, 1.6, '#2c3e6b'); T.ell(7.4, 12.6, 1.1, 1.6, '#2c3e6b');          // rodillas
+  T.rr(1.4, 7.4, 7.2, 5.4, 2.4, T.hg(1.4, 8.6, [VR.shadeHex(shirt[0], 1.2), shirt[0], shirt[1]])); // espalda
+  T.ell(5, 7, helmet ? 2.2 : 1.9, helmet ? 2.3 : 2, T.hg(3, 7, [VR.shadeHex(head, 1.4), head, VR.shadeHex(head, 0.7)])); // cabeza
+  if (helmet) T.rr(3.6, 5, 2.8, 0.8, 0.4, '#1e2430'); else T.ell(4.4, 6.2, 0.6, 0.4, 'rgba(255,255,255,.18)');
+});
 
-// Rota un sprite a 64 ángulos al pixel (vecino más cercano) y lo contornea después, para que quede nítido.
+// Rota un sprite a 64 ángulos. Los dibujos suaves (VR.vbase) se rotan grandes con suavizado, se contornean y
+// se achican: quedan sin escalones. Los de píxel (otros) se rotan al pixel con vecino más cercano.
 VR.rotFrames = (base, S, outline = true) => {
-  const bw = base.width, bh = base.height, src = base.getContext('2d').getImageData(0, 0, bw, bh).data, N = 64;
-  const f = { img: [], shadow: [], S };
+  const N = 64, f = { img: [], shadow: [], S };
+  const ss = base.ss || 1;
   for (let k = 0; k < N; k++) {
-    const a = k / N * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
-    const c = VR.canvas(S, S), x = c.getContext('2d'), img = x.createImageData(S, S), d = img.data;
-    for (let y = 0; y < S; y++) for (let xx = 0; xx < S; xx++) {
-      const dx = xx - S / 2 + 0.5, dy = y - S / 2 + 0.5;
-      const sx = Math.round(dx * ca + dy * sa + bw / 2 - 0.5), sy = Math.round(-dx * sa + dy * ca + bh / 2 - 0.5);
-      if (sx < 0 || sy < 0 || sx >= bw || sy >= bh) continue;
-      const i = (sy * bw + sx) * 4, o = (y * S + xx) * 4;
-      if (src[i + 3] < 128) continue;
-      d[o] = src[i]; d[o + 1] = src[i + 1]; d[o + 2] = src[i + 2]; d[o + 3] = 255;
+    const a = k / N * Math.PI * 2;
+    let c;
+    if (ss > 1) {
+      const B = S * ss, big = VR.canvas(B, B), x = big.getContext('2d');
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.translate(B / 2, B / 2); x.rotate(a); x.drawImage(base, -base.width / 2, -base.height / 2);
+      c = VR.gfx.down(outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big, S, S);
+    } else {
+      const bw = base.width, bh = base.height, src = base.getContext('2d').getImageData(0, 0, bw, bh).data, ca = Math.cos(a), sa = Math.sin(a);
+      c = VR.canvas(S, S); const x = c.getContext('2d'), img = x.createImageData(S, S), d = img.data;
+      for (let y = 0; y < S; y++) for (let xx = 0; xx < S; xx++) {
+        const dx = xx - S / 2 + 0.5, dy = y - S / 2 + 0.5;
+        const sx = Math.round(dx * ca + dy * sa + bw / 2 - 0.5), sy = Math.round(-dx * sa + dy * ca + bh / 2 - 0.5);
+        if (sx < 0 || sy < 0 || sx >= bw || sy >= bh) continue;
+        const i = (sy * bw + sx) * 4, o = (y * S + xx) * 4;
+        if (src[i + 3] < 128) continue;
+        d[o] = src[i]; d[o + 1] = src[i + 1]; d[o + 2] = src[i + 2]; d[o + 3] = 255;
+      }
+      x.putImageData(img, 0, 0);
+      if (outline) VR.gfx.outline(c, '#141216');
     }
-    x.putImageData(img, 0, 0);
-    if (outline) VR.gfx.outline(c, '#141216');
     const sh = VR.canvas(S, S), sx = sh.getContext('2d');
     sx.drawImage(c, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(0,0,0,.32)'; sx.fillRect(0, 0, S, S);
     f.img.push(c); f.shadow.push(sh);
