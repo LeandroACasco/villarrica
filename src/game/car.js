@@ -360,6 +360,17 @@ VR.parkCars = (world, n, near) => {
             add(xr - 8, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           (world.parkingDemo = world.parkingDemo || []).push({ x0: xa * S, x1: (xb + 1) * S, y0: ya * S, y1: yz * S });
         }
+        // Coronel Bogado, del lado oeste de la plaza (mano única hacia el sur): autos a la izquierda (este,
+        // el lado de la plaza) y motos a la derecha (oeste, frente a los negocios), como en el video de Leandro
+        let wb = bx0 - 1, lim3 = 10; while (lim3-- > 0 && !road(wb, my)) wb--;
+        let wa = wb; while (road(wa - 1, my)) wa--;
+        if (wb - wa >= 3) {
+          const ya = by0 + 3, yz = by1 - 3, xl = (wb + 1) * S - 8, xr = wa * S + 6;
+          for (let py = ya * S + 16; py <= yz * S - 16; py += 36) if (rnd() < 0.85) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = (ya + 1) * S; py <= yz * S - 8; py += 11) if (rnd() < 0.8)
+            add(xr + 8, py + ((rnd() * 2) | 0), Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? -0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          world.parkingDemo.push({ x0: wa * S, x1: (wb + 1) * S, y0: ya * S, y1: yz * S });
+        }
       }
     }
   }

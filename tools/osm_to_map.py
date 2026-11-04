@@ -575,6 +575,43 @@ def main(src, out, preview=None):
         floors = max(1, min(4, floors))
         bdata += [int(xmin[new_id]), int(xmax[new_id]), floors, rt, rc, wc, shop, rnd.randrange(N_AWN)]
 
+    # ---------- frente oeste de la Plaza de los Héroes (Coronel Bogado), según el video de Leandro (03/11/2026) ----------
+    # De sur a norte: tienda de deportes, pub, Heladería y Cafetería Marimer, Cooperativa Universitaria y farmacia.
+    # Las fachadas miran al este (a la plaza): se ven desde arriba como toldo/cartel sobre la vereda y con el nombre.
+    # (latitudes: orden del video y posiciones de Google Maps; OSM tiene la heladería un poco más al sur)
+    FRENTE = [('Antana Deportes', -25.78092, 'antana', 2, 4), ('Gleu Pub', -25.78085, 'gleu', 2, 11),
+              ('Heladería Marimer', -25.78078, 'marimer', 2, 4), ('Cooperativa Universitaria', -25.78068, 'universitaria', 3, 12),
+              ('Farmacia', -25.78058, 'farma', 2, 4)]
+    hero = area_names.index('Plaza de los Héroes') + 1 if 'Plaza de los Héroes' in area_names else 0
+    rows_done = []
+    if hero:
+        cols = np.nonzero((area == hero).any(axis=0))[0]
+        px0 = int(cols.min())
+        used = set()
+        prow = np.nonzero((area == hero).any(axis=1))[0]
+        seq = []
+        for y in range(int(prow.min()), int(prow.max()) + 1):
+            for x in range(px0, max(0, px0 - 30), -1):
+                if bid[y, x] > 0:
+                    if not seq or seq[-1][0] != int(bid[y, x]): seq.append((int(bid[y, x]), y, x))
+                    break
+        # los 5 edificios que dan a la plaza, de sur a norte, en el orden del video
+        for (name, lat, style, fl, wc_), (b_id, y, bx_) in zip(FRENTE, reversed(seq)):
+            ys_ = np.nonzero(bid[:, bx_] == b_id)[0]
+            ya_, yb_ = int(ys_.min()), int(ys_.max())
+            o = (b_id - 1) * 8
+            bdata[o + 2] = fl; bdata[o + 5] = wc_; bdata[o + 6] = 1
+            decals.append({'kind': 'frente', 'style': style, 'x': bx_ + 1, 'y': ya_, 'w': 2, 'h': yb_ - ya_ + 1})
+            labels.append({'text': name, 'x': (bx_ + 1) * 16 + 12, 'y': ((ya_ + yb_) // 2) * 16 + 6, 'small': 1})
+            rows_done.append((ya_, yb_, bx_, style))
+        if rows_done:
+            ya_ = min(r[0] for r in rows_done); yb_ = max(r[1] for r in rows_done); xe = max(r[2] for r in rows_done)
+            # guirnaldas de luces cruzando Coronel Bogado y mesas de la heladería en el borde de la plaza
+            decals.append({'kind': 'guirnaldas', 'x': xe + 1, 'y': ya_, 'w': px0 - xe + 2, 'h': yb_ - ya_ + 1})
+            ym = next(((r[0] + r[1]) // 2 for r in rows_done if r[3] == 'marimer'), ya_)
+            decals.append({'kind': 'terraza', 'x': px0, 'y': ym - 4, 'w': 3, 'h': 9})
+    print('frente oeste de la plaza: %d negocios' % len(rows_done))
+
     # ---------- punto de inicio: vereda al sur de la Plaza de los Héroes ----------
     spawn = {'x': W * 8, 'y': H * 8}
     for i, p in enumerate(parks):

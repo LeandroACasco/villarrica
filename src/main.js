@@ -150,7 +150,7 @@
     for (const t of tall) t.draw(ctx);
     for (const l of world.labels) {
       const lx = l.x - cx, ly = l.y - cy;
-      if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, '#fff6d8', { center: true, shadow: '#1a1a1e' });
+      if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, l.small ? '#ffe9a8' : '#fff6d8', { center: true, shadow: '#1a1a1e', size: l.small ? 7 : 8 });
     }
     player.drawBubble(ctx, cx, cy, a);
     drawMini(dt || 0);
@@ -232,7 +232,7 @@
     x.putImageData(img, 0, 0);
     const L = $('mapLabels'); L.innerHTML = '';
     for (const l of (world.barrioLabels || []).map((b) => ({ ...b, cls: 'barrio' })).concat(world.labels)) {
-      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls;
+      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls; if (l.small) s.className = 'small';
       s.style.left = (l.x / 16) + 'px'; s.style.top = (l.y / 16) + 'px'; L.appendChild(s);
     }
     mapBuilt = true;

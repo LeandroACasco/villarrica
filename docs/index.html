@@ -81,6 +81,7 @@
     color: #cfcabe; font-size: 13px; text-shadow: 0 1px 3px #000; pointer-events: none; padding: 0 70px; }
   #mapHelp b { color: #fff; }
   #gps { display: block; color: #7fe3ff !important; font-weight: 700; }
+  #mapLabels span.small { font-size: 9px; color: #ffe9a8; } #mapLabels.far span.small { display: none; }
   #mapLabels span.barrio { font: 900 15px system-ui; letter-spacing: .12em; text-transform: uppercase; color: #ffd75e; opacity: .9; }
   #mapMe { position: absolute; width: 12px; height: 12px; transform-origin: 0 0; transform: scale(var(--ik)) translate(-50%, -50%); border-radius: 50%; background: #f2a52b;
     border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(242,165,43,.35); animation: pulse 1s infinite alternate; }
@@ -188,7 +189,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 052c7d3c · 2026-11-03</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 84075d7e · 2026-11-03</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -931,7 +932,7 @@ VR.World = class {
 // ---------- paleta de edificios (los índices los usa tools/osm_to_map.py) ----------
 VR.BPAL = {
   walls: [[236, 222, 186], [230, 196, 140], [214, 164, 150], [176, 204, 214], [240, 236, 226], [190, 214, 170], [226, 182, 110], [200, 184, 214],
-    [246, 242, 230], [232, 230, 222], [234, 156, 132]], // 8 = catedral, 9 = edificios públicos, 10 = Municipalidad (salmón)
+    [246, 242, 230], [232, 230, 222], [234, 156, 132], [70, 64, 60], [230, 242, 242]], // 8 = catedral, 9 = públicos, 10 = salmón, 11 = gris oscuro (Gleu), 12 = blanco turquesa (Universitaria)
   roofs: [
     [[178, 82, 52], [160, 70, 46], [190, 98, 60], [150, 60, 40], [200, 92, 58], [124, 52, 38]], // teja
     [[150, 156, 162], [124, 132, 140], [92, 110, 128], [176, 180, 186], [96, 140, 170], [62, 120, 86]], // chapa
@@ -1067,6 +1068,30 @@ VR.decor = {
 VR.MUNI = { SAL: '#eeece6', SAL_D: '#c9c5bc', SAL_L: '#ffffff', CREAM: '#ffffff', CREAM_D: '#d6d2c8', TEJA: '#b5573c', TEJA_D: '#8e3f2b', GLASS: '#3a3f4c' };
 VR.MUNI_OLD = { SAL: '#e99c82', SAL_D: '#c97a62', SAL_L: '#f4b8a0', CREAM: '#f2deae', CREAM_D: '#cdb582' };
 VR.decorOver = {
+  // frente de un negocio que mira al este (a la plaza): toldo/alero sobre la vereda, cartel y detalles
+  frente(g, d) {
+    const S = VR.TILE, X = d.x * S, Y = d.y * S + 2, H = d.h * S - 4;
+    const st = { antana: ['#1a1a1e', '#f04a2a', 'deportes'], gleu: ['#3a2c22', '#e8e0d0', 'pub'], marimer: ['#f4efe4', '#c8963a', 'heladeria'],
+      universitaria: ['#2a9aa0', '#ffffff', 'coop'], farma: ['#2e7fc8', '#3aa64a', 'farma'] }[d.style] || ['#888', '#fff', ''];
+    g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(X, Y + 3, 9, H);
+    g.fillStyle = st[0]; g.fillRect(X, Y, 7, H);                       // alero / cartel
+    g.fillStyle = st[1]; g.fillRect(X + 2, Y + 3, 3, H - 6);
+    if (d.style === 'marimer') { // luces cálidas del frente
+      for (let y = Y + 4; y < Y + H - 2; y += 6) { g.fillStyle = 'rgba(255,214,120,.35)'; g.fillRect(X + 6, y - 2, 8, 5); g.fillStyle = '#ffe9a8'; g.fillRect(X + 7, y, 2, 2); }
+    }
+    if (d.style === 'universitaria') { for (let y = Y; y < Y + H; y += 10) { g.fillStyle = '#e8fbfb'; g.fillRect(X, y, 7, 2); } }
+    if (d.style === 'gleu') { for (let y = Y + 2; y < Y + H; y += 8) { g.fillStyle = '#6a4a30'; g.fillRect(X + 1, y, 5, 5); } }
+  },
+  terraza(g, d) { // mesas y sillas en el borde de la plaza, frente a la heladería, y tachos rojos
+    const S = VR.TILE, X = d.x * S, Y = d.y * S;
+    for (let k = 0; k < 4; k++) {
+      const tx = X + 8 + (k % 2) * 18, ty = Y + 10 + k * 30;
+      g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(tx + 1, ty + 2, 12, 12);
+      g.fillStyle = '#d8d6d0'; g.fillRect(tx - 5, ty + 3, 4, 6); g.fillRect(tx + 13, ty + 3, 4, 6); g.fillRect(tx + 4, ty - 5, 6, 4); g.fillRect(tx + 4, ty + 13, 6, 4);
+      g.fillStyle = '#f2f0ea'; g.fillRect(tx, ty, 12, 12); g.fillStyle = '#c8c4ba'; g.fillRect(tx, ty + 10, 12, 2);
+    }
+    for (const ty of [Y + 2, Y + d.h * S - 12]) { g.fillStyle = '#1f1d1a'; g.fillRect(X - 2, ty - 1, 10, 10); g.fillStyle = '#c8322a'; g.fillRect(X - 1, ty, 8, 8); g.fillStyle = '#e8584a'; g.fillRect(X - 1, ty, 3, 8); }
+  },
   muni(g, d) {
     const S = VR.TILE, C = VR.MUNI, X0 = d.bx * S, Y0 = d.y * S, W = d.bw * S, H = d.bh * S, FH = 40, RE = Y0 + H - FH;
     // techo: borde de teja y franjas de losa gris con parapetos crema
@@ -1151,6 +1176,21 @@ VR.decorOver = {
   },
 };
 VR.decorTop = {
+  guirnaldas(d) { // luces colgadas en zigzag sobre Coronel Bogado, entre los negocios y la plaza
+    const S = VR.TILE, X0 = d.x * S, X1 = (d.x + d.w) * S, Y0 = d.y * S, Y1 = (d.y + d.h) * S;
+    return [{ sy: Y1 + 400, draw(g) {
+      const tw = performance.now() / 500;
+      for (let y = Y0; y < Y1; y += 48) {
+        g.strokeStyle = 'rgba(30,30,30,.55)'; g.lineWidth = 1; g.beginPath(); g.moveTo(X0, y); g.lineTo(X1, y + 24); g.stroke();
+        for (let k = 0; k <= 12; k++) {
+          const x = X0 + (X1 - X0) * k / 12, yy = y + 24 * k / 12 + Math.sin(k / 12 * Math.PI) * 4;
+          const on = 0.75 + 0.25 * Math.sin(tw + k * 1.7 + y);
+          g.fillStyle = `rgba(255,236,170,${0.25 * on})`; g.fillRect(Math.round(x) - 2, Math.round(yy) - 1, 5, 5);
+          g.fillStyle = '#fff7d8'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
+        }
+      }
+    } }];
+  },
   mastiles(d) { // dos mástiles (bandera paraguaya y una blanca, como en la foto) y dos leones
     const S = VR.TILE, X = d.x * S, Y = d.y * S, t = performance.now() / 260;
     const flag = (g, fx, fy, cols) => {
@@ -1778,6 +1818,17 @@ VR.parkCars = (world, n, near) => {
             add(xr - 8, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           (world.parkingDemo = world.parkingDemo || []).push({ x0: xa * S, x1: (xb + 1) * S, y0: ya * S, y1: yz * S });
         }
+        // Coronel Bogado, del lado oeste de la plaza (mano única hacia el sur): autos a la izquierda (este,
+        // el lado de la plaza) y motos a la derecha (oeste, frente a los negocios), como en el video de Leandro
+        let wb = bx0 - 1, lim3 = 10; while (lim3-- > 0 && !road(wb, my)) wb--;
+        let wa = wb; while (road(wa - 1, my)) wa--;
+        if (wb - wa >= 3) {
+          const ya = by0 + 3, yz = by1 - 3, xl = (wb + 1) * S - 8, xr = wa * S + 6;
+          for (let py = ya * S + 16; py <= yz * S - 16; py += 36) if (rnd() < 0.85) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = (ya + 1) * S; py <= yz * S - 8; py += 11) if (rnd() < 0.8)
+            add(xr + 8, py + ((rnd() * 2) | 0), Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? -0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          world.parkingDemo.push({ x0: wa * S, x1: (wb + 1) * S, y0: ya * S, y1: yz * S });
+        }
       }
     }
   }
@@ -2349,7 +2400,7 @@ VR.Peds = class {
     for (const t of tall) t.draw(ctx);
     for (const l of world.labels) {
       const lx = l.x - cx, ly = l.y - cy;
-      if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, '#fff6d8', { center: true, shadow: '#1a1a1e' });
+      if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, l.small ? '#ffe9a8' : '#fff6d8', { center: true, shadow: '#1a1a1e', size: l.small ? 7 : 8 });
     }
     player.drawBubble(ctx, cx, cy, a);
     drawMini(dt || 0);
@@ -2431,7 +2482,7 @@ VR.Peds = class {
     x.putImageData(img, 0, 0);
     const L = $('mapLabels'); L.innerHTML = '';
     for (const l of (world.barrioLabels || []).map((b) => ({ ...b, cls: 'barrio' })).concat(world.labels)) {
-      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls;
+      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls; if (l.small) s.className = 'small';
       s.style.left = (l.x / 16) + 'px'; s.style.top = (l.y / 16) + 'px'; L.appendChild(s);
     }
     mapBuilt = true;

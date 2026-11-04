@@ -248,7 +248,7 @@ VR.World = class {
 // ---------- paleta de edificios (los índices los usa tools/osm_to_map.py) ----------
 VR.BPAL = {
   walls: [[236, 222, 186], [230, 196, 140], [214, 164, 150], [176, 204, 214], [240, 236, 226], [190, 214, 170], [226, 182, 110], [200, 184, 214],
-    [246, 242, 230], [232, 230, 222], [234, 156, 132]], // 8 = catedral, 9 = edificios públicos, 10 = Municipalidad (salmón)
+    [246, 242, 230], [232, 230, 222], [234, 156, 132], [70, 64, 60], [230, 242, 242]], // 8 = catedral, 9 = públicos, 10 = salmón, 11 = gris oscuro (Gleu), 12 = blanco turquesa (Universitaria)
   roofs: [
     [[178, 82, 52], [160, 70, 46], [190, 98, 60], [150, 60, 40], [200, 92, 58], [124, 52, 38]], // teja
     [[150, 156, 162], [124, 132, 140], [92, 110, 128], [176, 180, 186], [96, 140, 170], [62, 120, 86]], // chapa
@@ -384,6 +384,30 @@ VR.decor = {
 VR.MUNI = { SAL: '#eeece6', SAL_D: '#c9c5bc', SAL_L: '#ffffff', CREAM: '#ffffff', CREAM_D: '#d6d2c8', TEJA: '#b5573c', TEJA_D: '#8e3f2b', GLASS: '#3a3f4c' };
 VR.MUNI_OLD = { SAL: '#e99c82', SAL_D: '#c97a62', SAL_L: '#f4b8a0', CREAM: '#f2deae', CREAM_D: '#cdb582' };
 VR.decorOver = {
+  // frente de un negocio que mira al este (a la plaza): toldo/alero sobre la vereda, cartel y detalles
+  frente(g, d) {
+    const S = VR.TILE, X = d.x * S, Y = d.y * S + 2, H = d.h * S - 4;
+    const st = { antana: ['#1a1a1e', '#f04a2a', 'deportes'], gleu: ['#3a2c22', '#e8e0d0', 'pub'], marimer: ['#f4efe4', '#c8963a', 'heladeria'],
+      universitaria: ['#2a9aa0', '#ffffff', 'coop'], farma: ['#2e7fc8', '#3aa64a', 'farma'] }[d.style] || ['#888', '#fff', ''];
+    g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(X, Y + 3, 9, H);
+    g.fillStyle = st[0]; g.fillRect(X, Y, 7, H);                       // alero / cartel
+    g.fillStyle = st[1]; g.fillRect(X + 2, Y + 3, 3, H - 6);
+    if (d.style === 'marimer') { // luces cálidas del frente
+      for (let y = Y + 4; y < Y + H - 2; y += 6) { g.fillStyle = 'rgba(255,214,120,.35)'; g.fillRect(X + 6, y - 2, 8, 5); g.fillStyle = '#ffe9a8'; g.fillRect(X + 7, y, 2, 2); }
+    }
+    if (d.style === 'universitaria') { for (let y = Y; y < Y + H; y += 10) { g.fillStyle = '#e8fbfb'; g.fillRect(X, y, 7, 2); } }
+    if (d.style === 'gleu') { for (let y = Y + 2; y < Y + H; y += 8) { g.fillStyle = '#6a4a30'; g.fillRect(X + 1, y, 5, 5); } }
+  },
+  terraza(g, d) { // mesas y sillas en el borde de la plaza, frente a la heladería, y tachos rojos
+    const S = VR.TILE, X = d.x * S, Y = d.y * S;
+    for (let k = 0; k < 4; k++) {
+      const tx = X + 8 + (k % 2) * 18, ty = Y + 10 + k * 30;
+      g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(tx + 1, ty + 2, 12, 12);
+      g.fillStyle = '#d8d6d0'; g.fillRect(tx - 5, ty + 3, 4, 6); g.fillRect(tx + 13, ty + 3, 4, 6); g.fillRect(tx + 4, ty - 5, 6, 4); g.fillRect(tx + 4, ty + 13, 6, 4);
+      g.fillStyle = '#f2f0ea'; g.fillRect(tx, ty, 12, 12); g.fillStyle = '#c8c4ba'; g.fillRect(tx, ty + 10, 12, 2);
+    }
+    for (const ty of [Y + 2, Y + d.h * S - 12]) { g.fillStyle = '#1f1d1a'; g.fillRect(X - 2, ty - 1, 10, 10); g.fillStyle = '#c8322a'; g.fillRect(X - 1, ty, 8, 8); g.fillStyle = '#e8584a'; g.fillRect(X - 1, ty, 3, 8); }
+  },
   muni(g, d) {
     const S = VR.TILE, C = VR.MUNI, X0 = d.bx * S, Y0 = d.y * S, W = d.bw * S, H = d.bh * S, FH = 40, RE = Y0 + H - FH;
     // techo: borde de teja y franjas de losa gris con parapetos crema
@@ -468,6 +492,21 @@ VR.decorOver = {
   },
 };
 VR.decorTop = {
+  guirnaldas(d) { // luces colgadas en zigzag sobre Coronel Bogado, entre los negocios y la plaza
+    const S = VR.TILE, X0 = d.x * S, X1 = (d.x + d.w) * S, Y0 = d.y * S, Y1 = (d.y + d.h) * S;
+    return [{ sy: Y1 + 400, draw(g) {
+      const tw = performance.now() / 500;
+      for (let y = Y0; y < Y1; y += 48) {
+        g.strokeStyle = 'rgba(30,30,30,.55)'; g.lineWidth = 1; g.beginPath(); g.moveTo(X0, y); g.lineTo(X1, y + 24); g.stroke();
+        for (let k = 0; k <= 12; k++) {
+          const x = X0 + (X1 - X0) * k / 12, yy = y + 24 * k / 12 + Math.sin(k / 12 * Math.PI) * 4;
+          const on = 0.75 + 0.25 * Math.sin(tw + k * 1.7 + y);
+          g.fillStyle = `rgba(255,236,170,${0.25 * on})`; g.fillRect(Math.round(x) - 2, Math.round(yy) - 1, 5, 5);
+          g.fillStyle = '#fff7d8'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
+        }
+      }
+    } }];
+  },
   mastiles(d) { // dos mástiles (bandera paraguaya y una blanca, como en la foto) y dos leones
     const S = VR.TILE, X = d.x * S, Y = d.y * S, t = performance.now() / 260;
     const flag = (g, fx, fy, cols) => {
