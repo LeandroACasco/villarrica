@@ -24,7 +24,7 @@ VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f 
 // de su tamaño en pantalla y se achican con suavizado al rotarlos, así se ven brillos del capó, reflejos en los
 // vidrios, faros, espejos, llantas y costuras del asiento aunque sean chicos. Se dibujan ×1,3 respecto de la
 // ciudad (como en los juegos de la época), para que se vean y se distingan. Diseños propios, sin marcas.
-VR.VK = 1.3; VR.VSS = 4;
+VR.VK = 1; VR.VSS = 5; // a escala real (2 m por baldosa); antes ×1,3 y las calles quedaban chicas
 VR.vbase = (w, h, fn) => {
   const k = VR.VK * VR.VSS, c = VR.canvas(Math.round(w * k), Math.round(h * k)), g = c.getContext('2d');
   g.scale(k, k);
@@ -237,7 +237,7 @@ VR.vspec = (() => {
     const key = type + ':' + (model || '');
     let sp = cache.get(key);
     if (!sp) {
-      sp = type === 'moto' ? { ...VR.VSPEC.moto, ...VR.MOTO_MODELS[model || 'cub'] } : { ...VR.VSPEC[type] };
+      sp = type === 'moto' ? { ...VR.VSPEC.moto, ...VR.MOTO_MODELS[model || 'cub'] } : { ...VR.VSPEC.car, ...(VR.CAR_MODELS ? VR.CAR_MODELS[model || 'mita'] : {}) };
       const k = VR.VK; sp.len = Math.round(sp.len * k); sp.wid = Math.round(sp.wid * k); sp.S = Math.round(sp.S * k) + 2; if (sp.riderOff) sp.riderOff = Math.round(sp.riderOff * k);
       cache.set(key, sp);
     }
@@ -265,7 +265,7 @@ VR.riderFrames = (() => {
 
 VR.Car = class {
   constructor(world, x, y, angle, color, type = 'car', model = null, tune = null) {
-    this.world = world; this.type = type; this.model = type === 'moto' ? (model || 'cub') : null; this.tune = tune;
+    this.world = world; this.type = type; this.model = type === 'moto' ? (model || 'cub') : (model || 'mita'); this.tune = tune;
     this.spec = tune ? VR.tuneSpec(VR.vspec(type, this.model), tune) : VR.vspec(type, this.model);
     this.x = this.px = x; this.y = this.py = y; this.a = this.pa = angle;
     this.v = 0; this.color = color; this.driven = false; this.hit = 0;
@@ -467,7 +467,7 @@ VR.parkCars = (world, n, near) => {
   const T = VR.T, rnd = VR.rng(2006), S = VR.TILE, cars = [];
   const road = (x, y) => { const t = world.get(x, y); return t === T.ROAD || t === T.STONE; };
   const curb = (x, y) => { const t = world.get(x, y); return t === T.SIDEWALK || t === T.CHECKER; };
-  const add = (x, y, a, color, type = 'car') => { const m = type === 'moto' ? VR.pickMoto(rnd, true) : null; const c = new VR.Car(world, x, y, a, m === 'pati' ? color % VR.PATI_COLORS.length : color, type, m); world.addBox(c); cars.push(c); return c; };
+  const add = (x, y, a, color, type = 'car', model) => { const m = model || (type === 'moto' ? VR.pickMoto(rnd, true) : VR.pickCar(rnd, true)); const c = new VR.Car(world, x, y, a, m === 'pati' ? color % VR.PATI_COLORS.length : color, type, m); world.addBox(c); cars.push(c); return c; };
   let first = null;
 
   // --- el experimento: la cuadra al sur de la plaza ---
@@ -489,7 +489,7 @@ VR.parkCars = (world, n, near) => {
       const slots = [];
       for (let px = x0 * S + 22; px <= x1 * S - 22; px += 47) slots.push(px);
       slots.sort((a, b) => Math.abs(a - near.x) - Math.abs(b - near.x));
-      first = add(slots[0], yl, Math.PI / 2, 0);
+      first = add(slots[0], yl, Math.PI / 2, 0, 'car', 'mita');
       for (let i = 1; i < slots.length; i++) if (rnd() < 0.85) add(slots[i], yl, Math.PI / 2, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
       // motos en batería, la rueda trasera contra el cordón sur (miran hacia la calle), cada 11 px
       for (let px = fx; px <= x1 * S - 10; px += 14) if (rnd() < 0.8)

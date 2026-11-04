@@ -26,7 +26,13 @@ VR.TUNE_PARTS = {
 };
 // qué se le puede poner a cada vehículo, precio base, cuánto de los precios de piezas paga y color de serie
 VR.TUNE_MODELS = {
-  car: { parts: ['color', 'franja', 'color2', 'llantas', 'polarizado', 'aleron', 'techo', 'escape', 'faros', 'bajo', 'neon'], price: 48000000, k: 1, serie: 0 },
+  mita: { parts: ['color', 'franja', 'color2', 'llantas', 'polarizado', 'aleron', 'techo', 'escape', 'faros', 'bajo', 'neon'], price: 48000000, k: 1, serie: 0 },
+  sedan: { parts: ['color', 'franja', 'color2', 'llantas', 'polarizado', 'aleron', 'techo', 'escape', 'faros', 'bajo', 'neon'], price: 72000000, k: 1, serie: 12 },
+  mono: { parts: ['color', 'franja', 'color2', 'llantas', 'polarizado', 'aleron', 'techo', 'escape', 'faros', 'bajo', 'neon'], price: 56000000, k: 1, serie: 8 },
+  pickup: { parts: ['color', 'franja', 'color2', 'llantas', 'polarizado', 'techo', 'escape', 'faros', 'bajo', 'neon'], price: 210000000, k: 1.2, serie: 11 },
+  suv: { parts: ['color', 'franja', 'color2', 'llantas', 'polarizado', 'techo', 'escape', 'faros', 'bajo', 'neon'], price: 150000000, k: 1.2, serie: 13 },
+  suvmed: { parts: ['color', 'franja', 'color2', 'llantas', 'polarizado', 'techo', 'escape', 'faros', 'bajo', 'neon'], price: 95000000, k: 1.1, serie: 5 },
+  suvchico: { parts: ['color', 'franja', 'color2', 'llantas', 'polarizado', 'aleron', 'techo', 'escape', 'faros', 'bajo', 'neon'], price: 62000000, k: 1, serie: 0 },
   cub: { parts: ['color', 'franja', 'color2', 'llantas', 'escape', 'faros', 'neon'], price: 9500000, k: 0.35, serie: 0 },
   mini: { parts: ['color', 'franja', 'color2', 'llantas', 'escape', 'faros', 'neon'], price: 7800000, k: 0.35, serie: 2 },
   calle: { parts: ['color', 'franja', 'color2', 'llantas', 'escape', 'faros', 'neon'], price: 14900000, k: 0.4, serie: 8 },

@@ -106,7 +106,7 @@ VR.Night = class {
     for (const l of this.dyn) vis.push(l);
     const cones = [];
     for (const v of vehicles) {
-      if (!(v.driven || v.ai)) continue;
+      if (!(v.driven || v.ai) || v.spec.noLights) continue;
       const fx = Math.sin(v.a), fy = -Math.cos(v.a);
       cones.push(v);
       vis.push([v.x - fx * v.LEN / 2, v.y - fy * v.LEN / 2, 10, '255,40,30', 0.9]); // luz trasera
