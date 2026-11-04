@@ -18,7 +18,7 @@ VR.drawSide = (kind, pal, t = {}) => {
   };
   if (t.neon && t.neon !== 'no' && VR.NEON) { const gr = g.createRadialGradient(32, 32, 1, 32, 32, 30); gr.addColorStop(0, `rgba(${VR.NEON[t.neon]},.85)`); gr.addColorStop(1, `rgba(${VR.NEON[t.neon]},0)`); g.save(); g.translate(0, 32); g.scale(1, 0.14); g.translate(0, -32); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); g.restore(); }
   const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
-  if (VR.CAR_MODELS && VR.CAR_MODELS[kind] && VR.CAR_MODELS[kind].sideShape || kind === 'karumbe') { VR.drawSideAuto(kind, pal, t, P, g, wheel, HL, S2); return c; }
+  if (kind !== 'mita' && VR.CAR_MODELS && VR.CAR_MODELS[kind] && VR.CAR_MODELS[kind].sideShape || kind === 'karumbe') { VR.drawSideAuto(kind, pal, t, P, g, wheel, HL, S2); return c; }
   if (kind === 'car') {
     const lo = +t.bajo ? 2 : 0; g.save(); g.translate(0, lo);
     if (t.escape === 'deportivo') { P.r(1, 24, 5, 2, CH); P.r(1, 24, 5, 1, '#ffffff'); }
@@ -92,7 +92,7 @@ VR.showVehicleCard = (v) => {
   const sp = v.spec, pal = v.tune ? VR.tunePal(v.tune.color) : sp.colors[v.color % sp.colors.length];
   const cv = el.querySelector('canvas'), g = cv.getContext('2d');
   g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false;
-  g.drawImage(VR.drawSide(sp.side || 'cub', pal, v.tune || {}), 0, 0);
+  g.imageSmoothingEnabled = true; g.drawImage(VR.drawSideHD ? VR.drawSideHD(sp.side || 'cub', pal, v.tune || {}, cv.width, cv.height) : VR.drawSide(sp.side || 'cub', pal, v.tune || {}), 0, 0);
   el.querySelector('b').textContent = sp.name || '';
   el.querySelector('span').textContent = sp.desc || '';
   el.classList.add('show'); clearTimeout(el._h); el._h = setTimeout(() => el.classList.remove('show'), 4200);

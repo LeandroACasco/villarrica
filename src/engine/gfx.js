@@ -36,6 +36,23 @@ VR.gfx = {
   },
   // achica un dibujo hecho al doble (o más) con suavizado: bordes y detalles finos sin escalones
   down(c, w, h) { const o = VR.canvas(w, h), x = o.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, w, h); return o; },
+  // nítido (04/11/2026): bordes sin semitransparencias (como pixel art) y un poco de realce en el color,
+  // para que los vehículos achicados no se vean borrosos al lado de las personas en píxeles
+  crisp(c, amount = 0.55) {
+    const w = c.width, h = c.height, x = c.getContext('2d'), img = x.getImageData(0, 0, w, h), d = img.data, src = new Uint8ClampedArray(d);
+    for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
+      const i = (y * w + xx) * 4;
+      if (src[i + 3] < 110) { d[i + 3] = 0; continue; }
+      d[i + 3] = 255;
+      for (let k = 0; k < 3; k++) {
+        let s = 0, n = 0;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = xx + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue; const j = (Y * w + X) * 4; if (src[j + 3] < 110) continue; s += src[j + k]; n++; }
+        if (n) d[i + k] = src[i + k] + (src[i + k] - s / n) * amount;
+      }
+    }
+    x.putImageData(img, 0, 0);
+    return c;
+  },
   flipX(c) {
     const o = VR.canvas(c.width, c.height), x = o.getContext('2d');
     x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(c, 0, 0);

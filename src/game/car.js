@@ -24,7 +24,7 @@ VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f 
 // de su tamaño en pantalla y se achican con suavizado al rotarlos, así se ven brillos del capó, reflejos en los
 // vidrios, faros, espejos, llantas y costuras del asiento aunque sean chicos. Se dibujan ×1,3 respecto de la
 // ciudad (como en los juegos de la época), para que se vean y se distingan. Diseños propios, sin marcas.
-VR.VK = 1; VR.VSS = 5; // a escala real (2 m por baldosa); antes ×1,3 y las calles quedaban chicas
+VR.VK = 1.15; VR.VSS = 5; // casi a escala real (×1,15); con ×1,3 las calles quedaban chicas
 VR.vbase = (w, h, fn) => {
   const k = VR.VK * VR.VSS, c = VR.canvas(Math.round(w * k), Math.round(h * k)), g = c.getContext('2d');
   g.scale(k, k);
@@ -177,7 +177,7 @@ VR.rotFrames = (base, S, outline = true) => {
       const B = S * ss, big = VR.canvas(B, B), x = big.getContext('2d');
       x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
       x.translate(B / 2, B / 2); x.rotate(a); x.drawImage(base, -base.width / 2, -base.height / 2);
-      c = VR.gfx.down(outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big, S, S);
+      c = VR.gfx.crisp(VR.gfx.down(outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big, S, S));
     } else {
       const bw = base.width, bh = base.height, ca = Math.cos(a), sa = Math.sin(a);
       if (!src) src = base.getContext('2d').getImageData(0, 0, bw, bh).data;
@@ -487,7 +487,7 @@ VR.parkCars = (world, n, near) => {
       const fx = (x0 + 1) * S;
       // autos en fila, mirando hacia el este (el sentido de la calle); el primero, rojo, frente a donde arrancás
       const slots = [];
-      for (let px = x0 * S + 22; px <= x1 * S - 22; px += 47) slots.push(px);
+      for (let px = x0 * S + 26; px <= x1 * S - 26; px += 54) slots.push(px);
       slots.sort((a, b) => Math.abs(a - near.x) - Math.abs(b - near.x));
       first = add(slots[0], yl, Math.PI / 2, 0, 'car', 'mita');
       for (let i = 1; i < slots.length; i++) if (rnd() < 0.85) add(slots[i], yl, Math.PI / 2, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
@@ -510,7 +510,7 @@ VR.parkCars = (world, n, near) => {
         let xb = xa; while (road(xb + 1, my)) xb++;
         if (xb - xa >= 3) {
           const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 11, xr = (xb + 1) * S - 6;
-          for (let py = ya * S + 22; py <= yz * S - 22; py += 47) if (rnd() < 0.85) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = ya * S + 26; py <= yz * S - 26; py += 54) if (rnd() < 0.85) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
           for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.8)
             add(xr - 11, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           (world.parkingDemo = world.parkingDemo || []).push({ x0: xa * S, x1: (xb + 1) * S, y0: ya * S, y1: yz * S });
@@ -521,7 +521,7 @@ VR.parkCars = (world, n, near) => {
         let wa = wb; while (road(wa - 1, my)) wa--;
         if (wb - wa >= 3) {
           const ya = by0 + 3, yz = by1 - 3, xl = (wb + 1) * S - 11, xr = wa * S + 6;
-          for (let py = ya * S + 22; py <= yz * S - 22; py += 47) if (rnd() < 0.85) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = ya * S + 26; py <= yz * S - 26; py += 54) if (rnd() < 0.85) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
           for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.8)
             add(xr + 11, py + ((rnd() * 2) | 0), Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? -0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
           world.parkingDemo.push({ x0: wa * S, x1: (wb + 1) * S, y0: ya * S, y1: yz * S });

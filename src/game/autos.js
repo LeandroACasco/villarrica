@@ -133,7 +133,9 @@
   // ---- perfiles de costado: puntos del contorno (de atrás a adelante), ventanillas, ruedas ----
   const side = (o) => o;
   VR.CAR_MODELS = {
-    mita: { name: 'Mitã 1.3', desc: 'Compacto de 5 puertas: chico, gasolero y fácil de estacionar.', side: 'car', base: VR.drawCarBase },
+    mita: { name: 'Mitã 1.3', desc: 'Compacto de 5 puertas: chico, gasolero y fácil de estacionar.', side: 'car', base: VR.drawCarBase,
+      sideShape: { body: [[4, 27], [4, 18], [10, 15], [20, 7], [42, 6], [52, 15], [60, 17], [61, 26], [55, 27], [53, 23], [43, 23], [41, 27], [23, 27], [21, 23], [11, 23], [9, 27]],
+        win: [[[21, 8.6], [32, 7.8], [32, 15], [14, 15]], [[34, 7.8], [41, 7.8], [49, 15], [34, 15]]], pillars: [33], yr: 6, rx0: 20, rx1: 42, belt: 15, sill: 27, doors: [33, 46], tailx: 4, tailTop: 17, nose: 61, hood: [52, 15], wheels: [16, 48], wr: 5 } },
     sedan: { len: 35, wid: 16, S: 40, acc: 168, turn: 2.5, max: { road: 245, stone: 205, dirt: 160, side: 145, grass: 105 },
       name: 'Porã 1.5', desc: 'Sedán familiar de 4 puertas con baúl grande: el de los remises y las familias.', side: 'sedan',
       base: VR.drawAuto({ L: 35, W: 16, hood: 8.4, ws: 4, roof: 10.4, rg: 3.6, fa: 0.2, ra: 0.74 }),
