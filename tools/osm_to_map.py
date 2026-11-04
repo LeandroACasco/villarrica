@@ -458,9 +458,10 @@ def main(src, out, preview=None):
         if p['named']:
             labels.append({'text': p['name'], 'x': int(cx * 16 + 8), 'y': int(y0b * 16 + (24 if is_park else -4))})
 
-    # ---------- Municipalidad: manzana arbolada con el edificio en el medio (vista satelital, 03/11/2026) ----------
-    # Edificio rectangular de dos pisos, techos planos con borde de teja, dos pórticos con frontón hacia el este
-    # (el principal al norte, el del Teatro Municipal al sur), jardín con palmeras y busto frente a la entrada.
+    # ---------- Municipalidad: manzana arbolada con el edificio en el medio (vista satelital y Leandro, 03/11/2026) ----------
+    # Edificio rectangular de dos pisos, techos planos con borde de teja. La fachada principal (pórtico con frontón,
+    # escudo, escarapela y bandera) mira al OESTE, hacia la Plaza de los Héroes; en el SUR está la entrada del
+    # Teatro Municipal. Jardín arbolado, palmeras y busto frente a la entrada principal.
     special = {}
     muni = next((i for i, b in enumerate(buildings) if b['tags'].get('name') == 'Municipalidad de Villarrica'), None)
     if muni is not None and (bid == muni + 1).any():
@@ -485,22 +486,30 @@ def main(src, out, preview=None):
         tiles[yard] = GRASS
         area_names.append('Municipalidad de Villarrica'); area[yard] = len(area_names)
         bh = by1 - by0 + 1
-        y1p, y2p = by0 + int(bh * 0.22), by0 + int(bh * 0.82)   # pórtico principal y del teatro
+        bw_ = bx1 - bx0 + 1
+        y1p = by0 + bh // 2                      # pórtico principal, en el medio de la fachada oeste
+        xtc = bx0 + bw_ // 2                     # entrada del teatro, en el medio de la fachada sur
         gy_, gx_ = np.mgrid[0:H, 0:W]
-        apron = yard & (gx_ > bx1) & (gx_ <= bx1 + 5) & (gy_ >= by0 - 1) & (gy_ <= by1 + 1)
-        paths = yard & (gx_ > bx1) & ((np.abs(gy_ - y1p) <= 1) | (np.abs(gy_ - y2p) <= 1))
-        tiles[apron | paths] = PAVING
-        # canteros con flores frente a la entrada (pasto dentro del sector de baldosas)
-        for yy in (y1p - 4, y1p + 4):
-            tiles[yy - 1:yy + 1, bx1 + 7:bx1 + 11] = GRASS
-        for k, (px_, py_) in enumerate(((bx1 + 7, y1p - 4), (bx1 + 10, y1p - 4), (bx1 + 7, y1p + 4), (bx1 + 10, y1p + 4))):
-            tree_at[py_, px_] = True; trees.append((px_, py_, 10, 4))
+        # patio de baldosas al oeste (hacia la plaza) y camino hasta la vereda de General Díaz
+        apron = yard & (gx_ < bx0) & (gx_ >= bx0 - 5) & (gy_ >= y1p - 7) & (gy_ <= y1p + 7)
+        paths = yard & (gx_ < bx0) & (np.abs(gy_ - y1p) <= 1)
+        # explanada del teatro al sur y camino hasta Mcal. Estigarribia
+        tapron = yard & (gy_ > by1) & (gy_ <= by1 + 4) & (np.abs(gx_ - xtc) <= 5)
+        tpath = yard & (gy_ > by1) & (np.abs(gx_ - xtc) <= 1)
+        tiles[apron | paths | tapron | tpath] = PAVING
+        # palmeras en canteros a los dos lados del camino de la entrada principal
+        palms = []
+        for px_ in (bx0 - 2, bx0 - 5):
+            for py_ in (y1p - 9, y1p + 9):
+                if 0 <= px_ < W and yard[py_, px_]:
+                    tiles[py_ - 1:py_ + 1, px_ - 1:px_ + 1] = GRASS
+                    tree_at[py_, px_] = True; trees.append((px_, py_, 10, 4)); palms.append((px_, py_))
         cand = list(zip(*np.nonzero(yard & (tiles == GRASS))))
-        cand = [(x, y) for y, x in cand if not (bx1 < x < bx1 + 12 and y1p - 6 < y < y1p + 6)]
+        cand = [(x, y) for y, x in cand if not (bx0 - 12 < x < bx0 and y1p - 11 < y < y1p + 11) and not (abs(x - xtc) < 7 and by1 < y < by1 + 6)]
         rnd.shuffle(cand)
         plant(cand, 0.7, 2, lambda x, y: (x, y, rnd.randint(12, 16), rnd.choice([0, 0, 1, 1, 2, 3])))
-        decals.append({'kind': 'muni', 'x': bx0, 'y': by0, 'w': bx1 - bx0 + 1 + 6, 'h': bh, 'bw': bx1 - bx0 + 1, 'p1': y1p - by0, 'p2': y2p - by0})
-        tiles[y1p:y1p + 1, bx1 + 4:bx1 + 5] = MONUMENT  # pedestal del busto (sólido)
+        decals.append({'kind': 'muni', 'x': bx0 - 8, 'y': by0, 'w': bw_ + 8, 'h': bh + 4, 'bx': bx0, 'bw': bw_, 'bh': bh, 'p1': y1p - by0, 'tx': xtc - bx0})
+        tiles[y1p:y1p + 1, bx0 - 5:bx0 - 4] = MONUMENT  # pedestal del busto (sólido)
         special['muni'] = muni + 1
         print('Municipalidad: edificio %dx%d tiles, manzana %d tiles' % (bx1 - bx0 + 1, bh, int(yard.sum())))
 

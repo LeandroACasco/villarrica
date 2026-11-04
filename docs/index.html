@@ -188,7 +188,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0c7a17a7 · 2026-11-03</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 7e18005a · 2026-11-03</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -1045,86 +1045,99 @@ VR.decor = {
     g.fillStyle = '#c9a54a'; g.fillRect(X + 12, Y + 22, 8, 4); // placa
   },
 };
-// ---------- Municipalidad de Villarrica (vista satelital y fotos de referencia, 03/11/2026) ----------
-// Edificio neoclásico de dos pisos color salmón con molduras crema; techos planos grises en franjas con borde de
-// teja; dos pórticos con frontón hacia el este (el principal con la escarapela y la bandera, y el del teatro).
+// ---------- Municipalidad de Villarrica (vista satelital, fotos de referencia y Leandro, 03/11/2026) ----------
+// Edificio neoclásico de dos pisos color salmón con molduras crema; techos planos grises en franjas con borde
+// de teja. Fachada principal al OESTE (hacia la Plaza de los Héroes): pórtico con frontón, escudo, escarapela y
+// bandera. Al SUR, la entrada del Teatro Municipal: como la cámara ve las fachadas sur, se ve de frente.
+VR.MUNI = { SAL: '#e99c82', SAL_D: '#c97a62', SAL_L: '#f4b8a0', CREAM: '#f2deae', CREAM_D: '#cdb582', TEJA: '#b5573c', TEJA_D: '#8e3f2b', GLASS: '#3a3f4c' };
 VR.decorOver = {
   muni(g, d) {
-    const S = VR.TILE, X0 = d.x * S, Y0 = d.y * S, W = d.bw * S, H = d.h * S, FH = 36, RE = Y0 + H - FH;
-    const SAL = '#e99c82', SAL_D = '#c97a62', SAL_L = '#f4b8a0', CREAM = '#f2deae', CREAM_D = '#cdb582', TEJA = '#b5573c', TEJA_D = '#8e3f2b';
-    const GLASS = '#3a3f4c';
+    const S = VR.TILE, C = VR.MUNI, X0 = d.bx * S, Y0 = d.y * S, W = d.bw * S, H = d.bh * S, FH = 40, RE = Y0 + H - FH;
     // techo: borde de teja y franjas de losa gris con parapetos crema
-    g.fillStyle = TEJA; g.fillRect(X0, Y0, W, RE - Y0);
-    for (let y = Y0 + 2; y < RE; y += 4) { g.fillStyle = TEJA_D; g.fillRect(X0, y, W, 1); }
+    g.fillStyle = C.TEJA; g.fillRect(X0, Y0, W, RE - Y0);
+    for (let y = Y0 + 2; y < RE; y += 4) { g.fillStyle = C.TEJA_D; g.fillRect(X0, y, W, 1); }
     const inset = 10, strips = 3, sw = (W - inset * 2) / strips;
     for (let i = 0; i < strips; i++) {
       const x = Math.round(X0 + inset + i * sw);
-      g.fillStyle = CREAM_D; g.fillRect(x, Y0 + inset - 2, Math.round(sw), RE - Y0 - inset * 2 + 4);
+      g.fillStyle = C.CREAM_D; g.fillRect(x, Y0 + inset - 2, Math.round(sw), RE - Y0 - inset * 2 + 4);
       g.fillStyle = i === 1 ? '#c9c5bb' : '#b9b5ab'; g.fillRect(x + 2, Y0 + inset, Math.round(sw) - 4, RE - Y0 - inset * 2);
       g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(x + 2, Y0 + inset, Math.round(sw) - 4, 2);
     }
-    g.fillStyle = CREAM; g.fillRect(X0, Y0, W, 2); g.fillRect(X0, Y0, 2, RE - Y0); g.fillRect(X0 + W - 2, Y0, 2, RE - Y0);
+    g.fillStyle = C.CREAM; g.fillRect(X0, Y0, W, 2); g.fillRect(X0, Y0, 2, RE - Y0); g.fillRect(X0 + W - 2, Y0, 2, RE - Y0);
     // fachada sur (dos pisos): salmón, cornisa y faja crema, ventanas con arco, pilastras
-    g.fillStyle = CREAM; g.fillRect(X0, RE, W, 4); g.fillStyle = CREAM_D; g.fillRect(X0, RE + 4, W, 1);
-    g.fillStyle = SAL; g.fillRect(X0, RE + 5, W, FH - 5);
-    g.fillStyle = CREAM; g.fillRect(X0, RE + 19, W, 2);
-    g.fillStyle = SAL_D; g.fillRect(X0, Y0 + H - 3, W, 3);
+    g.fillStyle = C.CREAM; g.fillRect(X0, RE, W, 4); g.fillStyle = C.CREAM_D; g.fillRect(X0, RE + 4, W, 1);
+    g.fillStyle = C.SAL; g.fillRect(X0, RE + 5, W, FH - 5);
+    g.fillStyle = C.CREAM; g.fillRect(X0, RE + 21, W, 2);
+    g.fillStyle = C.SAL_D; g.fillRect(X0, Y0 + H - 3, W, 3);
+    const tcx = X0 + d.tx * S + 8, tw = 64; // entrada del teatro (centro de la fachada sur)
     for (let x = X0 + 6; x < X0 + W - 10; x += 16) {
-      g.fillStyle = CREAM; g.fillRect(x, RE + 5, 3, FH - 8);           // pilastra
-      for (const wy of [RE + 8, RE + 23]) {
-        g.fillStyle = CREAM; g.fillRect(x + 6, wy, 7, 10); g.fillStyle = GLASS; g.fillRect(x + 7, wy + 2, 5, 8);
-        g.fillStyle = CREAM; g.fillRect(x + 7, wy + 1, 5, 1);           // arco
+      if (Math.abs(x + 8 - tcx) < tw / 2 + 4) continue;
+      g.fillStyle = C.CREAM; g.fillRect(x, RE + 5, 3, FH - 8);
+      for (const wy of [RE + 8, RE + 25]) {
+        g.fillStyle = C.CREAM; g.fillRect(x + 6, wy, 7, 11); g.fillStyle = C.GLASS; g.fillRect(x + 7, wy + 2, 5, 9);
+        g.fillStyle = C.CREAM; g.fillRect(x + 7, wy + 1, 5, 1);
       }
     }
-    g.fillStyle = SAL_L; g.fillRect(X0, RE + 5, 2, FH - 8);
-    // pórticos hacia el este: techo a dos aguas visto desde arriba, frontón y columnas dobles
-    const portico = (py, main) => {
-      const ph = main ? 80 : 56, px = X0 + W - 6, pw = 40, y = Y0 + py * S - ph / 2;
-      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(px + 4, y + 6, pw, ph);
-      // faldones
-      g.fillStyle = TEJA; g.fillRect(px, y, pw, ph / 2); g.fillStyle = TEJA_D; g.fillRect(px, y + ph / 2, pw, ph / 2);
+    g.fillStyle = C.SAL_L; g.fillRect(X0, RE + 5, 2, FH - 8);
+    // pórtico del teatro: sobresale hacia el sur; frontón triangular crema con tímpano salmón, cuatro columnas
+    // dobles, puerta y cartel
+    {
+      const x0 = tcx - tw / 2, top = RE - 18, bot = Y0 + H + 14;
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x0 + 5, bot, tw, 4);
+      // techo del pórtico visto desde arriba
+      g.fillStyle = C.TEJA; g.fillRect(x0, top, tw, 14); g.fillStyle = C.TEJA_D; g.fillRect(x0, top + 7, tw, 7);
+      // frontón
+      g.fillStyle = C.CREAM;
+      for (let k = 0; k < 14; k++) g.fillRect(x0 + 2 + k * 2.2, top + 14 + 13 - k, tw - 4 - k * 4.4, 1);
+      g.fillRect(x0, top + 27, tw, 3);
+      g.fillStyle = C.SAL; for (let k = 2; k < 11; k++) g.fillRect(x0 + 8 + k * 2, top + 14 + 13 - k + 1, tw - 16 - k * 4, 1);
+      // fondo en sombra y columnas
+      g.fillStyle = C.SAL_D; g.fillRect(x0 + 2, top + 30, tw - 4, bot - top - 30);
+      g.fillStyle = '#2c2a2e'; g.fillRect(tcx - 7, bot - 18, 14, 18); g.fillStyle = '#4a3a2c'; g.fillRect(tcx - 6, bot - 17, 12, 17); g.fillStyle = '#2c2a2e'; g.fillRect(tcx, bot - 17, 1, 17);
+      for (const cx of [x0 + 4, x0 + 14, tw + x0 - 20, tw + x0 - 10]) { g.fillStyle = C.CREAM; g.fillRect(cx, top + 30, 3, bot - top - 32); g.fillRect(cx + 4, top + 30, 3, bot - top - 32); g.fillStyle = C.CREAM_D; g.fillRect(cx + 2, top + 30, 1, bot - top - 32); g.fillRect(cx - 1, top + 29, 9, 2); g.fillRect(cx - 1, bot - 4, 9, 2); }
+      g.fillStyle = C.CREAM; g.fillRect(x0, bot - 2, tw, 2);
+      // cartel
+      g.fillStyle = '#2a1f1a'; g.fillRect(tcx - 18, top + 31, 36, 6); g.fillStyle = '#f2deae'; g.fillRect(tcx - 17, top + 32, 34, 4);
+      g.fillStyle = '#7a3a28'; for (let k = 0; k < 10; k++) g.fillRect(tcx - 15 + k * 3, top + 33, 2, 2);
+    }
+    // pórtico principal hacia el oeste (plaza): techo a dos aguas visto desde arriba, frontón al oeste,
+    // columnas dobles asomando, cara sur con dos pisos de columnas; escudo y escarapela
+    {
+      const ph = 84, pw = 40, px = X0 - pw + 6, y = Y0 + d.p1 * S - ph / 2;
+      g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(px + 4, y + 6, pw, ph);
+      g.fillStyle = C.TEJA; g.fillRect(px, y, pw, ph / 2); g.fillStyle = C.TEJA_D; g.fillRect(px, y + ph / 2, pw, ph / 2);
       for (let k = 0; k < pw; k += 4) { g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(px + k, y, 1, ph); }
-      g.fillStyle = '#d07056'; g.fillRect(px, y + ph / 2 - 1, pw, 2);  // cumbrera
-      // frontón (borde crema al este) y cornisas
-      g.fillStyle = CREAM; g.fillRect(px + pw - 4, y, 4, ph); g.fillRect(px, y, pw, 2); g.fillRect(px, y + ph - 2, pw, 2);
-      g.fillStyle = CREAM_D; g.fillRect(px + pw - 4, y + ph / 2 - 1, 4, 2);
-      // columnas dobles asomando debajo del borde este (vistas desde arriba)
-      for (let k = 6; k < ph - 4; k += 12) { g.fillStyle = '#fff3d2'; g.fillRect(px + pw, y + k, 4, 4); g.fillRect(px + pw, y + k + 5, 4, 4); g.fillStyle = CREAM_D; g.fillRect(px + pw + 3, y + k, 1, 9); }
-      // cara sur del pórtico (se ve en 3/4): dos pisos de columnas sobre fondo en sombra
-      g.fillStyle = SAL_D; g.fillRect(px, y + ph, pw + 4, 26);
-      for (let k = 2; k < pw; k += 7) { g.fillStyle = CREAM; g.fillRect(px + k, y + ph, 3, 26); g.fillStyle = CREAM_D; g.fillRect(px + k + 2, y + ph, 1, 26); }
-      g.fillStyle = CREAM; g.fillRect(px, y + ph + 12, pw + 4, 2); g.fillRect(px, y + ph, pw + 4, 2);
-      if (main) { // escudo en el frontón y escarapela del balcón
-        const ex = px + pw - 2, ey = y + ph / 2;
-        g.fillStyle = '#f7f3e8'; g.beginPath(); g.arc(ex, ey, 4, 0, Math.PI * 2); g.fill(); g.fillStyle = '#c8322a'; g.fillRect(ex - 1, ey - 2, 2, 4);
-        const rx = px + pw + 8, ry = y + ph / 2;
-        g.fillStyle = '#c8322a'; g.beginPath(); g.arc(rx, ry, 6, 0, Math.PI * 2); g.fill();
-        g.fillStyle = '#ffffff'; g.beginPath(); g.arc(rx, ry, 4, 0, Math.PI * 2); g.fill();
-        g.fillStyle = '#1f4fa8'; g.beginPath(); g.arc(rx, ry, 2, 0, Math.PI * 2); g.fill();
-      }
-    };
-    portico(d.p2, false);
-    portico(d.p1, true);
+      g.fillStyle = '#d07056'; g.fillRect(px, y + ph / 2 - 1, pw, 2);
+      g.fillStyle = C.CREAM; g.fillRect(px, y, 4, ph); g.fillRect(px, y, pw, 2); g.fillRect(px, y + ph - 2, pw, 2);
+      g.fillStyle = C.CREAM_D; g.fillRect(px, y + ph / 2 - 1, 4, 2);
+      for (let k = 6; k < ph - 4; k += 12) { g.fillStyle = '#fff3d2'; g.fillRect(px - 4, y + k, 4, 4); g.fillRect(px - 4, y + k + 5, 4, 4); g.fillStyle = C.CREAM_D; g.fillRect(px - 4, y + k, 1, 9); }
+      g.fillStyle = C.SAL_D; g.fillRect(px - 4, y + ph, pw + 4, 26);
+      for (let k = 0; k < pw; k += 7) { g.fillStyle = C.CREAM; g.fillRect(px - 2 + k, y + ph, 3, 26); g.fillStyle = C.CREAM_D; g.fillRect(px + k, y + ph, 1, 26); }
+      g.fillStyle = C.CREAM; g.fillRect(px - 4, y + ph + 12, pw + 4, 2); g.fillRect(px - 4, y + ph, pw + 4, 2);
+      const ex = px + 2, ey = y + ph / 2;
+      g.fillStyle = '#f7f3e8'; g.beginPath(); g.arc(ex, ey, 4, 0, Math.PI * 2); g.fill(); g.fillStyle = '#c8322a'; g.fillRect(ex - 1, ey - 2, 2, 4);
+      const rx = px - 9, ry = y + ph / 2;
+      g.fillStyle = '#c8322a'; g.beginPath(); g.arc(rx, ry, 6, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffffff'; g.beginPath(); g.arc(rx, ry, 4, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#1f4fa8'; g.beginPath(); g.arc(rx, ry, 2, 0, Math.PI * 2); g.fill();
+    }
   },
 };
 VR.decorTop = {
   muni(d) { // bandera en el frontón principal (flamea) y busto frente a la entrada
-    const S = VR.TILE, X0 = d.x * S, W = d.bw * S, py = d.y * S + d.p1 * S;
-    const fx = X0 + W + 30, fy = py - 26;
+    const S = VR.TILE, X0 = d.bx * S, py = (d.y + d.p1) * S;
+    const fx = X0 - 34, fy = py - 26;
     return [{ sy: py + 30, draw(g) {
-      // mástil
       g.fillStyle = '#1f1d1a'; g.fillRect(fx - 1, fy - 46, 3, 48); g.fillStyle = '#d8d4cc'; g.fillRect(fx, fy - 46, 1, 48);
-      // bandera: tres franjas que ondulan
       const t = performance.now() / 260;
       for (let i = 0; i < 18; i++) {
-        const o = Math.round(Math.sin(t + i * 0.45) * 1.5), x = fx + 2 + i;
+        const o = Math.round(Math.sin(t + i * 0.45) * 1.5), x = fx - 2 - i; // flamea hacia el oeste
         g.fillStyle = '#d0302a'; g.fillRect(x, fy - 46 + o, 1, 4);
         g.fillStyle = '#ffffff'; g.fillRect(x, fy - 42 + o, 1, 4);
         g.fillStyle = '#2050a8'; g.fillRect(x, fy - 38 + o, 1, 4);
       }
-    } }, { sy: py * 1 + 10, draw(g) {
-      // busto sobre pedestal salmón (frente a la entrada principal)
-      const X = (d.x + d.bw + 4) * S, Y = (d.y + d.p1) * S;
+    } }, { sy: py + 10, draw(g) {
+      const X = (d.bx - 5) * S, Y = py;
       g.fillStyle = '#1f1d1a'; g.fillRect(X + 1, Y - 13, 14, 26);
       g.fillStyle = '#e99c82'; g.fillRect(X + 2, Y - 4, 12, 16); g.fillStyle = '#f4b8a0'; g.fillRect(X + 2, Y - 4, 4, 16);
       g.fillStyle = '#c97a62'; g.fillRect(X + 2, Y + 9, 12, 3);
