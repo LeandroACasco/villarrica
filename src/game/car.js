@@ -428,6 +428,16 @@ VR.Car = class {
         else { throttle = m * (Math.abs(d) > 1.6 ? 0.35 : 1); steer = VR.clamp(d * 2.2, -1, 1); }
       }
     } else { throttle = -input.ay; steer = input.ax; }
+    if (mode === 'manual' && VR.td && VR.td.on) { throttle = VR.td.gas - VR.td.brake; steer = VR.td.steer; } // volante y pedales táctiles
+    if (this.gear != null) { // cuentavueltas y caja automática
+      const sp = this.spec, mx = (sp.max.road || 240) * (this.gear > 0 ? [0, 0.3, 0.5, 0.68, 0.85, 1][this.gear] : 0.3);
+      this.rpm = VR.clamp(900 + Math.abs(this.v) / mx * 6100 + (throttle > 0 && Math.abs(this.v) < 5 ? 1500 : 0), 800, 7200);
+      if (VR.autoBox) {
+        if (this.gear > 0 && this.gear < 5 && this.rpm > 6200) this.gear++;
+        else if (this.gear > 1 && this.rpm < 2600) this.gear--;
+        if (throttle < 0 && this.v < 3 && this.gear > 0) this.gear = -1; else if (throttle > 0 && this.gear < 0 && this.v > -3) this.gear = 1;
+      }
+    }
     if (this.gear < 0) throttle = throttle > 0 ? -throttle : throttle < 0 && this.v <= 0 ? 0 : throttle; // reversa: arriba va para atrás
     else if (this.gear > 0 && throttle < 0 && this.v <= 2) throttle = 0;                          // en marcha, abajo solo frena
     // volante suave: el giro llega de a poco y a alta velocidad gira menos

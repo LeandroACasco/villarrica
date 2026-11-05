@@ -160,9 +160,18 @@
   #tvFrame.off iframe { display: none; } #tvFrame.off .tvOff { display: flex; }
   #tvFrame .tvBack { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 8px); width: auto; padding: 0 16px; }
   #tvFrame.full { height: 100vh; z-index: 40; padding: 3vh 8vw calc(env(safe-area-inset-bottom) + 56px); } #tvFrame.full .tvBack { display: block; }
-  #gearBtns { position: fixed; right: calc(env(safe-area-inset-right) + 235px); bottom: calc(env(safe-area-inset-bottom) + 18px); z-index: 7; display: flex; flex-direction: column; gap: 10px; }
+  #gearBtns { position: fixed; right: calc(env(safe-area-inset-right) + 200px); bottom: calc(env(safe-area-inset-bottom) + 132px); flex-direction: row !important; z-index: 7; display: flex; flex-direction: column; gap: 10px; }
   #gearBtns button { width: 56px; height: 56px; border-radius: 50%; border: 2px solid rgba(255,216,74,.8); background: rgba(20,20,26,.6); color: #ffd84a; font: 700 22px system-ui; touch-action: none; }
   #gearBtns button:active { background: rgba(255,216,74,.35); }
+  #tdWheel { position: fixed; left: calc(env(safe-area-inset-left) + 18px); bottom: calc(env(safe-area-inset-bottom) + 14px); width: 150px; height: 150px; z-index: 8; touch-action: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+  #tdWheel svg { width: 100%; height: 100%; }
+  #tdGas, #tdBrk { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 14px); width: 64px; height: 104px; border-radius: 12px; border: 2px solid #555; z-index: 8; touch-action: none; font: 800 10px system-ui; color: #fff; writing-mode: vertical-rl; letter-spacing: 1px;
+    background: repeating-linear-gradient(0deg, #2a2a30 0 8px, #3a3a42 8px 12px); }
+  #tdGas { right: calc(env(safe-area-inset-right) + 196px); border-color: #3a9a5a; } #tdBrk { right: calc(env(safe-area-inset-right) + 268px); border-color: #c8322a; width: 74px; height: 74px; writing-mode: horizontal-tb; }
+  #tdGas.on { background: #3a9a5a; } #tdBrk.on { background: #c8322a; }
+  #tdDash { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 8px); width: 220px; z-index: 7; pointer-events: none; }
+  #tdDash canvas { width: 100%; display: block; } #tdDash button { position: absolute; right: 6px; top: -26px; pointer-events: auto; font: 800 11px system-ui; padding: 4px 9px; border-radius: 8px; border: 1px solid #ffd84a; background: rgba(20,20,26,.85); color: #ffd84a; }
+  #tdDash button.on { background: #ffd84a; color: #14141a; }
   #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
@@ -305,7 +314,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 2d6bd770 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 4ecadbba · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -3440,6 +3449,16 @@ VR.Car = class {
         else { throttle = m * (Math.abs(d) > 1.6 ? 0.35 : 1); steer = VR.clamp(d * 2.2, -1, 1); }
       }
     } else { throttle = -input.ay; steer = input.ax; }
+    if (mode === 'manual' && VR.td && VR.td.on) { throttle = VR.td.gas - VR.td.brake; steer = VR.td.steer; } // volante y pedales táctiles
+    if (this.gear != null) { // cuentavueltas y caja automática
+      const sp = this.spec, mx = (sp.max.road || 240) * (this.gear > 0 ? [0, 0.3, 0.5, 0.68, 0.85, 1][this.gear] : 0.3);
+      this.rpm = VR.clamp(900 + Math.abs(this.v) / mx * 6100 + (throttle > 0 && Math.abs(this.v) < 5 ? 1500 : 0), 800, 7200);
+      if (VR.autoBox) {
+        if (this.gear > 0 && this.gear < 5 && this.rpm > 6200) this.gear++;
+        else if (this.gear > 1 && this.rpm < 2600) this.gear--;
+        if (throttle < 0 && this.v < 3 && this.gear > 0) this.gear = -1; else if (throttle > 0 && this.gear < 0 && this.v > -3) this.gear = 1;
+      }
+    }
     if (this.gear < 0) throttle = throttle > 0 ? -throttle : throttle < 0 && this.v <= 0 ? 0 : throttle; // reversa: arriba va para atrás
     else if (this.gear > 0 && throttle < 0 && this.v <= 2) throttle = 0;                          // en marcha, abajo solo frena
     // volante suave: el giro llega de a poco y a alta velocidad gira menos
@@ -6044,6 +6063,57 @@ VR.Changas = class {
   }
 };
 
+// ===== game/panel.js =====
+// Tablero de manejo manual en el teléfono (05/11/2026, pedido de Leandro): volante para arrastrar, pedales de
+// acelerador y freno, minipanel con velocímetro, cuentavueltas (rpm, luz de cambio) y marcha, y caja AUTO/MAN.
+// El auto lee VR.td = { on, steer, gas, brake } en car.update; la caja automática es VR.autoBox.
+'use strict';
+VR.td = { on: false, steer: 0, gas: 0, brake: 0 };
+VR.DrivePanel = class {
+  constructor() {
+    const el = (h) => { const d = document.createElement('div'); d.innerHTML = h; const e = d.firstChild; document.body.append(e); return e; };
+    this.wheel = el('<div id="tdWheel"><svg viewBox="-50 -50 100 100"><circle r="44" fill="none" stroke="#1c1c22" stroke-width="12"/><circle r="44" fill="none" stroke="#3a3a44" stroke-width="7"/><path d="M-40 4 L-12 10 L12 10 L40 4" stroke="#2a2a32" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M0 12 L0 40" stroke="#2a2a32" stroke-width="9" stroke-linecap="round"/><circle r="13" fill="#2a2a32"/><circle r="6" fill="#ffd84a"/><rect x="-3" y="-48" width="6" height="9" fill="#ffd84a"/></svg></div>');
+    this.gas = el('<button id="tdGas">ACELERAR</button>'); this.brk = el('<button id="tdBrk">FRENAR</button>');
+    this.dash = el('<div id="tdDash"><canvas width="360" height="140"></canvas><button id="tdBox">MAN</button></div>');
+    this.cv = this.dash.querySelector('canvas'); this.box = this.dash.querySelector('#tdBox');
+    this.box.onclick = (e) => { e.stopPropagation(); VR.autoBox = !VR.autoBox; VR.store.set('autoBox', VR.autoBox); this.paintBox(); };
+    VR.autoBox = VR.store.get('autoBox', false); this.paintBox();
+    // volante: arrastrar a los costados
+    let id = null, x0 = 0;
+    this.wheel.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); id = e.pointerId; x0 = e.clientX; this.wheel.setPointerCapture(id); });
+    this.wheel.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; VR.td.steer = VR.clamp((e.clientX - x0) / 70, -1, 1); });
+    const up = (e) => { if (e.pointerId === id) { id = null; VR.td.steer = 0; } };
+    this.wheel.addEventListener('pointerup', up); this.wheel.addEventListener('pointercancel', up);
+    for (const [b, k] of [[this.gas, 'gas'], [this.brk, 'brake']]) {
+      b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); VR.td[k] = 1; b.classList.add('on'); });
+      const off = () => { VR.td[k] = 0; b.classList.remove('on'); };
+      b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('pointerleave', off);
+    }
+  }
+  paintBox() { this.box.textContent = VR.autoBox ? 'AUTO' : 'MAN'; this.box.classList.toggle('on', !!VR.autoBox); }
+  update(car, touch) {
+    const manual = !!(car && VR.drive === 'manual'), show = manual && touch;
+    VR.td.on = show; this.wheel.hidden = this.gas.hidden = this.brk.hidden = !show; this.dash.hidden = !manual;
+    if (!show) { VR.td.steer = VR.td.gas = VR.td.brake = 0; }
+    this.wheel.style.transform = 'rotate(' + VR.td.steer * 120 + 'deg)';
+    if (!manual) return;
+    // minipanel: km/h, rpm (luz roja para cambiar) y marcha
+    const g = this.cv.getContext('2d'), W = 360, H = 140, rpm = car.rpm || 900, kmh = car.kmh();
+    g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(14,14,18,.85)'; g.beginPath(); g.roundRect(0, 0, W, H, 18); g.fill();
+    const cx = 92, cy = 92, R = 62, a0 = Math.PI * 0.8, a1 = Math.PI * 2.2;
+    g.lineWidth = 10; g.strokeStyle = '#2a2a32'; g.beginPath(); g.arc(cx, cy, R, a0, a1); g.stroke();
+    g.strokeStyle = '#c8322a'; g.beginPath(); g.arc(cx, cy, R, a0 + (a1 - a0) * 6 / 7, a1); g.stroke();
+    const k = Math.min(1, rpm / 7000), an = a0 + (a1 - a0) * k;
+    g.strokeStyle = rpm > 6000 ? '#ff4a3a' : '#ffd84a'; g.lineWidth = 10; g.beginPath(); g.arc(cx, cy, R, a0, an); g.stroke();
+    g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(an) * (R - 4), cy + Math.sin(an) * (R - 4)); g.stroke();
+    g.fillStyle = '#aaa'; g.font = '600 15px system-ui'; g.textAlign = 'center'; g.fillText('rpm ×1000', cx, cy + 34);
+    for (let i = 0; i <= 7; i++) { const t = a0 + (a1 - a0) * i / 7; g.fillText(i, cx + Math.cos(t) * (R - 20), cy + Math.sin(t) * (R - 20) + 5); }
+    if (rpm > 6000 && (performance.now() / 120 | 0) % 2) { g.fillStyle = '#ff4a3a'; g.beginPath(); g.arc(cx, 22, 7, 0, 7); g.fill(); } // luz de cambio
+    g.fillStyle = '#fff'; g.font = '800 48px system-ui'; g.textAlign = 'right'; g.fillText(kmh, 290, 76); g.font = '600 16px system-ui'; g.fillStyle = '#aaa'; g.fillText('km/h', 290, 98);
+    g.fillStyle = '#ffd84a'; g.font = '800 40px system-ui'; g.textAlign = 'center'; g.fillText(car.gear < 0 ? 'R' : car.gear || 'N', 326, 74);
+  }
+};
+
 // ===== game/vcard.js =====
 // Tarjeta del vehículo: al subirte aparece un dibujito de costado con el nombre (inventado) y una línea
 // que lo describe. Los dibujos son propios, por categoría, sin marcas ni modelos reales.
@@ -6707,8 +6777,10 @@ VR.showVehicleCard = (v) => {
     if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
       if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
-    $('gearBtns').hidden = !(car && VR.drive === 'manual' && VR.input.source === 'touch');
-    if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh() + (car.gear ? ' · ' + (car.gear < 0 ? 'R' : car.gear + 'ª') + ' ' : ''); } else if (!spd.hidden) spd.hidden = true;
+    $('gearBtns').hidden = !(car && VR.drive === 'manual' && VR.input.source === 'touch') || !!VR.autoBox;
+    dpanel.update(car, VR.input.source === 'touch');
+    if (car && VR.drive === 'manual') spd.hidden = true; // el minipanel ya muestra la velocidad
+    else if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh() + (car.gear ? ' · ' + (car.gear < 0 ? 'R' : car.gear + 'ª') + ' ' : ''); } else if (!spd.hidden) spd.hidden = true;
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
     $('dbg').hidden = false;
@@ -6782,6 +6854,7 @@ VR.showVehicleCard = (v) => {
     for (const s of L) { const b = document.createElement('button'); b.textContent = '▶ ' + s.n + ' · de ' + s.h + ' · ' + s.j + ' jugando'; b.onclick = () => { $('onRoom').value = s.n; goOnline(false); }; box.append(b); }
   };
   $('onHost').onclick = () => goOnline(true); $('onJoin').onclick = () => goOnline(false); $('onStop').onclick = () => online.stop();
+  const dpanel = new VR.DrivePanel();
   for (const [id, d] of [['gearUp', 1], ['gearDn', -1]]) $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); VR.gearReq = d; VR.input.buzz && VR.input.buzz(10); });
   seg('segManejo', 'manejo', () => { VR.drive = settings.manejo; if (car) car.gear = null; });
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
