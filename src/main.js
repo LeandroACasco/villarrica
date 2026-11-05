@@ -176,9 +176,10 @@
       const nci = nearCine(); if (nci && !nc && !ns) { hint = VR.input.source === 'touch' ? '🎬 Cine: ACCIÓN' : '🎬 Espacio: cine'; hintCar = { x: nci.x, y: nci.y - 8 }; if (VR.input.pressed('action')) { teatro.enter(); return; } }
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       if (VR.input.pressed('car')) { if (nc) enterCar(nc); else toast('Acercate a un auto o una moto para subir'); }
-      else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
+    changas.update(dt);
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
     updateCamera(dt);
@@ -292,6 +293,7 @@
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
   // ---- online ----
+  const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player }); $('btnJobs').onclick = () => changas.open();
   const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
@@ -618,5 +620,5 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();

@@ -263,6 +263,9 @@ Salas por código con WebRTC (PeerJS, `vendor/peerjs.min.js`, copiado a `docs/` 
 ### 6.14 Interior del Teatro (`teatro.js`)
 Escena aparte (no usa el mapa): `VR.Teatro` con su propio piso, butacas (`seats`), choques (`solid`), cámara con vista un poco más lejana y un `iframe` de YouTube puesto encima del lienzo justo sobre la pantalla del escenario (`SCR`). En `main.js`, si `teatro.on`, `update` y `render` le pasan el control. Online: el estado del jugador lleva `tz: 1` y `t: [x, y, dir, mv, sentado]`; los que están adentro no se dibujan en la calle.
 
+### 6.15 Changas (`changas.js`)
+`VR.Changas`: botón 📋. **Delivery** (moto): retirar en la Heladería Marimer (`world.labels`) y llevar a un punto de calle al azar (`spot()` sobre `world.roads.nodes`) con tiempo límite; 25.000 Gs. + 600 por segundo sobrante, 10.000 si llega tarde. **Remís** (auto): buscar pasajero y llevarlo; 15.000 + 9.000 por km (cada 8.000 unidades), mitad si el auto perdió más de 20 de vida. **Chipa** (a pie): ACCIÓN junto a la gente (`peds.greet`), 60 % compra a 5.000, hasta 10. Para agregar una changa: un caso más en `start()`, `update()` y el botón del diálogo.
+
 ### 6.11 Tienda (`shop.js` + diálogo en `shell.html`)
 "Ao Porã": vende lo de `VR.AV2_CAT` con sus precios; guarda en `ropa:mia` y `look:propio`; la plata en `plata`. La puerta está en la decal `tienda`.
 
