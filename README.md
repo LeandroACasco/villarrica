@@ -23,3 +23,7 @@ python3 -m http.server -d docs 8000
 
 - `data/villarrica.osm.gz`: OpenStreetMap, zona urbana de Villarrica (bbox lon −56.4745 a −56.4212, lat −25.8100 a −25.7605), bajado de Overpass el 03/11/2026. © colaboradores de OpenStreetMap (ODbL).
 - `data/barrios_ine.json`: los 8 barrios urbanos de Villarrica, recortados de la cartografía de barrios y localidades 2025 del INE Paraguay.
+
+## Documentación técnica
+
+Cómo está armado el juego y recetas para agregar cosas (vehículos, ropa, lugares, armas): [TECNICO.md](TECNICO.md).
