@@ -160,6 +160,9 @@
   #tvFrame.off iframe { display: none; } #tvFrame.off .tvOff { display: flex; }
   #tvFrame .tvBack { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 8px); width: auto; padding: 0 16px; }
   #tvFrame.full { height: 100vh; z-index: 40; padding: 3vh 8vw calc(env(safe-area-inset-bottom) + 56px); } #tvFrame.full .tvBack { display: block; }
+  #gearBtns { position: fixed; right: calc(env(safe-area-inset-right) + 235px); bottom: calc(env(safe-area-inset-bottom) + 18px); z-index: 7; display: flex; flex-direction: column; gap: 10px; }
+  #gearBtns button { width: 56px; height: 56px; border-radius: 50%; border: 2px solid rgba(255,216,74,.8); background: rgba(20,20,26,.6); color: #ffd84a; font: 700 22px system-ui; touch-action: none; }
+  #gearBtns button:active { background: rgba(255,216,74,.35); }
   #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
@@ -226,6 +229,7 @@
 <dialog id="onDlg"><h2>🌐 Online</h2><div id="onSlot"></div><div class="seg"><button id="onClose">Cerrar</button></div></dialog>
 <div id="chatLog"></div>
 <form id="chatBox" hidden><input id="chatIn" maxlength="80" placeholder="Escribí y apretá Enter" autocomplete="off"></form>
+<div id="gearBtns" hidden><button id="gearUp">▲</button><button id="gearDn">▼</button></div>
 <div id="topbar">
   <button class="icon-btn" id="btnJobs" title="Changas">📋</button>
   <button class="icon-btn" id="btnOnline" title="Online">🌐</button>
@@ -265,7 +269,7 @@
     <p id="onStatus" class="hint">Sin conectar · una persona crea la sala con un código y la otra se une con el mismo código</p></div>
     <h3>Manejo</h3>
     <div class="seg" id="segManejo"><button data-v="facil">Fácil</button><button data-v="clasico">Clásico</button><button data-v="manual">Manual</button></div>
-    <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB sube, Q/LB baja; parado en 1ª, Q pone la reversa).</p>
+    <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB o ▲ sube, Q/LB o ▼ baja; parado en 1ª, bajar pone la reversa; en el teléfono el joystick es volante y pedal).</p>
     <h3>Hora del día</h3>
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
     <h3>Opciones</h3>

@@ -160,6 +160,9 @@
   #tvFrame.off iframe { display: none; } #tvFrame.off .tvOff { display: flex; }
   #tvFrame .tvBack { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 8px); width: auto; padding: 0 16px; }
   #tvFrame.full { height: 100vh; z-index: 40; padding: 3vh 8vw calc(env(safe-area-inset-bottom) + 56px); } #tvFrame.full .tvBack { display: block; }
+  #gearBtns { position: fixed; right: calc(env(safe-area-inset-right) + 235px); bottom: calc(env(safe-area-inset-bottom) + 18px); z-index: 7; display: flex; flex-direction: column; gap: 10px; }
+  #gearBtns button { width: 56px; height: 56px; border-radius: 50%; border: 2px solid rgba(255,216,74,.8); background: rgba(20,20,26,.6); color: #ffd84a; font: 700 22px system-ui; touch-action: none; }
+  #gearBtns button:active { background: rgba(255,216,74,.35); }
   #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
@@ -229,6 +232,7 @@
 <dialog id="onDlg"><h2>🌐 Online</h2><div id="onSlot"></div><div class="seg"><button id="onClose">Cerrar</button></div></dialog>
 <div id="chatLog"></div>
 <form id="chatBox" hidden><input id="chatIn" maxlength="80" placeholder="Escribí y apretá Enter" autocomplete="off"></form>
+<div id="gearBtns" hidden><button id="gearUp">▲</button><button id="gearDn">▼</button></div>
 <div id="topbar">
   <button class="icon-btn" id="btnJobs" title="Changas">📋</button>
   <button class="icon-btn" id="btnOnline" title="Online">🌐</button>
@@ -268,7 +272,7 @@
     <p id="onStatus" class="hint">Sin conectar · una persona crea la sala con un código y la otra se une con el mismo código</p></div>
     <h3>Manejo</h3>
     <div class="seg" id="segManejo"><button data-v="facil">Fácil</button><button data-v="clasico">Clásico</button><button data-v="manual">Manual</button></div>
-    <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB sube, Q/LB baja; parado en 1ª, Q pone la reversa).</p>
+    <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB o ▲ sube, Q/LB o ▼ baja; parado en 1ª, bajar pone la reversa; en el teléfono el joystick es volante y pedal).</p>
     <h3>Hora del día</h3>
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
     <h3>Opciones</h3>
@@ -301,7 +305,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión f9898621 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 2d6bd770 · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -3421,12 +3425,13 @@ VR.Car = class {
     // modos (05/11/2026): 'facil' = apuntás hacia dónde ir (como el táctil); 'clasico' = costados giran;
     // 'manual' = como el clásico pero con cambios (E/RB sube, Q/LB baja; R = reversa)
     const mode = VR.drive || 'facil';
-    if (mode === 'manual' && input.source !== 'touch') {
+    if (mode === 'manual') {
       this.gear = this.gear ?? 1;
+      if (VR.gearReq) { const up = VR.gearReq > 0; VR.gearReq = 0; if (up) this.gear = this.gear < 0 ? 1 : Math.min(5, this.gear + 1); else this.gear = this.gear <= 1 ? (Math.abs(this.v) < 15 ? -1 : 1) : this.gear - 1; } // botones táctiles ▲ ▼
       if (input.pressed('fire')) { this.gear = this.gear < 0 ? 1 : Math.min(5, this.gear + 1); VR.audio.gear && VR.audio.gear(); }
       if (input.pressed('weapon')) this.gear = this.gear <= 1 ? (Math.abs(this.v) < 15 ? -1 : 1) : this.gear - 1;
     } else this.gear = null;
-    if (input.source === 'touch' || mode === 'facil') {
+    if (mode === 'facil' || (input.source === 'touch' && mode !== 'manual')) { // en manual, el joystick es volante y pedal
       const m = Math.min(1, Math.hypot(input.ax, input.ay));
       if (m > 0.1) {
         const want = Math.atan2(input.ax, -input.ay);
@@ -6702,6 +6707,7 @@ VR.showVehicleCard = (v) => {
     if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
       if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
+    $('gearBtns').hidden = !(car && VR.drive === 'manual' && VR.input.source === 'touch');
     if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh() + (car.gear ? ' · ' + (car.gear < 0 ? 'R' : car.gear + 'ª') + ' ' : ''); } else if (!spd.hidden) spd.hidden = true;
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
@@ -6776,6 +6782,7 @@ VR.showVehicleCard = (v) => {
     for (const s of L) { const b = document.createElement('button'); b.textContent = '▶ ' + s.n + ' · de ' + s.h + ' · ' + s.j + ' jugando'; b.onclick = () => { $('onRoom').value = s.n; goOnline(false); }; box.append(b); }
   };
   $('onHost').onclick = () => goOnline(true); $('onJoin').onclick = () => goOnline(false); $('onStop').onclick = () => online.stop();
+  for (const [id, d] of [['gearUp', 1], ['gearDn', -1]]) $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); VR.gearReq = d; VR.input.buzz && VR.input.buzz(10); });
   seg('segManejo', 'manejo', () => { VR.drive = settings.manejo; if (car) car.gear = null; });
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };

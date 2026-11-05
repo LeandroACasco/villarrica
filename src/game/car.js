@@ -413,12 +413,13 @@ VR.Car = class {
     // modos (05/11/2026): 'facil' = apuntás hacia dónde ir (como el táctil); 'clasico' = costados giran;
     // 'manual' = como el clásico pero con cambios (E/RB sube, Q/LB baja; R = reversa)
     const mode = VR.drive || 'facil';
-    if (mode === 'manual' && input.source !== 'touch') {
+    if (mode === 'manual') {
       this.gear = this.gear ?? 1;
+      if (VR.gearReq) { const up = VR.gearReq > 0; VR.gearReq = 0; if (up) this.gear = this.gear < 0 ? 1 : Math.min(5, this.gear + 1); else this.gear = this.gear <= 1 ? (Math.abs(this.v) < 15 ? -1 : 1) : this.gear - 1; } // botones táctiles ▲ ▼
       if (input.pressed('fire')) { this.gear = this.gear < 0 ? 1 : Math.min(5, this.gear + 1); VR.audio.gear && VR.audio.gear(); }
       if (input.pressed('weapon')) this.gear = this.gear <= 1 ? (Math.abs(this.v) < 15 ? -1 : 1) : this.gear - 1;
     } else this.gear = null;
-    if (input.source === 'touch' || mode === 'facil') {
+    if (mode === 'facil' || (input.source === 'touch' && mode !== 'manual')) { // en manual, el joystick es volante y pedal
       const m = Math.min(1, Math.hypot(input.ax, input.ay));
       if (m > 0.1) {
         const want = Math.atan2(input.ax, -input.ay);
