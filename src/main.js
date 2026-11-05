@@ -624,5 +624,5 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();

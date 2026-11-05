@@ -151,6 +151,15 @@
   .vrdlg label { display: inline-block; width: 48%; margin: 0 1% 6px; font-size: 13px; } .vrdlg select, .vrdlg input { width: 100%; padding: 6px; box-sizing: border-box; font: inherit; }
   .vrdlg iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; background: #000; }
   #onSalas button { display: block; width: 100%; margin: 3px 0; text-align: left; }
+  #tvFrame { position: fixed; left: 0; top: 0; width: 100vw; height: min(56vh, calc(100vw * 9 / 16 + 40px)); z-index: 4; box-sizing: border-box; padding: 12px 9vw 16px;
+    background: linear-gradient(90deg, #16285a 0, #2a4a9a 3vw, #16285a 6vw, #a02430 6vw, #a02430 7vw, #0c1a2c 7vw, #0c1a2c 93vw, #a02430 93vw, #a02430 94vw, #16285a 94vw, #2a4a9a 97vw, #16285a 100%);
+    box-shadow: inset 0 -10px 18px -6px rgba(90,208,255,.6); display: flex; align-items: center; justify-content: center; }
+  #tvFrame .tvIn { position: relative; flex: none; background: #05060a; border: 3px solid #05060a; border-radius: 2px; box-shadow: 0 0 22px rgba(90,170,255,.35); }
+  #tvFrame iframe { width: 100%; height: 100%; border: 0; display: block; }
+  #tvFrame .tvOff { display: none; position: absolute; inset: 0; margin: 0; align-items: center; justify-content: center; text-align: center; color: #8aa0c0; font: 600 14px system-ui; padding: 10px; }
+  #tvFrame.off iframe { display: none; } #tvFrame.off .tvOff { display: flex; }
+  #tvFrame .tvBack { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 8px); width: auto; padding: 0 16px; }
+  #tvFrame.full { height: 100vh; z-index: 40; padding: 3vh 8vw calc(env(safe-area-inset-bottom) + 56px); } #tvFrame.full .tvBack { display: block; }
   #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }

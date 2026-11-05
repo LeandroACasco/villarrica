@@ -15,8 +15,14 @@ VR.Teatro = class {
       for (let i = 0; i < n; i++) this.seats.push({ x: x0 + 7 + i * 16, y });
     }
     this.solid = [{ x: 0, y: 0, w: 18, h: 530 }, { x: 342, y: 0, w: 18, h: 530 }, { x: 0, y: 0, w: 360, h: 122 }, { x: 18, y: 0, w: 70, h: 150 }, { x: 272, y: 0, w: 70, h: 150 }, { x: 0, y: 518, w: 360, h: 12 }].concat(this.blocks);
-    this.ifr = document.createElement('iframe'); this.ifr.allow = 'autoplay; encrypted-media'; this.ifr.style.cssText = 'position:fixed;border:0;z-index:4;display:none;background:#000';
-    document.body.append(this.ifr);
+    // pantalla grande (05/11/2026): arriba la pantalla del teatro con su telón; abajo, la sala de cerca.
+    // Sentado, "Solo mirar" la pone en pantalla completa con el mismo marco.
+    this.fr = document.createElement('div'); this.fr.id = 'tvFrame'; this.fr.hidden = true;
+    this.fr.innerHTML = '<div class="tvIn"><iframe allow="autoplay; encrypted-media" allowfullscreen></iframe><p class="tvOff">🎬 La pantalla está apagada · tocá «Poner video»</p></div><button class="icon-btn tvBack">↩ Volver a la sala</button>';
+    document.body.append(this.fr); this.ifr = this.fr.querySelector('iframe');
+    this.fr.querySelector('.tvBack').onclick = () => this.setFull(false);
+    this.watch = document.createElement('button'); this.watch.className = 'icon-btn'; this.watch.textContent = '📺 Solo mirar'; this.watch.style.cssText = 'position:fixed;right:calc(env(safe-area-inset-right) + 10px);bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:6;display:none;width:auto;padding:0 14px';
+    this.watch.onclick = () => this.setFull(true); document.body.append(this.watch);
     this.btn = document.createElement('button'); this.btn.textContent = '🎬 Poner video'; this.btn.className = 'icon-btn'; this.btn.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:6;display:none;width:auto;padding:0 14px';
     document.body.append(this.btn);
   }
@@ -33,8 +39,9 @@ VR.Teatro = class {
     if (Math.abs(cur - target) > 1.2) this.yt('seekTo', [target, true]);
     if (this.vstate === 2 || this.vstate === -1 || this.vstate === 5) this.yt('playVideo');
   }
-  enter() { this.on = true; Object.assign(this.t = this.t || {}, { x: 180, y: 500, dir: 'up', moving: false, anim: 0, sit: null }); this.btn.style.display = ''; this.cur = null; this.toast('🎭 Teatro Municipal · ACCIÓN para sentarte'); }
-  exit() { this.on = false; this.ifr.style.display = 'none'; this.ifr.src = 'about:blank'; this.cur = null; this.btn.style.display = 'none'; }
+  setFull(on) { this.full = on; this.fr.classList.toggle('full', on); }
+  enter() { this.on = true; Object.assign(this.t = this.t || {}, { x: 180, y: 500, dir: 'up', moving: false, anim: 0, sit: null }); this.btn.style.display = ''; this.cur = null; this.fr.hidden = false; this.toast('🎭 Teatro Municipal · ACCIÓN para sentarte'); }
+  exit() { this.on = false; this.fr.hidden = true; this.setFull(false); this.ifr.src = 'about:blank'; this.cur = null; this.btn.style.display = 'none'; this.watch.style.display = 'none'; }
   hit(x, y) { for (const r of this.solid) if (x > r.x - 4 && x < r.x + r.w + 4 && y > r.y - 2 && y < r.y + r.h + 2) return true; return false; }
   update(dt, I) {
     const t = this.t;
@@ -64,9 +71,9 @@ VR.Teatro = class {
     if (name) { g.font = 'bold 7px sans-serif'; g.textAlign = 'center'; g.lineWidth = 2.5; g.strokeStyle = 'rgba(0,0,0,.75)'; g.strokeText(name, X, Y - 34); g.fillStyle = '#ffd84a'; g.fillText(name, X, Y - 34); }
   }
   draw(g, sw0, sh0) {
-    const t = this.t, W = this.W, H = this.H, z = VR.clamp(sh0 / 470, 0.55, 1), sw = sw0 / z, sh = sh0 / z; // vista un poco más lejos: se ve el escenario desde las butacas
+    const t = this.t, W = this.W, H = this.H, z = 1, sw = sw0, sh = sh0, kk = VR.screen.scale / (window.devicePixelRatio || 1), band = this.fr.offsetHeight / kk; // la franja de arriba es la pantalla grande
     g.save(); g.scale(z, z);
-    const ty = t.sit ? t.sit.y : t.y, cx = W <= sw ? (W - sw) / 2 : VR.clamp(t.x - sw / 2, 0, W - sw), cy = H <= sh ? (H - sh) / 2 : VR.clamp(Math.min(ty - sh / 2, ty - sh + 28), -6, H - sh + 10);
+    const ty = t.sit ? t.sit.y : t.y, cx = W <= sw ? (W - sw) / 2 : VR.clamp(t.x - sw / 2, 0, W - sw), cy = ty - band - (sh - band) * 0.62;
     g.fillStyle = '#16141a'; g.fillRect(0, 0, sw, sh);
     g.save(); g.translate(-Math.round(cx), -Math.round(cy));
     // piso: alfombra gris con lucecitas en los pasillos
@@ -100,13 +107,14 @@ VR.Teatro = class {
     g.fillStyle = '#e8e4dc'; g.fillRect(18, 518, 324, 12); g.fillStyle = '#7a4a2a'; g.fillRect(146, 516, 68, 10); g.fillStyle = '#9ac8d8'; for (let x = 149; x < 212; x += 16) g.fillRect(x, 518, 13, 7);
     if (t.y > 488 && Math.abs(t.x - 180) < 40 && !t.sit) { g.font = 'bold 8px sans-serif'; g.textAlign = 'center'; g.fillStyle = '#fff'; g.fillText('ACCIÓN: salir', 180, 510); }
     g.restore(); g.restore();
-    // el video, encima de la pantalla
-    const c = VR.cineNow, k = z * VR.screen.scale / (window.devicePixelRatio || 1), r = VR.screen.canvas.getBoundingClientRect();
+    // el video en la pantalla grande de arriba (o completa)
+    this.watch.style.display = t.sit && !this.full ? '' : 'none';
+    { const cs = getComputedStyle(this.fr), iw = this.fr.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), ih = this.fr.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom), w = Math.max(0, Math.min(iw, ih * 16 / 9)), box = this.fr.firstChild;
+      if (box.dataset.w !== String(w | 0)) { box.dataset.w = w | 0; box.style.width = w + 'px'; box.style.height = w * 9 / 16 + 'px'; } } // 16:9 siempre, entre en lo que haya
+    const c = VR.cineNow; this.fr.classList.toggle('off', !c);
     if (c) {
-      const src = 'https://www.youtube-nocookie.com/embed/' + c.v + '?autoplay=1&controls=0&enablejsapi=1&origin=' + encodeURIComponent(location.origin) + '&start=' + Math.max(0, Math.floor((VR.netNow() - c.t0) / 1000));
-      if (this.cur !== c.v + c.t0) { this.cur = c.v + c.t0; this.ifr.src = src; this.vt = null; this.syncT = performance.now() + 2500; }
+      if (this.cur !== c.v + c.t0) { this.cur = c.v + c.t0; this.ifr.src = 'https://www.youtube-nocookie.com/embed/' + c.v + '?autoplay=1&controls=0&enablejsapi=1&origin=' + encodeURIComponent(location.origin) + '&start=' + Math.max(0, Math.floor((VR.netNow() - c.t0) / 1000)); this.vt = null; this.syncT = performance.now() + 2500; }
       this.sync(c);
-      Object.assign(this.ifr.style, { display: '', left: r.left + (S.x - cx) * k + 'px', top: r.top + (S.y - cy) * k + 'px', width: S.w * k + 'px', height: S.h * k + 'px' });
-    } else this.ifr.style.display = 'none';
+    }
   }
 };
