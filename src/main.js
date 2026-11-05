@@ -130,6 +130,7 @@
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
   let sayIdx = 0, hint = '', hintCar = null, holdT = 0;
   function update(dt) {
+    online.update(dt, player, car);
     if (mapOpen) {
       if (['map', 'menu'].some((b) => VR.input.pressed(b))) closeMap();
       else if (VR.input.ax || VR.input.ay) { mv.ox -= VR.input.ax * 700 * dt; mv.oy -= VR.input.ay * 700 * dt; mapApply(); }
@@ -183,6 +184,7 @@
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
     if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
+    online.collect(cx, cy, a, tall);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
@@ -251,7 +253,7 @@
   menu.addEventListener('close', () => { VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; });
   $('btnMenu').onclick = openMenu;
   $('menuClose').onclick = () => menu.close();
-  menu.addEventListener('keydown', (e) => { if (e.code === 'KeyP') menu.close(); });
+  menu.addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !/INPUT/.test(e.target.tagName)) menu.close(); });
   $('btnFull').onclick = () => {
     if (document.fullscreenElement) { document.exitFullscreen(); return; }
     const el = document.documentElement;
@@ -266,6 +268,15 @@
   };
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
+  // ---- online ----
+  const online = new VR.Online();
+  $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
+  online.onStatus = (st) => { $('onStatus').textContent = st; };
+  const goOnline = (host) => {
+    const nick = $('onNick').value.trim() || 'Jugador', room = $('onRoom').value.trim().replace(/[^a-z0-9]/gi, '') || String(1000 + ((Math.random() * 9000) | 0));
+    $('onRoom').value = room; VR.store.set('nick', nick); VR.store.set('sala', room); online.set('Conectando…'); online.start(nick, room, host);
+  };
+  $('onHost').onclick = () => goOnline(true); $('onJoin').onclick = () => goOnline(false); $('onStop').onclick = () => online.stop();
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };

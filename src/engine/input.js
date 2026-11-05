@@ -15,6 +15,7 @@ VR.input = (() => {
   const any = () => { if (api.onAny) api.onAny(); };
   addEventListener('keydown', (e) => {
     if (!api.enabled) return;
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return; // escribiendo (nombre, sala)
     const d = dirKeys[e.code], b = btnKeys[e.code];
     if (!d && !b) return;
     e.preventDefault(); api.source = 'kb'; any();

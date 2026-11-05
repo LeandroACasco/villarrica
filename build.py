@@ -8,7 +8,7 @@ root = pathlib.Path(__file__).parent
 # orden de carga de los scripts (todo queda en un solo index.html)
 SCRIPTS = ['engine/inflate.js', 'engine/core.js', 'engine/input.js', 'engine/gfx.js', 'engine/audio.js',
            'world/tiles.js', 'world/world.js', 'world/testmap.js',
-           'game/avatar2.js', 'game/player.js', 'game/car.js', 'game/autos.js', 'game/tune.js', 'game/traffic.js', 'game/gps.js', 'game/peds.js', 'game/night.js', 'game/emerg.js', 'game/weapons.js', 'game/shop.js', 'game/vcard.js', 'game/sidehd.js', 'main.js']
+           'game/avatar2.js', 'game/player.js', 'game/car.js', 'game/autos.js', 'game/tune.js', 'game/traffic.js', 'game/gps.js', 'game/peds.js', 'game/night.js', 'game/emerg.js', 'game/weapons.js', 'game/shop.js', 'game/online.js', 'game/vcard.js', 'game/sidehd.js', 'main.js']
 
 
 def build():
@@ -44,6 +44,7 @@ def build():
     }
     (docs / 'manifest.webmanifest').write_text(json.dumps(manifest, ensure_ascii=False, indent=1))
     (docs / 'sw.js').write_text((root / 'src/sw.js').read_text().replace('__VERSION__', version))
+    shutil.copy(root / 'vendor/peerjs.min.js', docs / 'peerjs.min.js')  # online (PeerJS, licencia MIT)
     (docs / '.nojekyll').write_text('')
     # Editor de personas: el mismo avatar2.js del juego, con perillas (también se publica como artifact)
     ed = (root / 'tools/editor_personas.html').read_text().replace('/*AVATAR2*/', (root / 'src/game/avatar2.js').read_text())

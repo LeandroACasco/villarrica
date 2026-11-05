@@ -252,6 +252,9 @@ Estrellas de búsqueda, policía (patrulleros `patrulla`, `policam`), ambulancia
 ### 6.10 Noche (`night.js`)
 Oscurece según la hora y pone luces (`this.put(x, y, radio, 'r,g,b', intensidad)`) en faroles, vidrieras y por cada `d.kind`.
 
+### 6.12 Online (`online.js`)
+Salas por código con WebRTC (PeerJS, `vendor/peerjs.min.js`, copiado a `docs/` por build.py; usa el servidor público gratuito de PeerJS solo para que los jugadores se encuentren). El que crea la sala (`Peer('villarrica-<código>')`) es el anfitrión y reenvía los mensajes a todos. Cada jugador manda 10 veces por segundo `{id, n: nombre, x, y, d: dirección, mv, c: [tipo, modelo, color, ángulo], L: look}`; `collect()` los dibuja con su personaje o vehículo y el nombre arriba. Solo se comparten los jugadores: tránsito, peatones y policía son de cada uno. Menú → Online (nombre y sala se guardan en `nick` y `sala`). Para probar sin internet: `window.__peerOpts = {host, port, path}` apunta a un servidor `peer` local.
+
 ### 6.11 Tienda (`shop.js` + diálogo en `shell.html`)
 "Ao Porã": vende lo de `VR.AV2_CAT` con sus precios; guarda en `ropa:mia` y `look:propio`; la plata en `plata`. La puerta está en la decal `tienda`.
 

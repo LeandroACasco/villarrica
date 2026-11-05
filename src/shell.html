@@ -134,6 +134,8 @@
   .seg button { flex: 1; background: var(--key); color: var(--text); border: none; padding: 9px 6px; font: 500 13px system-ui; cursor: pointer; }
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button.on { background: var(--accent); color: #111; }
+  .online input { width: 48%; margin: 0 1% 6px; padding: 7px; font: inherit; border-radius: 6px; border: 1px solid var(--line); background: #1a1a20; color: #fff; box-sizing: border-box; }
+  .online .hint { font-size: 12px; opacity: .75; margin: 4px 0 0; }
   #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
@@ -224,6 +226,10 @@
     <div class="seg" id="segTouch"><button data-v="auto">Automático</button><button data-v="on">Mostrar</button><button data-v="off">Ocultar</button></div>
     <h3>Personaje</h3>
     <div class="seg" id="segPj"><button data-v="propio">Mío (tienda)</button><button data-v="generico">Genérico</button><button data-v="leandro">Leandro</button><button data-v="sofia">Sofía</button><button data-v="deisy">Deisy</button><button data-v="cinthia">Cinthia</button><button data-v="nora">Nora</button></div>
+    <h3>Online (jugar con amigos)</h3>
+    <div class="online"><input id="onNick" maxlength="14" placeholder="Tu nombre"><input id="onRoom" maxlength="8" placeholder="Código de sala">
+    <div class="seg"><button id="onHost">Crear sala</button><button id="onJoin">Unirse</button><button id="onStop">Salir</button></div>
+    <p id="onStatus" class="hint">Sin conectar · una persona crea la sala con un código y la otra se une con el mismo código</p></div>
     <h3>Hora del día</h3>
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
     <h3>Opciones</h3>
