@@ -257,6 +257,9 @@
     <button id="onRef">🌐 Ver salas abiertas</button><div id="onSalas"></div>
     <p id="onList"></p>
     <p id="onStatus" class="hint">Sin conectar · una persona crea la sala con un código y la otra se une con el mismo código</p></div>
+    <h3>Manejo</h3>
+    <div class="seg" id="segManejo"><button data-v="facil">Fácil</button><button data-v="clasico">Clásico</button><button data-v="manual">Manual</button></div>
+    <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB sube, Q/LB baja; parado en 1ª, Q pone la reversa).</p>
     <h3>Hora del día</h3>
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
     <h3>Opciones</h3>
@@ -289,7 +292,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 51b71cdb · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión cf2cf4b6 · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -3406,7 +3409,15 @@ VR.Car = class {
   update(dt, input) {
     let throttle = 0, steer = 0;
     const brake = input.down('run');
-    if (input.source === 'touch') {
+    // modos (05/11/2026): 'facil' = apuntás hacia dónde ir (como el táctil); 'clasico' = costados giran;
+    // 'manual' = como el clásico pero con cambios (E/RB sube, Q/LB baja; R = reversa)
+    const mode = VR.drive || 'facil';
+    if (mode === 'manual' && input.source !== 'touch') {
+      this.gear = this.gear ?? 1;
+      if (input.pressed('fire')) { this.gear = this.gear < 0 ? 1 : Math.min(5, this.gear + 1); VR.audio.gear && VR.audio.gear(); }
+      if (input.pressed('weapon')) this.gear = this.gear <= 1 ? (Math.abs(this.v) < 15 ? -1 : 1) : this.gear - 1;
+    } else this.gear = null;
+    if (input.source === 'touch' || mode === 'facil') {
       const m = Math.min(1, Math.hypot(input.ax, input.ay));
       if (m > 0.1) {
         const want = Math.atan2(input.ax, -input.ay);
@@ -3415,7 +3426,11 @@ VR.Car = class {
         else { throttle = m * (Math.abs(d) > 1.6 ? 0.35 : 1); steer = VR.clamp(d * 2.2, -1, 1); }
       }
     } else { throttle = -input.ay; steer = input.ax; }
-    this.physics(dt, throttle, steer, brake);
+    if (this.gear < 0) throttle = throttle > 0 ? -throttle : throttle < 0 && this.v <= 0 ? 0 : throttle; // reversa: arriba va para atrás
+    else if (this.gear > 0 && throttle < 0 && this.v <= 2) throttle = 0;                          // en marcha, abajo solo frena
+    // volante suave: el giro llega de a poco y a alta velocidad gira menos
+    this.st = (this.st || 0) + (steer - (this.st || 0)) * Math.min(1, dt * 8);
+    this.physics(dt, throttle, this.st * (1 - Math.min(0.3, Math.abs(this.v) / 800)), brake);
   }
   get mass() { return this.spec.mass; }
   // Física: velocidad como vector (vx, vy) además del rumbo, así el vehículo puede derrapar;
@@ -3430,7 +3445,9 @@ VR.Car = class {
     if (parked) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 260 * dt);
     else {
       if (brake) vf -= Math.sign(vf) * Math.min(Math.abs(vf), sp.brake * dt);
-      if (throttle > 0) vf += (vf < 0 ? 380 : sp.acc * gripF) * throttle * dt;
+      const G = this.gear > 0 ? [0, 0.3, 0.5, 0.68, 0.85, 1][this.gear] : 1, GA = this.gear > 0 ? [0, 1.35, 1.15, 0.95, 0.78, 0.62][this.gear] : 1;
+      if (this.gear > 0 && vf > max * G) vf = Math.max(max * G, vf - 160 * dt);                  // freno motor del cambio
+      if (throttle > 0) vf += (vf < 0 ? 380 : sp.acc * gripF * GA) * throttle * (this.gear > 0 && vf > max * G ? 0 : 1) * dt;
       else if (throttle < 0) vf += (vf > 0 ? 380 : 120) * throttle * dt;
       else vf -= Math.sign(vf) * Math.min(Math.abs(vf), 70 * dt);
       if (vf > max) vf = Math.max(max, vf - 260 * dt);
@@ -3438,7 +3455,7 @@ VR.Car = class {
     }
     // agarre lateral: menos en tierra y pasto, y casi nada si frenás fuerte doblando (derrape)
     const t = this.world.get(Math.floor(this.x / VR.TILE), Math.floor(this.y / VR.TILE)), T = VR.T;
-    let grip = t === T.ROAD ? 9 : t === T.STONE ? 7 : t === T.DIRTROAD || t === T.DIRT || t === T.PLAZADIRT ? 4.5 : t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER ? 7.5 : 3.5;
+    let grip = t === T.ROAD ? 11.5 : t === T.STONE ? 8.5 : t === T.DIRTROAD || t === T.DIRT || t === T.PLAZADIRT ? 4.5 : t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER ? 7.5 : 3.5;
     if (this.type === 'moto') grip *= 1.4;
     if (brake && Math.abs(vf) > 70 && Math.abs(steer) > 0.2) grip *= 0.22;
     if (parked) grip = 6;
@@ -3535,7 +3552,7 @@ VR.Car = class {
           this.vx -= (1 + e) * vn * nnx; this.vy -= (1 + e) * vn * nny;
           // roce: pierde algo de la velocidad que va a lo largo de la pared
           const tx = this.vx - (this.vx * nnx + this.vy * nny) * nnx, ty = this.vy - (this.vx * nnx + this.vy * nny) * nny;
-          this.vx -= tx * 0.12; this.vy -= ty * 0.12;
+          this.vx -= tx * 0.04; this.vy -= ty * 0.04; // resbala a lo largo de la pared (antes frenaba más)
           const cx = mx - nx, cy = my - ny;
           this.w += (cx * nny - cy * nnx) * (-vn) * 0.0022;
           impact = -vn;
@@ -3568,6 +3585,7 @@ VR.Car = class {
       const ro = this.spec.riderOff || 0;
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro), R.S, R.S);
     }
+    if (this.taxi) { ctx.save(); ctx.translate(x + shake, y); ctx.rotate(a); ctx.fillStyle = '#1a1a1e'; ctx.fillRect(-4, -2.5, 8, 5); ctx.fillStyle = '#ffd23a'; ctx.fillRect(-3.5, -2, 7, 4); ctx.fillStyle = '#1a1a1e'; for (let i = -3; i < 3; i += 2) ctx.fillRect(i, -0.5, 1, 1); ctx.restore(); }
     if (this.siren && this.spec.lights) { // barra de luces titilando
       const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : this.model === 'ambulancia' ? this.LEN * 0.22 : this.LEN * 0.1;
       const bx = x + Math.sin(a) * f, by = y - Math.cos(a) * f, rx = Math.cos(a) * 3.5, ry = Math.sin(a) * 3.5;
@@ -4776,7 +4794,7 @@ VR.Emergency = class {
 
   // ---------- daño, fuego y explosiones ----------
   damage(c, imp, o) {
-    const hurt = (v, k) => { if (v.wreck || v.spec.noFire) return; const m = (v.spec.mass > 2 ? 0.45 : 1) * (v.unit ? 0.35 : 1); v.hp = (v.hp ?? 100) - (imp - 50) * 0.13 * k * m; if (v.hp <= 0 && !v.burning) this.ignite(v); };
+    const hurt = (v, k) => { if (v.wreck || v.spec.noFire) return; const m = (v.spec.mass > 2 ? 0.45 : 1) * (v.unit ? 0.35 : 1); v.hp = (v.hp ?? 100) - Math.max(0, imp - 90) * 0.07 * k * m * (o && o.spec ? 1 : 0.6); if (v.hp <= 0 && !v.burning) this.ignite(v); };
     hurt(c, 1); if (o && o.spec) hurt(o, 0.8);
     VR.audio.crash(c.x, c.y, imp);
     if (c.driven && imp > 110) this.reckless(c.x, c.y);
@@ -5740,9 +5758,13 @@ VR.Online.NEAR = 900; // px: más cerca que esto del anfitrión, se ve su tráns
 VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; d.className = 'vrdlg'; d.innerHTML = html; document.body.append(d); return d; };
 VR.Garage = class {
   constructor() {
-    this.d = VR.dlg('garage', '<h2>🔧 Taller Pyahu</h2><canvas id="grPrev" width="320" height="180"></canvas><div id="grParts"></div><p id="grTot"></p><div class="seg"><button id="grBuy">Comprar</button><button id="grOut">Salir</button></div>');
+    this.d = VR.dlg('garage', '<h2>🔧 Taller Pyahu</h2><canvas id="grPrev" width="320" height="180"></canvas><div id="grParts"></div><p id="grTot"></p><div class="seg"><button id="grFix">🔧 Reparar</button><button id="grBuy">Comprar</button><button id="grOut">Salir</button></div>');
     this.d.querySelector('#grOut').onclick = () => this.close();
     this.d.querySelector('#grBuy').onclick = () => this.buy();
+    this.d.querySelector('#grFix').onclick = () => { // reparar: 1.500 Gs. por punto de vida
+      const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.toast('✨ Está joya, no hace falta'); return; }
+      const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.toast('💸 Reparar cuesta ' + VR.fmtGs(n)); return; }
+      VR.Wallet.add(-n); c.hp = 100; if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.toast('🔧 Quedó como nuevo · ' + VR.fmtGs(n)); this.paint(); };
   }
   open(car, toast) {
     this.car = car; this.toast = toast; const m = car.model, M = VR.TUNE_MODELS[m];
@@ -5762,7 +5784,7 @@ VR.Garage = class {
   paint() {
     const c = this.d.querySelector('#grPrev'), g = c.getContext('2d'); g.clearRect(0, 0, 320, 180);
     try { g.drawImage(VR.drawSideHD(this.car.model, VR.tunePal(this.t.color), this.t, 320, 180), 0, 0); } catch (e) {}
-    this.d.querySelector('#grTot').textContent = 'Total: ' + VR.fmtGs(this.cost()) + ' · tenés ' + VR.fmtGs(VR.Wallet.get());
+    this.d.querySelector('#grTot').textContent = 'Total: ' + VR.fmtGs(this.cost()) + ' · vida ' + Math.round(Math.max(0, this.car.hp ?? 100)) + '% · tenés ' + VR.fmtGs(VR.Wallet.get());
   }
   buy() {
     const n = this.cost(); if (n > VR.Wallet.get()) { this.toast('💸 No te alcanza la plata'); return; }
@@ -5913,26 +5935,57 @@ VR.Changas = class {
   constructor(o) { // o: { world, peds, setDest, toast, getCar, player }
     Object.assign(this, o); this.job = null; this.rnd = Math.random;
     this.hud = document.createElement('div'); this.hud.id = 'jobHud'; this.hud.hidden = true; document.body.append(this.hud);
-    this.d = VR.dlg('changasDlg', '<h2>📋 Changas</h2><div class="seg" style="flex-direction:column"><button data-k="delivery">🍦 Delivery de helados · en moto</button><button data-k="remis">🚕 Remís · en auto</button><button data-k="chipa">🥐 Vender chipa · a pie</button><button data-k="no">Dejar la changa</button></div><p class="hint">Delivery: retirá en la Heladería Marimer y llevá a tiempo. Remís: buscá al pasajero y llevalo; si chocás, paga la mitad. Chipa: acercate a la gente y ACCIÓN.</p><div class="seg"><button data-k="x">Cerrar</button></div>');
+    this.d = VR.dlg('changasDlg', '<h2>📋 Changas</h2><div class="seg" style="flex-direction:column"><button data-k="delivery">🍦 Delivery de helados · en moto</button><button data-k="taxi">🚖 Taxista · te damos el taxi</button><button data-k="chipa">🥐 Vender chipa · a pie</button><button data-k="no">Dejar la changa</button></div><p class="hint">Delivery: retirá en la Heladería Marimer y llevá a tiempo. Taxista: te damos un taxi, buscá al cliente y dejalo en el círculo; si chocás, paga la mitad. Chipa: acercate a la gente y ACCIÓN.</p><div class="seg"><button data-k="x">Cerrar</button></div>');
     this.d.querySelectorAll('button').forEach((b) => b.onclick = () => { const k = b.dataset.k; this.d.close(); VR.input.enabled = true; if (k !== 'x') this.start(k); });
     const m = (this.world.labels || []).find((l) => /Marimer/.test(l.text)); this.helad = m ? { x: m.x, y: m.y + 30, name: 'Heladería Marimer' } : null;
+  }
+  tutorial(k) {
+    const T = { delivery: ['🍦 Delivery de helados', 'Necesitás una moto.', 'El GPS y el <b>círculo amarillo</b> te llevan a la Heladería Marimer: entrá en el círculo.', 'Después llevá el pedido a la dirección <b>antes de que se acabe el tiempo</b> y frená dentro del círculo.', 'A tiempo: 25.000 Gs. + propina. Tarde: 10.000.'],
+      taxi: ['🚖 Taxista', 'Te damos un <b>taxi amarillo</b> y ya estás adentro.', 'Tu cliente te espera donde marca el GPS, con el <b>círculo verde</b> y la mano levantada 🙋: acercate despacio y sube solo.', 'Llevalo a donde pide y <b>frená dentro del círculo amarillo</b> para que se baje.', 'Cobrás por distancia; si chocás mucho, paga la mitad.'],
+      chipa: ['🥐 Vender chipa', 'Caminá por donde hay gente.', 'Parate al lado de una persona y apretá <b>ACCIÓN</b>.', 'Algunos compran (5.000 Gs.) y otros no. Nadie compra dos veces.', 'Vendé 10 y terminás.'] }[k];
+    if (!T) return;
+    const d = this.tut || (this.tut = VR.dlg('tutDlg', ''));
+    d.innerHTML = '<h2>' + T[0] + '</h2><ol style="padding-left:20px;line-height:1.5">' + T.slice(1).map((x) => '<li>' + x + '</li>').join('') + '</ol><div class="seg"><button>¡Dale!</button></div>';
+    d.querySelector('button').onclick = () => { d.close(); VR.input.enabled = true; };
+    VR.input.releaseAll(); VR.input.enabled = false; d.showModal();
+  }
+  // marcas en el piso: círculo verde donde espera el cliente o se retira; amarillo donde dejar
+  drawGround(g, cx, cy) {
+    const J = this.job; if (!J || !J.dest || J.k === 'chipa') return;
+    const pick = J.stage === 0, x = J.dest.x - cx, y = J.dest.y - cy, t = performance.now() / 1000, r = 24 + Math.sin(t * 4) * 2;
+    g.save(); g.lineWidth = 3; g.strokeStyle = pick ? 'rgba(80,230,120,.9)' : 'rgba(255,214,60,.95)'; g.fillStyle = pick ? 'rgba(80,230,120,.18)' : 'rgba(255,214,60,.2)';
+    g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.stroke(); g.setLineDash([4, 4]); g.beginPath(); g.arc(x, y, r - 6, 0, 7); g.stroke(); g.restore();
+  }
+  collect(cx, cy, tall) { // el cliente esperando con la mano levantada
+    const J = this.job; if (!J || J.k !== 'taxi' || J.stage !== 0 || !J.dest || !this.peds) return;
+    const x = J.dest.x - cx, y = J.dest.y - cy + 6, L = this.peds.sprites[J.pal % this.peds.sprites.length];
+    tall.push({ sy: J.dest.y + 6, draw: (g) => { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x, y - 1, 6, 2.5, 0, 0, 7); g.fill(); g.drawImage(L.get('down', 'idle', 0), x - 8, y - 31, 16, 32);
+      const b = Math.sin(performance.now() / 150) * 2; g.font = '12px system-ui'; g.textAlign = 'center'; g.fillText('🙋', x + 9, y - 30 + b); } });
   }
   open() { VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal(); }
   pay(n, why) { n = Math.round(n / 1000) * 1000; VR.Wallet.add(n); this.toast('💵 +' + VR.fmtGs(n) + ' · ' + why); if (VR.audio.coin) VR.audio.coin(); }
   spot(min, max, from) { // un punto de calle al azar entre min y max px
     const N = this.world.roads && this.world.roads.nodes; if (!N) return null;
-    for (let t = 0; t < 200; t++) { const i = ((this.rnd() * N.length / 2) | 0) * 2, x = N[i], y = N[i + 1], d = Math.hypot(x - from.x, y - from.y); if (d > min && d < max) return { x, y, name: this.world.placeName ? this.world.placeName(x, y) || 'la dirección' : 'la dirección' }; }
+    for (let t = 0; t < 4000; t++) { if (t === 2000) { min *= 0.5; max *= 2; } const i = ((this.rnd() * N.length / 2) | 0) * 2, x = N[i], y = N[i + 1], d = Math.hypot(x - from.x, y - from.y); if (d > min && d < max) return { x, y, name: this.world.placeName ? this.world.placeName(x, y) || 'la dirección' : 'la dirección' }; }
     return null;
   }
   start(k) {
     const car = this.getCar(), p = this.player;
     if (k === 'no') { this.end('Dejaste la changa'); return; }
     if (k === 'delivery' && !(car && car.type === 'moto')) { this.toast('🏍 Para el delivery necesitás una moto'); return; }
-    if (k === 'remis' && !(car && car.type === 'car')) { this.toast('🚗 Para el remís necesitás un auto'); return; }
     if (k === 'chipa' && car) { this.toast('🚶 Bajate para vender chipa'); return; }
     this.job = { k, stage: 0, t: 0, n: 0 };
+    this.tutorial(k);
     if (k === 'delivery') { this.go(this.helad || this.spot(200, 600, p), 'Retirá el pedido'); }
-    if (k === 'remis') { const s = this.spot(150, 500, car); this.go({ ...s, name: 'el pasajero' }, 'Buscá al pasajero'); }
+    if (k === 'taxi') { // te damos un taxi amarillo al lado y te subís
+      const f = car || p; let taxi = car && car.taxi ? car : null;
+      if (!taxi) {
+        for (let r = 22; r < 160 && !taxi; r += 12) for (let k = 0; k < 12 && !taxi; k++) { const an = k / 12 * Math.PI * 2; for (const ca of [0, Math.PI / 2]) { const c = new VR.Car(this.world, f.x + Math.cos(an) * r, f.y + Math.sin(an) * r, ca, 0, 'car', 'sedan', { ...VR.tuneDefault('sedan'), color: 3 }); if (!c.contacts(c.x, c.y, c.a)) { taxi = c; break; } } }
+        if (!taxi) { this.job = null; this.toast('No hay lugar para el taxi aquí: probá en una calle'); return; }
+        taxi.taxi = true; this.world.addBox(taxi); this.cars.push(taxi); if (car) this.exitCar(); this.enterCar(taxi);
+      }
+      const s = this.spot(200, 600, taxi); this.job.pal = (this.rnd() * 32) | 0; this.go({ ...s, name: 'tu cliente' }, 'Buscá a tu cliente');
+    }
     if (k === 'chipa') this.toast('🥐 ¡Chipa, chipa! Acercate a la gente y ACCIÓN');
   }
   go(dest, msg) { this.job.dest = dest; this.setDest(dest); this.job.msg = msg; }
@@ -5950,20 +6003,20 @@ VR.Changas = class {
   update(dt) {
     const J = this.job; if (!J) return; const car = this.getCar(), f = car || this.player;
     J.t += dt;
-    if ((J.k === 'delivery' && !(car && car.type === 'moto')) || (J.k === 'remis' && !(car && car.type === 'car'))) { if ((J.off = (J.off || 0) + dt) > 20) this.end('Se canceló la changa (te bajaste)'); } else J.off = 0;
-    const D = J.dest, near = D && Math.hypot(f.x - D.x, f.y - D.y) < 46, slow = !car || Math.abs(car.v) < 45;
+    if ((J.k === 'delivery' && !(car && car.type === 'moto')) || (J.k === 'taxi' && !(car && car.taxi))) { if ((J.off = (J.off || 0) + dt) > 20) this.end('Se canceló la changa (te bajaste)'); } else J.off = 0;
+    const D = J.dest, dd = D ? Math.hypot(f.x - D.x, f.y - D.y) : 1e9, near = dd < 46, inRing = dd < 24, slow = !car || Math.abs(car.v) < 45, stopped = !car || Math.abs(car.v) < 18;
     if (J.k === 'delivery') {
       if (J.stage === 0 && near) { const s = this.spot(700, 1700, f); J.stage = 1; J.t = 0; J.lim = Math.round(Math.hypot(s.x - f.x, s.y - f.y) / 120 + 25); this.go(s, 'Llevá los helados'); this.toast('🍦 ¡Pedido listo! Tenés ' + J.lim + ' s'); }
-      else if (J.stage === 1 && near && slow) { const left = J.lim - J.t; if (left > 0) this.pay(25000 + left * 600, 'delivery a tiempo'); else this.pay(10000, 'llegó medio derretido'); J.stage = 0; this.go(this.helad || this.spot(200, 600, f), 'Retirá otro pedido'); }
+      else if (J.stage === 1 && inRing && stopped) { const left = J.lim - J.t; if (left > 0) this.pay(25000 + left * 600, 'delivery a tiempo'); else this.pay(10000, 'llegó medio derretido'); J.stage = 0; this.go(this.helad || this.spot(200, 600, f), 'Retirá otro pedido'); }
     }
-    if (J.k === 'remis') {
-      if (J.stage === 0 && near && slow) { const s = this.spot(900, 2400, f); J.stage = 1; J.hp0 = car.hp ?? 100; J.d = Math.hypot(s.x - f.x, s.y - f.y); this.go(s, 'Llevá al pasajero'); this.toast('🙋 "' + ['A ' + s.name + ', por favor', 'Rápido que llego tarde', 'Mba\'éichapa, a ' + s.name][(this.rnd() * 3) | 0] + '"'); }
-      else if (J.stage === 1 && near && slow) { const bad = (J.hp0 - (car.hp ?? 100)) > 20; this.pay((15000 + J.d / 8000 * 9000) * (bad ? 0.5 : 1), bad ? 'remís (chocaste, paga la mitad)' : 'remís'); J.stage = 0; const s = this.spot(150, 600, f); this.go({ ...s, name: 'otro pasajero' }, 'Buscá al próximo pasajero'); }
+    if (J.k === 'taxi') {
+      if (J.stage === 0 && dd < 50 && slow) { const s = this.spot(900, 2400, f); J.stage = 1; J.hp0 = car.hp ?? 100; J.d = Math.hypot(s.x - f.x, s.y - f.y); this.go(s, 'Llevá a tu cliente y estacioná en el círculo'); this.toast('🙋 "' + ['A ' + s.name + ', por favor', 'Rápido que llego tarde', "Mba'éichapa, a " + s.name][(this.rnd() * 3) | 0] + '"'); }
+      else if (J.stage === 1 && inRing && stopped) { const bad = (J.hp0 - (car.hp ?? 100)) > 20; this.pay((15000 + J.d / 8000 * 9000) * (bad ? 0.5 : 1), bad ? 'taxi (chocaste, paga la mitad)' : '¡Aguyje! Viaje de taxi'); J.stage = 0; J.pal = (this.rnd() * 32) | 0; const s = this.spot(200, 700, f); this.go({ ...s, name: 'tu próximo cliente' }, 'Buscá a tu próximo cliente'); }
     }
     // cartel arriba
     if ((this.hT = (this.hT || 0) - dt) < 0) {
       this.hT = 0.25; this.hud.hidden = false;
-      const ico = { delivery: '🍦', remis: '🚕', chipa: '🥐' }[J.k];
+      const ico = { delivery: '🍦', taxi: '🚖', chipa: '🥐' }[J.k];
       this.hud.textContent = J.k === 'chipa' ? ico + ' Chipa vendidas: ' + J.n + '/10' : ico + ' ' + J.msg + (D && D.name ? ' · ' + D.name : '') + (J.k === 'delivery' && J.stage === 1 ? ' · ⏱ ' + Math.max(0, Math.ceil(J.lim - J.t)) + ' s' : '');
     }
   }
@@ -6382,7 +6435,8 @@ VR.showVehicleCard = (v) => {
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico') };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil') };
+  VR.drive = settings.manejo;
 
   VR.screen.init($('game'));
   const prueba = /[?&]prueba\b/.test(location.search);
@@ -6557,6 +6611,7 @@ VR.showVehicleCard = (v) => {
       else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
+    if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
@@ -6582,11 +6637,12 @@ VR.showVehicleCard = (v) => {
     ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
     world.draw(ctx, cx, cy, sw, sh);
     world.warm(cx, cy, sw, sh);
+    changas.drawGround(ctx, cx, cy);
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
     if (!car && !online.ride) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car);
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
@@ -6629,7 +6685,7 @@ VR.showVehicleCard = (v) => {
     if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
       if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
-    if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh(); } else if (!spd.hidden) spd.hidden = true;
+    if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh() + (car.gear ? ' · ' + (car.gear < 0 ? 'R' : car.gear + 'ª') + ' ' : ''); } else if (!spd.hidden) spd.hidden = true;
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
     $('dbg').hidden = false;
@@ -6671,7 +6727,7 @@ VR.showVehicleCard = (v) => {
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
   // ---- online ----
-  const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player }); $('btnJobs').onclick = () => changas.open();
+  const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player, enterCar, exitCar, cars }); $('btnJobs').onclick = () => changas.open();
   const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
@@ -6703,6 +6759,7 @@ VR.showVehicleCard = (v) => {
     for (const s of L) { const b = document.createElement('button'); b.textContent = '▶ ' + s.n + ' · de ' + s.h + ' · ' + s.j + ' jugando'; b.onclick = () => { $('onRoom').value = s.n; goOnline(false); }; box.append(b); }
   };
   $('onHost').onclick = () => goOnline(true); $('onJoin').onclick = () => goOnline(false); $('onStop').onclick = () => online.stop();
+  seg('segManejo', 'manejo', () => { VR.drive = settings.manejo; if (car) car.gear = null; });
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };

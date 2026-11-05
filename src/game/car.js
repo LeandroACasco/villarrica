@@ -410,7 +410,15 @@ VR.Car = class {
   update(dt, input) {
     let throttle = 0, steer = 0;
     const brake = input.down('run');
-    if (input.source === 'touch') {
+    // modos (05/11/2026): 'facil' = apuntás hacia dónde ir (como el táctil); 'clasico' = costados giran;
+    // 'manual' = como el clásico pero con cambios (E/RB sube, Q/LB baja; R = reversa)
+    const mode = VR.drive || 'facil';
+    if (mode === 'manual' && input.source !== 'touch') {
+      this.gear = this.gear ?? 1;
+      if (input.pressed('fire')) { this.gear = this.gear < 0 ? 1 : Math.min(5, this.gear + 1); VR.audio.gear && VR.audio.gear(); }
+      if (input.pressed('weapon')) this.gear = this.gear <= 1 ? (Math.abs(this.v) < 15 ? -1 : 1) : this.gear - 1;
+    } else this.gear = null;
+    if (input.source === 'touch' || mode === 'facil') {
       const m = Math.min(1, Math.hypot(input.ax, input.ay));
       if (m > 0.1) {
         const want = Math.atan2(input.ax, -input.ay);
@@ -419,7 +427,11 @@ VR.Car = class {
         else { throttle = m * (Math.abs(d) > 1.6 ? 0.35 : 1); steer = VR.clamp(d * 2.2, -1, 1); }
       }
     } else { throttle = -input.ay; steer = input.ax; }
-    this.physics(dt, throttle, steer, brake);
+    if (this.gear < 0) throttle = throttle > 0 ? -throttle : throttle < 0 && this.v <= 0 ? 0 : throttle; // reversa: arriba va para atrás
+    else if (this.gear > 0 && throttle < 0 && this.v <= 2) throttle = 0;                          // en marcha, abajo solo frena
+    // volante suave: el giro llega de a poco y a alta velocidad gira menos
+    this.st = (this.st || 0) + (steer - (this.st || 0)) * Math.min(1, dt * 8);
+    this.physics(dt, throttle, this.st * (1 - Math.min(0.3, Math.abs(this.v) / 800)), brake);
   }
   get mass() { return this.spec.mass; }
   // Física: velocidad como vector (vx, vy) además del rumbo, así el vehículo puede derrapar;
@@ -434,7 +446,9 @@ VR.Car = class {
     if (parked) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 260 * dt);
     else {
       if (brake) vf -= Math.sign(vf) * Math.min(Math.abs(vf), sp.brake * dt);
-      if (throttle > 0) vf += (vf < 0 ? 380 : sp.acc * gripF) * throttle * dt;
+      const G = this.gear > 0 ? [0, 0.3, 0.5, 0.68, 0.85, 1][this.gear] : 1, GA = this.gear > 0 ? [0, 1.35, 1.15, 0.95, 0.78, 0.62][this.gear] : 1;
+      if (this.gear > 0 && vf > max * G) vf = Math.max(max * G, vf - 160 * dt);                  // freno motor del cambio
+      if (throttle > 0) vf += (vf < 0 ? 380 : sp.acc * gripF * GA) * throttle * (this.gear > 0 && vf > max * G ? 0 : 1) * dt;
       else if (throttle < 0) vf += (vf > 0 ? 380 : 120) * throttle * dt;
       else vf -= Math.sign(vf) * Math.min(Math.abs(vf), 70 * dt);
       if (vf > max) vf = Math.max(max, vf - 260 * dt);
@@ -442,7 +456,7 @@ VR.Car = class {
     }
     // agarre lateral: menos en tierra y pasto, y casi nada si frenás fuerte doblando (derrape)
     const t = this.world.get(Math.floor(this.x / VR.TILE), Math.floor(this.y / VR.TILE)), T = VR.T;
-    let grip = t === T.ROAD ? 9 : t === T.STONE ? 7 : t === T.DIRTROAD || t === T.DIRT || t === T.PLAZADIRT ? 4.5 : t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER ? 7.5 : 3.5;
+    let grip = t === T.ROAD ? 11.5 : t === T.STONE ? 8.5 : t === T.DIRTROAD || t === T.DIRT || t === T.PLAZADIRT ? 4.5 : t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER ? 7.5 : 3.5;
     if (this.type === 'moto') grip *= 1.4;
     if (brake && Math.abs(vf) > 70 && Math.abs(steer) > 0.2) grip *= 0.22;
     if (parked) grip = 6;
@@ -539,7 +553,7 @@ VR.Car = class {
           this.vx -= (1 + e) * vn * nnx; this.vy -= (1 + e) * vn * nny;
           // roce: pierde algo de la velocidad que va a lo largo de la pared
           const tx = this.vx - (this.vx * nnx + this.vy * nny) * nnx, ty = this.vy - (this.vx * nnx + this.vy * nny) * nny;
-          this.vx -= tx * 0.12; this.vy -= ty * 0.12;
+          this.vx -= tx * 0.04; this.vy -= ty * 0.04; // resbala a lo largo de la pared (antes frenaba más)
           const cx = mx - nx, cy = my - ny;
           this.w += (cx * nny - cy * nnx) * (-vn) * 0.0022;
           impact = -vn;
@@ -572,6 +586,7 @@ VR.Car = class {
       const ro = this.spec.riderOff || 0;
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro), R.S, R.S);
     }
+    if (this.taxi) { ctx.save(); ctx.translate(x + shake, y); ctx.rotate(a); ctx.fillStyle = '#1a1a1e'; ctx.fillRect(-4, -2.5, 8, 5); ctx.fillStyle = '#ffd23a'; ctx.fillRect(-3.5, -2, 7, 4); ctx.fillStyle = '#1a1a1e'; for (let i = -3; i < 3; i += 2) ctx.fillRect(i, -0.5, 1, 1); ctx.restore(); }
     if (this.siren && this.spec.lights) { // barra de luces titilando
       const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : this.model === 'ambulancia' ? this.LEN * 0.22 : this.LEN * 0.1;
       const bx = x + Math.sin(a) * f, by = y - Math.cos(a) * f, rx = Math.cos(a) * 3.5, ry = Math.sin(a) * 3.5;

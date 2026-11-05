@@ -7,9 +7,13 @@
 VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; d.className = 'vrdlg'; d.innerHTML = html; document.body.append(d); return d; };
 VR.Garage = class {
   constructor() {
-    this.d = VR.dlg('garage', '<h2>🔧 Taller Pyahu</h2><canvas id="grPrev" width="320" height="180"></canvas><div id="grParts"></div><p id="grTot"></p><div class="seg"><button id="grBuy">Comprar</button><button id="grOut">Salir</button></div>');
+    this.d = VR.dlg('garage', '<h2>🔧 Taller Pyahu</h2><canvas id="grPrev" width="320" height="180"></canvas><div id="grParts"></div><p id="grTot"></p><div class="seg"><button id="grFix">🔧 Reparar</button><button id="grBuy">Comprar</button><button id="grOut">Salir</button></div>');
     this.d.querySelector('#grOut').onclick = () => this.close();
     this.d.querySelector('#grBuy').onclick = () => this.buy();
+    this.d.querySelector('#grFix').onclick = () => { // reparar: 1.500 Gs. por punto de vida
+      const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.toast('✨ Está joya, no hace falta'); return; }
+      const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.toast('💸 Reparar cuesta ' + VR.fmtGs(n)); return; }
+      VR.Wallet.add(-n); c.hp = 100; if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.toast('🔧 Quedó como nuevo · ' + VR.fmtGs(n)); this.paint(); };
   }
   open(car, toast) {
     this.car = car; this.toast = toast; const m = car.model, M = VR.TUNE_MODELS[m];
@@ -29,7 +33,7 @@ VR.Garage = class {
   paint() {
     const c = this.d.querySelector('#grPrev'), g = c.getContext('2d'); g.clearRect(0, 0, 320, 180);
     try { g.drawImage(VR.drawSideHD(this.car.model, VR.tunePal(this.t.color), this.t, 320, 180), 0, 0); } catch (e) {}
-    this.d.querySelector('#grTot').textContent = 'Total: ' + VR.fmtGs(this.cost()) + ' · tenés ' + VR.fmtGs(VR.Wallet.get());
+    this.d.querySelector('#grTot').textContent = 'Total: ' + VR.fmtGs(this.cost()) + ' · vida ' + Math.round(Math.max(0, this.car.hp ?? 100)) + '% · tenés ' + VR.fmtGs(VR.Wallet.get());
   }
   buy() {
     const n = this.cost(); if (n > VR.Wallet.get()) { this.toast('💸 No te alcanza la plata'); return; }

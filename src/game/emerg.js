@@ -55,7 +55,7 @@ VR.Emergency = class {
 
   // ---------- daño, fuego y explosiones ----------
   damage(c, imp, o) {
-    const hurt = (v, k) => { if (v.wreck || v.spec.noFire) return; const m = (v.spec.mass > 2 ? 0.45 : 1) * (v.unit ? 0.35 : 1); v.hp = (v.hp ?? 100) - (imp - 50) * 0.13 * k * m; if (v.hp <= 0 && !v.burning) this.ignite(v); };
+    const hurt = (v, k) => { if (v.wreck || v.spec.noFire) return; const m = (v.spec.mass > 2 ? 0.45 : 1) * (v.unit ? 0.35 : 1); v.hp = (v.hp ?? 100) - Math.max(0, imp - 90) * 0.07 * k * m * (o && o.spec ? 1 : 0.6); if (v.hp <= 0 && !v.burning) this.ignite(v); };
     hurt(c, 1); if (o && o.spec) hurt(o, 0.8);
     VR.audio.crash(c.x, c.y, imp);
     if (c.driven && imp > 110) this.reckless(c.x, c.y);

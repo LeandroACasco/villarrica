@@ -4,7 +4,8 @@
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico') };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil') };
+  VR.drive = settings.manejo;
 
   VR.screen.init($('game'));
   const prueba = /[?&]prueba\b/.test(location.search);
@@ -179,6 +180,7 @@
       else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
+    if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
@@ -204,11 +206,12 @@
     ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
     world.draw(ctx, cx, cy, sw, sh);
     world.warm(cx, cy, sw, sh);
+    changas.drawGround(ctx, cx, cy);
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
     if (!car && !online.ride) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car);
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
@@ -251,7 +254,7 @@
     if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
       if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
-    if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh(); } else if (!spd.hidden) spd.hidden = true;
+    if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh() + (car.gear ? ' · ' + (car.gear < 0 ? 'R' : car.gear + 'ª') + ' ' : ''); } else if (!spd.hidden) spd.hidden = true;
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
     $('dbg').hidden = false;
@@ -293,7 +296,7 @@
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
   // ---- online ----
-  const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player }); $('btnJobs').onclick = () => changas.open();
+  const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player, enterCar, exitCar, cars }); $('btnJobs').onclick = () => changas.open();
   const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
@@ -325,6 +328,7 @@
     for (const s of L) { const b = document.createElement('button'); b.textContent = '▶ ' + s.n + ' · de ' + s.h + ' · ' + s.j + ' jugando'; b.onclick = () => { $('onRoom').value = s.n; goOnline(false); }; box.append(b); }
   };
   $('onHost').onclick = () => goOnline(true); $('onJoin').onclick = () => goOnline(false); $('onStop').onclick = () => online.stop();
+  seg('segManejo', 'manejo', () => { VR.drive = settings.manejo; if (car) car.gear = null; });
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
