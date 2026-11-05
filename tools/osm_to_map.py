@@ -22,7 +22,7 @@ M_PER_TILE = 2.0
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BARRIOS = ROOT / 'data/barrios_ine.json'
 # tipos de tile (iguales a VR.T en src/world/tiles.js)
-GRASS, ROAD, SIDEWALK, BUILDING, PAVING, TREE, MONUMENT, DIRT, WATER, STONE, DIRTROAD, CHECKER = range(12)
+GRASS, ROAD, SIDEWALK, BUILDING, PAVING, TREE, MONUMENT, DIRT, WATER, STONE, DIRTROAD, CHECKER, PLAZADIRT = range(13)
 # ancho de calzada y de vereda (en tiles) según el tipo de calle
 ROADS = {
     'trunk': (6, 2), 'primary': (6, 2), 'secondary': (5, 1.5), 'tertiary': (5, 1.5), 'trunk_link': (4, 1), 'tertiary_link': (4, 1),
@@ -450,7 +450,18 @@ def main(src, out, preview=None):
         cand = [(x + x0b, y + y0b) for y, x in cand]
         rnd.shuffle(cand)
         if heroes:  # copas grandes y tupidas, casi sin huecos
+            # Street View (enero 2025, 05/11/2026): juegos infantiles amarillos al norte, al oeste del centro, y
+            # mesas y sillas plásticas rojas en el sector sudoeste. Ahí no van árboles.
+            jx, jy = int(x0b + 0.36 * Wd), int(y0b + 0.12 * Hd)
+            sx_, sy_ = int(x0b + 0.12 * Wd), int(y0b + 0.78 * Hd)
+            free_ = lambda x, y, w, h: [(cx_, cy_) for (cx_, cy_) in cand if not (x - 1 <= cx_ <= x + w and y - 1 <= cy_ <= y + h)]
+            cand = free_(jx, jy, 4, 3); cand = free_(sx_, sy_, 4, 4)
+            decals.append({'kind': 'juegos', 'x': jx, 'y': jy, 'w': 4, 'h': 3})
+            decals.append({'kind': 'sillas', 'x': sx_, 'y': sy_, 'w': 4, 'h': 4})
             plant(cand, 0.95, 2, lambda x, y: (x, y, rnd.randint(16, 20), 3 if rnd.random() < 0.12 else rnd.choice([0, 0, 1, 1, 2])))
+            # bajo los árboles el piso es tierra con pasto ralo (Street View), no pasto parejo
+            nz_ = noise[y0b:y1b, x0b:x1b]
+            tsub[sub & (tsub == GRASS) & (nz_ < 0.6)] = PLAZADIRT
         elif is_park:
             plant(cand, 0.6, 3, lambda x, y: (x, y, rnd.randint(10, 14), rnd.choice([0, 1, 1, 3])))
         else:
@@ -864,7 +875,7 @@ def main(src, out, preview=None):
 
     if preview:
         pal = np.array([(92, 158, 58), (120, 120, 128), (200, 192, 176), (200, 120, 90), (196, 146, 108),
-                        (40, 100, 40), (230, 230, 230), (168, 92, 58), (70, 130, 200), (96, 92, 90), (150, 84, 52), (190, 188, 184)], np.uint8)
+                        (40, 100, 40), (230, 230, 230), (168, 92, 58), (70, 130, 200), (96, 92, 90), (150, 84, 52), (190, 188, 184), (140, 114, 86)], np.uint8)
         img = pal[tiles]
         img[line > 0] = (226, 191, 69)
         Image.fromarray(img).save(preview)

@@ -299,7 +299,7 @@ VR.Car = class {
     const t = this.world.get(Math.floor(this.x / VR.TILE), Math.floor(this.y / VR.TILE)), T = VR.T, m = this.spec.max;
     if (t === T.ROAD) return [m.road, 1];
     if (t === T.STONE) return [m.stone, 0.95];
-    if (t === T.DIRTROAD || t === T.DIRT) return [m.dirt, 0.85];
+    if (t === T.DIRTROAD || t === T.DIRT || t === T.PLAZADIRT) return [m.dirt, 0.85];
     if (t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER) return [m.side, 0.9];
     return [m.grass, 0.7];
   }
@@ -340,7 +340,7 @@ VR.Car = class {
     }
     // agarre lateral: menos en tierra y pasto, y casi nada si frenás fuerte doblando (derrape)
     const t = this.world.get(Math.floor(this.x / VR.TILE), Math.floor(this.y / VR.TILE)), T = VR.T;
-    let grip = t === T.ROAD ? 9 : t === T.STONE ? 7 : t === T.DIRTROAD || t === T.DIRT ? 4.5 : t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER ? 7.5 : 3.5;
+    let grip = t === T.ROAD ? 9 : t === T.STONE ? 7 : t === T.DIRTROAD || t === T.DIRT || t === T.PLAZADIRT ? 4.5 : t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER ? 7.5 : 3.5;
     if (this.type === 'moto') grip *= 1.4;
     if (brake && Math.abs(vf) > 70 && Math.abs(steer) > 0.2) grip *= 0.22;
     if (parked) grip = 6;
@@ -350,7 +350,7 @@ VR.Car = class {
     this.w += (wt - this.w) * Math.min(1, (parked ? 2.5 : 7) * dt);
     this.vx = fx * vf + rx * vr; this.vy = fy * vf + ry * vr;
     // marcas de frenada / derrape
-    if (Math.abs(vr) > 25 || (brake && s > 90)) this.skid(t === T.DIRTROAD || t === T.DIRT || t === T.GRASS);
+    if (Math.abs(vr) > 25 || (brake && s > 90)) this.skid(t === T.DIRTROAD || t === T.DIRT || t === T.PLAZADIRT || t === T.GRASS);
     this.move(dt);
     fx = Math.sin(this.a); fy = -Math.cos(this.a);
     this.v = this.vx * fx + this.vy * fy;
@@ -531,11 +531,9 @@ VR.parkCars = (world, n, near) => {
         let xa = bx1 + 1, lim2 = 10; while (lim2-- > 0 && !road(xa, my)) xa++;
         let xb = xa; while (road(xb + 1, my)) xb++;
         if (xb - xa >= 3) {
-          const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 11, xr = (xb + 1) * S - 6;
+          const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 11;
           for (let py = ya * S + 26; py <= yz * S - 26; py += 54) if (rnd() < 0.6) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
-          if (battery(xb - xa + 1)) { for (let py = (ya + 1) * S; py <= yz * S - 10; py += 14) if (rnd() < 0.5)
-            add(xr - 11, py + ((rnd() * 2) | 0), -Math.PI / 2 - 0.06 + (rnd() < 0.5 ? 0 : 0.12) + (rnd() < 0.15 ? 0.25 : 0), (rnd() * VR.MOTO_COLORS.length) | 0, 'moto'); }
-          else for (let py = (ya + 1) * S + 14; py <= yz * S - 16; py += 32) if (rnd() < 0.55) add((xb + 1) * S - 7, py, 0, (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+          // del lado de la Municipalidad el cordón es amarillo: no se estaciona (Street View, enero 2025)
           (world.parkingDemo = world.parkingDemo || []).push({ x0: xa * S, x1: (xb + 1) * S, y0: ya * S, y1: yz * S });
         }
         // Coronel Bogado, del lado oeste de la plaza (mano única hacia el sur): autos a la izquierda (este,

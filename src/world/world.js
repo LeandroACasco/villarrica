@@ -154,6 +154,7 @@ VR.World = class {
     // 1) piso
     for (let ty = ty0; ty < ty1; ty++) for (let tx = tx0; tx < tx1; tx++) {
       let t = this.tiles[ty * this.w + tx];
+      if (t === T.TREE) { const n = this.get(tx - 1, ty), n2 = this.get(tx + 1, ty); if (n === T.PLAZADIRT || n2 === T.PLAZADIRT) t = T.PLAZADIRT; }
       if (VR.GROUND_OF[t] !== undefined) t = VR.GROUND_OF[t];
       VR.tileset.draw(g, t, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
     }
@@ -171,6 +172,11 @@ VR.World = class {
         if (curb(1, 0)) { g.fillStyle = 'rgba(0,0,0,.24)'; g.fillRect(x + S, y, 1, S); g.fillStyle = '#e6e0d2'; g.fillRect(x + S - 1.5, y, 1.5, S); g.fillStyle = '#8a8478'; g.fillRect(x + S - 0.5, y, 0.5, S); g.fillStyle = '#f6f2e8'; g.fillRect(x + S - 2, y, 0.5, S); }
         // macetas contra las fachadas (05/11/2026): arbusto redondo, flores o lengua de suegra, en macetas de barro
         if (t === T.SIDEWALK && this.b(tx, ty - 1) && !this.b(tx, ty + 1) && VR.hash(tx, ty, 307) < 0.07) VR.drawPot(g, x + 3 + VR.hash(tx, ty, 308) * 4, y + 2, (VR.hash(tx, ty, 309) * 3) | 0, VR.hash(tx, ty, 310));
+        if (t === T.CHECKER) { // frente a la Municipalidad el cordón está pintado de amarillo (Street View, enero 2025)
+          g.fillStyle = '#e8c430';
+          if (curb(0, -1)) g.fillRect(x, y, S, 1.5); if (curb(0, 1)) g.fillRect(x, y + S - 2.5, S, 1.5);
+          if (curb(-1, 0)) g.fillRect(x, y, 1.5, S); if (curb(1, 0)) g.fillRect(x + S - 1.5, y, 1.5, S);
+        }
         // tapas de registro en la vereda (de vez en cuando, cerca del cordón)
         if (t === T.SIDEWALK && (curb(0, -1) || curb(0, 1) || curb(-1, 0) || curb(1, 0)) && VR.hash(tx, ty, 301) < 0.035) {
           const hx = x + 5, hy = y + 5; g.fillStyle = '#5c5850'; g.fillRect(hx, hy, 6, 6); g.fillStyle = '#8e897e'; g.fillRect(hx + 0.5, hy + 0.5, 5, 5);
@@ -223,7 +229,12 @@ VR.World = class {
       if (!this.b(tx, ty + 1)) g.fillRect(tx * S + (this.b(tx - 1, ty) ? 0 : 5), (ty + 1) * S, S, 3);
     }
     // 5) troncos
-    for (const t of idx.t) { g.fillStyle = '#4b2f1b'; g.fillRect(t.x * S + 6, t.y * S + 2, 4, 10); g.fillStyle = '#6e4628'; g.fillRect(t.x * S + 6, t.y * S + 2, 2, 10); }
+    for (const t of idx.t) {
+      g.fillStyle = '#4b2f1b'; g.fillRect(t.x * S + 6, t.y * S + 2, 4, 10); g.fillStyle = '#6e4628'; g.fillRect(t.x * S + 6, t.y * S + 2, 2, 10);
+      if (this.plazaSet && this.plazaSet.has(this.area[t.y * this.w + t.x])) { // tronco pintado con cal (Street View de la plaza)
+        g.fillStyle = '#e9e7df'; g.fillRect(t.x * S + 6, t.y * S + 6, 4, 6); g.fillStyle = '#ffffff'; g.fillRect(t.x * S + 6, t.y * S + 6, 1.5, 6); g.fillStyle = '#c4c0b4'; g.fillRect(t.x * S + 9, t.y * S + 6, 1, 6);
+      }
+    }
     // 6) edificios: se dibujan por columnas (cada tramo vertical de un mismo edificio: techo arriba, fachada abajo)
     for (let tx = tx0; tx < tx1; tx++) {
       let ty = ty0;
@@ -550,6 +561,20 @@ VR.decorOver = {
       g.fillStyle = '#3a3a44'; g.beginPath(); g.ellipse(x + 4, Y - 0.5, 3.5, 3, 0, Math.PI, Math.PI * 1.5); g.fill();
     }
   },
+  sillas(g, d) { // mesas y sillas plásticas rojas bajo los árboles, sector sudoeste de la plaza (Street View)
+    const S = VR.TILE, X = d.x * S, Y = d.y * S, red = '#d0282a', redD = '#8e1a1c', redL = '#f05048';
+    for (let k = 0; k < 5; k++) {
+      const tx = X + 6 + ((k * 23) % (d.w * S - 18)), ty = Y + 6 + ((k * 17) % (d.h * S - 18));
+      g.fillStyle = 'rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(tx + 6, ty + 7, 8, 5, 0, 0, 7); g.fill();
+      for (const [cx, cy] of [[-5, 2], [13, 3], [4, -5], [5, 12]]) { g.fillStyle = redD; g.fillRect(tx + cx, ty + cy, 4.5, 4.5); g.fillStyle = red; g.fillRect(tx + cx, ty + cy, 4, 4); g.fillStyle = redL; g.fillRect(tx + cx, ty + cy, 4, 1); } // sillas
+      g.fillStyle = redD; g.fillRect(tx - 0.5, ty - 0.5, 12, 11); g.fillStyle = red; g.fillRect(tx, ty, 11, 10); g.fillStyle = redL; g.fillRect(tx, ty, 11, 1.5); g.fillRect(tx, ty, 1.5, 10); // mesa
+    }
+  },
+  juegos(g, d) { // juegos infantiles amarillos al norte de la plaza (Street View): arenero, tobogán y hamacas
+    const S = VR.TILE, X = d.x * S, Y = d.y * S, W = d.w * S, H = d.h * S;
+    g.fillStyle = '#c8a878'; g.fillRect(X, Y, W, H); g.fillStyle = '#d8bc8c'; for (let i = 0; i < 40; i++) g.fillRect(X + VR.hash(i, 1, 9) * W, Y + VR.hash(i, 2, 9) * H, 1, 1); // arena
+    g.fillStyle = '#8a6a44'; g.fillRect(X, Y, W, 1); g.fillRect(X, Y + H - 1, W, 1); g.fillRect(X, Y, 1, H); g.fillRect(X + W - 1, Y, 1, H);
+  },
   mesas(g, d) { // mesitas de madera y macetas en la vereda, frente al café
     const S = VR.TILE, X = d.x * S, Y = d.y * S + 3;
     for (let k = 0, x = X + 6; x < X + d.w * S - 14 && k < 3; x += 22, k++) {
@@ -701,9 +726,9 @@ VR.decorTop = {
     }
     return parts;
   },
-  banco(d) { // banco de plaza (05/11/2026): tablas pintadas de verde, hierro negro; la gente sentada la pone VR.Peds
+  banco(d) { // banco de plaza (05/11/2026): tablas de madera marrón, hierro negro; la gente sentada la pone VR.Peds
     const S = VR.TILE, X = d.x * S, Y = d.y * S;
-    const sl = ['#2f6a3c', '#4a8f56', '#7cc088'], iron = '#18181c';
+    const sl = ['#5a3418', '#7a4a24', '#a06a3a'], iron = '#18181c'; // madera marrón (foto 360 de la plaza)
     return [{ sy: Y + 3, draw(g) {
       if (d.f === 's') { // respaldo al norte, la gente mira a la cámara
         g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(X + 1, Y + 6, 16, 9);
@@ -801,14 +826,40 @@ VR.decorTop = {
       g.fillStyle = 'rgba(255,255,255,.35)'; for (let i = -7; i < 7; i += 2) g.fillRect(cx + i, gy - 8, 1, 8);
     } }));
   },
-  monumento(d) { // obelisco
-    const S = VR.TILE, X = d.x * S + 16, Y = d.y * S + 6;
-    return [{ sy: d.y * S + 30, draw(g) {
-      g.fillStyle = '#1f1d1a'; g.fillRect(X - 6, Y - 40, 12, 42);
-      g.fillStyle = '#d9d3c5'; g.fillRect(X - 5, Y - 36, 10, 37); g.fillStyle = '#f1ece0'; g.fillRect(X - 5, Y - 36, 4, 37);
-      g.fillStyle = '#a8a294'; g.fillRect(X + 3, Y - 36, 2, 37);
-      g.fillStyle = '#1f1d1a'; g.fillRect(X - 3, Y - 44, 6, 4); g.fillRect(X - 1, Y - 46, 2, 2);
-      g.fillStyle = '#d9d3c5'; g.fillRect(X - 2, Y - 43, 4, 7); g.fillStyle = '#f1ece0'; g.fillRect(X - 2, Y - 43, 2, 7);
+  monumento(d) { // pórtico blanco de dos columnas con friso y medallones, sobre escalones, y leones dorados (Street View)
+    const S = VR.TILE, X = d.x * S + 16, Y = d.y * S + 24;
+    const lion = (g, x, y) => {
+      g.fillStyle = '#1f1d1a'; g.fillRect(x - 4.5, y - 3.5, 9, 5); g.fillStyle = '#2f7a3a'; g.fillRect(x - 4, y - 3, 8, 4); g.fillStyle = '#4a9a54'; g.fillRect(x - 4, y - 3, 8, 1); // pedestal verde
+      g.fillStyle = '#5a4418'; g.fillRect(x - 3, y - 9.5, 6, 6.5); g.fillStyle = '#c8a040'; g.fillRect(x - 2.5, y - 9, 5, 6); g.fillStyle = '#e8c860'; g.fillRect(x - 2.5, y - 9, 2, 3); // león sentado
+      g.fillStyle = '#a07a2a'; g.fillRect(x - 2, y - 11, 4, 2.5); g.fillStyle = '#e0b850'; g.fillRect(x - 1.5, y - 10.5, 1.5, 1.5);
+    };
+    return [{ sy: Y + 2, draw(g) {
+      g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(X - 13, Y - 2, 30, 5);
+      g.fillStyle = '#8e3f2b'; g.fillRect(X - 15, Y - 4, 30, 5); g.fillStyle = '#b5573c'; g.fillRect(X - 15, Y - 4, 30, 1.5);   // escalón de ladrillo
+      g.fillStyle = '#2f7a3a'; g.fillRect(X - 13, Y - 7, 26, 3.5); g.fillStyle = '#4a9a54'; g.fillRect(X - 13, Y - 7, 26, 1);    // escalón verde
+      g.fillStyle = '#1f1d1a'; g.fillRect(X - 12.5, Y - 40, 25, 34);
+      for (const cx of [X - 11, X + 5]) { g.fillStyle = '#e8e6de'; g.fillRect(cx, Y - 34, 6, 27); g.fillStyle = '#ffffff'; g.fillRect(cx, Y - 34, 2, 27); g.fillStyle = '#b8b4aa'; g.fillRect(cx + 5, Y - 34, 1, 27); } // columnas
+      g.fillStyle = 'rgba(40,36,30,.35)'; g.fillRect(X - 5, Y - 34, 10, 27); g.fillStyle = '#7a6a4a'; g.fillRect(X - 3, Y - 16, 6, 9); g.fillStyle = '#9a8a62'; g.fillRect(X - 3, Y - 16, 6, 1.5); // placa al medio
+      g.fillStyle = '#e8e6de'; g.fillRect(X - 12, Y - 39.5, 24, 6); g.fillStyle = '#ffffff'; g.fillRect(X - 12, Y - 39.5, 24, 1.5);   // friso
+      g.fillStyle = '#5a5246'; g.beginPath(); g.arc(X - 6, Y - 36.5, 1.6, 0, 7); g.arc(X + 6, Y - 36.5, 1.6, 0, 7); g.fill(); g.fillRect(X - 3, Y - 37.5, 6, 2); // medallones y placa
+    } }, { sy: Y + 4, draw(g) { lion(g, X - 20, Y + 2); lion(g, X + 20, Y + 2); } }];
+  },
+  juegos(d) { // tobogán y hamacas amarillas
+    const S = VR.TILE, X = d.x * S, Y = d.y * S, W = d.w * S;
+    return [{ sy: Y + 30, draw(g) {
+      const yl = '#e8b820', ylD = '#a8800c', blk = '#1f1d1a';
+      // hamacas: pórtico amarillo con dos asientos
+      const hx = X + 6, hy = Y + 26;
+      g.fillStyle = blk; g.fillRect(hx - 1, hy - 21, 22, 3); g.fillStyle = yl; g.fillRect(hx - 0.5, hy - 20.5, 21, 2);
+      for (const px of [hx, hx + 18]) { g.fillStyle = blk; g.fillRect(px - 0.5, hy - 20, 3, 20); g.fillStyle = yl; g.fillRect(px, hy - 19.5, 2, 19.5); g.fillStyle = ylD; g.fillRect(px + 1.5, hy - 19.5, 0.5, 19.5); }
+      for (const sx of [hx + 5, hx + 12]) { g.fillStyle = '#5a5a60'; g.fillRect(sx, hy - 18.5, 0.5, 13); g.fillRect(sx + 3.5, hy - 18.5, 0.5, 13); g.fillStyle = blk; g.fillRect(sx - 0.5, hy - 6, 5, 2.5); g.fillStyle = '#d0282a'; g.fillRect(sx, hy - 5.5, 4, 1.5); }
+      // tobogán: escalera y rampa
+      const tx = X + W - 18, ty = Y + 34;
+      g.fillStyle = blk; g.fillRect(tx - 0.5, ty - 24, 6, 24); g.fillStyle = '#9a9aa2'; for (let k = 0; k < 6; k++) g.fillRect(tx, ty - 22 + k * 4, 5, 1); g.fillStyle = '#5a5a60'; g.fillRect(tx, ty - 24, 1, 24); g.fillRect(tx + 4, ty - 24, 1, 24);
+      g.fillStyle = blk; g.fillRect(tx - 1, ty - 27, 8, 4); g.fillStyle = yl; g.fillRect(tx - 0.5, ty - 26.5, 7, 3);
+      g.fillStyle = blk; g.beginPath(); g.moveTo(tx + 6, ty - 26); g.lineTo(tx + 16, ty - 2); g.lineTo(tx + 16, ty + 1); g.lineTo(tx + 10, ty + 1); g.lineTo(tx + 2, ty - 24); g.closePath(); g.fill();
+      g.fillStyle = yl; g.beginPath(); g.moveTo(tx + 6, ty - 25); g.lineTo(tx + 15, ty - 2); g.lineTo(tx + 15, ty); g.lineTo(tx + 10.5, ty); g.lineTo(tx + 3, ty - 23.5); g.closePath(); g.fill();
+      g.fillStyle = '#f8dc60'; g.beginPath(); g.moveTo(tx + 5, ty - 24.5); g.lineTo(tx + 6.5, ty - 24.5); g.lineTo(tx + 15, ty - 1); g.lineTo(tx + 13.5, ty - 1); g.closePath(); g.fill();
     } }];
   },
 };
@@ -831,6 +882,7 @@ VR.loadMap = async (url) => {
     w.buildings.push({ x0, x1, door: (x0 + x1) >> 1, floors, rt: P.types[rt], roof: P.roofs[rt][rc], wall: P.walls[wc], shop: !!shop, awning: P.awnings[awn] });
   }
   for (let i = 0; i < meta.nt; i++) w.trees.push({ x: tr[i * 4], y: tr[i * 4 + 1], r: tr[i * 4 + 2], pal: tr[i * 4 + 3] });
+  w.plazaSet = new Set(); (meta.areas || []).forEach((n, i) => { if (/plaza/i.test(n)) w.plazaSet.add(i + 1); });
   w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
   w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
   w.roads = meta.roads || null; w.special = meta.special || {};

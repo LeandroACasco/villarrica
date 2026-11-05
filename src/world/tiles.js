@@ -1,6 +1,6 @@
 // Tiles generados por código, con 4 variantes cada uno para que el piso no se vea repetido.
 'use strict';
-VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8, STONE: 9, DIRTROAD: 10, CHECKER: 11 };
+VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8, STONE: 9, DIRTROAD: 10, CHECKER: 11, PLAZADIRT: 12 }; // 12: tierra de plaza bajo los árboles, con hojas secas (Street View)
 // calzadas: asfalto, empedrado y calle de tierra
 VR.ROADLIKE = new Uint8Array(16); VR.ROADLIKE[VR.T.ROAD] = 1; VR.ROADLIKE[VR.T.STONE] = 1; VR.ROADLIKE[VR.T.DIRTROAD] = 1;
 VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] = 1; VR.SOLID[VR.T.MONUMENT] = 1; VR.SOLID[VR.T.WATER] = 1;
@@ -13,7 +13,7 @@ VR.GROUND_OF = { [VR.T.TREE]: VR.T.GRASS, [VR.T.BUILDING]: VR.T.SIDEWALK, [VR.T.
 // vereda con junta y bisel, empedrado de piedras irregulares con luz y sombra, tierra colorada con terrones.
 // Los patrones se repiten cada 2 m sin costuras (el ruido y las piedras "dan la vuelta" en el borde).
 VR.tileset = {
-  VARS: 4, TYPES: 12, _c: null, _r: 0,
+  VARS: 4, TYPES: 13, _c: null, _r: 0,
   build(R) {
     const S = VR.TILE, Q = Math.round(S * R), VARS = this.VARS, TYPES = this.TYPES;
     const c = VR.canvas(Q * VARS, Q * TYPES), ctx = c.getContext('2d');
@@ -110,6 +110,14 @@ VR.tileset = {
           const T = tile(x, y, 4), w = ((T.i + T.j) & 1) === 0, k = (h - 0.5) * 8;
           r = (w ? 224 : 148) + k; g = (w ? 222 : 148) + k; b = (w ? 216 : 154) + k;
           if (T.joint) { r -= 40; g -= 40; b -= 38; } else if (T.hi) { r += 10; g += 10; b += 10; } else if (T.lo) { r -= 12; g -= 12; b -= 12; }
+          break;
+        }
+        case VR.T.PLAZADIRT: { // tierra gris parda pisada, sombra de los árboles, hojas secas y matitas de pasto
+          const m = vnoise(x, y, 4, 161 + v), m2 = vnoise(x, y, 8, 171 + v);
+          const k = (h - 0.5) * 10 + (m - 0.5) * 18; r = 142 + k; g = 116 + k * 0.9; b = 88 + k * 0.8;
+          if (m2 > 0.72) { r -= 14; g -= 12; b -= 8; } // más pisada
+          if (h2 > 0.965) { const f = H(px, py, 180 + v); r = f < 0.5 ? 168 : 112; g = f < 0.5 ? 124 : 84; b = f < 0.5 ? 60 : 44; } // hoja seca
+          else if (h2 < 0.03 && m < 0.45) { r = 92; g = 132; b = 58; } // matita de pasto
           break;
         }
         default: r = 255; g = 0; b = 255;
