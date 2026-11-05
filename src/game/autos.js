@@ -19,17 +19,31 @@
     for (const y of [ta, tb]) { T.tire(-0.1, y - tl / 2, 2.3, tl); T.tire(W - 2.2, y - tl / 2, 2.3, tl); }
     if (t.llantas && t.llantas !== 'serie') for (const y of [ta, tb]) { T.rr(-0.1, y - 1.2, 0.8, 2.4, 0.3, VR.RIMS[t.llantas]); T.rr(W - 0.7, y - 1.2, 0.8, 2.4, 0.3, VR.RIMS[t.llantas]); }
     const rf = c.box ? 2 : 4.2;
-    T.rr(x0, 0.3, bw, Ln - 0.6, [rf, rf, c.box ? 1.6 : 3, c.box ? 1.6 : 3], T.hg(x0, x1, [D, L, C, C, D]));     // carrocería
+    if (c.flares) for (const y of [ta, tb]) { T.rr(x0 - 0.5, y - tl / 2 - 1, 1.4, tl + 2, 0.7, D); T.rr(x1 - 0.9, y - tl / 2 - 1, 1.4, tl + 2, 0.7, D); } // guardabarros anchos
+    const pf = c.pinch || 0, pr = (c.pinch || 0) * 0.6;
+    const bodyPath = () => { // trompa y cola redondeadas y más angostas (deportivos); si no, la caja de siempre
+      g.beginPath(); g.moveTo(mid, 0.2);
+      g.bezierCurveTo(x1 - pf, 0.2, x1, yH * 0.25, x1, yH * 0.7); g.lineTo(x1, Ln - 4);
+      g.bezierCurveTo(x1, Ln - 0.6, x1 - pr, Ln - 0.3, mid, Ln - 0.3); g.bezierCurveTo(x0 + pr, Ln - 0.3, x0, Ln - 0.6, x0, Ln - 4);
+      g.lineTo(x0, yH * 0.7); g.bezierCurveTo(x0, yH * 0.25, x0 + pf, 0.2, mid, 0.2); g.closePath();
+    };
+    if (pf) { bodyPath(); g.fillStyle = T.hg(x0, x1, [D, L, C, C, D]); g.fill(); g.save(); bodyPath(); g.clip(); }
+    else T.rr(x0, 0.3, bw, Ln - 0.6, [rf, rf, c.box ? 1.6 : 3, c.box ? 1.6 : 3], T.hg(x0, x1, [D, L, C, C, D]));     // carrocería
     if (t.franja === 'costado') { g.fillStyle = S2; g.fillRect(x0 + 0.2, 3, 0.7, Ln - 6); g.fillRect(x1 - 0.9, 3, 0.7, Ln - 6); }
     // capó
     T.rr(x0 + 0.9, 1, bw - 1.8, yH - 0.8, [c.box ? 1.4 : 3.4, c.box ? 1.4 : 3.4, 1, 1], T.hg(x0, x1, [C, L, C, D]));
     T.line(mid - 2.6, 1.6, mid - 2.3, yH - 0.4, 0.25, VR.shadeHex(C, 0.82)); T.line(mid + 2.6, 1.6, mid + 2.3, yH - 0.4, 0.25, VR.shadeHex(C, 0.82));
-    if (c.scoop) T.rr(mid - 1.6, yH * 0.45, 3.2, 1.6, 0.4, VR.shadeHex(C, 0.6));                            // toma de aire
+    if (c.scoop === 'rally') { T.rr(mid - 2.4, yH * 0.42, 4.8, 2.6, [0.6, 0.6, 1.2, 1.2], VR.shadeHex(C, 0.75)); T.rr(mid - 1.9, yH * 0.42 + 0.4, 3.8, 1.1, 0.4, '#1a1a1e'); for (let x = mid - 1.5; x < mid + 1.7; x += 0.8) T.rr(x, yH * 0.42 + 0.5, 0.3, 0.9, 0, '#3a3a40'); } // toma de aire grande del rally
+    else if (c.scoop) T.rr(mid - 1.6, yH * 0.45, 3.2, 1.6, 0.4, VR.shadeHex(C, 0.6));                            // toma de aire
     st(0.5, yH);
     T.ell(mid - 2.5, yH * 0.4, 1.6, 0.7, 'rgba(255,255,255,.35)');
     const hw = c.box ? 2.6 : 3;
-    T.rr(x0 + 0.8, 0.6, hw, 1.4, c.box ? 0.3 : 0.6, HL); T.rr(x1 - 0.8 - hw, 0.6, hw, 1.4, c.box ? 0.3 : 0.6, HL);       // faros
-    T.rr(mid - 2.6, 0.35, 5.2, c.box ? 1.3 : 0.9, 0.3, c.grille || '#2a2a30');                            // parrilla
+    if (c.hl === 'quad') for (const s of [-1, 1]) { for (const dx of [3.2, 5.2]) { T.ell(mid + s * dx, 1.5 + (dx - 3.2) * 0.35, 0.95, 0.85, '#2a2a30'); T.ell(mid + s * dx, 1.5 + (dx - 3.2) * 0.35, 0.7, 0.62, HL); } } // cuatro faros redondos
+    else if (c.hl === 'slant') for (const s of [-1, 1]) T.poly([[mid + s * 1.8, 1.3], [mid + s * 5.6, 0.9], [mid + s * (bw / 2 - 0.4), 2.6], [mid + s * (bw / 2 - 1), 3.3], [mid + s * 3, 2.1]], HL); // faros rasgados
+    else if (c.hl === 'round') for (const s of [-1, 1]) { T.ell(mid + s * (bw / 2 - 2.2), 1.3, 1.25, 1.05, '#2a2a30'); T.ell(mid + s * (bw / 2 - 2.2), 1.3, 0.95, 0.8, HL); }
+    else { T.rr(x0 + 0.8, 0.6, hw, 1.4, c.box ? 0.3 : 0.6, HL); T.rr(x1 - 0.8 - hw, 0.6, hw, 1.4, c.box ? 0.3 : 0.6, HL); }       // faros
+    if (c.hl === 'quad') T.rr(mid - 1.6, 0.4, 3.2, 0.6, 0.3, '#2a2a30'); else if (c.hl === 'slant') { T.poly([[mid - 1.6, 0.6], [mid + 1.6, 0.6], [mid + 1, 1.6], [mid - 1, 1.6]], '#2a2a30'); T.rr(mid - 3.4, 0.25, 6.8, 0.6, 0.3, '#1e1e22'); }
+    else T.rr(mid - 2.6, 0.35, 5.2, c.box ? 1.3 : 0.9, 0.3, c.grille || '#2a2a30');                            // parrilla
     if (c.box) for (let x = mid - 2.2; x < mid + 2.4; x += 0.9) T.rr(x, 0.5, 0.35, 1, 0, CHR[0]);
     if (c.bull) { T.line(x0 + 1.5, -0.1, x1 - 1.5, -0.1, 0.6, '#2a2a30'); }                              // defensa
     // parabrisas
@@ -65,10 +79,19 @@
     }
     if (c.spare) { T.ell(mid, tail - 0.4, 2.9, 1.3, '#16161a'); T.ell(mid, tail - 0.6, 1.8, 0.7, c.spareC ? C : '#3a3a40'); }  // auxilio
     if (!c.bed) T.rr(mid - 1.6, tail - 1.6, 3.2, 0.9, 0.2, '#f2f0ea');                                   // patente
-    T.rr(x0 + 0.4, tail - 2.4, 2.2, 1.8, 0.5, '#d8302a'); T.rr(x1 - 2.6, tail - 2.4, 2.2, 1.8, 0.5, '#d8302a');
+    if (c.tl === 'bar') { T.rr(x0 + 0.6, tail - 1.9, bw - 1.2, 1, 0.5, '#d8302a'); T.rr(x0 + 1.4, tail - 1.7, bw - 2.8, 0.3, 0.15, '#ff8a70'); }
+    else if (c.tl === 'round') for (const s of [-1, 1]) for (const dx of [bw / 2 - 1.6, bw / 2 - 3.6]) { T.ell(mid + s * dx, tail - 1.6, 0.85, 0.8, '#2a2a30'); T.ell(mid + s * dx, tail - 1.6, 0.65, 0.6, dx > 5 ? '#e8302a' : '#f0a030'); }
+    else if (c.tl === 'vertical') { T.rr(x0 + 0.2, tail - 5.6, 1.2, 5, 0.5, '#d8302a'); T.rr(x1 - 1.4, tail - 5.6, 1.2, 5, 0.5, '#d8302a'); }
+    else { T.rr(x0 + 0.4, tail - 2.4, 2.2, 1.8, 0.5, '#d8302a'); T.rr(x1 - 2.6, tail - 2.4, 2.2, 1.8, 0.5, '#d8302a'); }
     g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x0 + 0.1, yW + 0.4, 0.5, c.roof); g.fillRect(x1 - 0.6, yW + 0.4, 0.5, c.roof);
     if (t.aleron === 'chico' && !c.bed) { T.rr(x0 + 2.2, yG + 0.4, bw - 4.4, 1, 0.4, D); }
-    if (t.aleron === 'grande' && !c.bed) { T.rr(x0, tail - 4, bw, 1.7, 0.5, T.hg(x0, x1, [D, L, C, D])); }
+    if (pf) g.restore();
+    if (c.lip && t.aleron !== 'grande') T.rr(x0 + 1.2, tail - 2.9, bw - 2.4, 0.9, 0.45, VR.shadeHex(C, 0.7));      // colita de pato integrada
+    if ((t.aleron === 'grande' || (c.wing && t.aleron !== 'chico')) && !c.bed) { // alerón alto (de fábrica en el rally)
+      T.rr(x0 + 2, tail - 4.4, 0.7, 2.4, 0.2, '#26262c'); T.rr(x1 - 2.7, tail - 4.4, 0.7, 2.4, 0.2, '#26262c');
+      T.rr(x0 + 0.4, tail - 2.7, bw - 0.8, 1, 0.4, 'rgba(0,0,0,.4)'); T.rr(x0 - 0.5, tail - 4.9, bw + 1, 2.4, 0.7, VR.shadeHex(D, 0.6));
+      T.rr(x0 - 0.2, tail - 4.6, bw + 0.4, 1.8, 0.6, T.hg(x0, x1, [D, L, C, D])); T.rr(x0 + 0.4, tail - 4.2, bw - 0.8, 0.35, 0.2, 'rgba(255,255,255,.35)'); }
+    if (pf) { T.rr(-0.7 + x0, yH + 0.6, 1.4, 1.2, 0.4, D); T.rr(x1 - 0.7, yH + 0.6, 1.4, 1.2, 0.4, D); } // espejos (fuera del recorte)
   });
 
   // Karumbe: caballo adelante, varas, carro de madera con dos ruedas grandes y el carrero sentado
@@ -127,7 +150,9 @@
     if (t.franja === 'costado') P.r(c.tailx + 1, c.belt + 4, c.nose - c.tailx - 2, 2, S2);
     else if (t.franja && t.franja !== 'no') { P.r(c.rx0, c.yr, c.rx1 - c.rx0, 1, S2); P.r(c.hood[0], c.hood[1], c.nose - c.hood[0] - 1, 1, S2); }
     if (t.aleron === 'chico' && !c.bed) P.r(c.tailx - 1, c.tailTop - 2, 7, 2, D);
-    if (t.aleron === 'grande' && !c.bed) { P.r(c.tailx + 1, c.tailTop - 4, 2, 4, '#2a2a30'); P.r(c.tailx - 3, c.tailTop - 6, 11, 2, C); P.r(c.tailx - 3, c.tailTop - 6, 11, 1, L); }
+    if (c.scoop) P.r(c.hood[0] + 3, c.hood[1] - 1, 5, 1, D);
+    if (c.lip && t.aleron !== 'grande') P.r(c.tailx, c.tailTop - 1, 5, 1, D);
+    if ((t.aleron === 'grande' || (c.wing && t.aleron !== 'chico')) && !c.bed) { P.r(c.tailx + 1, c.tailTop - 4, 2, 4, '#2a2a30'); P.r(c.tailx - 3, c.tailTop - 6, 11, 2, C); P.r(c.tailx - 3, c.tailTop - 6, 11, 1, L); }
     if (c.spare) { for (let y = -4; y <= 4; y++) for (let x = -2; x <= 0; x++) if (Math.hypot(x * 1.8, y) <= 4.3) P.r(c.tailx - 1 + x, c.spare + y, 1, 1, y * y + x * x < 4 ? '#3a3a40' : '#16161a'); }
     P.r(c.nose - 3, c.hood[1] + 2, 3, 2, HL); P.r(c.tailx, c.tailTop + 1, 2, 3, '#e8302a');
     if (c.bull) { P.r(c.nose, c.hood[1] + 3, 2, 7, '#2a2a30'); }
@@ -143,12 +168,12 @@
         win: [[[21, 8.6], [32, 7.8], [32, 15], [14, 15]], [[34, 7.8], [41, 7.8], [49, 15], [34, 15]]], pillars: [33], yr: 6, rx0: 20, rx1: 42, belt: 15, sill: 27, doors: [33, 46], tailx: 4, tailTop: 17, nose: 61, hood: [52, 15], wheels: [16, 48], wr: 5 } },
     sedan: { len: 35, wid: 16, S: 40, acc: 168, turn: 2.5, max: { road: 245, stone: 205, dirt: 160, side: 145, grass: 105 },
       name: 'Porã 1.5', desc: 'Sedán familiar de 4 puertas con baúl grande: el de los remises y las familias.', side: 'sedan',
-      base: VR.drawAuto({ L: 35, W: 16, hood: 8.4, ws: 4, roof: 10.4, rg: 3.6, fa: 0.2, ra: 0.74 }),
+      base: VR.drawAuto({ L: 35, W: 16, hood: 8.4, ws: 4, roof: 10.4, rg: 3.6, fa: 0.2, ra: 0.74, hl: 'slant', tl: 'bar', pinch: 1.2 }),
       sideShape: side({ body: [[3, 27], [3, 18], [12, 16], [21, 8], [38, 7], [47, 15], [60, 17], [61, 26], [55, 27], [53, 23], [43, 23], [41, 27], [22, 27], [20, 23], [10, 23], [8, 27]],
         win: [[[22, 9], [31, 8], [31, 15], [16, 15]], [[33, 8], [38, 8], [45, 15], [33, 15]]], pillars: [32], yr: 7, rx0: 22, rx1: 38, belt: 15, sill: 27, doors: [32, 44], tailx: 3, tailTop: 16, nose: 61, hood: [47, 15], wheels: [15, 48], wr: 5 }) },
     mono: { len: 31, wid: 16, S: 36, acc: 160, turn: 2.8, max: { road: 225, stone: 198, dirt: 165, side: 145, grass: 110 },
       name: "Ka'i 1.3", desc: 'Monovolumen chico de techo alto: entra todo y se estaciona en cualquier lado.', side: 'mono',
-      base: VR.drawAuto({ L: 31, W: 16, hood: 5.6, ws: 5.4, roof: 13.4, rg: 2.6, fa: 0.19, ra: 0.79 }),
+      base: VR.drawAuto({ L: 31, W: 16, hood: 5.6, ws: 5.4, roof: 13.4, rg: 2.6, fa: 0.19, ra: 0.79, tl: 'vertical', pinch: 1.6 }),
       sideShape: side({ body: [[4, 27], [4, 9], [8, 5], [36, 4], [48, 13], [59, 16], [60, 26], [54, 27], [52, 23], [42, 23], [40, 27], [21, 27], [19, 23], [9, 23], [7, 27]],
         win: [[[6, 7], [8, 6], [20, 6], [20, 14], [6, 14]], [[22, 6], [32, 6], [32, 14], [22, 14]], [[34, 5], [36, 5], [45, 14], [34, 14]]], pillars: [21, 33], yr: 4, rx0: 8, rx1: 36, belt: 14, sill: 27, doors: [21, 33], tailx: 4, tailTop: 12, nose: 60, hood: [48, 13], wheels: [14, 47], wr: 5 }) },
     pickup: { len: 41, wid: 18, S: 46, acc: 165, rev: 70, turn: 2.2, brake: 380, mass: 1.5, max: { road: 230, stone: 212, dirt: 205, side: 140, grass: 165 },
@@ -158,19 +183,33 @@
         win: [[[29, 7], [34, 7], [34, 13], [29, 13]], [[36, 6], [41, 6], [45, 13], [36, 13]]], pillars: [35], yr: 5, rx0: 27, rx1: 42, belt: 13, sill: 27, doors: [35, 46], tailx: 2, tailTop: 15, nose: 62, hood: [47, 13], bed: [3, 15, 27], rollbar: true, wheels: [12, 49], wr: 6 }) },
     suv: { len: 37, wid: 18, S: 42, acc: 175, rev: 70, turn: 2.4, brake: 400, mass: 1.4, max: { road: 235, stone: 214, dirt: 205, side: 140, grass: 168 },
       name: 'Jaguarete 3.2', desc: 'Todoterreno grande con rueda de auxilio atrás: no hay calle de tierra que lo pare.', side: 'suv',
-      base: VR.drawAuto({ L: 37, W: 18, hood: 8.6, ws: 3.6, roof: 17.4, rg: 1.8, fa: 0.2, ra: 0.76, box: true, rails: true, spare: true, tireL: 6.4, scoop: true }),
+      base: VR.drawAuto({ L: 37, W: 18, hood: 8.6, ws: 3.6, roof: 17.4, rg: 1.8, fa: 0.2, ra: 0.76, box: true, rails: true, spare: true, tireL: 6.4, scoop: true, tl: 'vertical', flares: true }),
       sideShape: side({ body: [[4, 27], [4, 6], [6, 4], [41, 4], [46, 12], [60, 13], [61, 26], [55, 27], [53, 22], [42, 22], [40, 27], [20, 27], [18, 22], [8, 22], [6, 27]],
         win: [[[6, 6], [16, 6], [16, 12], [6, 12]], [[18, 6], [28, 6], [28, 12], [18, 12]], [[30, 6], [40, 6], [44, 12], [30, 12]]], pillars: [17, 29], yr: 4, rx0: 6, rx1: 41, belt: 12, sill: 27, doors: [29, 44], tailx: 4, tailTop: 8, nose: 61, hood: [46, 12], rails: true, spare: 17, bull: true, wheels: [13, 48], wr: 6 }) },
     suvmed: { len: 35, wid: 17, S: 40, acc: 170, rev: 70, turn: 2.5, brake: 400, mass: 1.3, max: { road: 230, stone: 210, dirt: 200, side: 140, grass: 162 },
       name: 'Mborevi 2.7', desc: 'Todoterreno mediano de 5 puertas: firme en la ruta y en la tierra colorada.', side: 'suvmed',
-      base: VR.drawAuto({ L: 35, W: 17, hood: 8.8, ws: 3.8, roof: 14.4, rg: 2.4, fa: 0.2, ra: 0.77, box: true, spare: true, spareC: true, tireL: 6 }),
+      base: VR.drawAuto({ L: 35, W: 17, hood: 8.8, ws: 3.8, roof: 14.4, rg: 2.4, fa: 0.2, ra: 0.77, box: true, spare: true, spareC: true, tireL: 6, tl: 'vertical', hl: 'slant' }),
       sideShape: side({ body: [[4, 27], [4, 8], [7, 5], [39, 5], [45, 13], [60, 14], [61, 26], [55, 27], [53, 22], [43, 22], [41, 27], [20, 27], [18, 22], [8, 22], [6, 27]],
         win: [[[7, 7], [18, 7], [18, 13], [6, 13]], [[20, 7], [29, 7], [29, 13], [20, 13]], [[31, 7], [38, 7], [43, 13], [31, 13]]], pillars: [19, 30], yr: 5, rx0: 7, rx1: 39, belt: 13, sill: 27, doors: [30, 43], tailx: 4, tailTop: 9, nose: 61, hood: [45, 13], spare: 18, wheels: [13, 48], wr: 6 }) },
     suvchico: { len: 28, wid: 16, S: 34, acc: 168, rev: 70, turn: 2.9, brake: 420, mass: 1.1, max: { road: 215, stone: 198, dirt: 195, side: 145, grass: 160 },
       name: 'Jaguarete Mirĩ', desc: 'Todoterreno chico de 3 puertas: corto, alto y guapo en la tierra.', side: 'suvchico',
-      base: VR.drawAuto({ L: 28, W: 16, hood: 7.2, ws: 3.4, roof: 11.6, rg: 1.6, fa: 0.21, ra: 0.75, box: true, spare: true, doors3: true, tireL: 5.6, rails: true }),
+      base: VR.drawAuto({ L: 28, W: 16, hood: 7.2, ws: 3.4, roof: 11.6, rg: 1.6, fa: 0.21, ra: 0.75, box: true, spare: true, doors3: true, tireL: 5.6, rails: true, hl: 'round', flares: true }),
       sideShape: side({ body: [[8, 27], [8, 7], [10, 5], [36, 5], [42, 13], [56, 14], [57, 26], [51, 27], [49, 22], [39, 22], [37, 27], [24, 27], [22, 22], [12, 22], [10, 27]],
         win: [[[10, 7], [20, 7], [20, 13], [10, 13]], [[22, 7], [35, 7], [40, 13], [22, 13]]], pillars: [21], yr: 5, rx0: 10, rx1: 36, belt: 13, sill: 27, doors: [21, 40], tailx: 8, tailTop: 9, nose: 57, hood: [42, 13], rails: true, spare: 18, wheels: [17, 44], wr: 6 }) },
+    // Deportivos (Leandro, 05/11/2026, pidió un sedán de rally turbo y un coupé deportivo de los 90-2000 que se ven
+    // en la calle): como siempre, la categoría con diseño propio y nombre inventado, no la copia del modelo.
+    rally: { len: 35, wid: 17, S: 40, acc: 215, rev: 70, turn: 2.8, brake: 440, mass: 1.05, max: { road: 275, stone: 245, dirt: 235, side: 150, grass: 185 },
+      colors: [['#1f4fa8', '#13336e', '#4f80d8'], ['#eceae4', '#a8a59e', '#ffffff'], ['#c8322a', '#8e1f1a', '#e4685c'], ['#26262c', '#141418', '#4a4a54'], ['#a8acb4', '#70747c', '#d4d8e0']],
+      name: 'Mbarakaja Turbo', desc: 'Sedán de rally con tracción en las cuatro: toma de aire en el capó, alerón alto y guapo en la tierra.', side: 'rally',
+      base: VR.drawAuto({ L: 35, W: 17, hood: 9, ws: 4, roof: 10, rg: 3.4, fa: 0.2, ra: 0.75, hl: 'slant', tl: 'round', scoop: 'rally', wing: true, flares: true, pinch: 1.4, tireL: 5.8 }),
+      sideShape: side({ body: [[3, 27], [3, 18], [12, 16], [21, 9], [37, 8], [46, 15], [60, 17], [61, 26], [55, 27], [53, 23], [43, 23], [41, 27], [22, 27], [20, 23], [10, 23], [8, 27]],
+        win: [[[22, 10], [31, 9], [31, 15], [16, 15]], [[33, 9], [37, 9], [44, 15], [33, 15]]], pillars: [32], yr: 8, rx0: 22, rx1: 37, belt: 15, sill: 27, doors: [32, 44], tailx: 3, tailTop: 16, nose: 61, hood: [46, 15], wheels: [15, 48], wr: 5, wing: true, scoop: true }) },
+    coupe: { len: 34, wid: 17, S: 40, acc: 205, rev: 70, turn: 3.0, brake: 440, mass: 0.95, max: { road: 270, stone: 215, dirt: 170, side: 150, grass: 120 },
+      colors: [['#d0302a', '#8e1f1a', '#f06a5c'], ['#e8c02a', '#a8820e', '#f8dc6a'], ['#26262c', '#141418', '#4a4a54'], ['#eceae4', '#a8a59e', '#ffffff'], ['#a8acb4', '#70747c', '#d4d8e0']],
+      name: 'Panambi GT', desc: 'Coupé deportivo de dos puertas, bajito, con cuatro faros redondos y luneta larga: dobla como pocos.', side: 'coupe',
+      base: VR.drawAuto({ L: 34, W: 17, hood: 10.5, ws: 4.6, roof: 6.4, rg: 7, fa: 0.21, ra: 0.76, hl: 'quad', tl: 'bar', pinch: 2.4, lip: true, doors3: true }),
+      sideShape: side({ body: [[3, 26], [3, 19], [8, 17], [14, 15], [27, 9], [37, 8], [46, 15], [60, 18], [61, 25], [55, 26], [53, 22], [43, 22], [41, 26], [22, 26], [20, 22], [10, 22], [8, 26]],
+        win: [[[20, 13], [27, 10.5], [33, 10.5], [33, 15], [18, 15]], [[35, 9.5], [37, 9.5], [44, 15], [35, 15]]], pillars: [34], yr: 8, rx0: 27, rx1: 37, belt: 15, sill: 26, doors: [24, 45], tailx: 3, tailTop: 17, nose: 61, hood: [46, 15], wheels: [15, 48], wr: 5, lip: true }) },
     karumbe: { len: 40, wid: 14, S: 46, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, noFire: true, colors: [['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
       name: 'Karumbe', desc: 'Carro de caballo: lento, pero llega a todos lados. Ojo con el caballo.', side: 'karumbe', base: VR.drawKarumbe },
   };
@@ -218,6 +257,7 @@
     const r = rnd();
     if (!parked && r < 0.025) return 'karumbe';
     if (!parked && r < 0.055) return rnd() < 0.7 ? 'policam' : 'patrulla'; // alguna patrullera recorriendo
+    const sp = rnd(); if (sp < 0.06) return sp < 0.03 ? 'rally' : 'coupe'; // deportivos: pocos
     const q = rnd();
     return q < 0.24 ? 'mita' : q < 0.42 ? 'sedan' : q < 0.56 ? 'mono' : q < 0.74 ? 'pickup' : q < 0.84 ? 'suv' : q < 0.93 ? 'suvmed' : 'suvchico';
   };

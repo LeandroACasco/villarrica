@@ -41,7 +41,7 @@
     if (emer) emer.clear();
     toast(msg);
   }
-  const me = () => Object.assign(VR.av2Rider(player.lookData), { look: player.sprites }); // así se ve el jugador arriba de la moto: su personaje (05/11/2026)
+  const me = () => Object.assign(VR.av2Rider(player.lookData), { L: player.lookData }); // así se ve el jugador arriba de la moto: su personaje (05/11/2026)
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];

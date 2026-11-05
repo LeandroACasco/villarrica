@@ -109,7 +109,9 @@
     if (c.spare) { const sx = c.tailx - 1.2, sy = c.spare; b.fillStyle = '#16161a'; b.beginPath(); b.ellipse(sx, sy, 1.6, 4.6, 0, 0, Math.PI * 2); b.fill(); b.fillStyle = M.base && m === 'suvmed' ? C : '#3a3a42'; b.beginPath(); b.ellipse(sx - 0.4, sy, 1.1, 3.6, 0, 0, Math.PI * 2); b.fill(); b.fillStyle = 'rgba(255,255,255,.25)'; b.fillRect(sx - 1, sy - 3, 0.4, 3); }
     if (c.bull) { b.strokeStyle = '#1e1e22'; b.lineWidth = 0.9; b.beginPath(); b.moveTo(c.nose + 0.2, c.sill - 2); b.lineTo(c.nose + 1, c.hood[1] + 2.5); b.lineTo(c.nose - 1, c.hood[1] + 1.8); b.stroke(); }
     if (t.aleron === 'chico' && !c.bed) { b.fillStyle = SH(C, 0.75); rrect(b, c.tailx - 0.6, c.tailTop - 1.8, 7, 1.6, 0.6); b.fill(); }
-    if (t.aleron === 'grande' && !c.bed) { b.fillStyle = '#26262c'; b.fillRect(c.tailx + 1.6, c.tailTop - 4, 0.9, 4); b.fillStyle = lin(b, 0, c.tailTop - 6, 0, c.tailTop - 4, [L, C, D]); rrect(b, c.tailx - 2.5, c.tailTop - 6.2, 11, 2.2, 0.8); b.fill(); }
+    if (c.scoop) { b.fillStyle = SH(C, 0.7); rrect(b, c.hood[0] + 2.5, c.hood[1] - 1.4, 6, 1.6, 0.6); b.fill(); b.fillStyle = '#1a1a1e'; b.fillRect(c.hood[0] + 3.2, c.hood[1] - 1, 4.6, 0.5); }
+    if (c.lip && t.aleron !== 'grande') { b.fillStyle = SH(C, 0.7); rrect(b, c.tailx - 0.4, c.tailTop - 1.2, 6, 1.2, 0.5); b.fill(); }
+    if ((t.aleron === 'grande' || (c.wing && t.aleron !== 'chico')) && !c.bed) { b.fillStyle = '#26262c'; b.fillRect(c.tailx + 1.6, c.tailTop - 4, 0.9, 4); b.fillStyle = lin(b, 0, c.tailTop - 6, 0, c.tailTop - 4, [L, C, D]); rrect(b, c.tailx - 2.5, c.tailTop - 6.2, 11, 2.2, 0.8); b.fill(); }
     if (M.emer) {
       const band = M.emer === 'policia' ? '#1e3a8a' : '#c8241a', x0 = c.tailx + 0.5, x1 = c.nose - 4.5;
       b.globalCompositeOperation = 'source-atop';

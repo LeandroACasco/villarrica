@@ -166,6 +166,104 @@ VR.drawRiderBase = (shirt, head, o = {}) => VR.vbase(10, 20, (T) => {
   if (o.cap) T.rr(3.4, 3.6, 3.2, 1.6, 0.6, VR.shadeHex(head, 0.7));                       // visera
 });
 
+// Conductor de verdad visto desde arriba (05/11/2026, segunda versión): se arma con el look del avatar 2
+// (cuerpo, piel, ropa con sus colores, peinado, gorra, casco, mochila…) y gira junto con la moto en los 64
+// ángulos, inclinado hacia el manubrio, con las manos en los puños, las rodillas a los costados del tanque y los
+// pies en los posapiés. geo: dónde quedan los puños (gy adelante, gx al costado), la cadera (hip) y si va parado.
+VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
+  const C = VR.AV2_CAT, L = Object.assign({}, VR.AV2_DEFAULT, L0), SH = VR.shadeHex, g = T.g;
+  const cx = 7, cy = 12, X = (d) => cx + d, Y = (d) => cy + d;
+  const gy = geo.gy ?? -5.8, gx = geo.gx ?? 4.3, stand = !!geo.stand, hip = stand ? 1.2 : (geo.hip ?? 3);
+  const f = L.gender === 'f', bw = { flaco: 5.2, normal: 5.8, fornido: 6.6, panza: 6.2 }[L.build] || 5.8, sw = bw * (f ? 0.88 : 1);
+  const skin = C.skin[L.skin], skD = SH(skin, 0.8), hairC = C.hairColor[L.hairColor];
+  const topC = L.top === 'top' ? skin : C.cloth[L.topColor], top2 = C.cloth[L.topColor2 ?? 1];
+  const jean = L.bottom === 'jean', pants = jean ? C.denim[L.bottomColor % C.denim.length] : C.cloth[L.bottomColor % C.cloth.length];
+  const shoe = C.cloth[L.shoesColor % C.cloth.length], hatC = C.cloth[L.hatColor % C.cloth.length];
+  const shortLeg = ['bermuda', 'cargoShort', 'short'].includes(L.bottom), skirt = L.bottom === 'pollera';
+  const sleeve = L.top === 'musculosa' || L.top === 'top' ? 0 : ['camisa', 'buzo', 'sueter', 'campera', 'puffer', 'hoodieAbierto'].includes(L.top) ? 1 : 0.45;
+  const sh = stand ? -0.6 : gy + 4.3, head = stand ? -0.9 : sh - 1.1; // hombros y cabeza (inclinada hacia adelante)
+  const lw = 1.7; // grosor de las piernas
+  const seg = (x0, y0, x1, y1, w, col) => T.line(X(x0), Y(y0), X(x1), Y(y1), w, col);
+  // piernas
+  if (stand) {
+    for (const [dx, dy] of [[-0.9, 0.6], [0.9, 2.4]]) { T.ell(X(dx), Y(dy), 0.9, 1.5, shoe); T.ell(X(dx), Y(dy - 0.9), 0.5, 0.35, SH(shoe, 1.3)); }
+    seg(-0.9, 0.4, -0.7, 0, 1.6, shortLeg || skirt ? skin : pants); seg(0.9, 2, 0.7, 1, 1.6, shortLeg || skirt ? skin : pants);
+  } else {
+    const kx = Math.min(gx * 0.66, 3.2), ky = sh + 0.9, fx = kx + 0.3, fy = ky + 2.2, hx = sw * 0.3;
+    for (const s of [-1, 1]) {
+      T.ell(X(s * fx), Y(fy), 0.85, 1.35, shoe); T.ell(X(s * fx), Y(fy - 0.8), 0.5, 0.35, SH(shoe, 1.35)); // pie en el posapié
+      seg(s * fx, fy - 0.4, s * kx, ky, lw * 0.9, shortLeg || skirt ? skin : SH(pants, 0.85));          // pantorrilla
+      seg(s * hx, hip - 0.2, s * kx, ky, lw, skirt ? skin : pants);                                       // muslo
+      if (shortLeg) seg(s * hx, hip - 0.2, s * (hx + (kx - hx) * 0.55), hip + (ky - hip) * 0.55, lw + 0.15, pants);
+      T.ell(X(s * kx), Y(ky), lw * 0.55, lw * 0.55, shortLeg || skirt ? SH(skin, 1.08) : SH(pants, 1.12)); // rodilla
+    }
+    if (skirt) T.ell(X(0), Y(hip - 0.6), sw * 0.55, 1.9, T.hg(X(-sw / 2), X(sw / 2), [SH(pants, 1.2), pants, SH(pants, 0.7)]));
+    else T.ell(X(0), Y(hip), sw * 0.42, 1.2, T.hg(X(-sw / 2), X(sw / 2), [SH(pants, 1.15), pants, SH(pants, 0.7)])); // cola en el asiento
+  }
+  // brazos (hombro → codo → mano en el puño)
+  const shx = sw / 2 - 0.5, arm = L.top === 'puffer' ? 1.55 : 1.25;
+  for (const s of [-1, 1]) {
+    const ex = (shx + gx) / 2 + 0.6, ey = (sh + gy) / 2 + 0.3;
+    const up = sleeve > 0 ? topC : skin, lo = sleeve >= 1 ? topC : skin;
+    seg(s * shx, sh + 0.3, s * ex, ey, arm, SH(up, 0.88)); seg(s * ex, ey, s * gx, gy + 0.2, arm * 0.9, SH(lo, 0.88));
+    if (sleeve > 0 && sleeve < 1) seg(s * shx, sh + 0.3, s * (shx + (ex - shx) * 0.6), sh + (ey - sh) * 0.6, arm + 0.2, SH(topC, 0.95));
+    if (L.reloj && s < 0) seg(s * (gx - 0.6), gy + 0.9, s * (gx - 0.3), gy + 0.5, arm, '#2a2a30');
+    T.ell(X(s * gx), Y(gy), 0.7, 0.75, skin); // mano
+  }
+  // espalda / torso (luz a la izquierda)
+  const ty0 = sh - 0.9, ty1 = stand ? 1.6 : hip + 0.3, tw = sw;
+  T.rr(X(-tw / 2), Y(ty0), tw, ty1 - ty0, [2.2, 2.2, 1.6, 1.6], T.hg(X(-tw / 2), X(tw / 2), [SH(topC, 1.18), topC, topC, SH(topC, 0.72)]));
+  if (L.top === 'musculosa' || L.top === 'top') { T.ell(X(-tw / 2 + 0.7), Y(ty0 + 0.7), 0.7, 0.6, skin); T.ell(X(tw / 2 - 0.7), Y(ty0 + 0.7), 0.7, 0.6, skD); }
+  if (L.top === 'camiseta') { g.save(); g.beginPath(); g.roundRect(X(-tw / 2), Y(ty0), tw, ty1 - ty0, [2.2, 2.2, 1.6, 1.6]); g.clip(); g.fillStyle = top2; for (let y = ty0 + 0.5; y < ty1; y += 1.2) g.fillRect(X(-tw / 2), Y(y), tw, 0.5); g.restore(); }
+  if (L.top === 'puffer') for (let y = ty0 + 1; y < ty1 - 0.3; y += 1.1) T.line(X(-tw / 2 + 0.4), Y(y), X(tw / 2 - 0.4), Y(y), 0.18, SH(topC, 0.7));
+  if (L.top === 'campera' || L.top === 'hoodieAbierto') T.line(X(0), Y(ty0 + 0.6), X(0), Y(ty1 - 0.2), 0.2, SH(topC, 0.65));
+  if (L.top === 'polo' || L.top === 'camisa' || L.top === 'camisaCorta') T.rr(X(-1.3), Y(ty0 + 0.2), 2.6, 0.7, 0.35, SH(topC, 1.25)); // cuello
+  if (L.top === 'buzo' || L.top === 'hoodieAbierto') T.ell(X(0), Y(head + 2.2), 1.7, 0.9, SH(topC, 0.82)); // capucha caída en la espalda
+  if (L.print && !['camiseta', 'puffer', 'top'].includes(L.top)) T.rr(X(-1), Y((ty0 + ty1) / 2), 2, 1.3, 0.3, top2);
+  if (L.mochila) { const pk = C.cloth[L.packColor % C.cloth.length]; T.line(X(-1.4), Y(ty0 + 0.4), X(-1.3), Y(ty0 + 2), 0.35, SH(pk, 0.6)); T.line(X(1.4), Y(ty0 + 0.4), X(1.3), Y(ty0 + 2), 0.35, SH(pk, 0.6)); T.rr(X(-1.9), Y(ty0 + 1.5), 3.8, Math.max(2.6, ty1 - ty0 - 1.8), 1, T.hg(X(-1.9), X(1.9), [SH(pk, 1.2), pk, SH(pk, 0.7)])); T.rr(X(-1.2), Y(ty1 - 1.6), 2.4, 0.9, 0.4, SH(pk, 0.8)); }
+  // cabeza: pelo, gorra, sombrero o casco
+  const hat = L.hat, cap = hat === 'gorra' || hat === 'gorraAtras' || hat === 'gorro', hr = 1.75;
+  const longH = ['largo', 'ondulado', 'onduladoFlequillo', 'medio'].includes(L.hair) && hat !== 'casco';
+  if (longH) T.rr(X(-1.7), Y(head), 3.4, L.hair === 'medio' ? 2.8 : 4.4, [1.2, 1.2, 1.6, 1.6], T.hg(X(-1.7), X(1.7), [SH(hairC, 1.2), hairC, SH(hairC, 0.75)]));
+  if (L.hair === 'trenza' && hat !== 'casco') for (let i = 0; i < 5; i++) T.ell(X(0), Y(head + 1.8 + i * 0.75), 0.55, 0.45, i % 2 ? SH(hairC, 0.8) : hairC);
+  if (L.hair === 'colita' && hat !== 'casco') { T.ell(X(0), Y(head + 1.9), 0.5, 0.4, '#d23c6a'); T.ell(X(0), Y(head + 2.9), 0.65, 1, hairC); }
+  if (L.hair === 'colitaLado' && hat !== 'casco') T.ell(X(1.9), Y(head + 1.6), 0.7, 1.2, hairC);
+  T.ell(X(-hr + 0.1), Y(head + 0.1), 0.45, 0.6, skD); T.ell(X(hr - 0.1), Y(head + 0.1), 0.45, 0.6, skD); // orejas
+  T.ell(X(0), Y(head), hr, hr * 1.05, skin);
+  if (hat === 'casco') {
+    T.ell(X(0), Y(head), 2.25, 2.4, T.hg(X(-2.2), X(2.2), [SH(hatC, 1.45), hatC, SH(hatC, 0.65)]));
+    T.rr(X(-1.6), Y(head - 2.35), 3.2, 1.1, [1, 1, 0.3, 0.3], '#1a1e26'); T.ell(X(-0.6), Y(head - 1.9), 0.6, 0.2, 'rgba(160,190,230,.6)'); // visera
+    T.line(X(0), Y(head - 1.1), X(0), Y(head + 2.2), 0.45, 'rgba(255,255,255,.45)'); T.ell(X(-0.9), Y(head - 0.4), 0.7, 0.5, 'rgba(255,255,255,.45)');
+  } else if (hat === 'piri') {
+    T.ell(X(0), Y(head), 3.3, 3.2, T.hg(X(-3.3), X(3.3), ['#ecd49a', '#d8b870', '#b0904e'])); for (let r = 1.4; r < 3.2; r += 0.6) { g.strokeStyle = 'rgba(120,90,40,.35)'; g.lineWidth = 0.15; g.beginPath(); g.ellipse(X(0), Y(head), r, r, 0, 0, 7); g.stroke(); }
+    T.ell(X(0), Y(head), 1.6, 1.6, '#c8a860'); T.ell(X(0), Y(head), 1.65, 1.65, 'rgba(0,0,0,0)'); g.strokeStyle = '#2a1e14'; g.lineWidth = 0.35; g.beginPath(); g.arc(X(0), Y(head), 1.6, 0, 7); g.stroke();
+  } else if (cap) {
+    T.ell(X(0), Y(head + 0.1), hr + 0.1, hr * 1.05, T.hg(X(-hr), X(hr), [SH(hatC, 1.3), hatC, SH(hatC, 0.7)]));
+    if (hat === 'gorra') T.ell(X(0), Y(head - hr - 0.2), 1.5, 1, SH(hatC, 0.8));
+    if (hat === 'gorraAtras') T.ell(X(0), Y(head + hr + 0.2), 1.5, 1, SH(hatC, 0.8));
+    if (hat === 'gorro') { T.line(X(-hr), Y(head + 0.8), X(hr), Y(head + 0.8), 0.6, SH(hatC, 0.8)); T.ell(X(0), Y(head), 0.6, 0.6, SH(hatC, 1.3)); }
+    T.ell(X(0), Y(head - 0.6), 0.4, 0.4, SH(hatC, 0.6));
+  } else if (L.hair !== 'pelado') {
+    const hc = L.hair === 'rapado' ? SH(hairC, 1.0) : hairC, rr = L.hair === 'rapado' ? hr - 0.1 : hr + 0.05;
+    T.ell(X(0), Y(head + 0.15), rr, rr * 1.02, T.hg(X(-rr), X(rr), [SH(hc, 1.35), hc, SH(hc, 0.7)]));
+    if (L.hair === 'rapado') T.ell(X(0), Y(head + 0.15), rr, rr, 'rgba(201,139,92,.35)');
+    if (L.hair === 'rulos') for (const [a, b] of [[-1, -0.8], [0.9, -0.6], [0, 0.4], [-1.1, 0.9], [1.1, 1], [0, -1.3]]) T.ell(X(a), Y(head + b), 0.65, 0.6, SH(hairC, 1.25));
+    if (L.hair === 'rodete') T.ell(X(0), Y(head + 0.5), 0.95, 0.9, SH(hairC, 1.2));
+    if (L.hair === 'degrade') T.ell(X(0), Y(head - 0.2), rr - 0.5, rr - 0.6, SH(hairC, 1.15));
+    T.ell(X(-0.6), Y(head - 0.5), 0.6, 0.4, 'rgba(255,255,255,.18)');
+    if (L.hair !== 'rapado') T.ell(X(0), Y(head - hr + 0.35), 1.1, 0.35, skin); // frente
+  } else T.ell(X(-0.5), Y(head - 0.4), 0.7, 0.5, 'rgba(255,255,255,.3)');
+});
+VR.riderTopFrames = (() => {
+  const cache = new Map();
+  return (L, geo) => {
+    const key = JSON.stringify(L) + JSON.stringify(geo || {});
+    let f = cache.get(key);
+    if (!f) { f = VR.rotFrames(VR.drawRiderTop(L, geo), Math.round(26 * VR.VK) + 2); cache.set(key, f); }
+    return f;
+  };
+})();
+
 // Rota un sprite a 64 ángulos. Los dibujos suaves (VR.vbase) se rotan grandes con suavizado, se contornean y
 // se achican: quedan sin escalones. Los de píxel (otros) se rotan al pixel con vecino más cercano.
 VR.rotFrames = (base, S, outline = true) => {
@@ -218,15 +316,15 @@ VR.VSPEC = {
 };
 VR.PATI_COLORS = [['#2c2c32', '#16161a', '#55555e'], ['#e8e6e0', '#a9a69e', '#ffffff'], ['#2f5fa8', '#1e3f74', '#5c8ad0']];
 VR.MOTO_MODELS = {
-  cub: { name: 'Mbojoaju 125', desc: 'La moto de todos los días: liviana, económica y con lugar para dos.', side: 'cub' },
-  mini: { len: 16, wid: 9, S: 22, base: VR.drawMotoMini, acc: 205, turn: 4.1, max: { road: 200, stone: 175, dirt: 170, side: 150, grass: 125 },
+  cub: { rider: { gy: -5.8, gx: 4.3, hip: 3 }, name: 'Mbojoaju 125', desc: 'La moto de todos los días: liviana, económica y con lugar para dos.', side: 'cub' },
+  mini: { rider: { gy: -4.1, gx: 3.8, hip: 2.4 }, len: 16, wid: 9, S: 22, base: VR.drawMotoMini, acc: 205, turn: 4.1, max: { road: 200, stone: 175, dirt: 170, side: 150, grass: 125 },
     name: 'Tatu 110', desc: 'Mini moto de ruedas gordas: chiquita, divertida y dobla en un pañuelo.', side: 'mini' },
-  calle: { len: 21, wid: 8, S: 26, base: VR.drawMotoCalle, acc: 265, turn: 3.2, max: { road: 290, stone: 240, dirt: 215, side: 160, grass: 140 },
+  calle: { rider: { gy: -5.6, gx: 4.6, hip: 2.6 }, len: 21, wid: 8, S: 26, base: VR.drawMotoCalle, acc: 265, turn: 3.2, max: { road: 290, stone: 240, dirt: 215, side: 160, grass: 140 },
     name: 'Yvytu GT 150', desc: 'Moto de calle con tanque grande y escape cromado: la más rápida.', side: 'calle' },
-  carga: { len: 32, wid: 16, S: 40, base: VR.drawMotoCarga, acc: 135, rev: 40, turn: 2.3, brake: 380, mass: 0.8,
+  carga: { rider: { gy: -3.7, gx: 5.2, hip: 2.2 }, len: 32, wid: 16, S: 40, base: VR.drawMotoCarga, acc: 135, rev: 40, turn: 2.3, brake: 380, mass: 0.8,
     max: { road: 185, stone: 165, dirt: 160, side: 120, grass: 105 },
     name: 'Kárga Guasu 200', desc: 'Motocarga de tres ruedas: lenta, pesada y aguanta de todo atrás.', side: 'carga', riderOff: 8 },
-  pati: { len: 12, wid: 6, S: 16, base: VR.drawPati, colors: VR.PATI_COLORS, acc: 150, rev: 15, turn: 4.4, brake: 420, mass: 0.15,
+  pati: { rider: { gy: -4.6, gx: 2.6, stand: true }, len: 12, wid: 6, S: 16, base: VR.drawPati, colors: VR.PATI_COLORS, acc: 150, rev: 15, turn: 4.4, brake: 420, mass: 0.15,
     max: { road: 115, stone: 85, dirt: 70, side: 110, grass: 60 },
     name: 'Pati-e', desc: 'Patineta eléctrica: silenciosa y ágil, pero no le pidas mucho en el empedrado.', side: 'pati' },
 };
@@ -466,9 +564,9 @@ VR.Car = class {
     if (this.tune && this.tune.neon !== 'no' && (this.driven || this.ai)) VR.drawNeon(ctx, x, y, a, this.LEN, this.WID, VR.NEON[this.tune.neon], VR.night ? 0.35 + VR.night.level * 0.65 : 0.4);
     ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
     ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
-    if (this.rider && this.rider.look) { // el personaje de verdad (avatar 2), sentado en la moto, mirando hacia donde va
-      const ro = this.spec.riderOff || 0, q = ((Math.round(a / (Math.PI / 2)) % 4) + 4) % 4, dir = ['up', 'right', 'down', 'left'][q];
-      ctx.drawImage(this.rider.look.get(dir, 'sit', 0), x - 8 + shake + Math.round(Math.sin(a) * ro), y - 24 - Math.round(Math.cos(a) * ro), 16, 32);
+    if (this.rider && this.rider.L) { // el personaje de verdad (avatar 2) visto desde arriba, girando con la moto
+      const R = VR.riderTopFrames(this.rider.L, this.spec.rider), rh = R.S >> 1, ro = this.spec.riderOff || 0;
+      ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - Math.round(Math.cos(a) * ro), R.S, R.S);
     } else if (this.rider) {
       const R = VR.riderFrames(this.rider.shirt, this.rider.head, this.rider.o), rh = R.S >> 1;
       const ro = this.spec.riderOff || 0;

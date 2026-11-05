@@ -99,8 +99,8 @@ VR.Traffic = class {
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model, tune);
       { const h = v.contacts(lx, ly, v.a); if (h && h.other) continue; } // no aparecer encima de nadie
       if (moto) { // conductores: personas del avatar 2 (algunas con casco), sentadas en la moto
-        if (!VR.RIDER_LOOKS) { const r = VR.rng(31); VR.RIDER_LOOKS = Array.from({ length: 12 }, (_, i) => { const L = VR.av2Random(r); L.mochila = false; L.termo = false; if (i % 3 !== 2) { L.hat = 'casco'; L.hatColor = (r() * VR.AV2_CAT.cloth.length) | 0; } return VR.av2Lazy(L); }); }
-        v.rider = { shirt: VR.RIDER_SHIRTS[0], head: '#2a1b12', look: VR.RIDER_LOOKS[(this.rnd() * VR.RIDER_LOOKS.length) | 0] };
+        if (!VR.RIDER_LOOKS) { const r = VR.rng(31); VR.RIDER_LOOKS = Array.from({ length: 12 }, (_, i) => { const L = VR.av2Random(r); L.mochila = false; L.termo = false; if (i % 3 !== 2) { L.hat = 'casco'; L.hatColor = (r() * VR.AV2_CAT.cloth.length) | 0; } return L; }); }
+        v.rider = { shirt: VR.RIDER_SHIRTS[0], head: '#2a1b12', L: VR.RIDER_LOOKS[(this.rnd() * VR.RIDER_LOOKS.length) | 0] };
       }
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
       v.ai.next = this.pickNext(e, to);

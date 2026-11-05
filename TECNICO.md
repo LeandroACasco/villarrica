@@ -205,7 +205,7 @@ Para agregar algo guardado: `VR.store.get('clave', porDefecto)` / `VR.store.set(
 - `VR.AV2_CAT` = catálogo: cada categoría (`hair, top, bottom, shoes, hat, extra, beard, build, gender`) es `{ clave: ['Nombre visible', precioEnGs] }`, más las paletas `skin`, `hairColor`, `cloth`.
 - `VR.av2Render(L, dir, anim, fase, k)` dibuja una pose; `VR.av2Lazy(look)` devuelve un objeto con `.get(dir, anim, frame)` que crea y guarda los cuadros a medida que se piden. Animaciones: `idle, walk, run, sit`. Direcciones: `up, down, left, right`.
 - `VR.AV2_TUNE` = proporciones (se ajustan cómodo con el **Editor de personas**, `docs/editor-personas.html`).
-- `VR.av2Rider(L)` = colores para el conductor viejo; ahora en motos se usa el look completo sentado (`car.rider.look`).
+- **Conductor de moto:** `VR.drawRiderTop(look, geo)` (car.js) lo dibuja visto desde arriba con la ropa, el peinado, la gorra/casco y la mochila del look, inclinado al manubrio, y `VR.riderTopFrames` lo gira en 64 ángulos con la moto. Se usa poniendo `car.rider = { L: look }`.
 
 ### 6.5 Vehículos (`car.js` + `autos.js` + `tune.js` + `vcard.js` + `sidehd.js`)
 - `VR.Car` = un vehículo (auto o moto, del jugador, del tránsito o estacionado). Tipo `'car'` o `'moto'` y `model`.
@@ -225,11 +225,13 @@ Para agregar algo guardado: `VR.store.get('clave', porDefecto)` / `VR.store.set(
 | `name`, `desc` | nombre inventado y descripción para la tarjeta |
 | `side` | qué dibujo de costado usar (tarjeta/taller) |
 | `sideShape` | contorno de costado (polígonos) para `drawSideAuto`/`sidehd.js` |
-| `riderOff` | (motos) corrimiento del conductor hacia atrás |
+| `riderOff` | (motos) corrimiento del conductor hacia adelante (unidades) |
+| `rider` | (motos) dónde quedan los puños y la cadera del conductor: `{ gy, gx, hip, stand }` (gy negativo = adelante; `stand: true` = va parado, patineta) |
 | `emer`, `lights` | vehículo de emergencia y colores de balizas |
 | `noLights`, `noFire` | sin faros / no se prende fuego (karumbe) |
 
 - **Dibujo desde arriba:** `VR.vbase(W, L, (T) => {...})` da un lienzo y ayudas `T.rr` (rectángulo redondeado), `T.tire`, `T.hg` (degradé), `T.line`. Para autos comunes alcanza `VR.drawAuto({ L, W, hood, ws, roof, rg, fa, ra, box, bed, spare, rails… })` (zonas a lo largo: capó, parabrisas, techo, luneta; el resto es baúl o caja).
+  Opciones de forma para que cada modelo se distinga: `pinch` (trompa y cola redondeadas y más angostas, 0–2,5), `hl` faros (`'slant'` rasgados, `'quad'` cuatro redondos, `'round'` redondos, sin nada = rectangulares), `tl` luces traseras (`'bar'` de lado a lado, `'round'` redondas, `'vertical'` altas en las esquinas), `flares` (guardabarros anchos), `scoop` (`true` o `'rally'`: toma de aire grande), `wing` (alerón alto de fábrica), `lip` (colita de pato), `box`, `bed`, `rollbar`, `spare`, `rails`, `doors3`. En `sideShape` también valen `wing`, `scoop` y `lip`.
 - `VR.rotFrames(base, S)` genera 64 rotaciones y la sombra (se cachean en `VR.vframes`).
 - **Sorteo:** `VR.pickCar(rnd, parked)` (autos.js) y `VR.pickMoto(rnd, parked)` (car.js) deciden qué modelos aparecen en el tránsito y estacionados.
 - **Taller:** `VR.TUNE_MODELS[model] = { parts: [...], price, k, serie }` (qué piezas se le pueden poner, precio base, multiplicador de precio de piezas, color de serie). Piezas en `VR.TUNE_PARTS`.
