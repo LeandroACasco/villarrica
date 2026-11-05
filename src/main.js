@@ -337,7 +337,32 @@
   $('mzOut').onclick = () => mapZoom(1 / 1.6);
   $('mzMe').onclick = () => { if (mv.k < fitK() * 3) mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); };
   $('mzClear').onclick = () => { setDest(null); };
-  for (const id of ['mzClose', 'mzIn', 'mzOut', 'mzMe', 'mzClear']) $(id).addEventListener('pointerdown', (e) => e.stopPropagation());
+  $('mzGo').onclick = () => { if (dest) teleport(dest.x, dest.y, dest.name); };
+  // ---------- teletransporte (05/11/2026): aparecés donde marcaste en el mapa, a pie o con el vehículo ----------
+  function teleport(px, py, name) {
+    const S = VR.TILE, T = VR.T, tx0 = Math.floor(px / S), ty0 = Math.floor(py / S);
+    const isRoad = (t) => t === T.ROAD || t === T.STONE || t === T.DIRTROAD;
+    const walk = (t) => t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER || t === T.GRASS || t === T.DIRT || t === T.PLAZADIRT;
+    let spot = null;
+    for (let r = 0; r < 60 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const tx = tx0 + dx, ty = ty0 + dy, t = world.get(tx, ty), x = tx * S + 8, y = ty * S + 10;
+      if (car) {
+        if (!isRoad(t)) continue;
+        const a = isRoad(world.get(tx - 1, ty)) && isRoad(world.get(tx + 1, ty)) ? Math.PI / 2 : 0;
+        if (!car.contacts(x, y, a)) spot = [x, y, a];
+      } else if (walk(t) && !world.hits(x - player.HW, y - player.HH, x + player.HW, y)) spot = [x, y];
+    }
+    if (!spot) { toast('No encontré lugar libre cerca de ahí'); return; }
+    if (car) {
+      world.removeBox(car); car.x = car.px = spot[0]; car.y = car.py = spot[1]; car.a = car.pa = spot[2]; car.v = car.vx = car.vy = car.w = 0; world.addBox(car);
+      player.x = player.px = car.x; player.y = player.py = car.y;
+    } else { player.x = player.px = spot[0]; player.y = player.py = spot[1]; player.moving = false; }
+    const f = car || player; cam.x = cam.px = f.x; cam.y = cam.py = f.y - (car ? 0 : 10); cam.lx = cam.ly = 0;
+    dest = null; route = null; VR.store.set('dest:' + world.id, null); updateGpsHud(); drawMapRoute();
+    closeMap(); toast('✨ Apareciste en ' + (name || world.placeName(spot[0], spot[1]) || 'el lugar marcado'));
+  }
+  for (const id of ['mzClose', 'mzIn', 'mzOut', 'mzMe', 'mzClear', 'mzGo']) $(id).addEventListener('pointerdown', (e) => e.stopPropagation());
   const ptrs = new Map(); let pinch = null, dragMoved = 0;
   mapBox.addEventListener('pointerdown', (e) => {
     e.preventDefault(); try { mapBox.setPointerCapture(e.pointerId); } catch (x) {}
@@ -367,6 +392,7 @@
     if (e.code === 'Equal' || e.code === 'NumpadAdd') mapZoom(1.4);
     else if (e.code === 'Minus' || e.code === 'NumpadSubtract') mapZoom(1 / 1.4);
     else if (e.code === 'Delete' || e.code === 'Backspace') setDest(null);
+    else if (e.code === 'KeyT' && dest) teleport(dest.x, dest.y, dest.name);
   });
   addEventListener('resize', () => { if (mapOpen) mapApply(); });
   // tocar: si es cerca de un nombre (plaza, lugar), el destino es ese lugar; si no, el punto tocado
@@ -396,7 +422,7 @@
   }
   function updateGpsHud() {
     const el = $('gps');
-    $('mzClear').hidden = !dest; $('mapDest').hidden = !dest;
+    $('mzClear').hidden = !dest; $('mzGo').hidden = !dest; $('mapDest').hidden = !dest;
     if (dest) { $('mapDest').style.left = dest.x / 16 + 'px'; $('mapDest').style.top = dest.y / 16 + 'px'; }
     if (!dest) { el.hidden = true; return; }
     el.hidden = false;
@@ -523,5 +549,5 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { world, player, shop, shopDoor, openShop, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();

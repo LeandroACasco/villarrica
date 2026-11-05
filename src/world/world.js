@@ -560,20 +560,28 @@ VR.decorOver = {
       g.fillStyle = 'rgba(255,214,140,.35)'; g.fillRect(X, Y + 7, W, 3);
     }
   },
-  esquina(g, d) { // esquina redondeada de la plaza: cordón curvo pintado de amarillo y rampas azules (Street View)
+  esquina(g, d) { // esquina redondeada: cordón curvo; en la plaza, pintado de amarillo y con rampas azules (Street View)
     const S = VR.TILE, R = d.r * S, q = d.q, sx = q[1] === 'w' ? 1 : -1, sy = q[0] === 'n' ? 1 : -1;
     const ox = d.cx * S, oy = d.cy * S, cx = ox + sx * R, cy = oy + sy * R, X = d.x * S, Y = d.y * S;
+    const inT = d.t !== undefined ? d.t : VR.T.PAVING, rdT = d.rt !== undefined ? d.rt : VR.T.ROAD, plaza = d.p !== 0;
     g.save(); g.beginPath(); g.rect(X, Y, R, R); g.clip();
-    for (let ty = d.y; ty < d.y + d.r; ty++) for (let tx = d.x; tx < d.x + d.r; tx++) VR.tileset.draw(g, VR.T.ROAD, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
+    for (let ty = d.y; ty < d.y + d.r; ty++) for (let tx = d.x; tx < d.x + d.r; tx++) VR.tileset.draw(g, rdT, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
     g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.arc(cx + 0.8, cy + 1, R + 0.6, 0, 7); g.fill(); // sombra del cordón
     g.beginPath(); g.arc(cx, cy, R, 0, 7); g.clip();
-    for (let ty = d.y; ty < d.y + d.r; ty++) for (let tx = d.x; tx < d.x + d.r; tx++) VR.tileset.draw(g, VR.T.PAVING, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
+    for (let ty = d.y; ty < d.y + d.r; ty++) for (let tx = d.x; tx < d.x + d.r; tx++) VR.tileset.draw(g, inT, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
     g.restore();
     g.save(); g.beginPath(); g.rect(X, Y, R, R); g.clip();
-    g.strokeStyle = '#a89a5a'; g.lineWidth = 2.2; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();
-    g.strokeStyle = '#e8b830'; g.lineWidth = 1.6; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();      // cordón amarillo
-    g.strokeStyle = '#f8d860'; g.lineWidth = 0.5; g.beginPath(); g.arc(cx, cy, R - 1.6, 0, 7); g.stroke();
+    if (plaza) {
+      g.strokeStyle = '#a89a5a'; g.lineWidth = 2.2; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();
+      g.strokeStyle = '#e8b830'; g.lineWidth = 1.6; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();      // cordón amarillo
+      g.strokeStyle = '#f8d860'; g.lineWidth = 0.5; g.beginPath(); g.arc(cx, cy, R - 1.6, 0, 7); g.stroke();
+    } else { // cordón común: canto claro y cara gris, como los rectos
+      g.strokeStyle = '#8f897c'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();
+      g.strokeStyle = '#d8d2c4'; g.lineWidth = 1.4; g.beginPath(); g.arc(cx, cy, R - 1.1, 0, 7); g.stroke();
+      g.strokeStyle = '#f6f2e8'; g.lineWidth = 0.5; g.beginPath(); g.arc(cx, cy, R - 0.6, 0, 7); g.stroke();
+    }
     g.restore();
+    if (!plaza) return;
     // dos rampas, una hacia cada cruce, sobre la curva
     const base = Math.atan2(-sy, -sx); // dirección de la esquina vista desde el centro
     for (const off of [-0.5, 0.5]) {

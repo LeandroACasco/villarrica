@@ -867,7 +867,7 @@ def main(src, out, preview=None):
                     x = cxe + (sx_ * k_ if sx_ > 0 else -k_ - 1); y = cye + (sy_ * j_ if sy_ > 0 else -j_ - 1)
                     if math.hypot(x + 0.5 - ccx, y + 0.5 - ccy) > R_:
                         tiles[y, x] = ROAD; rounded[y, x] = True
-            decals.append({'kind': 'esquina', 'x': min(cxe, ccx), 'y': min(cye, ccy), 'w': R_, 'h': R_, 'cx': cxe, 'cy': cye, 'q': q, 'r': R_})
+            decals.append({'kind': 'esquina', 'x': min(cxe, ccx), 'y': min(cye, ccy), 'w': R_, 'h': R_, 'cx': cxe, 'cy': cye, 'q': q, 'r': R_, 't': PAVING, 'rt': ROAD, 'p': 1})
             # banco en diagonal mirando a la esquina, en el centro del arco, y sin árboles alrededor
             bxc, byc = ccx + sx_ * 0.6, ccy + sy_ * 0.6
             fa = math.atan2(-sy_, -sx_)
@@ -919,6 +919,60 @@ def main(src, out, preview=None):
                         line[y, x] = val
                     n_z += 1
         print('cebras: %d en %d cruces del Centro' % (n_z, n_inter))
+
+    # ---------- esquinas redondeadas en toda la ciudad (Leandro, 05/11/2026: "no es solo la plaza") ----------
+    # En cada cruce de calles con vereda, la punta de la vereda de cada manzana se redondea (radio 4 m, o 2 m si
+    # la vereda es angosta). La baldosa de la punta pasa a calle y el decorado 'esquina' dibuja la curva lisa.
+    SIDEW = (SIDEWALK, CHECKER, PAVING)
+    RD = (ROAD, STONE, DIRTROAD)
+    lab2, n2 = ndimage.label((cover >= 2) & np.isin(tiles, RD))
+    done_c, n_round = set(), 0
+    plaza_c = []
+    for d_ in decals:
+        if d_['kind'] == 'esquina': done_c.add((d_['cx'], d_['cy'])); plaza_c.append((d_['cx'], d_['cy']))
+    for sl in ndimage.find_objects(lab2):
+        y0_, y1_, x0_, x1_ = sl[0].start, sl[0].stop - 1, sl[1].start, sl[1].stop - 1
+        if y0_ < 4 or x0_ < 4 or y1_ > H - 5 or x1_ > W - 5:
+            continue
+        rt = int(tiles[(y0_ + y1_) // 2, (x0_ + x1_) // 2])
+        # (borde x, borde y, dirección hacia adentro de la manzana, cuadrante de la manzana)
+        for cxe, cye, sx_, sy_, q in ((x1_ + 1, y0_, 1, -1, 'sw'), (x0_, y0_, -1, -1, 'se'), (x1_ + 1, y1_ + 1, 1, 1, 'nw'), (x0_, y1_ + 1, -1, 1, 'ne')):
+            # la punta de la manzana: la celda de vereda más cercana al cruce con calle a los dos lados (afuera);
+            # se busca un poco alrededor porque el cruce no siempre es un rectángulo justo
+            c0x = cxe if sx_ > 0 else cxe - 1; c0y = cye if sy_ > 0 else cye - 1
+            best = None
+            for ddx in range(-2, 4):
+                for ddy in range(-2, 4):
+                    x, y = c0x + sx_ * ddx, c0y + sy_ * ddy
+                    if tiles[y, x] in SIDEW and tiles[y, x - sx_] in RD and tiles[y - sy_, x] in RD and tiles[y - sy_, x - sx_] in RD:
+                        sc_ = abs(ddx) + abs(ddy)
+                        if best is None or sc_ < best[0]: best = (sc_, x, y)
+            if not best:
+                continue
+            cx_cell, cy_cell = best[1], best[2]
+            cxe = cx_cell if sx_ > 0 else cx_cell + 1; cye = cy_cell if sy_ > 0 else cy_cell + 1
+            if (cxe, cye) in done_c or rounded[cy_cell, cx_cell] or any(abs(px_ - cxe) <= 4 and abs(py_ - cye) <= 4 for px_, py_ in plaza_c):
+                continue
+            t0 = tiles[cy_cell, cx_cell]
+            R_ = 0
+            for r_try in (2, 1):
+                ok = True
+                for k_ in range(r_try):
+                    for j_ in range(r_try):
+                        if tiles[cy_cell + sy_ * j_, cx_cell + sx_ * k_] not in SIDEW: ok = False
+                if ok: R_ = r_try; break
+            if not R_:
+                continue
+            ccx, ccy = cxe + sx_ * R_, cye + sy_ * R_
+            cut = False
+            for k_ in range(R_):
+                for j_ in range(R_):
+                    x, y = cx_cell + sx_ * k_, cy_cell + sy_ * j_
+                    if math.hypot(x + 0.5 - ccx, y + 0.5 - ccy) > R_:
+                        tiles[y, x] = rt; line[y, x] = 0; rounded[y, x] = True; cut = True
+            decals.append({'kind': 'esquina', 'x': min(cxe, ccx), 'y': min(cye, ccy), 'w': R_, 'h': R_, 'cx': cxe, 'cy': cye, 'q': q, 'r': R_, 't': int(t0), 'rt': rt, 'p': 0})
+            done_c.add((cxe, cye)); n_round += 1
+    print('esquinas redondeadas: %d' % n_round)
 
     # ---------- punto de inicio: vereda al sur de la Plaza de los Héroes ----------
     spawn = {'x': W * 8, 'y': H * 8}

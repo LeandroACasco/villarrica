@@ -216,8 +216,8 @@
 <div id="vcard"><canvas width="256" height="144"></canvas><div><b></b><span></span></div></div>
 <div id="mapView" hidden>
   <div id="mapBox"><div id="mapInner"><canvas id="mapCanvas"></canvas><svg id="mapRoute"><polyline id="routeBg" stroke="#0b2a36" stroke-width="7"/><polyline id="routeFg" stroke="#3fd3ff" stroke-width="4"/></svg><div id="mapLabels"></div><div id="mapDest" hidden>🏁</div><div id="mapMe"></div></div></div>
-  <div id="mapTools"><button id="mzClose" title="Volver (M)">✕</button><button id="mzIn" title="Acercar (+)">＋</button><button id="mzOut" title="Alejar (−)">－</button><button id="mzMe" title="Ir a donde estoy">📍</button><button id="mzClear" class="wide" hidden>Quitar destino</button></div>
-  <p id="mapHelp">Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar un destino · arrastrá o pellizcá para moverte</p>
+  <div id="mapTools"><button id="mzClose" title="Volver (M)">✕</button><button id="mzIn" title="Acercar (+)">＋</button><button id="mzOut" title="Alejar (−)">－</button><button id="mzMe" title="Ir a donde estoy">📍</button><button id="mzGo" class="wide" hidden title="Teletransportarme (T)">✨ Ir ahí</button><button id="mzClear" class="wide" hidden>Quitar destino</button></div>
+  <p id="mapHelp">Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar un destino (y ✨ para aparecer ahí) · arrastrá o pellizcá para moverte</p>
 </div>
 
 <dialog id="menu">
@@ -259,7 +259,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión ac11d686 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión f43fb9c5 · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -1532,20 +1532,28 @@ VR.decorOver = {
       g.fillStyle = 'rgba(255,214,140,.35)'; g.fillRect(X, Y + 7, W, 3);
     }
   },
-  esquina(g, d) { // esquina redondeada de la plaza: cordón curvo pintado de amarillo y rampas azules (Street View)
+  esquina(g, d) { // esquina redondeada: cordón curvo; en la plaza, pintado de amarillo y con rampas azules (Street View)
     const S = VR.TILE, R = d.r * S, q = d.q, sx = q[1] === 'w' ? 1 : -1, sy = q[0] === 'n' ? 1 : -1;
     const ox = d.cx * S, oy = d.cy * S, cx = ox + sx * R, cy = oy + sy * R, X = d.x * S, Y = d.y * S;
+    const inT = d.t !== undefined ? d.t : VR.T.PAVING, rdT = d.rt !== undefined ? d.rt : VR.T.ROAD, plaza = d.p !== 0;
     g.save(); g.beginPath(); g.rect(X, Y, R, R); g.clip();
-    for (let ty = d.y; ty < d.y + d.r; ty++) for (let tx = d.x; tx < d.x + d.r; tx++) VR.tileset.draw(g, VR.T.ROAD, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
+    for (let ty = d.y; ty < d.y + d.r; ty++) for (let tx = d.x; tx < d.x + d.r; tx++) VR.tileset.draw(g, rdT, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
     g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.arc(cx + 0.8, cy + 1, R + 0.6, 0, 7); g.fill(); // sombra del cordón
     g.beginPath(); g.arc(cx, cy, R, 0, 7); g.clip();
-    for (let ty = d.y; ty < d.y + d.r; ty++) for (let tx = d.x; tx < d.x + d.r; tx++) VR.tileset.draw(g, VR.T.PAVING, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
+    for (let ty = d.y; ty < d.y + d.r; ty++) for (let tx = d.x; tx < d.x + d.r; tx++) VR.tileset.draw(g, inT, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
     g.restore();
     g.save(); g.beginPath(); g.rect(X, Y, R, R); g.clip();
-    g.strokeStyle = '#a89a5a'; g.lineWidth = 2.2; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();
-    g.strokeStyle = '#e8b830'; g.lineWidth = 1.6; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();      // cordón amarillo
-    g.strokeStyle = '#f8d860'; g.lineWidth = 0.5; g.beginPath(); g.arc(cx, cy, R - 1.6, 0, 7); g.stroke();
+    if (plaza) {
+      g.strokeStyle = '#a89a5a'; g.lineWidth = 2.2; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();
+      g.strokeStyle = '#e8b830'; g.lineWidth = 1.6; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();      // cordón amarillo
+      g.strokeStyle = '#f8d860'; g.lineWidth = 0.5; g.beginPath(); g.arc(cx, cy, R - 1.6, 0, 7); g.stroke();
+    } else { // cordón común: canto claro y cara gris, como los rectos
+      g.strokeStyle = '#8f897c'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R - 1, 0, 7); g.stroke();
+      g.strokeStyle = '#d8d2c4'; g.lineWidth = 1.4; g.beginPath(); g.arc(cx, cy, R - 1.1, 0, 7); g.stroke();
+      g.strokeStyle = '#f6f2e8'; g.lineWidth = 0.5; g.beginPath(); g.arc(cx, cy, R - 0.6, 0, 7); g.stroke();
+    }
     g.restore();
+    if (!plaza) return;
     // dos rampas, una hacia cada cruce, sobre la curva
     const base = Math.atan2(-sy, -sx); // dirección de la esquina vista desde el centro
     for (const off of [-0.5, 0.5]) {
@@ -4792,7 +4800,9 @@ VR.Weapons = class {
   }
 
   // ---------- pistola ----------
-  muzzle(player) { const a = this.aim; return [player.x + Math.sin(a) * 9, player.y - 13 - Math.cos(a) * 9]; }
+  // Se sostiene con la mano derecha a la altura del pecho, apuntando para adelante (05/11/2026: antes salía de la cadera)
+  hand(x, y, a) { const fx = Math.sin(a), fy = -Math.cos(a), rx = Math.cos(a), ry = Math.sin(a); return [x + fx * 3 + rx * 2.5, y - 18 + fy * 2 + ry * 1.5]; }
+  muzzle(player) { const a = this.aim, [hx, hy] = this.hand(player.x, player.y, a), L = this.cur === 'pistola' ? 7 : 12; return [hx + Math.sin(a) * L, hy - Math.cos(a) * L * 0.75]; }
   shoot(player) {
     const W = VR.WEAPONS.pistola, [x, y] = this.muzzle(player), a = this.aim + (this.rnd() - 0.5) * 0.04;
     this.shots.push({ x, y, px: x, py: y, vx: Math.sin(a) * W.speed, vy: -Math.cos(a) * W.speed, left: W.range });
@@ -4865,13 +4875,22 @@ VR.Weapons = class {
   // el arma en la mano (se dibuja encima del personaje)
   drawHeld(ctx, player, cx, cy, al) {
     if (!this.enabled) return;
-    const x = VR.lerp(player.px, player.x, al) - cx, y = VR.lerp(player.py, player.y, al) - cy - 13;
     const firing = VR.input.down('fire'), a = firing ? this.aim : ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
     if (player.dir === 'up' && !firing) return; // de espaldas no se ve
-    ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(a);
-    if (this.cur === 'pistola') { ctx.fillStyle = '#16161a'; ctx.fillRect(-1, -8, 2, 6); ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1, -4, 2, 3); }
-    else { ctx.fillStyle = '#2a2a30'; ctx.fillRect(-1.5, -11, 3, 9); ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-1, -12, 2, 2); ctx.fillStyle = '#c23a28'; ctx.fillRect(-2, -3, 4, 3); }
+    const [hx, hy] = this.hand(VR.lerp(player.px, player.x, al) - cx, VR.lerp(player.py, player.y, al) - cy, a);
+    ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); // el largo hacia arriba o abajo se ve acortado (vista 3/4)
+    if (this.cur === 'pistola') {
+      ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.25, -7.5, 2.5, 8.5);                                   // contorno
+      ctx.fillStyle = '#2e2e36'; ctx.fillRect(-0.75, -7, 1.5, 7); ctx.fillStyle = '#5a5a66'; ctx.fillRect(-0.75, -7, 0.5, 6); // cañón
+      ctx.fillStyle = '#1a1a20'; ctx.fillRect(-1, -1, 2, 2.5);                                          // empuñadura en la mano
+    } else {
+      ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.75, -12.5, 3.5, 14);
+      ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1.25, -12, 2.5, 12); ctx.fillStyle = '#6a6a74'; ctx.fillRect(-1.25, -12, 0.75, 11);
+      ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-1, -12.5, 2, 1.5);
+      ctx.fillStyle = '#7a1a12'; ctx.fillRect(-2.5, -1, 5, 3.5); ctx.fillStyle = '#c23a28'; ctx.fillRect(-2, -0.5, 4, 2.5); ctx.fillStyle = '#e8584a'; ctx.fillRect(-2, -0.5, 1.5, 2.5); // tanque
+    }
     ctx.restore();
+    ctx.fillStyle = player.lookData ? VR.AV2_CAT.skin[player.lookData.skin] : '#c98b5c'; ctx.fillRect(hx - 1, hy - 1, 2, 2); // la mano encima de la empuñadura
     if (this.flash > 0 && this.cur === 'pistola') {
       const [mx, my] = this.muzzle({ x: VR.lerp(player.px, player.x, al), y: VR.lerp(player.py, player.y, al) });
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(mx - cx, my - cy, 0, mx - cx, my - cy, 6);
@@ -5825,7 +5844,32 @@ VR.showVehicleCard = (v) => {
   $('mzOut').onclick = () => mapZoom(1 / 1.6);
   $('mzMe').onclick = () => { if (mv.k < fitK() * 3) mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); };
   $('mzClear').onclick = () => { setDest(null); };
-  for (const id of ['mzClose', 'mzIn', 'mzOut', 'mzMe', 'mzClear']) $(id).addEventListener('pointerdown', (e) => e.stopPropagation());
+  $('mzGo').onclick = () => { if (dest) teleport(dest.x, dest.y, dest.name); };
+  // ---------- teletransporte (05/11/2026): aparecés donde marcaste en el mapa, a pie o con el vehículo ----------
+  function teleport(px, py, name) {
+    const S = VR.TILE, T = VR.T, tx0 = Math.floor(px / S), ty0 = Math.floor(py / S);
+    const isRoad = (t) => t === T.ROAD || t === T.STONE || t === T.DIRTROAD;
+    const walk = (t) => t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER || t === T.GRASS || t === T.DIRT || t === T.PLAZADIRT;
+    let spot = null;
+    for (let r = 0; r < 60 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const tx = tx0 + dx, ty = ty0 + dy, t = world.get(tx, ty), x = tx * S + 8, y = ty * S + 10;
+      if (car) {
+        if (!isRoad(t)) continue;
+        const a = isRoad(world.get(tx - 1, ty)) && isRoad(world.get(tx + 1, ty)) ? Math.PI / 2 : 0;
+        if (!car.contacts(x, y, a)) spot = [x, y, a];
+      } else if (walk(t) && !world.hits(x - player.HW, y - player.HH, x + player.HW, y)) spot = [x, y];
+    }
+    if (!spot) { toast('No encontré lugar libre cerca de ahí'); return; }
+    if (car) {
+      world.removeBox(car); car.x = car.px = spot[0]; car.y = car.py = spot[1]; car.a = car.pa = spot[2]; car.v = car.vx = car.vy = car.w = 0; world.addBox(car);
+      player.x = player.px = car.x; player.y = player.py = car.y;
+    } else { player.x = player.px = spot[0]; player.y = player.py = spot[1]; player.moving = false; }
+    const f = car || player; cam.x = cam.px = f.x; cam.y = cam.py = f.y - (car ? 0 : 10); cam.lx = cam.ly = 0;
+    dest = null; route = null; VR.store.set('dest:' + world.id, null); updateGpsHud(); drawMapRoute();
+    closeMap(); toast('✨ Apareciste en ' + (name || world.placeName(spot[0], spot[1]) || 'el lugar marcado'));
+  }
+  for (const id of ['mzClose', 'mzIn', 'mzOut', 'mzMe', 'mzClear', 'mzGo']) $(id).addEventListener('pointerdown', (e) => e.stopPropagation());
   const ptrs = new Map(); let pinch = null, dragMoved = 0;
   mapBox.addEventListener('pointerdown', (e) => {
     e.preventDefault(); try { mapBox.setPointerCapture(e.pointerId); } catch (x) {}
@@ -5855,6 +5899,7 @@ VR.showVehicleCard = (v) => {
     if (e.code === 'Equal' || e.code === 'NumpadAdd') mapZoom(1.4);
     else if (e.code === 'Minus' || e.code === 'NumpadSubtract') mapZoom(1 / 1.4);
     else if (e.code === 'Delete' || e.code === 'Backspace') setDest(null);
+    else if (e.code === 'KeyT' && dest) teleport(dest.x, dest.y, dest.name);
   });
   addEventListener('resize', () => { if (mapOpen) mapApply(); });
   // tocar: si es cerca de un nombre (plaza, lugar), el destino es ese lugar; si no, el punto tocado
@@ -5884,7 +5929,7 @@ VR.showVehicleCard = (v) => {
   }
   function updateGpsHud() {
     const el = $('gps');
-    $('mzClear').hidden = !dest; $('mapDest').hidden = !dest;
+    $('mzClear').hidden = !dest; $('mzGo').hidden = !dest; $('mapDest').hidden = !dest;
     if (dest) { $('mapDest').style.left = dest.x / 16 + 'px'; $('mapDest').style.top = dest.y / 16 + 'px'; }
     if (!dest) { el.hidden = true; return; }
     el.hidden = false;
@@ -6011,7 +6056,7 @@ VR.showVehicleCard = (v) => {
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { world, player, shop, shopDoor, openShop, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();
 
 </script>

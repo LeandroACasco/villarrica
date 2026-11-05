@@ -53,7 +53,9 @@ VR.Weapons = class {
   }
 
   // ---------- pistola ----------
-  muzzle(player) { const a = this.aim; return [player.x + Math.sin(a) * 9, player.y - 13 - Math.cos(a) * 9]; }
+  // Se sostiene con la mano derecha a la altura del pecho, apuntando para adelante (05/11/2026: antes salía de la cadera)
+  hand(x, y, a) { const fx = Math.sin(a), fy = -Math.cos(a), rx = Math.cos(a), ry = Math.sin(a); return [x + fx * 3 + rx * 2.5, y - 18 + fy * 2 + ry * 1.5]; }
+  muzzle(player) { const a = this.aim, [hx, hy] = this.hand(player.x, player.y, a), L = this.cur === 'pistola' ? 7 : 12; return [hx + Math.sin(a) * L, hy - Math.cos(a) * L * 0.75]; }
   shoot(player) {
     const W = VR.WEAPONS.pistola, [x, y] = this.muzzle(player), a = this.aim + (this.rnd() - 0.5) * 0.04;
     this.shots.push({ x, y, px: x, py: y, vx: Math.sin(a) * W.speed, vy: -Math.cos(a) * W.speed, left: W.range });
@@ -126,13 +128,22 @@ VR.Weapons = class {
   // el arma en la mano (se dibuja encima del personaje)
   drawHeld(ctx, player, cx, cy, al) {
     if (!this.enabled) return;
-    const x = VR.lerp(player.px, player.x, al) - cx, y = VR.lerp(player.py, player.y, al) - cy - 13;
     const firing = VR.input.down('fire'), a = firing ? this.aim : ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
     if (player.dir === 'up' && !firing) return; // de espaldas no se ve
-    ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(a);
-    if (this.cur === 'pistola') { ctx.fillStyle = '#16161a'; ctx.fillRect(-1, -8, 2, 6); ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1, -4, 2, 3); }
-    else { ctx.fillStyle = '#2a2a30'; ctx.fillRect(-1.5, -11, 3, 9); ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-1, -12, 2, 2); ctx.fillStyle = '#c23a28'; ctx.fillRect(-2, -3, 4, 3); }
+    const [hx, hy] = this.hand(VR.lerp(player.px, player.x, al) - cx, VR.lerp(player.py, player.y, al) - cy, a);
+    ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); // el largo hacia arriba o abajo se ve acortado (vista 3/4)
+    if (this.cur === 'pistola') {
+      ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.25, -7.5, 2.5, 8.5);                                   // contorno
+      ctx.fillStyle = '#2e2e36'; ctx.fillRect(-0.75, -7, 1.5, 7); ctx.fillStyle = '#5a5a66'; ctx.fillRect(-0.75, -7, 0.5, 6); // cañón
+      ctx.fillStyle = '#1a1a20'; ctx.fillRect(-1, -1, 2, 2.5);                                          // empuñadura en la mano
+    } else {
+      ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.75, -12.5, 3.5, 14);
+      ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1.25, -12, 2.5, 12); ctx.fillStyle = '#6a6a74'; ctx.fillRect(-1.25, -12, 0.75, 11);
+      ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-1, -12.5, 2, 1.5);
+      ctx.fillStyle = '#7a1a12'; ctx.fillRect(-2.5, -1, 5, 3.5); ctx.fillStyle = '#c23a28'; ctx.fillRect(-2, -0.5, 4, 2.5); ctx.fillStyle = '#e8584a'; ctx.fillRect(-2, -0.5, 1.5, 2.5); // tanque
+    }
     ctx.restore();
+    ctx.fillStyle = player.lookData ? VR.AV2_CAT.skin[player.lookData.skin] : '#c98b5c'; ctx.fillRect(hx - 1, hy - 1, 2, 2); // la mano encima de la empuñadura
     if (this.flash > 0 && this.cur === 'pistola') {
       const [mx, my] = this.muzzle({ x: VR.lerp(player.px, player.x, al), y: VR.lerp(player.py, player.y, al) });
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(mx - cx, my - cy, 0, mx - cx, my - cy, 6);
