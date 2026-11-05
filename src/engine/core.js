@@ -2,6 +2,7 @@
 'use strict';
 const VR = {};
 VR.TILE = 16;
+VR.RES = 1; // resolución del dibujo (píxeles del lienzo por unidad del mundo); la fija VR.screen.fit
 VR.clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 VR.lerp = (a, b, t) => a + (b - a) * t;
 // ruido determinístico por coordenada (mismo resultado siempre para la misma celda)
@@ -17,9 +18,12 @@ VR.store = {
 };
 VR.canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return c; };
 
-// Pantalla: el lado corto mide ~270 píxeles del juego y cada píxel del juego ocupa un número entero de píxeles físicos.
+// Pantalla: el lado corto mide ~270 píxeles del juego (unidades del mundo: 8 por metro).
+// Resolución ×2 (05/11/2026): cada unidad del mundo se dibuja con R×R píxeles del lienzo (R = 2 cuando la pantalla
+// da), así el piso, las personas y los vehículos pueden tener el doble de detalle (16 px por metro, como Gangstar)
+// sin acercar la cámara. Todo el código de dibujo sigue trabajando en unidades del mundo: el contexto lleva la escala.
 VR.screen = {
-  BASE: 270,
+  BASE: 270, R: 1,
   init(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d', { alpha: false }); this.fit(); },
   fit() {
     const dpr = window.devicePixelRatio || 1;
@@ -29,10 +33,12 @@ VR.screen = {
     const s = raw >= 3 ? Math.round(raw) : Math.max(1, Math.round(raw * 2) / 2);
     this.scale = s;
     this.w = Math.ceil(dw / s); this.h = Math.ceil(dh / s);
-    this.canvas.width = this.w; this.canvas.height = this.h;
+    const R = this.R = VR.RES = Math.min(2, s);
+    this.canvas.width = Math.round(this.w * R); this.canvas.height = Math.round(this.h * R);
     this.canvas.style.width = (this.w * s / dpr) + 'px';
     this.canvas.style.height = (this.h * s / dpr) + 'px';
     this.ctx.imageSmoothingEnabled = false;
+    this.ctx.setTransform(R, 0, 0, R, 0, 0);
   },
   // Alejar o acercar la cámara (p. ej. al subir al auto): cambia el lado corto de la pantalla en píxeles
   // del juego. El salto entre escalas enteras se suaviza con una transición CSS desde la escala anterior.

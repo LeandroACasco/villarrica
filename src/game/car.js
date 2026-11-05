@@ -168,7 +168,7 @@ VR.rotFrames = (base, S, outline = true) => {
   // Cada ángulo se dibuja recién cuando hace falta (y se guarda): antes se armaban los 64 de una vez cada vez
   // que aparecía un vehículo de un color nuevo, y eso trababa el juego (sobre todo en el teléfono).
   const N = 64, f = { img: new Array(N), shadow: new Array(N), S };
-  const ss = base.ss || 1;
+  const ss = base.ss || 1, SR = Math.round(S * (VR.RES || 1)); // tamaño en el lienzo (resolución ×2)
   let src = null;
   const make = (k) => {
     const a = k / N * Math.PI * 2;
@@ -177,7 +177,7 @@ VR.rotFrames = (base, S, outline = true) => {
       const B = S * ss, big = VR.canvas(B, B), x = big.getContext('2d');
       x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
       x.translate(B / 2, B / 2); x.rotate(a); x.drawImage(base, -base.width / 2, -base.height / 2);
-      c = VR.gfx.crisp(VR.gfx.down(outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big, S, S));
+      c = VR.gfx.crisp(VR.gfx.down(outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big, SR, SR));
     } else {
       const bw = base.width, bh = base.height, ca = Math.cos(a), sa = Math.sin(a);
       if (!src) src = base.getContext('2d').getImageData(0, 0, bw, bh).data;
@@ -192,9 +192,10 @@ VR.rotFrames = (base, S, outline = true) => {
       }
       x.putImageData(img, 0, 0);
       if (outline) VR.gfx.outline(c, '#141216');
+      if (SR !== S) { const up = VR.canvas(SR, SR); up.getContext('2d').drawImage(c, 0, 0, SR, SR); c = up; }
     }
-    const sh = VR.canvas(S, S), sx = sh.getContext('2d');
-    sx.drawImage(c, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(0,0,0,.32)'; sx.fillRect(0, 0, S, S);
+    const sh = VR.canvas(SR, SR), sx = sh.getContext('2d');
+    sx.drawImage(c, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(0,0,0,.32)'; sx.fillRect(0, 0, SR, SR);
     f.img[k] = c; f.shadow[k] = sh;
   };
   f.get = (k) => { if (!f.img[k]) make(k); return f.img[k]; };
@@ -459,12 +460,12 @@ VR.Car = class {
     const k = this.frame(a), F = this.frames, h = F.S >> 1;
     const shake = this.hit > 0 ? ((this.hit * 60) | 0) % 2 : 0;
     if (this.tune && this.tune.neon !== 'no' && (this.driven || this.ai)) VR.drawNeon(ctx, x, y, a, this.LEN, this.WID, VR.NEON[this.tune.neon], VR.night ? 0.35 + VR.night.level * 0.65 : 0.4);
-    ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3);
-    ctx.drawImage(F.get(k), x - h + shake, y - h);
+    ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
+    ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
     if (this.rider) {
       const R = VR.riderFrames(this.rider.shirt, this.rider.head), rh = R.S >> 1;
       const ro = this.spec.riderOff || 0;
-      ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro));
+      ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro), R.S, R.S);
     }
     if (this.siren && this.spec.lights) { // barra de luces titilando
       const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : this.model === 'ambulancia' ? this.LEN * 0.22 : this.LEN * 0.1;

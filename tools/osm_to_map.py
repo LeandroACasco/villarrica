@@ -728,6 +728,61 @@ def main(src, out, preview=None):
             labels.append({'text': 'Ao Porã · ropa', 'x': (x0_ + x1_ + 1) * 8, 'y': y0_ * 16 + 20, 'small': 1})
             print('tienda de ropa: edificio %d, x %d-%d, y %d-%d, vereda y=%d, plaza x %d-%d y %d-%d' % (ti, x0_, x1_, y0_, y1_, sw0, x0p, x1p, y0p, y1p_))
 
+    # ---------- bancos en las plazas (05/11/2026): al borde de los caminos, de espaldas al pasto ----------
+    # f = hacia dónde mira la gente sentada: 's' (al sur, de frente a la cámara), 'e' o 'o'.
+    rb = np.random.default_rng(23)
+    benches = []
+    plazas = [i + 1 for i, n in enumerate(area_names) if 'Plaza' in n or 'plaza' in n]
+    if plazas:
+        inplaza = np.isin(area, plazas)
+        ys_, xs_ = np.nonzero(inplaza & (tiles == PAVING))
+        green = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] in (GRASS, TREE)
+        for y, x in zip(ys_, xs_):
+            if y < 2 or x < 2 or y >= H - 2 or x >= W - 2:
+                continue
+            f = None
+            if green(y - 1, x) and tiles[y + 1, x] == PAVING and tiles[y, x - 1] == PAVING and tiles[y, x + 1] == PAVING: f = 's'
+            elif green(y, x - 1) and tiles[y, x + 1] == PAVING and tiles[y - 1, x] == PAVING and tiles[y + 1, x] == PAVING: f = 'e'
+            elif green(y, x + 1) and tiles[y, x - 1] == PAVING and tiles[y - 1, x] == PAVING and tiles[y + 1, x] == PAVING: f = 'o'
+            if not f or rb.random() > 0.45:
+                continue
+            if any(abs(by - y) + abs(bx - x) < 6 for by, bx in benches[-60:]):
+                continue
+            if any(d_['kind'] in ('anfiteatro', 'terraza', 'mastiles', 'monumento', 'monumento_bajo') and d_['x'] - 2 <= x <= d_['x'] + d_['w'] + 1 and d_['y'] - 2 <= y <= d_['y'] + d_['h'] + 1 for d_ in decals):
+                continue
+            benches.append((y, x))
+            decals.append({'kind': 'banco', 'x': int(x), 'y': int(y), 'w': 1, 'h': 1, 'f': f})
+    print('bancos en las plazas: %d' % len(benches))
+
+    # ---------- cebras en las esquinas del Centro (05/11/2026) ----------
+    # Cada cruce (celdas que pisan 2 calles o más) es un rectángulo; en cada brazo, justo afuera del cruce, se pintan
+    # 2 baldosas (4 m) de cebra sobre el asfalto, de cordón a cordón. Solo en el barrio Centro.
+    from scipy import ndimage
+    if 'Centro' in barrio_names:
+        centro = barrio == barrio_names.index('Centro') + 1
+        paved_rd = tiles == ROAD  # en el empedrado casi no se pintan
+        lab, n_inter = ndimage.label((cover >= 2) & paved_rd & centro)
+        n_z = 0
+        for sl in ndimage.find_objects(lab):
+            y0_, y1_, x0_, x1_ = sl[0].start, sl[0].stop - 1, sl[1].start, sl[1].stop - 1
+            if (y1_ - y0_) < 2 or (x1_ - x0_) < 2:
+                continue
+            arms = [(range(y0_ - 2, y0_), range(x0_, x1_ + 1), 3), (range(y1_ + 1, y1_ + 3), range(x0_, x1_ + 1), 3),
+                    (range(y0_, y1_ + 1), range(x0_ - 2, x0_), 4), (range(y0_, y1_ + 1), range(x1_ + 1, x1_ + 3), 4)]
+            road_at = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] in (ROAD, STONE, DIRTROAD)
+            for ys_, xs_, val in arms:
+                cells = [(y, x) for y in ys_ for x in xs_ if 0 <= y < H and 0 <= x < W and paved_rd[y, x]]
+                # el brazo tiene que ser una calle que sale del cruce: a sus costados, vereda (no más calle)
+                if val == 3 and any(road_at(y, x0_ - 1) or road_at(y, x1_ + 1) for y in ys_):
+                    continue
+                if val == 4 and any(road_at(y0_ - 1, x) or road_at(y1_ + 1, x) for x in xs_):
+                    continue
+                if len(cells) >= 6:
+                    for y, x in cells:
+                        line[y, x] = val
+                    n_z += 1
+        print('cebras: %d en %d cruces del Centro' % (n_z, n_inter))
+
     # ---------- punto de inicio: vereda al sur de la Plaza de los Héroes ----------
     spawn = {'x': W * 8, 'y': H * 8}
     for i, p in enumerate(parks):

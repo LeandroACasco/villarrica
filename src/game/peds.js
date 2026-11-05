@@ -16,6 +16,19 @@ VR.Peds = class {
     this.sprites = [];
     for (let i = 0; i < 32; i++) this.sprites.push(VR.av2Lazy(VR.av2Random(R)));
     this.flat = new Map(); // sprite "acostado" (cuando lo chocás)
+    // gente sentada en los bancos de las plazas (05/11/2026): quietos, algunos con el termo de tereré
+    this.sitters = [];
+    const SR = VR.rng(7);
+    for (const d of world.decals || []) {
+      if (d.kind !== 'banco') continue;
+      const n = SR() < 0.5 ? 1 : SR() < 0.55 ? 2 : 0, S = VR.TILE, X = d.x * S, Y = d.y * S;
+      for (let i = 0; i < n; i++) {
+        const L = VR.av2Random(SR); L.termo = SR() < 0.35; L.mochila = false; if (L.hat === 'casco') L.hat = 'ninguno';
+        const o = n === 2 ? (i ? 3.5 : -3.5) : 0;
+        if (d.f === 's') this.sitters.push({ x: X + 8 + o, y: Y + 15.5, dir: 'down', look: VR.av2Lazy(L), d });
+        else this.sitters.push({ x: d.f === 'e' ? X + 7.5 : X + 8.5, y: Y + 11 + o * 1.6, dir: d.f === 'e' ? 'right' : 'left', look: VR.av2Lazy(L), d });
+      }
+    }
   }
   walkable(px, py) {
     const W = this.world, tx = Math.floor(px / VR.TILE), ty = Math.floor(py / VR.TILE), t = W.get(tx, ty), T = VR.T;
@@ -116,19 +129,24 @@ VR.Peds = class {
   lying(pal) {
     let c = this.flat.get(pal);
     if (!c) {
-      const s = this.sprites[pal].get('down', 'idle', 0); c = VR.canvas(34, 18); const g = c.getContext('2d');
-      g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(s, -8, -16); this.flat.set(pal, c);
+      const s = this.sprites[pal].get('down', 'idle', 0), R = VR.RES; c = VR.canvas(34 * R, 18 * R); const g = c.getContext('2d');
+      g.scale(R, R); g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(s, -8, -16, 16, 32); this.flat.set(pal, c);
     }
     return c;
   }
   collect(camX, camY, sw, sh, al, out) {
+    for (const p of this.sitters) {
+      const x = Math.round(p.x - camX), y = Math.round(p.y - camY);
+      if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
+      out.push({ sy: p.y + 2, draw: (ctx) => ctx.drawImage(p.look.get(p.dir, 'sit', 0), x - 8, y - 31, 16, 32) });
+    }
     for (const p of this.list) {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12);
-        else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8, y - 31);
+        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
+        else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8, y - 31, 16, 32);
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
     }

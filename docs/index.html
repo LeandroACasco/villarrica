@@ -259,7 +259,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 198baf19 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 14b1d3f7 · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -388,6 +388,7 @@ const Inflate = (() => {
 'use strict';
 const VR = {};
 VR.TILE = 16;
+VR.RES = 1; // resolución del dibujo (píxeles del lienzo por unidad del mundo); la fija VR.screen.fit
 VR.clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 VR.lerp = (a, b, t) => a + (b - a) * t;
 // ruido determinístico por coordenada (mismo resultado siempre para la misma celda)
@@ -403,9 +404,12 @@ VR.store = {
 };
 VR.canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return c; };
 
-// Pantalla: el lado corto mide ~270 píxeles del juego y cada píxel del juego ocupa un número entero de píxeles físicos.
+// Pantalla: el lado corto mide ~270 píxeles del juego (unidades del mundo: 8 por metro).
+// Resolución ×2 (05/11/2026): cada unidad del mundo se dibuja con R×R píxeles del lienzo (R = 2 cuando la pantalla
+// da), así el piso, las personas y los vehículos pueden tener el doble de detalle (16 px por metro, como Gangstar)
+// sin acercar la cámara. Todo el código de dibujo sigue trabajando en unidades del mundo: el contexto lleva la escala.
 VR.screen = {
-  BASE: 270,
+  BASE: 270, R: 1,
   init(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d', { alpha: false }); this.fit(); },
   fit() {
     const dpr = window.devicePixelRatio || 1;
@@ -415,10 +419,12 @@ VR.screen = {
     const s = raw >= 3 ? Math.round(raw) : Math.max(1, Math.round(raw * 2) / 2);
     this.scale = s;
     this.w = Math.ceil(dw / s); this.h = Math.ceil(dh / s);
-    this.canvas.width = this.w; this.canvas.height = this.h;
+    const R = this.R = VR.RES = Math.min(2, s);
+    this.canvas.width = Math.round(this.w * R); this.canvas.height = Math.round(this.h * R);
     this.canvas.style.width = (this.w * s / dpr) + 'px';
     this.canvas.style.height = (this.h * s / dpr) + 'px';
     this.ctx.imageSmoothingEnabled = false;
+    this.ctx.setTransform(R, 0, 0, R, 0, 0);
   },
   // Alejar o acercar la cámara (p. ej. al subir al auto): cambia el lado corto de la pantalla en píxeles
   // del juego. El salto entre escalas enteras se suaviza con una transición CSS desde la escala anterior.
@@ -649,24 +655,24 @@ VR.gfx = {
   // Texto en el mundo (globos, carteles): fuente del sistema, cacheada como imagen.
   _txt: new Map(),
   textImg(str, col = '#ffffff', size = 8, bold = true) {
-    const key = str + '|' + col + '|' + size + '|' + bold;
+    const key = str + '|' + col + '|' + size + '|' + bold + '|' + VR.RES;
     let c = this._txt.get(key);
     if (c) return c;
     const font = (bold ? 'bold ' : '') + size + 'px "Trebuchet MS", Verdana, sans-serif';
     const m = VR.canvas(1, 1).getContext('2d'); m.font = font;
-    const w = Math.ceil(m.measureText(str).width) + 2, h = size + 4;
-    c = VR.canvas(w, h);
-    const x = c.getContext('2d'); x.font = font; x.textBaseline = 'top'; x.fillStyle = col; x.fillText(str, 1, 1);
+    const w = Math.ceil(m.measureText(str).width) + 2, h = size + 4, R = VR.RES;
+    c = VR.canvas(Math.round(w * R), Math.round(h * R)); c.lw = w; c.lh = h;
+    const x = c.getContext('2d'); x.scale(R, R); x.font = font; x.textBaseline = 'top'; x.fillStyle = col; x.fillText(str, 1, 1);
     if (this._txt.size > 400) this._txt.clear();
     this._txt.set(key, c);
     return c;
   },
   text(ctx, str, x, y, col = '#ffffff', opt = {}) {
     const img = this.textImg(str, col, opt.size || 8, opt.bold !== false);
-    let px = Math.round(opt.center ? x - img.width / 2 : opt.right ? x - img.width : x);
-    if (opt.shadow) ctx.drawImage(this.textImg(str, opt.shadow, opt.size || 8, opt.bold !== false), px + 1, Math.round(y) + 1);
-    ctx.drawImage(img, px, Math.round(y));
-    return img.width;
+    let px = Math.round(opt.center ? x - img.lw / 2 : opt.right ? x - img.lw : x);
+    if (opt.shadow) ctx.drawImage(this.textImg(str, opt.shadow, opt.size || 8, opt.bold !== false), px + 1, Math.round(y) + 1, img.lw, img.lh);
+    ctx.drawImage(img, px, Math.round(y), img.lw, img.lh);
+    return img.lw;
   },
 };
 
@@ -750,7 +756,7 @@ VR.audio = {
 };
 
 // ===== world/tiles.js =====
-// Tiles generados por código (16×16), con 4 variantes cada uno para que el piso no se vea repetido.
+// Tiles generados por código, con 4 variantes cada uno para que el piso no se vea repetido.
 'use strict';
 VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8, STONE: 9, DIRTROAD: 10, CHECKER: 11 };
 // calzadas: asfalto, empedrado y calle de tierra
@@ -759,119 +765,192 @@ VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] 
 // tile que se dibuja debajo de cada tipo
 VR.GROUND_OF = { [VR.T.TREE]: VR.T.GRASS, [VR.T.BUILDING]: VR.T.SIDEWALK, [VR.T.MONUMENT]: VR.T.PAVING };
 
-VR.tileset = (() => {
-  const S = VR.TILE, VARS = 4, TYPES = 12;
-  const c = VR.canvas(S * VARS, S * TYPES), ctx = c.getContext('2d');
-  const img = ctx.createImageData(c.width, c.height), d = img.data;
-  const put = (x, y, r, g, b) => { const i = (y * c.width + x) * 4; d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255; };
-  const n = (x, y, s) => VR.hash(x, y, s);
-  for (let t = 0; t < TYPES; t++) for (let v = 0; v < VARS; v++) for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    const gx = v * S + x, gy = t * S + y, h = n(gx, gy, t * 7 + 1), h2 = n(gx, gy, t * 13 + 5);
-    let r, g, b;
-    switch (t) {
-      case VR.T.GRASS: {
-        r = 92; g = 158; b = 58;
-        if (h < 0.18) { r -= 18; g -= 22; b -= 10; } else if (h > 0.9) { r += 22; g += 22; b += 8; }
-        if (h2 > 0.985) { r = 222; g = 214; b = 96; } // florcitas
-        break;
+// Tileset con detalle (05/11/2026, resolución ×2): cada baldosa del mundo (2 m) se dibuja con Q = 16·R píxeles
+// de lado (32 con R = 2: 16 px por metro). Se arma la primera vez que se usa, a la resolución de la pantalla.
+// Todo es ruido y formas por código (sin imágenes): pasto con matas y briznas, asfalto con grano, baldosas de
+// vereda con junta y bisel, empedrado de piedras irregulares con luz y sombra, tierra colorada con terrones.
+// Los patrones se repiten cada 2 m sin costuras (el ruido y las piedras "dan la vuelta" en el borde).
+VR.tileset = {
+  VARS: 4, TYPES: 12, _c: null, _r: 0,
+  build(R) {
+    const S = VR.TILE, Q = Math.round(S * R), VARS = this.VARS, TYPES = this.TYPES;
+    const c = VR.canvas(Q * VARS, Q * TYPES), ctx = c.getContext('2d');
+    const img = ctx.createImageData(c.width, c.height), d = img.data;
+    const H = VR.hash, u = 1 / R; // u: tamaño de un píxel en unidades del mundo
+    const wrap = (a) => ((a % 16) + 16) % 16;
+    // ruido suave que se repite cada 16 unidades (sin costura), con período p de la grilla
+    const vnoise = (x, y, p, s) => {
+      const n = 16 / p, gx = x / p, gy = y / p, x0 = Math.floor(gx), y0 = Math.floor(gy), fx = gx - x0, fy = gy - y0;
+      const g = (i, j) => H(((i % n) + n) % n, ((j % n) + n) % n, s);
+      const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+      return (g(x0, y0) * (1 - sx) + g(x0 + 1, y0) * sx) * (1 - sy) + (g(x0, y0 + 1) * (1 - sx) + g(x0 + 1, y0 + 1) * sx) * sy;
+    };
+    // piedras: celdas de Voronoi con centros corridos, que dan la vuelta en el borde
+    const stones = (x, y, cs, jit, s) => {
+      const n = 16 / cs, cx = Math.floor(x / cs), cy = Math.floor(y / cs);
+      let d1 = 1e9, d2 = 1e9, best = null;
+      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+        const ix = cx + i, iy = cy + j, kx = ((ix % n) + n) % n, ky = ((iy % n) + n) % n;
+        const px = (ix + 0.5) * cs + (H(kx, ky, s) - 0.5) * jit, py = (iy + 0.5) * cs + (H(kx, ky, s + 9) - 0.5) * jit;
+        const dd = Math.hypot(x - px, y - py);
+        if (dd < d1) { d2 = d1; d1 = dd; best = [px, py, kx, ky]; } else if (dd < d2) d2 = dd;
       }
-      case VR.T.ROAD: {
-        const k = (h - 0.5) * 12 | 0; r = 76 + k; g = 76 + k; b = 84 + k;
-        if (h2 > 0.992) { r -= 22; g -= 22; b -= 22; }
-        break;
+      return { edge: d2 - d1, dx: x - best[0], dy: y - best[1], id: H(best[2], best[3], s + 3) };
+    };
+    const put = (X, Y, r, g, b) => { const i = (Y * c.width + X) * 4; d[i] = Math.max(0, Math.min(255, r)); d[i + 1] = Math.max(0, Math.min(255, g)); d[i + 2] = Math.max(0, Math.min(255, b)); d[i + 3] = 255; };
+    // baldosas cuadradas de lado b (unidades) con junta, bisel claro arriba-izquierda y sombra abajo-derecha
+    const tile = (x, y, b, ox = 0) => { const xx = wrap(x + ox), lx = xx % b, ly = y % b; return { lx, ly, i: Math.floor(xx / b), j: Math.floor(y / b), joint: lx < u || ly < u, hi: lx < 2 * u || ly < 2 * u, lo: lx > b - 2 * u || ly > b - 2 * u }; };
+    for (let t = 0; t < TYPES; t++) for (let v = 0; v < VARS; v++) for (let py = 0; py < Q; py++) for (let px = 0; px < Q; px++) {
+      const x = px * u, y = py * u, X = v * Q + px, Y = t * Q + py;
+      const h = H(px + v * 97, py, t * 7 + 1), h2 = H(px + v * 97, py, t * 13 + 5);
+      let r, g, b;
+      switch (t) {
+        case VR.T.GRASS: { // matas de distinto verde, briznas, alguna florcita
+          const m = vnoise(x, y, 4, 11 + v), m2 = vnoise(x, y, 2, 31 + v);
+          r = 84 + m * 22; g = 146 + m * 26; b = 52 + m * 10;
+          if (m2 < 0.3) { r -= 12; g -= 14; b -= 6; }
+          if (h < 0.16) { r -= 22; g -= 26; b -= 12; } else if (h > 0.9) { r += 18; g += 20; b += 8; }
+          if (H(px + v * 97, py - 1, t * 7 + 1) < 0.1 && h > 0.5) { r -= 16; g -= 18; b -= 8; } // brizna (sombra debajo)
+          if (h2 > 0.993) { const f = H(px, py, 70 + v) < 0.5; r = f ? 236 : 246; g = f ? 214 : 240; b = f ? 80 : 228; }
+          break;
+        }
+        case VR.T.ROAD: { // asfalto: grano fino, piedritas claras, manchas de aceite
+          const m = vnoise(x, y, 8, 21 + v);
+          const k = (h - 0.5) * 14; r = 72 + k + m * 8; g = 72 + k + m * 8; b = 80 + k + m * 8;
+          if (h2 > 0.975) { r += 26; g += 26; b += 24; } else if (h2 < 0.012) { r -= 18; g -= 18; b -= 18; }
+          break;
+        }
+        case VR.T.SIDEWALK: { // baldosas de 50 cm con junta y bisel; cada una con su tono; algunas rajadas o manchadas
+          const T = tile(x, y, 4), id = H(T.i + v * 5, T.j, 41), k = (id - 0.5) * 12 + (h - 0.5) * 6;
+          r = 192 + k; g = 184 + k; b = 168 + k;
+          if (v === 1 && id > 0.75) { r -= 8; g -= 6; b -= 2; } // baldosa más vieja
+          if (T.joint) { r = 156; g = 150; b = 138; } else if (T.hi) { r += 8; g += 8; b += 8; } else if (T.lo) { r -= 8; g -= 8; b -= 8; }
+          if (v === 3 && id > 0.8 && !T.joint && Math.abs(T.lx - T.ly) < u * 0.8) { r -= 34; g -= 34; b -= 32; } // rajadura
+          if (v === 2 && id < 0.15 && !T.joint && Math.hypot(T.lx - 2, T.ly - 2) < 1.2) { r -= 14; g -= 14; b -= 10; } // mancha
+          break;
+        }
+        case VR.T.PAVING: { // baldosas rojizas de plaza en damero, con junta y bisel
+          const T = tile(x, y, 4), alt = (T.i + T.j + v) & 1, k = (H(T.i + v * 5, T.j, 51) - 0.5) * 12 + (h - 0.5) * 8;
+          r = (alt ? 198 : 180) + k; g = (alt ? 148 : 128) + k; b = (alt ? 110 : 96) + k;
+          if (T.joint) { r = 128; g = 92; b = 70; } else if (T.hi) { r += 14; g += 12; b += 10; } else if (T.lo) { r -= 14; g -= 12; b -= 10; }
+          break;
+        }
+        case VR.T.DIRT: { // tierra colorada con terrones y piedritas
+          const m = vnoise(x, y, 4, 61 + v), st = stones(x, y, 2, 1.6, 90 + v);
+          const k = (h - 0.5) * 16 + (m - 0.5) * 20; r = 168 + k; g = 92 + k * 0.8; b = 58 + k * 0.6;
+          if (st.edge < 0.35 && st.id > 0.55) { r -= 22; g -= 16; b -= 10; } // grietas entre terrones
+          if (h2 > 0.985) { r += 40; g += 36; b += 30; } // piedrita
+          break;
+        }
+        case VR.T.WATER: { // laguna: azul con ondas claras
+          const m = vnoise(x, y, 8, 81 + v), k = (h - 0.5) * 6 + (m - 0.5) * 14;
+          r = 58 + k; g = 114 + k; b = 182 + k;
+          const w = Math.sin((x * 0.9 + vnoise(x, y, 4, 85) * 6 + v * 3) * 1.6) + Math.sin(y * 1.9 + m * 4);
+          if (w > 1.55 && Math.floor(y * 2) % 3 === 0) { r += 54; g += 58; b += 44; }
+          break;
+        }
+        case VR.T.STONE: { // empedrado: piedras irregulares (~25 cm) con luz arriba a la izquierda y juntas de tierra
+          const st = stones(x, y, 2, 1.1, 120 + v * 3), k = (st.id - 0.5) * 30 + (h - 0.5) * 8;
+          r = 128 + k; g = 120 + k; b = 106 + k;
+          const sh = (st.dx + st.dy); // − arriba-izquierda (luz), + abajo-derecha (sombra)
+          if (st.edge < 0.32) { r = 74; g = 66; b = 56; }
+          else if (st.edge < 0.6 && sh > 0) { r -= 22; g -= 22; b -= 20; }
+          else if (st.edge < 0.75 && sh < 0) { r += 20; g += 20; b += 18; }
+          break;
+        }
+        case VR.T.DIRTROAD: { // calle de tierra colorada pisada, con piedritas y marcas de ruedas
+          const m = vnoise(x, y, 8, 141 + v), k = (h - 0.5) * 10 + (m - 0.5) * 16; r = 204 + k; g = 128 + k * 0.8; b = 84 + k * 0.6;
+          if (h2 > 0.95) { r -= 34; g -= 26; b -= 18; } else if (h2 < 0.04) { r += 22; g += 18; b += 14; }
+          if ((Math.floor(y * 2) + v * 3) % 9 === 0 && h > 0.55) { r -= 14; g -= 10; b -= 6; }
+          break;
+        }
+        case VR.T.CHECKER: { // baldosas en damero gris y blanco (veredas de la Municipalidad)
+          const T = tile(x, y, 4), w = ((T.i + T.j) & 1) === 0, k = (h - 0.5) * 8;
+          r = (w ? 224 : 148) + k; g = (w ? 222 : 148) + k; b = (w ? 216 : 154) + k;
+          if (T.joint) { r -= 40; g -= 40; b -= 38; } else if (T.hi) { r += 10; g += 10; b += 10; } else if (T.lo) { r -= 12; g -= 12; b -= 12; }
+          break;
+        }
+        default: r = 255; g = 0; b = 255;
       }
-      case VR.T.SIDEWALK: {
-        const k = (h - 0.5) * 10 | 0; r = 190 + k; g = 182 + k; b = 166 + k;
-        if (x % 8 === 0 || y % 8 === 0) { r -= 26; g -= 26; b -= 26; }
-        break;
-      }
-      case VR.T.PAVING: { // baldosas rojizas de plaza, en damero
-        const k = (h - 0.5) * 10 | 0, alt = ((x >> 2) + (y >> 2) + v) & 1;
-        r = (alt ? 196 : 182) + k; g = (alt ? 146 : 132) + k; b = (alt ? 108 : 98) + k;
-        if (x % 4 === 0 || y % 4 === 0) { r -= 22; g -= 22; b -= 20; }
-        break;
-      }
-      case VR.T.DIRT: { // tierra colorada
-        const k = (h - 0.5) * 16 | 0; r = 168 + k; g = 92 + k; b = 58 + k;
-        if (h2 > 0.96) { r += 20; g += 16; b += 12; }
-        break;
-      }
-      case VR.T.WATER: { // laguna: azul con reflejos horizontales
-        const k = (h - 0.5) * 6 | 0; r = 62 + k; g = 118 + k; b = 186 + k;
-        if (((x + v * 5 + (y >> 2) * 7) % 13) < 3 && (y % 4) === 1) { r += 60; g += 60; b += 50; }
-        break;
-      }
-      case VR.T.STONE: { // empedrado: piedras irregulares gris tostado con juntas oscuras
-        const cx = ((x + (y >> 2 & 1) * 2) >> 2), cy = y >> 2, st = n(cx + v * 7, cy, 77);
-        const jx = (x + (y >> 2 & 1) * 2) % 4 === 0, jy = y % 4 === 0;
-        const k = (st - 0.5) * 26 | 0;
-        r = 124 + k; g = 116 + k; b = 104 + k;
-        if (jx || jy) { r = 78; g = 72; b = 64; } else if (((x + y) & 3) === 1 && h > 0.5) { r += 12; g += 12; b += 10; }
-        break;
-      }
-      case VR.T.DIRTROAD: { // calle de tierra colorada, más pisada que la de los patios, con huellas
-        const k = (h - 0.5) * 10 | 0; r = 204 + k; g = 128 + k; b = 84 + k;
-        if (h2 > 0.93) { r -= 34; g -= 26; b -= 18; } else if (h2 < 0.05) { r += 18; g += 16; b += 12; } // piedritas
-        if ((y + v * 3) % 6 === 0 && h > 0.6) { r -= 14; g -= 10; b -= 6; } // marcas de ruedas
-        break;
-      }
-      case VR.T.CHECKER: { // baldosas en damero gris y blanco (veredas de la Municipalidad)
-        const k = (h - 0.5) * 8 | 0, w = (((x >> 2) + (y >> 2)) & 1) === 0;
-        r = (w ? 222 : 150) + k; g = (w ? 220 : 150) + k; b = (w ? 214 : 154) + k;
-        if (x % 4 === 0 || y % 4 === 0) { r -= 14; g -= 14; b -= 14; }
-        break;
-      }
-      default: r = 255; g = 0; b = 255;
+      put(X, Y, Math.round(r), Math.round(g), Math.round(b));
     }
-    put(gx, gy, r, g, b);
-  }
-  ctx.putImageData(img, 0, 0);
-  return { canvas: c, VARS, draw(dst, type, v, x, y) { dst.drawImage(c, (v % VARS) * S, type * S, S, S, x, y, S, S); } };
-})();
+    ctx.putImageData(img, 0, 0);
+    this._c = c; this._r = R; this.Q = Q;
+  },
+  get canvas() { if (this._r !== VR.RES) this.build(VR.RES); return this._c; },
+  draw(dst, type, v, x, y) {
+    if (this._r !== VR.RES) this.build(VR.RES);
+    const Q = this.Q; dst.drawImage(this._c, (v % this.VARS) * Q, type * Q, Q, Q, x, y, VR.TILE, VR.TILE);
+  },
+};
 
-// Copas de árboles pre-dibujadas (círculos con luz arriba a la izquierda y contorno oscuro).
+// Copas de árboles (05/11/2026, resolución ×2): se arman con racimos de hojas (celdas de Voronoi), cada racimo con
+// luz arriba a la izquierda y sombra abajo a la derecha, y la copa entera más oscura del lado de la sombra. El borde
+// sale de los racimos de afuera, así queda irregular. Las palmeras tienen hojas finas con nervadura y folíolos.
 VR.canopy = (() => {
   const cache = new Map();
   const PAL = [
-    [[48, 102, 40], [72, 138, 52], [110, 176, 70]],
-    [[40, 94, 52], [62, 128, 64], [98, 166, 84]],
-    [[70, 104, 36], [104, 140, 46], [150, 182, 70]], // lapacho sin flor / más amarillento
-    [[150, 52, 120], [196, 82, 158], [236, 140, 200]], // lapacho rosado
-    [[60, 110, 40], [80, 140, 50], [110, 170, 60]], // 4 = palmera (se dibuja aparte)
-    [[178, 132, 18], [228, 186, 34], [252, 226, 96]], // 5 = tajy amarillo (lapacho amarillo, idea de Deisy)
+    [[40, 90, 36], [60, 124, 46], [88, 156, 60], [128, 190, 84]],
+    [[34, 84, 46], [52, 116, 58], [80, 148, 76], [118, 182, 100]],
+    [[62, 92, 32], [92, 128, 42], [126, 162, 58], [168, 196, 86]], // lapacho sin flor / más amarillento
+    [[136, 44, 110], [184, 72, 148], [222, 116, 186], [246, 170, 220]], // lapacho rosado
+    [[60, 110, 40], [80, 140, 50], [110, 170, 60], [140, 196, 80]], // 4 = palmera (se dibuja aparte)
+    [[166, 120, 14], [214, 172, 28], [244, 212, 70], [255, 240, 150]], // 5 = tajy amarillo (idea de Deisy)
   ];
+  const H = VR.hash;
   return (r, pal) => {
-    const key = r + ':' + pal;
+    const R = VR.RES || 1, key = r + ':' + pal + ':' + R;
     let c = cache.get(key);
     if (c) return c;
-    const S = r * 2 + 3;
-    c = VR.canvas(S, S);
-    if (pal === 4) { // palmera: hojas largas en estrella
-      const x = c.getContext('2d'), cx = r + 1, cy = r + 1;
-      for (let k = 0; k < 9; k++) {
-        const a = k / 9 * Math.PI * 2 + 0.3, len = r * (0.85 + 0.15 * VR.hash(k, r, 7));
-        for (let t = 0; t <= len; t += 0.5) {
-          const px = cx + Math.cos(a) * t, py = cy + Math.sin(a) * t + (t / len) ** 2 * 3;
-          x.fillStyle = t < len * 0.5 ? '#4d8a32' : (k % 2 ? '#3d7228' : '#62a03c');
-          x.fillRect(Math.round(px), Math.round(py), 2, 2);
+    const S = r * 2 + 3, SR = Math.round(S * R);
+    c = VR.canvas(SR, SR); c.lw = S;
+    const x = c.getContext('2d');
+    if (pal === 4) { // palmera: hojas largas en estrella, con nervadura y folíolos
+      x.scale(R, R);
+      const cx = r + 1.5, cy = r + 1.5, seed = r * 13;
+      for (let k = 0; k < 10; k++) {
+        const a = k / 10 * Math.PI * 2 + 0.3 + (H(k, seed, 3) - 0.5) * 0.3, len = r * (0.82 + 0.18 * H(k, r, 7));
+        for (let t = 0.5; t <= len; t += 0.5) {
+          const droop = (t / len) ** 2 * 3, px = cx + Math.cos(a) * t, py = cy + Math.sin(a) * t + droop;
+          const w = Math.max(0.6, 2.4 * Math.sin(Math.PI * t / len)), nx = -Math.sin(a), ny = Math.cos(a);
+          // folíolos a los dos lados (más oscuros abajo a la derecha)
+          for (const sd of [-1, 1]) {
+            const lx = px + nx * sd * w, ly = py + ny * sd * w + 0.3;
+            x.fillStyle = (nx * sd + ny * sd) > 0 ? '#3a6e26' : '#5c9a38';
+            x.fillRect(lx - 0.5, ly - 0.5, 1, 1);
+            x.fillStyle = (nx * sd + ny * sd) > 0 ? '#2f5c20' : '#4c8a30'; x.fillRect((px + lx) / 2 - 0.5, (py + ly) / 2 - 0.5, 1, 1);
+          }
+          x.fillStyle = t < len * 0.4 ? '#7aa84a' : '#8cbc58'; x.fillRect(px - 0.25, py - 0.25, 0.5, 0.5); // nervadura
         }
       }
-      x.fillStyle = '#6e4a24'; x.fillRect(cx - 1, cy - 1, 3, 3);
-      VR.gfx.outline(c, '#1d2a14'); cache.set(key, c); return c;
+      x.fillStyle = '#6e4a24'; x.fillRect(cx - 1.5, cy - 1.5, 3, 3); x.fillStyle = '#8e6a3a'; x.fillRect(cx - 1.5, cy - 1.5, 1.5, 1.5);
+      c = VR.gfx.crisp(c); c.lw = S; VR.gfx.outline(c, '#1d2a14'); cache.set(key, c); return c;
     }
-    const x = c.getContext('2d'), P = PAL[pal % PAL.length];
-    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-      const q = dx * dx + dy * dy;
-      // borde irregular
-      const edge = r * r * (0.82 + 0.18 * VR.hash(dx, dy, r + pal * 31));
-      if (q > edge) continue;
-      const sh = (dx + dy) / r, hn = VR.hash(dx * 3, dy * 5, pal);
-      let col = P[1];
-      if (sh > 0.55 || (sh > 0.1 && hn < 0.25)) col = P[0];
-      else if (sh < -0.6 || (sh < -0.15 && hn > 0.7)) col = P[2];
-      x.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`;
-      x.fillRect(dx + r + 1, dy + r + 1, 1, 1);
+    const P = PAL[pal % PAL.length], img = x.createImageData(SR, SR), d = img.data, cs = 2.6, seed = r * 31 + pal * 7;
+    const cell = (ux, uy) => { // racimo más cercano
+      const gx = Math.floor(ux / cs), gy = Math.floor(uy / cs); let d1 = 1e9, d2 = 1e9, b = null;
+      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+        const ix = gx + i, iy = gy + j, px = (ix + 0.5) * cs + (H(ix, iy, seed) - 0.5) * cs * 0.9, py = (iy + 0.5) * cs + (H(ix, iy, seed + 5) - 0.5) * cs * 0.9;
+        const dd = Math.hypot(ux - px, uy - py); if (dd < d1) { d2 = d1; d1 = dd; b = [px, py, ix, iy]; } else if (dd < d2) d2 = dd;
+      }
+      return { d1, d2, cx: b[0], cy: b[1], id: H(b[2], b[3], seed + 9) };
+    };
+    for (let py = 0; py < SR; py++) for (let px = 0; px < SR; px++) {
+      const ux = (px + 0.5) / R - (r + 1.5), uy = (py + 0.5) / R - (r + 1.5);
+      const cl = cell(ux, uy), ccx = cl.cx, ccy = cl.cy;
+      const rr = Math.hypot(ccx, ccy), q = Math.hypot(ux, uy);
+      // el racimo entra en la copa si su centro está adentro; su borde redondeado define el contorno
+      if (rr > r * (0.78 + 0.12 * cl.id) || cl.d1 > cs * 0.72 || q > r + 0.6) continue;
+      const big = (ccx + ccy) / (r * 1.4), loc = ((ux - ccx) + (uy - ccy)) / cs; // sombra general y dentro del racimo
+      let lv = 1.6 - big * 1.1 - loc * 1.3 + (cl.id - 0.5) * 0.6;
+      if (cl.d2 - cl.d1 < 0.35 / R + 0.15) lv -= 0.9; // hueco entre racimos
+      const k = Math.max(0, Math.min(3, Math.round(lv)));
+      const col = P[k], i = (py * SR + px) * 4;
+      let f = (H(px, py, seed + 2) - 0.5) * 10;
+      if ((pal === 3 || pal === 5) && H(px, py, seed + 4) > 0.93 && k >= 2) f += 30; // flores sueltas
+      d[i] = Math.max(0, Math.min(255, col[0] + f)); d[i + 1] = Math.max(0, Math.min(255, col[1] + f)); d[i + 2] = Math.max(0, Math.min(255, col[2] + f)); d[i + 3] = 255;
     }
+    x.putImageData(img, 0, 0);
     VR.gfx.outline(c, '#1d2a14');
     cache.set(key, c);
     return c;
@@ -895,8 +974,8 @@ VR.World = class {
     this.buildings = []; this.trees = []; this.decals = []; this.labels = [];
     this.streets = []; this.areas = []; this.barrios = [];
     this.spawn = { x: w * 8, y: h * 8 }; this.spawnName = 'el inicio';
-    this.CH = 32; // tiles por chunk (512 px)
-    this.cache = new Map(); this.MAXCACHE = 40;
+    this.CH = 16; // tiles por chunk (256 unidades; con resolución ×2, 512 px de lienzo)
+    this.cache = new Map(); this.MAXCACHE = 64;
     this.index = null;
     this.boxGrid = new Map(); // cosas que se mueven o no son baldosas (autos): grilla de 64 px
     this.id = 'w' + w + 'x' + h;
@@ -939,7 +1018,7 @@ VR.World = class {
       const cx = Math.floor(x / PX), cy = Math.floor(y / PX), key = cx + ',' + cy;
       if (done.has(key)) continue; done.add(key);
       const c = this.cache.get(key); if (!c) continue;
-      const g = c.ground.getContext('2d');
+      const g = c.ground.getContext('2d'); g.setTransform(c.R, 0, 0, c.R, 0, 0);
       g.strokeStyle = col; g.lineWidth = 2; g.lineCap = 'round'; g.beginPath();
       g.moveTo(x0 - cx * PX, y0 - cy * PX); g.lineTo(x1 - cx * PX, y1 - cy * PX); g.stroke();
     }
@@ -947,7 +1026,7 @@ VR.World = class {
   mark(px, py, col) {
     const PX = this.CH * VR.TILE, cx = Math.floor(px / PX), cy = Math.floor(py / PX), c = this.cache.get(cx + ',' + cy);
     if (!c) return;
-    const g = c.ground.getContext('2d'); g.fillStyle = col; g.fillRect(Math.round(px - cx * PX) - 1, Math.round(py - cy * PX) - 1, 2, 2);
+    const g = c.ground.getContext('2d'); g.setTransform(c.R, 0, 0, c.R, 0, 0); g.fillStyle = col; g.fillRect(Math.round(px - cx * PX) - 1, Math.round(py - cy * PX) - 1, 2, 2);
   }
   boxAt(px, py, except) {
     const l = this.boxGrid.get(Math.floor(px / 64) + Math.floor(py / 64) * 65536);
@@ -1026,7 +1105,8 @@ VR.World = class {
 
   renderChunk(cx, cy) {
     const S = VR.TILE, N = this.CH, PX = N * S, ox = cx * PX, oy = cy * PX;
-    const ground = VR.canvas(PX, PX), g = ground.getContext('2d');
+    const R = VR.RES, ground = VR.canvas(PX * R, PX * R), g = ground.getContext('2d');
+    g.scale(R, R);
     const idx = this.index[cy * this.cw + cx];
     const tx0 = cx * N, ty0 = cy * N, tx1 = Math.min(this.w, tx0 + N), ty1 = Math.min(this.h, ty0 + N);
     const T = VR.T;
@@ -1044,10 +1124,28 @@ VR.World = class {
       const t = this.tiles[ty * this.w + tx], x = tx * S, y = ty * S;
       if (t === T.SIDEWALK || t === T.BUILDING || t === T.CHECKER) {
         const RL = VR.ROADLIKE, curb = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n >= 0 && RL[n] === 1 && n !== T.DIRTROAD; };
-        if (curb(0, -1)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, S, 1); g.fillStyle = '#7d776c'; g.fillRect(x, y + 1, S, 1); }
-        if (curb(0, 1)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y + S - 2, S, 1); g.fillStyle = '#3c3c44'; g.fillRect(x, y + S - 1, S, 1); }
-        if (curb(-1, 0)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + 1, y, 1, S); }
-        if (curb(1, 0)) { g.fillStyle = '#e4ded0'; g.fillRect(x + S - 1, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + S - 2, y, 1, S); }
+        // cordón (con resolución ×2 se dibuja con medias unidades: canto claro, cara y sombra sobre la calle)
+        if (curb(0, -1)) { g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(x, y - 1, S, 1); g.fillStyle = '#d8d2c4'; g.fillRect(x, y, S, 1.5); g.fillStyle = '#f6f2e8'; g.fillRect(x, y, S, 0.5); g.fillStyle = '#8f897c'; g.fillRect(x, y + 1.5, S, 0.5); }
+        if (curb(0, 1)) { g.fillStyle = '#ebe6da'; g.fillRect(x, y + S - 2.5, S, 1); g.fillStyle = '#a49e90'; g.fillRect(x, y + S - 1.5, S, 1); g.fillStyle = '#4a4850'; g.fillRect(x, y + S - 0.5, S, 0.5); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, y + S, S, 1); }
+        if (curb(-1, 0)) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x - 1, y, 1, S); g.fillStyle = '#e6e0d2'; g.fillRect(x, y, 1.5, S); g.fillStyle = '#f6f2e8'; g.fillRect(x, y, 0.5, S); g.fillStyle = '#9d978a'; g.fillRect(x + 1.5, y, 0.5, S); }
+        if (curb(1, 0)) { g.fillStyle = 'rgba(0,0,0,.24)'; g.fillRect(x + S, y, 1, S); g.fillStyle = '#e6e0d2'; g.fillRect(x + S - 1.5, y, 1.5, S); g.fillStyle = '#8a8478'; g.fillRect(x + S - 0.5, y, 0.5, S); g.fillStyle = '#f6f2e8'; g.fillRect(x + S - 2, y, 0.5, S); }
+        // macetas contra las fachadas (05/11/2026): arbusto redondo, flores o lengua de suegra, en macetas de barro
+        if (t === T.SIDEWALK && this.b(tx, ty - 1) && !this.b(tx, ty + 1) && VR.hash(tx, ty, 307) < 0.07) VR.drawPot(g, x + 3 + VR.hash(tx, ty, 308) * 4, y + 2, (VR.hash(tx, ty, 309) * 3) | 0, VR.hash(tx, ty, 310));
+        // tapas de registro en la vereda (de vez en cuando, cerca del cordón)
+        if (t === T.SIDEWALK && (curb(0, -1) || curb(0, 1) || curb(-1, 0) || curb(1, 0)) && VR.hash(tx, ty, 301) < 0.035) {
+          const hx = x + 5, hy = y + 5; g.fillStyle = '#5c5850'; g.fillRect(hx, hy, 6, 6); g.fillStyle = '#8e897e'; g.fillRect(hx + 0.5, hy + 0.5, 5, 5);
+          g.fillStyle = '#6e6a62'; for (let k = 1.5; k < 5.5; k += 1.5) g.fillRect(hx + 0.5, hy + k, 5, 0.5); g.fillStyle = '#b4aea2'; g.fillRect(hx + 0.5, hy + 0.5, 5, 0.5);
+        }
+      } else if (t === T.ROAD || t === T.STONE) { // rejillas de desagüe junto al cordón y alguna tapa redonda en el asfalto
+        const side = (dx, dy) => this.get(tx + dx, ty + dy) === T.SIDEWALK;
+        if (VR.hash(tx, ty, 311) < 0.05) {
+          const R = (rx, ry, w, h) => { g.fillStyle = '#2a2a2e'; g.fillRect(rx, ry, w, h); g.fillStyle = '#6a6a70'; if (w > h) for (let k = 0.5; k < w; k += 1) g.fillRect(rx + k, ry + 0.5, 0.5, h - 1); else for (let k = 0.5; k < h; k += 1) g.fillRect(rx + 0.5, ry + k, w - 1, 0.5); };
+          if (side(0, -1)) R(x + 5, y + 1, 6, 2.5); else if (side(0, 1)) R(x + 5, y + S - 3.5, 6, 2.5); else if (side(-1, 0)) R(x + 1, y + 5, 2.5, 6); else if (side(1, 0)) R(x + S - 3.5, y + 5, 2.5, 6);
+        }
+        if (t === T.ROAD && VR.hash(tx, ty, 317) < 0.006 && !side(0, -1) && !side(0, 1) && !side(-1, 0) && !side(1, 0)) {
+          g.fillStyle = '#3e3e44'; g.beginPath(); g.arc(x + 8, y + 8, 3.5, 0, 7); g.fill(); g.fillStyle = '#6c6c72'; g.beginPath(); g.arc(x + 8, y + 8, 3, 0, 7); g.fill();
+          g.fillStyle = '#56565c'; for (let k = -2; k <= 2; k += 1) g.fillRect(x + 6, y + 8 + k - 0.25, 4, 0.5);
+        }
       } else if (t === T.DIRTROAD) { // borde de la calle de tierra: pasto ralo más oscuro
         const edge = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n >= 0 && VR.ROADLIKE[n] !== 1 && n !== T.SIDEWALK && n !== T.CHECKER; };
         g.fillStyle = 'rgba(70,40,20,.35)';
@@ -1066,8 +1164,14 @@ VR.World = class {
       if (!l) continue;
       if (l === 1) { g.fillStyle = '#e2bf45'; g.fillRect(x + 2, y + 7, 9, 2); }
       else if (l === 2) { g.fillStyle = '#e2bf45'; g.fillRect(x + 7, y + 2, 2, 9); }
-      else if (l === 3) { g.fillStyle = '#e8e6e0'; for (let i = 1; i < S; i += 5) g.fillRect(x + i, y + 1, 3, S - 2); }
-      else if (l === 4) { g.fillStyle = '#e8e6e0'; for (let i = 1; i < S; i += 5) g.fillRect(x + 1, y + i, S - 2, 3); }
+      else if (l === 3 || l === 4) { // cebra: barras blancas gastadas (3 = la calle va de norte a sur, 4 = de este a oeste)
+        const V = l === 3;
+        for (let i = 1.5; i < S; i += 5.33) {
+          g.fillStyle = '#dedcd4'; V ? g.fillRect(x + i, y, 2.8, S) : g.fillRect(x, y + i, S, 2.8);
+          g.fillStyle = 'rgba(70,70,76,.45)';
+          for (let k = 0; k < 6; k++) { const h = VR.hash(tx * 7 + k, ty * 5 + (i | 0), 331); if (h < 0.5) { const o = h * 2 * S, w = 0.5 + VR.hash(tx, ty + k, 337) * 1.5; V ? g.fillRect(x + i + (k % 3) * 0.9, y + o, 0.5, w) : g.fillRect(x + o, y + i + (k % 3) * 0.9, w, 0.5); } }
+        }
+      }
     }
     // 4) sombras (sol del noroeste): árboles, y edificios hacia el este y el sur
     g.fillStyle = 'rgba(10,20,10,.28)';
@@ -1095,7 +1199,7 @@ VR.World = class {
     // 7) edificios dibujados a mano (lugares emblemáticos), encima de todo lo del piso
     for (const d of idx.d) VR.decorOver[d.kind] && VR.decorOver[d.kind](g, d);
     g.restore();
-    return { ground };
+    return { ground, R };
   }
 
   draw(ctx, camX, camY, sw, sh) {
@@ -1103,7 +1207,7 @@ VR.World = class {
     const c0 = Math.max(0, Math.floor(camX / PX)), c1 = Math.min(this.cw - 1, Math.floor((camX + sw) / PX));
     const r0 = Math.max(0, Math.floor(camY / PX)), r1 = Math.min(this.chh - 1, Math.floor((camY + sh) / PX));
     for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++)
-      ctx.drawImage(this.chunk(cx, cy).ground, cx * PX - camX, cy * PX - camY);
+      ctx.drawImage(this.chunk(cx, cy).ground, cx * PX - camX, cy * PX - camY, PX, PX);
   }
   // Cosas altas visibles (copas, obelisco, arcos): se ordenan por Y junto con los personajes.
   collectTall(camX, camY, sw, sh, out) {
@@ -1116,7 +1220,7 @@ VR.World = class {
         if (seen.has(t)) continue; seen.add(t);
         const x = t.x * S + 8 - t.r - 1, y = t.y * S - 6 - t.r - 1;
         if (x > camX + sw || y > camY + sh || x + t.r * 2 + 3 < camX || y + t.r * 2 + 3 < camY) continue;
-        out.push({ sy: t.y * S + 12, draw: (ctx) => ctx.drawImage(VR.canopy(t.r, t.pal), x - camX, y - camY) });
+        out.push({ sy: t.y * S + 12, draw: (ctx) => { const cimg = VR.canopy(t.r, t.pal); ctx.drawImage(cimg, x - camX, y - camY, cimg.lw, cimg.lw); } });
       }
       for (const d of idx.d) {
         if (seen.has(d) || !VR.decorTop[d.kind]) continue; seen.add(d);
@@ -1218,6 +1322,21 @@ VR.drawBuildingColumn = (g, world, tx, ty0, ty1, id) => {
   // bordes y medianeras
   if (rb !== id) { g.fillStyle = sh(b.wall, 0.62); g.fillRect(X + S - 1, fy, 1, Yb - fy); }
   if (lb && lb !== id) { g.fillStyle = sh(b.wall, 0.5); g.fillRect(X, fy, 1, Yb - fy); }
+};
+
+// ---------- maceta vista desde arriba (en unidades del mundo, con detalle de medio píxel) ----------
+VR.drawPot = (g, x, y, kind, h) => {
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(x + 4.5, y + 8, 4.2, 1.6, 0, 0, 7); g.fill();
+  g.fillStyle = '#7a3a22'; g.fillRect(x + 1, y + 4, 7, 4.5); g.fillStyle = '#b4583a'; g.fillRect(x + 1, y + 4, 7, 3.5);   // maceta
+  g.fillStyle = '#d0784e'; g.fillRect(x + 1, y + 4, 2, 3.5); g.fillStyle = '#8e4428'; g.fillRect(x + 0.5, y + 3.5, 8, 1);   // luz y borde
+  if (kind === 2) { // lengua de suegra: hojas verticales con borde amarillo
+    for (let i = 0; i < 6; i++) { const lx = x + 1.5 + i * 1.1, top = y - 3.5 + VR.hash(i, h * 99, 5) * 2.5; g.fillStyle = '#c8b850'; g.fillRect(lx, top, 1, y + 4 - top); g.fillStyle = i % 2 ? '#2f6a34' : '#3f8a44'; g.fillRect(lx + 0.25, top + 0.5, 0.5, y + 3.5 - top); }
+    return;
+  }
+  const blobs = [[4.5, 1.5, 3.2], [2.5, 2.8, 2.2], [6.5, 2.8, 2.2], [4.5, -0.5, 2.2]];
+  for (const [bx, by, r] of blobs) { g.fillStyle = '#285c26'; g.beginPath(); g.arc(x + bx, y + by, r + 0.5, 0, 7); g.fill(); }
+  for (const [bx, by, r] of blobs) { g.fillStyle = '#3f8a3c'; g.beginPath(); g.arc(x + bx, y + by, r, 0, 7); g.fill(); g.fillStyle = '#62ad54'; g.beginPath(); g.arc(x + bx - r * 0.35, y + by - r * 0.35, r * 0.45, 0, 7); g.fill(); }
+  if (kind === 1) { const col = h < 0.5 ? ['#e04a6a', '#ff9ab0'] : ['#f2d040', '#fff3a0']; for (let i = 0; i < 7; i++) { const fx = x + 1.5 + VR.hash(i, h * 77, 3) * 6, fy = y - 1.5 + VR.hash(i, h * 77, 4) * 5; g.fillStyle = col[0]; g.fillRect(fx, fy, 1, 1); g.fillStyle = col[1]; g.fillRect(fx, fy, 0.5, 0.5); } }
 };
 
 // ---------- decorados ----------
@@ -1439,6 +1558,27 @@ VR.decorTop = {
           g.fillStyle = '#fff7d8'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
           if (VR.night && k % 4 === 2) VR.night.add(x, yy + 6, 24, '255,224,150', 0.4);
         }
+      }
+    } }];
+  },
+  banco(d) { // banco de plaza (05/11/2026): tablas pintadas de verde, hierro negro; la gente sentada la pone VR.Peds
+    const S = VR.TILE, X = d.x * S, Y = d.y * S;
+    const sl = ['#2f6a3c', '#4a8f56', '#7cc088'], iron = '#18181c';
+    return [{ sy: Y + 3, draw(g) {
+      if (d.f === 's') { // respaldo al norte, la gente mira a la cámara
+        g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(X + 1, Y + 6, 16, 9);
+        g.fillStyle = iron; g.fillRect(X - 0.5, Y - 4.5, 17, 18.5);                             // contorno
+        for (const px of [X + 1, X + 13.5]) { g.fillStyle = '#3a3a42'; g.fillRect(px, Y - 4, 1.5, 17.5); }
+        for (let i = 0; i < 3; i++) { const y = Y - 4 + i * 2.6; g.fillStyle = sl[0]; g.fillRect(X, y, 16, 2.2); g.fillStyle = sl[1]; g.fillRect(X, y, 16, 1.2); g.fillStyle = sl[2]; g.fillRect(X, y, 16, 0.5); } // respaldo
+        for (let i = 0; i < 3; i++) { const y = Y + 5 + i * 2.6; g.fillStyle = sl[0]; g.fillRect(X, y, 16, 2.2); g.fillStyle = sl[1]; g.fillRect(X, y, 16, 1.4); g.fillStyle = sl[2]; g.fillRect(X, y, 16, 0.5); } // asiento
+        g.fillStyle = '#3a3a42'; g.fillRect(X + 1, Y + 12.8, 1.5, 1.2); g.fillRect(X + 13.5, Y + 12.8, 1.5, 1.2);
+      } else { // a lo largo de un camino norte-sur: respaldo al oeste ('e') o al este ('o')
+        const L = d.f === 'e', bx = L ? X + 0.5 : X + 12.5, sx = L ? X + 4 : X + 4.5;
+        g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(X + 3, Y + 1, 12, 17);
+        g.fillStyle = iron; g.fillRect(Math.min(bx, sx) - 0.5, Y - 3.5, 12.5, 19);                 // contorno
+        for (let i = 0; i < 3; i++) { const x = sx + i * 2.4; g.fillStyle = sl[0]; g.fillRect(x, Y - 3, 2.1, 18); g.fillStyle = sl[1]; g.fillRect(x, Y - 3, 1.3, 18); g.fillStyle = sl[2]; g.fillRect(x, Y - 3, 0.5, 18); } // asiento
+        g.fillStyle = sl[0]; g.fillRect(bx, Y - 3, 3, 18); g.fillStyle = sl[1]; g.fillRect(bx, Y - 3, 1.6, 18); g.fillStyle = sl[2]; g.fillRect(bx, Y - 3, 0.5, 18); // respaldo
+        g.fillStyle = '#3a3a42'; for (const yy of [Y - 2, Y + 12.5]) g.fillRect(Math.min(bx, sx), yy, 11, 1.2);
       }
     } }];
   },
@@ -1716,11 +1856,12 @@ VR.makeTestMap = () => {
     const fem = L.gender === 'f';
     const bd = { flaco: [0.9, 0.92], normal: [1, 1], fornido: [1.14, 1.06], panza: [1.06, 1.18] }[L.build] || [1, 1];
     const sw = bd[0] * (fem ? 0.84 : 1), ww = bd[1] * (fem ? 0.84 : 1), hipW = fem ? 1.18 : 1;
-    const run = anim === 'run', walk = anim === 'walk', moving = run || walk;
+    const run = anim === 'run', walk = anim === 'walk', moving = run || walk, sit = anim === 'sit';
     const S = { sw, ww, hipW, fem, dir, anim, run };
     const L1 = T.muslo, L2 = T.pantorrilla;
     const tab = run ? LEG_RUN : LEG_WALK;
-    const legAt = (t) => moving ? key(tab, t) : [0, 4, 0];
+    // sentado (05/11/2026): muslo hacia adelante (90°) y pantorrilla para abajo; los pies apoyados en el piso
+    const legAt = (t) => moving ? key(tab, t) : sit ? [90, 90, 0] : [0, 4, 0];
     const lN = legAt(ph), lF = legAt(ph + 0.5);
     const legPts = (hip, [th, kn, fa]) => {
       const a = th * D2R, b2 = (th - kn) * D2R;
@@ -1735,12 +1876,14 @@ VR.makeTestMap = () => {
     if (run) { const c = Math.cos(4 * Math.PI * (ph - 0.1)); bodyY = 30.0 - Math.max(pN[1][1], pF[1][1]); bodyY = Math.min(bodyY, 0.5) - 0.9 * Math.max(0, -c) - 0.25; }
     else bodyY = 30.0 - Math.max(pN[1][1], pF[1][1]);
     if (!moving) bodyY = 30.0 - pN[1][1];
-    S.bob = bodyY;
+    if (sit && dir !== 'left' && dir !== 'right') bodyY = 30.0 - (17.0 + (dir === 'down' ? L1 * 0.55 : 0.8) + L2 * 0.75); // de frente: la falda (muslos) se ve desde arriba
+    S.bob = bodyY; S.sit = sit;
     // brazos: opuestos a la pierna del mismo lado, con un poco de retraso
     const armAt = (t) => {
       const s = Math.sin(2 * Math.PI * (t - 0.06));
       if (run) return [-44 * s + 6, 88 + 12 * s];
       if (walk) return [-24 * s, 12 + 14 * Math.max(0, -s)];
+      if (sit) return [22, 64]; // manos sobre las rodillas
       return [0, 6];
     };
     const aN = armAt(ph), aF = armAt(ph + 0.5);
@@ -1781,6 +1924,11 @@ VR.makeTestMap = () => {
     const PL = proj(hx - 1.3 * ww * hipW, hy, lLeft), PR = proj(hx + 1.3 * ww * hipW, hy, lRight);
     S.hip = [[hx - 1.3 * ww * hipW, hy], [hx + 1.3 * ww * hipW, hy]];
     S.knee = [PL[0], PR[0]]; S.ank = [PL[1], PR[1]];
+    if (sit) { // sentado de frente: muslos vistos desde arriba (falda), rodillas un poco abiertas, pantorrillas acortadas
+      const ky = hy + (dir === 'down' ? L1 * 0.55 : 0.8);
+      S.knee = [[hx - 1.3 * ww * hipW - 0.35, ky], [hx + 1.3 * ww * hipW + 0.35, ky]];
+      S.ank = [[S.knee[0][0] + 0.2, ky + L2 * 0.75], [S.knee[1][0] - 0.2, ky + L2 * 0.75]];
+    }
     if (run) { S.knee[0][0] -= 0.25; S.knee[1][0] += 0.25; }
     const shY = 8.5 + bodyY, sx = 8 - sway * 0.4;
     S.sh = [[sx - T.hombros * sw, shY + tilt], [sx + T.hombros * sw, shY - tilt]];
@@ -1907,6 +2055,11 @@ VR.makeTestMap = () => {
           }
         }
         if (legLen > 0) paint((g) => g.fillRect(8 - 2.5 * ww, 14.6 + S.bob, 5 * ww, 2.6), botC, { shade: SH(botC, 0.72) }); // cadera
+        if (S.sit && front && legLen > 0) { // sentado: pantorrillas en sombra debajo de la falda y la falda iluminada desde arriba
+          if (legLen > 0.5) for (const [kn, an] of [[kL, aL], [kR, aR]]) paint((g) => cap(g, [kn[0], kn[1] + 0.9], [an[0], an[1] - (legLen >= 1 ? 0 : 1.5)], 2.0 * GP, 1.8 * GP), SH(botC, 0.74), { light: false });
+          paint((g) => { g.beginPath(); g.roundRect(kL[0] - 1.3, hL[1] - 0.6, kR[0] - kL[0] + 2.6, kL[1] - hL[1] + 1.7, 0.9); g.fill(); }, SH(botC, 1.1), { shade: SH(botC, 0.8) });
+          if (k >= 2) pix(8 - 0.1, hL[1] + 0.3, SH(botC, 0.82), P, Math.round((kL[1] - hL[1] + 0.6) * k)); // entre las piernas
+        }
         if (front && k >= 2 && (L.bottom === 'jean' || L.bottom === 'cargo' || L.bottom === 'vestir' || L.bottom === 'bermuda')) {
           pix(8 - 0.1, 15.2 + S.bob, SH(botC, 0.7), P, Math.round(1.6 * k)); // bragueta
           pix(8 - 2.2 * ww, 15.1 + S.bob, SH(botC, 0.75), Math.round(0.9 * k), P); pix(8 + 1.4 * ww, 15.1 + S.bob, SH(botC, 0.75), Math.round(0.9 * k), P); // bolsillos
@@ -2189,7 +2342,7 @@ VR.makeTestMap = () => {
     return out;
   };
   // versión perezosa para el juego: cada cuadro se dibuja recién la primera vez que se usa (sin tirones)
-  VR.av2Lazy = (look, k = 1, n = { idle: 1, walk: 8, run: 8 }) => {
+  VR.av2Lazy = (look, k = VR.RES || 1, n = { idle: 1, walk: 8, run: 8, sit: 1 }) => {
     const L = Object.assign({}, VR.AV2_DEFAULT, look), c = new Map();
     return { n, look: L, get(d, a, i) {
       const key = d + a + i; let f = c.get(key);
@@ -2343,24 +2496,24 @@ VR.Player = class {
       else if (!dx) { for (const n of [-1, 1]) if (!box(this.x + n * 5, this.y + dy)) { this.x += n * Math.min(Math.abs(dy), 1); break; } }
     }
   }
-  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = VR.av2Lazy(this.lookData); }
+  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = VR.av2Lazy(this.lookData, VR.RES); }
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
-    ctx.drawImage(img, x - 8, y - 31);
+    ctx.drawImage(img, x - 8, y - 31, 16, 32);
   }
   drawBubble(ctx, camX, camY, a) {
     if (!this.bubble) return;
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 36;
     const img = VR.gfx.textImg(this.bubble.text, '#1a1a1e', 9);
-    const w = img.width + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2), by = y - h;
+    const w = img.lw + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2), by = y - h;
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(bx - 1, by, w + 2, h); ctx.fillRect(bx, by - 1, w, h + 2);
     ctx.fillStyle = '#fbf8ef'; ctx.fillRect(bx, by, w, h);
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(x - 2, by + h + 1, 5, 1); ctx.fillRect(x - 1, by + h + 2, 3, 1); ctx.fillRect(x, by + h + 3, 1, 1);
     ctx.fillStyle = '#fbf8ef'; ctx.fillRect(x - 1, by + h, 3, 1); ctx.fillRect(x, by + h + 1, 1, 1);
-    ctx.drawImage(img, bx + 4, by + 2);
+    ctx.drawImage(img, bx + 4, by + 2, img.lw, img.lh);
   }
 };
 
@@ -2535,7 +2688,7 @@ VR.rotFrames = (base, S, outline = true) => {
   // Cada ángulo se dibuja recién cuando hace falta (y se guarda): antes se armaban los 64 de una vez cada vez
   // que aparecía un vehículo de un color nuevo, y eso trababa el juego (sobre todo en el teléfono).
   const N = 64, f = { img: new Array(N), shadow: new Array(N), S };
-  const ss = base.ss || 1;
+  const ss = base.ss || 1, SR = Math.round(S * (VR.RES || 1)); // tamaño en el lienzo (resolución ×2)
   let src = null;
   const make = (k) => {
     const a = k / N * Math.PI * 2;
@@ -2544,7 +2697,7 @@ VR.rotFrames = (base, S, outline = true) => {
       const B = S * ss, big = VR.canvas(B, B), x = big.getContext('2d');
       x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
       x.translate(B / 2, B / 2); x.rotate(a); x.drawImage(base, -base.width / 2, -base.height / 2);
-      c = VR.gfx.crisp(VR.gfx.down(outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big, S, S));
+      c = VR.gfx.crisp(VR.gfx.down(outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big, SR, SR));
     } else {
       const bw = base.width, bh = base.height, ca = Math.cos(a), sa = Math.sin(a);
       if (!src) src = base.getContext('2d').getImageData(0, 0, bw, bh).data;
@@ -2559,9 +2712,10 @@ VR.rotFrames = (base, S, outline = true) => {
       }
       x.putImageData(img, 0, 0);
       if (outline) VR.gfx.outline(c, '#141216');
+      if (SR !== S) { const up = VR.canvas(SR, SR); up.getContext('2d').drawImage(c, 0, 0, SR, SR); c = up; }
     }
-    const sh = VR.canvas(S, S), sx = sh.getContext('2d');
-    sx.drawImage(c, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(0,0,0,.32)'; sx.fillRect(0, 0, S, S);
+    const sh = VR.canvas(SR, SR), sx = sh.getContext('2d');
+    sx.drawImage(c, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(0,0,0,.32)'; sx.fillRect(0, 0, SR, SR);
     f.img[k] = c; f.shadow[k] = sh;
   };
   f.get = (k) => { if (!f.img[k]) make(k); return f.img[k]; };
@@ -2826,12 +2980,12 @@ VR.Car = class {
     const k = this.frame(a), F = this.frames, h = F.S >> 1;
     const shake = this.hit > 0 ? ((this.hit * 60) | 0) % 2 : 0;
     if (this.tune && this.tune.neon !== 'no' && (this.driven || this.ai)) VR.drawNeon(ctx, x, y, a, this.LEN, this.WID, VR.NEON[this.tune.neon], VR.night ? 0.35 + VR.night.level * 0.65 : 0.4);
-    ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3);
-    ctx.drawImage(F.get(k), x - h + shake, y - h);
+    ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
+    ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
     if (this.rider) {
       const R = VR.riderFrames(this.rider.shirt, this.rider.head), rh = R.S >> 1;
       const ro = this.spec.riderOff || 0;
-      ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro));
+      ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro), R.S, R.S);
     }
     if (this.siren && this.spec.lights) { // barra de luces titilando
       const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : this.model === 'ambulancia' ? this.LEN * 0.22 : this.LEN * 0.1;
@@ -3607,6 +3761,19 @@ VR.Peds = class {
     this.sprites = [];
     for (let i = 0; i < 32; i++) this.sprites.push(VR.av2Lazy(VR.av2Random(R)));
     this.flat = new Map(); // sprite "acostado" (cuando lo chocás)
+    // gente sentada en los bancos de las plazas (05/11/2026): quietos, algunos con el termo de tereré
+    this.sitters = [];
+    const SR = VR.rng(7);
+    for (const d of world.decals || []) {
+      if (d.kind !== 'banco') continue;
+      const n = SR() < 0.5 ? 1 : SR() < 0.55 ? 2 : 0, S = VR.TILE, X = d.x * S, Y = d.y * S;
+      for (let i = 0; i < n; i++) {
+        const L = VR.av2Random(SR); L.termo = SR() < 0.35; L.mochila = false; if (L.hat === 'casco') L.hat = 'ninguno';
+        const o = n === 2 ? (i ? 3.5 : -3.5) : 0;
+        if (d.f === 's') this.sitters.push({ x: X + 8 + o, y: Y + 15.5, dir: 'down', look: VR.av2Lazy(L), d });
+        else this.sitters.push({ x: d.f === 'e' ? X + 7.5 : X + 8.5, y: Y + 11 + o * 1.6, dir: d.f === 'e' ? 'right' : 'left', look: VR.av2Lazy(L), d });
+      }
+    }
   }
   walkable(px, py) {
     const W = this.world, tx = Math.floor(px / VR.TILE), ty = Math.floor(py / VR.TILE), t = W.get(tx, ty), T = VR.T;
@@ -3707,19 +3874,24 @@ VR.Peds = class {
   lying(pal) {
     let c = this.flat.get(pal);
     if (!c) {
-      const s = this.sprites[pal].get('down', 'idle', 0); c = VR.canvas(34, 18); const g = c.getContext('2d');
-      g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(s, -8, -16); this.flat.set(pal, c);
+      const s = this.sprites[pal].get('down', 'idle', 0), R = VR.RES; c = VR.canvas(34 * R, 18 * R); const g = c.getContext('2d');
+      g.scale(R, R); g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(s, -8, -16, 16, 32); this.flat.set(pal, c);
     }
     return c;
   }
   collect(camX, camY, sw, sh, al, out) {
+    for (const p of this.sitters) {
+      const x = Math.round(p.x - camX), y = Math.round(p.y - camY);
+      if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
+      out.push({ sy: p.y + 2, draw: (ctx) => ctx.drawImage(p.look.get(p.dir, 'sit', 0), x - 8, y - 31, 16, 32) });
+    }
     for (const p of this.list) {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12);
-        else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8, y - 31);
+        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
+        else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8, y - 31, 16, 32);
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
     }
@@ -4260,7 +4432,7 @@ VR.Emergency = class {
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + cy, draw: (ctx) => {
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.drawImage(c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, 'idle', 0), x - 8, y - 31);
+        ctx.drawImage(c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, 'idle', 0), x - 8, y - 31, 16, 32);
         if (c.say) VR.Player.prototype.drawBubble.call({ bubble: c.say, px: x + cx, x: x + cx, py: y + cy + 6, y: y + cy + 6 }, ctx, cx, cy, 1);
       } });
     }

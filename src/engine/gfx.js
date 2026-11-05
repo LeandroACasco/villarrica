@@ -61,23 +61,23 @@ VR.gfx = {
   // Texto en el mundo (globos, carteles): fuente del sistema, cacheada como imagen.
   _txt: new Map(),
   textImg(str, col = '#ffffff', size = 8, bold = true) {
-    const key = str + '|' + col + '|' + size + '|' + bold;
+    const key = str + '|' + col + '|' + size + '|' + bold + '|' + VR.RES;
     let c = this._txt.get(key);
     if (c) return c;
     const font = (bold ? 'bold ' : '') + size + 'px "Trebuchet MS", Verdana, sans-serif';
     const m = VR.canvas(1, 1).getContext('2d'); m.font = font;
-    const w = Math.ceil(m.measureText(str).width) + 2, h = size + 4;
-    c = VR.canvas(w, h);
-    const x = c.getContext('2d'); x.font = font; x.textBaseline = 'top'; x.fillStyle = col; x.fillText(str, 1, 1);
+    const w = Math.ceil(m.measureText(str).width) + 2, h = size + 4, R = VR.RES;
+    c = VR.canvas(Math.round(w * R), Math.round(h * R)); c.lw = w; c.lh = h;
+    const x = c.getContext('2d'); x.scale(R, R); x.font = font; x.textBaseline = 'top'; x.fillStyle = col; x.fillText(str, 1, 1);
     if (this._txt.size > 400) this._txt.clear();
     this._txt.set(key, c);
     return c;
   },
   text(ctx, str, x, y, col = '#ffffff', opt = {}) {
     const img = this.textImg(str, col, opt.size || 8, opt.bold !== false);
-    let px = Math.round(opt.center ? x - img.width / 2 : opt.right ? x - img.width : x);
-    if (opt.shadow) ctx.drawImage(this.textImg(str, opt.shadow, opt.size || 8, opt.bold !== false), px + 1, Math.round(y) + 1);
-    ctx.drawImage(img, px, Math.round(y));
-    return img.width;
+    let px = Math.round(opt.center ? x - img.lw / 2 : opt.right ? x - img.lw : x);
+    if (opt.shadow) ctx.drawImage(this.textImg(str, opt.shadow, opt.size || 8, opt.bold !== false), px + 1, Math.round(y) + 1, img.lw, img.lh);
+    ctx.drawImage(img, px, Math.round(y), img.lw, img.lh);
+    return img.lw;
   },
 };

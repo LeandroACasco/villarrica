@@ -14,8 +14,8 @@ VR.World = class {
     this.buildings = []; this.trees = []; this.decals = []; this.labels = [];
     this.streets = []; this.areas = []; this.barrios = [];
     this.spawn = { x: w * 8, y: h * 8 }; this.spawnName = 'el inicio';
-    this.CH = 32; // tiles por chunk (512 px)
-    this.cache = new Map(); this.MAXCACHE = 40;
+    this.CH = 16; // tiles por chunk (256 unidades; con resolución ×2, 512 px de lienzo)
+    this.cache = new Map(); this.MAXCACHE = 64;
     this.index = null;
     this.boxGrid = new Map(); // cosas que se mueven o no son baldosas (autos): grilla de 64 px
     this.id = 'w' + w + 'x' + h;
@@ -58,7 +58,7 @@ VR.World = class {
       const cx = Math.floor(x / PX), cy = Math.floor(y / PX), key = cx + ',' + cy;
       if (done.has(key)) continue; done.add(key);
       const c = this.cache.get(key); if (!c) continue;
-      const g = c.ground.getContext('2d');
+      const g = c.ground.getContext('2d'); g.setTransform(c.R, 0, 0, c.R, 0, 0);
       g.strokeStyle = col; g.lineWidth = 2; g.lineCap = 'round'; g.beginPath();
       g.moveTo(x0 - cx * PX, y0 - cy * PX); g.lineTo(x1 - cx * PX, y1 - cy * PX); g.stroke();
     }
@@ -66,7 +66,7 @@ VR.World = class {
   mark(px, py, col) {
     const PX = this.CH * VR.TILE, cx = Math.floor(px / PX), cy = Math.floor(py / PX), c = this.cache.get(cx + ',' + cy);
     if (!c) return;
-    const g = c.ground.getContext('2d'); g.fillStyle = col; g.fillRect(Math.round(px - cx * PX) - 1, Math.round(py - cy * PX) - 1, 2, 2);
+    const g = c.ground.getContext('2d'); g.setTransform(c.R, 0, 0, c.R, 0, 0); g.fillStyle = col; g.fillRect(Math.round(px - cx * PX) - 1, Math.round(py - cy * PX) - 1, 2, 2);
   }
   boxAt(px, py, except) {
     const l = this.boxGrid.get(Math.floor(px / 64) + Math.floor(py / 64) * 65536);
@@ -145,7 +145,8 @@ VR.World = class {
 
   renderChunk(cx, cy) {
     const S = VR.TILE, N = this.CH, PX = N * S, ox = cx * PX, oy = cy * PX;
-    const ground = VR.canvas(PX, PX), g = ground.getContext('2d');
+    const R = VR.RES, ground = VR.canvas(PX * R, PX * R), g = ground.getContext('2d');
+    g.scale(R, R);
     const idx = this.index[cy * this.cw + cx];
     const tx0 = cx * N, ty0 = cy * N, tx1 = Math.min(this.w, tx0 + N), ty1 = Math.min(this.h, ty0 + N);
     const T = VR.T;
@@ -163,10 +164,28 @@ VR.World = class {
       const t = this.tiles[ty * this.w + tx], x = tx * S, y = ty * S;
       if (t === T.SIDEWALK || t === T.BUILDING || t === T.CHECKER) {
         const RL = VR.ROADLIKE, curb = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n >= 0 && RL[n] === 1 && n !== T.DIRTROAD; };
-        if (curb(0, -1)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, S, 1); g.fillStyle = '#7d776c'; g.fillRect(x, y + 1, S, 1); }
-        if (curb(0, 1)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y + S - 2, S, 1); g.fillStyle = '#3c3c44'; g.fillRect(x, y + S - 1, S, 1); }
-        if (curb(-1, 0)) { g.fillStyle = '#e4ded0'; g.fillRect(x, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + 1, y, 1, S); }
-        if (curb(1, 0)) { g.fillStyle = '#e4ded0'; g.fillRect(x + S - 1, y, 1, S); g.fillStyle = '#9d978a'; g.fillRect(x + S - 2, y, 1, S); }
+        // cordón (con resolución ×2 se dibuja con medias unidades: canto claro, cara y sombra sobre la calle)
+        if (curb(0, -1)) { g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(x, y - 1, S, 1); g.fillStyle = '#d8d2c4'; g.fillRect(x, y, S, 1.5); g.fillStyle = '#f6f2e8'; g.fillRect(x, y, S, 0.5); g.fillStyle = '#8f897c'; g.fillRect(x, y + 1.5, S, 0.5); }
+        if (curb(0, 1)) { g.fillStyle = '#ebe6da'; g.fillRect(x, y + S - 2.5, S, 1); g.fillStyle = '#a49e90'; g.fillRect(x, y + S - 1.5, S, 1); g.fillStyle = '#4a4850'; g.fillRect(x, y + S - 0.5, S, 0.5); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, y + S, S, 1); }
+        if (curb(-1, 0)) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x - 1, y, 1, S); g.fillStyle = '#e6e0d2'; g.fillRect(x, y, 1.5, S); g.fillStyle = '#f6f2e8'; g.fillRect(x, y, 0.5, S); g.fillStyle = '#9d978a'; g.fillRect(x + 1.5, y, 0.5, S); }
+        if (curb(1, 0)) { g.fillStyle = 'rgba(0,0,0,.24)'; g.fillRect(x + S, y, 1, S); g.fillStyle = '#e6e0d2'; g.fillRect(x + S - 1.5, y, 1.5, S); g.fillStyle = '#8a8478'; g.fillRect(x + S - 0.5, y, 0.5, S); g.fillStyle = '#f6f2e8'; g.fillRect(x + S - 2, y, 0.5, S); }
+        // macetas contra las fachadas (05/11/2026): arbusto redondo, flores o lengua de suegra, en macetas de barro
+        if (t === T.SIDEWALK && this.b(tx, ty - 1) && !this.b(tx, ty + 1) && VR.hash(tx, ty, 307) < 0.07) VR.drawPot(g, x + 3 + VR.hash(tx, ty, 308) * 4, y + 2, (VR.hash(tx, ty, 309) * 3) | 0, VR.hash(tx, ty, 310));
+        // tapas de registro en la vereda (de vez en cuando, cerca del cordón)
+        if (t === T.SIDEWALK && (curb(0, -1) || curb(0, 1) || curb(-1, 0) || curb(1, 0)) && VR.hash(tx, ty, 301) < 0.035) {
+          const hx = x + 5, hy = y + 5; g.fillStyle = '#5c5850'; g.fillRect(hx, hy, 6, 6); g.fillStyle = '#8e897e'; g.fillRect(hx + 0.5, hy + 0.5, 5, 5);
+          g.fillStyle = '#6e6a62'; for (let k = 1.5; k < 5.5; k += 1.5) g.fillRect(hx + 0.5, hy + k, 5, 0.5); g.fillStyle = '#b4aea2'; g.fillRect(hx + 0.5, hy + 0.5, 5, 0.5);
+        }
+      } else if (t === T.ROAD || t === T.STONE) { // rejillas de desagüe junto al cordón y alguna tapa redonda en el asfalto
+        const side = (dx, dy) => this.get(tx + dx, ty + dy) === T.SIDEWALK;
+        if (VR.hash(tx, ty, 311) < 0.05) {
+          const R = (rx, ry, w, h) => { g.fillStyle = '#2a2a2e'; g.fillRect(rx, ry, w, h); g.fillStyle = '#6a6a70'; if (w > h) for (let k = 0.5; k < w; k += 1) g.fillRect(rx + k, ry + 0.5, 0.5, h - 1); else for (let k = 0.5; k < h; k += 1) g.fillRect(rx + 0.5, ry + k, w - 1, 0.5); };
+          if (side(0, -1)) R(x + 5, y + 1, 6, 2.5); else if (side(0, 1)) R(x + 5, y + S - 3.5, 6, 2.5); else if (side(-1, 0)) R(x + 1, y + 5, 2.5, 6); else if (side(1, 0)) R(x + S - 3.5, y + 5, 2.5, 6);
+        }
+        if (t === T.ROAD && VR.hash(tx, ty, 317) < 0.006 && !side(0, -1) && !side(0, 1) && !side(-1, 0) && !side(1, 0)) {
+          g.fillStyle = '#3e3e44'; g.beginPath(); g.arc(x + 8, y + 8, 3.5, 0, 7); g.fill(); g.fillStyle = '#6c6c72'; g.beginPath(); g.arc(x + 8, y + 8, 3, 0, 7); g.fill();
+          g.fillStyle = '#56565c'; for (let k = -2; k <= 2; k += 1) g.fillRect(x + 6, y + 8 + k - 0.25, 4, 0.5);
+        }
       } else if (t === T.DIRTROAD) { // borde de la calle de tierra: pasto ralo más oscuro
         const edge = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n >= 0 && VR.ROADLIKE[n] !== 1 && n !== T.SIDEWALK && n !== T.CHECKER; };
         g.fillStyle = 'rgba(70,40,20,.35)';
@@ -185,8 +204,14 @@ VR.World = class {
       if (!l) continue;
       if (l === 1) { g.fillStyle = '#e2bf45'; g.fillRect(x + 2, y + 7, 9, 2); }
       else if (l === 2) { g.fillStyle = '#e2bf45'; g.fillRect(x + 7, y + 2, 2, 9); }
-      else if (l === 3) { g.fillStyle = '#e8e6e0'; for (let i = 1; i < S; i += 5) g.fillRect(x + i, y + 1, 3, S - 2); }
-      else if (l === 4) { g.fillStyle = '#e8e6e0'; for (let i = 1; i < S; i += 5) g.fillRect(x + 1, y + i, S - 2, 3); }
+      else if (l === 3 || l === 4) { // cebra: barras blancas gastadas (3 = la calle va de norte a sur, 4 = de este a oeste)
+        const V = l === 3;
+        for (let i = 1.5; i < S; i += 5.33) {
+          g.fillStyle = '#dedcd4'; V ? g.fillRect(x + i, y, 2.8, S) : g.fillRect(x, y + i, S, 2.8);
+          g.fillStyle = 'rgba(70,70,76,.45)';
+          for (let k = 0; k < 6; k++) { const h = VR.hash(tx * 7 + k, ty * 5 + (i | 0), 331); if (h < 0.5) { const o = h * 2 * S, w = 0.5 + VR.hash(tx, ty + k, 337) * 1.5; V ? g.fillRect(x + i + (k % 3) * 0.9, y + o, 0.5, w) : g.fillRect(x + o, y + i + (k % 3) * 0.9, w, 0.5); } }
+        }
+      }
     }
     // 4) sombras (sol del noroeste): árboles, y edificios hacia el este y el sur
     g.fillStyle = 'rgba(10,20,10,.28)';
@@ -214,7 +239,7 @@ VR.World = class {
     // 7) edificios dibujados a mano (lugares emblemáticos), encima de todo lo del piso
     for (const d of idx.d) VR.decorOver[d.kind] && VR.decorOver[d.kind](g, d);
     g.restore();
-    return { ground };
+    return { ground, R };
   }
 
   draw(ctx, camX, camY, sw, sh) {
@@ -222,7 +247,7 @@ VR.World = class {
     const c0 = Math.max(0, Math.floor(camX / PX)), c1 = Math.min(this.cw - 1, Math.floor((camX + sw) / PX));
     const r0 = Math.max(0, Math.floor(camY / PX)), r1 = Math.min(this.chh - 1, Math.floor((camY + sh) / PX));
     for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++)
-      ctx.drawImage(this.chunk(cx, cy).ground, cx * PX - camX, cy * PX - camY);
+      ctx.drawImage(this.chunk(cx, cy).ground, cx * PX - camX, cy * PX - camY, PX, PX);
   }
   // Cosas altas visibles (copas, obelisco, arcos): se ordenan por Y junto con los personajes.
   collectTall(camX, camY, sw, sh, out) {
@@ -235,7 +260,7 @@ VR.World = class {
         if (seen.has(t)) continue; seen.add(t);
         const x = t.x * S + 8 - t.r - 1, y = t.y * S - 6 - t.r - 1;
         if (x > camX + sw || y > camY + sh || x + t.r * 2 + 3 < camX || y + t.r * 2 + 3 < camY) continue;
-        out.push({ sy: t.y * S + 12, draw: (ctx) => ctx.drawImage(VR.canopy(t.r, t.pal), x - camX, y - camY) });
+        out.push({ sy: t.y * S + 12, draw: (ctx) => { const cimg = VR.canopy(t.r, t.pal); ctx.drawImage(cimg, x - camX, y - camY, cimg.lw, cimg.lw); } });
       }
       for (const d of idx.d) {
         if (seen.has(d) || !VR.decorTop[d.kind]) continue; seen.add(d);
@@ -337,6 +362,21 @@ VR.drawBuildingColumn = (g, world, tx, ty0, ty1, id) => {
   // bordes y medianeras
   if (rb !== id) { g.fillStyle = sh(b.wall, 0.62); g.fillRect(X + S - 1, fy, 1, Yb - fy); }
   if (lb && lb !== id) { g.fillStyle = sh(b.wall, 0.5); g.fillRect(X, fy, 1, Yb - fy); }
+};
+
+// ---------- maceta vista desde arriba (en unidades del mundo, con detalle de medio píxel) ----------
+VR.drawPot = (g, x, y, kind, h) => {
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(x + 4.5, y + 8, 4.2, 1.6, 0, 0, 7); g.fill();
+  g.fillStyle = '#7a3a22'; g.fillRect(x + 1, y + 4, 7, 4.5); g.fillStyle = '#b4583a'; g.fillRect(x + 1, y + 4, 7, 3.5);   // maceta
+  g.fillStyle = '#d0784e'; g.fillRect(x + 1, y + 4, 2, 3.5); g.fillStyle = '#8e4428'; g.fillRect(x + 0.5, y + 3.5, 8, 1);   // luz y borde
+  if (kind === 2) { // lengua de suegra: hojas verticales con borde amarillo
+    for (let i = 0; i < 6; i++) { const lx = x + 1.5 + i * 1.1, top = y - 3.5 + VR.hash(i, h * 99, 5) * 2.5; g.fillStyle = '#c8b850'; g.fillRect(lx, top, 1, y + 4 - top); g.fillStyle = i % 2 ? '#2f6a34' : '#3f8a44'; g.fillRect(lx + 0.25, top + 0.5, 0.5, y + 3.5 - top); }
+    return;
+  }
+  const blobs = [[4.5, 1.5, 3.2], [2.5, 2.8, 2.2], [6.5, 2.8, 2.2], [4.5, -0.5, 2.2]];
+  for (const [bx, by, r] of blobs) { g.fillStyle = '#285c26'; g.beginPath(); g.arc(x + bx, y + by, r + 0.5, 0, 7); g.fill(); }
+  for (const [bx, by, r] of blobs) { g.fillStyle = '#3f8a3c'; g.beginPath(); g.arc(x + bx, y + by, r, 0, 7); g.fill(); g.fillStyle = '#62ad54'; g.beginPath(); g.arc(x + bx - r * 0.35, y + by - r * 0.35, r * 0.45, 0, 7); g.fill(); }
+  if (kind === 1) { const col = h < 0.5 ? ['#e04a6a', '#ff9ab0'] : ['#f2d040', '#fff3a0']; for (let i = 0; i < 7; i++) { const fx = x + 1.5 + VR.hash(i, h * 77, 3) * 6, fy = y - 1.5 + VR.hash(i, h * 77, 4) * 5; g.fillStyle = col[0]; g.fillRect(fx, fy, 1, 1); g.fillStyle = col[1]; g.fillRect(fx, fy, 0.5, 0.5); } }
 };
 
 // ---------- decorados ----------
@@ -558,6 +598,27 @@ VR.decorTop = {
           g.fillStyle = '#fff7d8'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
           if (VR.night && k % 4 === 2) VR.night.add(x, yy + 6, 24, '255,224,150', 0.4);
         }
+      }
+    } }];
+  },
+  banco(d) { // banco de plaza (05/11/2026): tablas pintadas de verde, hierro negro; la gente sentada la pone VR.Peds
+    const S = VR.TILE, X = d.x * S, Y = d.y * S;
+    const sl = ['#2f6a3c', '#4a8f56', '#7cc088'], iron = '#18181c';
+    return [{ sy: Y + 3, draw(g) {
+      if (d.f === 's') { // respaldo al norte, la gente mira a la cámara
+        g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(X + 1, Y + 6, 16, 9);
+        g.fillStyle = iron; g.fillRect(X - 0.5, Y - 4.5, 17, 18.5);                             // contorno
+        for (const px of [X + 1, X + 13.5]) { g.fillStyle = '#3a3a42'; g.fillRect(px, Y - 4, 1.5, 17.5); }
+        for (let i = 0; i < 3; i++) { const y = Y - 4 + i * 2.6; g.fillStyle = sl[0]; g.fillRect(X, y, 16, 2.2); g.fillStyle = sl[1]; g.fillRect(X, y, 16, 1.2); g.fillStyle = sl[2]; g.fillRect(X, y, 16, 0.5); } // respaldo
+        for (let i = 0; i < 3; i++) { const y = Y + 5 + i * 2.6; g.fillStyle = sl[0]; g.fillRect(X, y, 16, 2.2); g.fillStyle = sl[1]; g.fillRect(X, y, 16, 1.4); g.fillStyle = sl[2]; g.fillRect(X, y, 16, 0.5); } // asiento
+        g.fillStyle = '#3a3a42'; g.fillRect(X + 1, Y + 12.8, 1.5, 1.2); g.fillRect(X + 13.5, Y + 12.8, 1.5, 1.2);
+      } else { // a lo largo de un camino norte-sur: respaldo al oeste ('e') o al este ('o')
+        const L = d.f === 'e', bx = L ? X + 0.5 : X + 12.5, sx = L ? X + 4 : X + 4.5;
+        g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(X + 3, Y + 1, 12, 17);
+        g.fillStyle = iron; g.fillRect(Math.min(bx, sx) - 0.5, Y - 3.5, 12.5, 19);                 // contorno
+        for (let i = 0; i < 3; i++) { const x = sx + i * 2.4; g.fillStyle = sl[0]; g.fillRect(x, Y - 3, 2.1, 18); g.fillStyle = sl[1]; g.fillRect(x, Y - 3, 1.3, 18); g.fillStyle = sl[2]; g.fillRect(x, Y - 3, 0.5, 18); } // asiento
+        g.fillStyle = sl[0]; g.fillRect(bx, Y - 3, 3, 18); g.fillStyle = sl[1]; g.fillRect(bx, Y - 3, 1.6, 18); g.fillStyle = sl[2]; g.fillRect(bx, Y - 3, 0.5, 18); // respaldo
+        g.fillStyle = '#3a3a42'; for (const yy of [Y - 2, Y + 12.5]) g.fillRect(Math.min(bx, sx), yy, 11, 1.2);
       }
     } }];
   },

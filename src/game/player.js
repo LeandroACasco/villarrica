@@ -132,23 +132,23 @@ VR.Player = class {
       else if (!dx) { for (const n of [-1, 1]) if (!box(this.x + n * 5, this.y + dy)) { this.x += n * Math.min(Math.abs(dy), 1); break; } }
     }
   }
-  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = VR.av2Lazy(this.lookData); }
+  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = VR.av2Lazy(this.lookData, VR.RES); }
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
-    ctx.drawImage(img, x - 8, y - 31);
+    ctx.drawImage(img, x - 8, y - 31, 16, 32);
   }
   drawBubble(ctx, camX, camY, a) {
     if (!this.bubble) return;
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 36;
     const img = VR.gfx.textImg(this.bubble.text, '#1a1a1e', 9);
-    const w = img.width + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2), by = y - h;
+    const w = img.lw + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2), by = y - h;
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(bx - 1, by, w + 2, h); ctx.fillRect(bx, by - 1, w, h + 2);
     ctx.fillStyle = '#fbf8ef'; ctx.fillRect(bx, by, w, h);
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(x - 2, by + h + 1, 5, 1); ctx.fillRect(x - 1, by + h + 2, 3, 1); ctx.fillRect(x, by + h + 3, 1, 1);
     ctx.fillStyle = '#fbf8ef'; ctx.fillRect(x - 1, by + h, 3, 1); ctx.fillRect(x, by + h + 1, 1, 1);
-    ctx.drawImage(img, bx + 4, by + 2);
+    ctx.drawImage(img, bx + 4, by + 2, img.lw, img.lh);
   }
 };
