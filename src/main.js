@@ -86,6 +86,18 @@
     toast('No hay lugar para bajar acá'); return false;
   }
 
+  // ---------- tienda de ropa (puerta en la vereda, frente a la plaza) ----------
+  const shopDecal = (world.decals || []).find((d) => d.kind === 'tienda');
+  const shopDoor = shopDecal ? { x: (shopDecal.x + shopDecal.w / 2) * VR.TILE, y: (shopDecal.y + 1) * VR.TILE } : null;
+  const nearShop = () => shopDoor && !car && Math.abs(player.x - shopDoor.x) < 26 && player.y > shopDoor.y - 30 && player.y < shopDoor.y + 4 ? shopDoor : null;
+  const shop = new VR.Shop({
+    onClose: () => { VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; },
+    onBuy: (L, tot) => { settings.pj = 'propio'; VR.store.set('pj', 'propio'); player.setLook('propio'); paintPj(); toast(tot ? '🛍 ¡Aguyje! Pagaste ' + VR.fmtGs(tot) : '👕 Listo, te cambiaste'); },
+  });
+  function openShop() { VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; shop.open(player.lookData); }
+  VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()); };
+  VR.Wallet.onChange();
+
   // ---------- cámara: sigue al jugador mirando un poco hacia donde camina ----------
   const cam = { x: player.x, y: player.y, px: player.x, py: player.y, lx: 0, ly: 0 };
   function updateCamera(dt) {
@@ -137,11 +149,12 @@
       if (player.bubble) { player.bubble.t -= dt; if (player.bubble.t <= 0) player.bubble = null; }
     } else {
       player.update(dt, VR.input);
-      const nc = nearCar();
+      const nc = nearCar(), ns = nearShop();
       hint = nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
       hintCar = nc;
+      if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       if (VR.input.pressed('car')) { if (nc) enterCar(nc); else toast('Acercate a un auto o una moto para subir'); }
-      else if (VR.input.pressed('action')) { player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
     }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
@@ -249,10 +262,12 @@
     const s = $(id), paint = () => s.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === settings[key]));
     s.querySelectorAll('button').forEach((b) => b.onclick = () => { settings[key] = b.dataset.v; VR.store.set(key, settings[key]); paint(); onChange(); });
     paint();
+    return paint;
   };
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
-  seg('segPj', 'pj', () => player.setLook(settings.pj));
+  const paintPj = seg('segPj', 'pj', () => player.setLook(settings.pj));
+  $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
   $('optSnd').checked = emer ? emer.sound : true; $('optSnd').onchange = (e) => { if (emer) emer.sound = e.target.checked; VR.audio.setOn(e.target.checked); VR.store.set('snd', e.target.checked); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
@@ -508,5 +523,5 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { world, player, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { world, player, shop, shopDoor, openShop, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();

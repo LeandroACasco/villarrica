@@ -1,0 +1,199 @@
+<title>Editor de personas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Mesa de trabajo de pixel art: panel de perillas a la izquierda, gente caminando a la derecha. Un solo tema oscuro, a propósito. */
+:root {
+  color-scheme: dark;
+  --bg: #17161b; --panel: #201f26; --well: #121116; --line: #34323d; --fg: #ece8df; --muted: #9a95a0;
+  --accent: #e8a33a; --accent-ink: #1a1408; --vereda: #b8b2a4; --vereda2: #aaa496; --changed: #7fd0ff;
+  --f-display: "Silkscreen", "Courier New", monospace; --f-body: "Atkinson Hyperlegible", system-ui, sans-serif; --f-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--f-body); }
+.wrap { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 18px; padding-block: 16px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1280px; margin: 0 auto; }
+@media (max-width: 820px) { .wrap { grid-template-columns: minmax(0, 1fr); } .knobs { order: 2; } }
+header.top { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { margin: 0; font: 400 26px/1 var(--f-display); letter-spacing: .02em; color: var(--accent); text-wrap: balance; }
+header.top p { margin: 0; color: var(--muted); max-width: 70ch; }
+.knobs { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 14px; align-self: start; }
+fieldset { border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+legend { font: 400 12px var(--f-display); letter-spacing: .08em; color: var(--muted); text-transform: uppercase; padding: 0 0 4px; }
+.k { display: grid; grid-template-columns: 96px minmax(0, 1fr) 46px 22px; gap: 8px; align-items: center; }
+.k label { font-size: 13px; }
+.k output { font: 12px var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; color: var(--muted); }
+.k.mod output, .k.mod label { color: var(--changed); }
+.k button { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; width: 22px; height: 22px; padding: 0; cursor: pointer; font-size: 12px; }
+.k button:hover { color: var(--fg); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.pal { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.pal span { font-size: 12px; color: var(--muted); width: 100%; }
+.pal input[type=color] { width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 6px; padding: 0; background: none; cursor: pointer; }
+.pal input.mod { outline: 2px solid var(--changed); outline-offset: 1px; }
+.stage { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.box h2 { margin: 0; font: 400 13px var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--fg); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.box h2 small { font: 12px var(--f-body); text-transform: none; letter-spacing: 0; color: var(--muted); }
+.street { background: var(--vereda); background-image: linear-gradient(45deg, var(--vereda2) 25%, transparent 25%, transparent 75%, var(--vereda2) 75%), linear-gradient(45deg, var(--vereda2) 25%, transparent 25%, transparent 75%, var(--vereda2) 75%); background-size: 32px 32px; background-position: 0 0, 16px 16px; border-radius: 8px; overflow-x: auto; }
+.street canvas { display: block; image-rendering: pixelated; height: 160px; }
+.close { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.close figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.close canvas { image-rendering: pixelated; background: var(--well); border-radius: 8px; height: 240px; max-width: 100%; }
+.close figcaption { font-size: 12px; color: var(--muted); }
+.bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { background: var(--well); color: var(--fg); border: none; padding: 6px 10px; font: 13px var(--f-body); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--accent); color: var(--accent-ink); }
+.btn { background: var(--well); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; font: 13px var(--f-body); cursor: pointer; }
+.btn.main { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--changed); outline-offset: 2px; }
+select { background: var(--well); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font: 13px var(--f-body); }
+textarea { width: 100%; min-height: 110px; background: var(--well); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; font: 12px/1.4 var(--f-mono); padding: 8px; resize: vertical; box-sizing: border-box; }
+.note { color: var(--muted); font-size: 13px; margin: 0; max-width: 70ch; }
+#copied { color: var(--changed); font-size: 13px; }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono&family=Silkscreen&display=swap">
+
+<div class="wrap">
+  <header class="top">
+    <h1>Editor de personas</h1>
+    <p>Las perillas cambian el cuerpo base de todas las personas de Villarrica (avatar 2). Lo que tocás se ve en celeste. Cuando te guste, copiá los ajustes y pasáselos a Claude para ponerlos en el juego.</p>
+  </header>
+
+  <aside class="knobs" id="knobs"></aside>
+
+  <main class="stage">
+    <section class="box">
+      <h2>En la calle <small>tamaño real del juego (16×32), agrandado</small></h2>
+      <div class="street"><canvas id="street"></canvas></div>
+      <div class="bar">
+        <div class="seg" id="anim"><button data-a="idle">Quietos</button><button data-a="walk" class="on">Caminando</button><button data-a="run">Corriendo</button></div>
+        <button class="btn" id="otros">🎲 Otra gente</button>
+      </div>
+    </section>
+    <section class="box">
+      <h2>De cerca <small>tamaño de la tienda (48×96)</small></h2>
+      <div class="bar">
+        <select id="quien" aria-label="Persona"></select>
+        <div class="seg" id="vs"><button data-v="1" class="on">Comparar con el de ahora</button><button data-v="0">Solo el nuevo</button></div>
+      </div>
+      <div class="close" id="close"></div>
+    </section>
+    <section class="box">
+      <h2>Ajustes para Claude</h2>
+      <p class="note">Solo van los valores que cambiaste. Copiá el texto y pegalo en el chat del proyecto.</p>
+      <textarea id="out" readonly aria-label="Ajustes"></textarea>
+      <div class="bar"><button class="btn main" id="copy">Copiar ajustes</button><button class="btn" id="reset">Volver todo a como está en el juego</button><span id="copied" role="status"></span></div>
+    </section>
+  </main>
+</div>
+
+<script>window.VR = {};</script>
+<script>
+/*AVATAR2*/
+</script>
+<script>
+(() => {
+  const T = VR.AV2_TUNE, B = VR.AV2_TUNE_BASE, CAT = VR.AV2_CAT, $ = (id) => document.getElementById(id);
+  const PAL0 = { skin: CAT.skin.slice(), hairColor: CAT.hairColor.slice(), cloth: CAT.cloth.slice(), denim: CAT.denim.slice() };
+  const GROUPS = [
+    ['Cabeza', [['cabezaAncho', 'Ancho', 1.6, 2.6, 0.05], ['cabezaAlto', 'Alto', 1.9, 3.0, 0.05], ['mandibula', 'Mandíbula', 1.2, 2.0, 0.05], ['cabezaY', 'Altura', 3.2, 4.6, 0.05]]],
+    ['Cuerpo', [['hombros', 'Hombros', 2.4, 3.8, 0.05], ['pecho', 'Pecho (perfil)', 1.5, 2.5, 0.05], ['cintura', 'Cintura', 1.7, 2.9, 0.05], ['cadera', 'Cadera', 1.9, 3.1, 0.05]]],
+    ['Piernas y brazos', [['muslo', 'Muslo', 5.5, 7.3, 0.1], ['pantorrilla', 'Pantorrilla', 5.5, 7.3, 0.1], ['brazo', 'Brazo', 3.8, 5.6, 0.1], ['antebrazo', 'Antebrazo', 3.2, 4.8, 0.1], ['grosorPiernas', 'Grosor piernas', 0.75, 1.3, 0.05], ['grosorBrazos', 'Grosor brazos', 0.75, 1.3, 0.05]]],
+    ['Luz y contorno', [['luz', 'Luz', 1.0, 1.4, 0.01], ['sombra', 'Sombra', 0.5, 0.95, 0.01], ['bandaLuz', 'Ancho de luz', 0.2, 1.0, 0.05], ['separacion', 'Línea entre capas', 0.5, 1.0, 0.01], ['contorno', 'Contorno (claro)', 0.05, 0.6, 0.01]]],
+  ];
+  const PALS = [['skin', 'Tonos de piel'], ['hairColor', 'Colores de pelo'], ['cloth', 'Colores de ropa'], ['denim', 'Jeans']];
+  const save = () => { try { localStorage.setItem('editorPersonas', JSON.stringify({ T, P: { skin: CAT.skin, hairColor: CAT.hairColor, cloth: CAT.cloth, denim: CAT.denim } })); } catch (e) {} };
+  try { const s = JSON.parse(localStorage.getItem('editorPersonas') || 'null'); if (s) { Object.assign(T, s.T); for (const k in s.P) s.P[k].forEach((c, i) => { CAT[k][i] = c; }); } } catch (e) {}
+
+  // ---------- perillas ----------
+  const kn = $('knobs');
+  for (const [g, list] of GROUPS) {
+    const fs = document.createElement('fieldset'); fs.innerHTML = `<legend>${g}</legend>`;
+    for (const [key, name, lo, hi, st] of list) {
+      const row = document.createElement('div'); row.className = 'k';
+      row.innerHTML = `<label for="k_${key}">${name}</label><input type="range" id="k_${key}" min="${lo}" max="${hi}" step="${st}"><output></output><button title="Volver a ${B[key]}" aria-label="Volver ${name} al valor del juego">↺</button>`;
+      const r = row.querySelector('input'), o = row.querySelector('output');
+      const show = () => { r.value = T[key]; o.textContent = (+T[key]).toFixed(st < 0.05 ? 2 : st < 0.1 ? 2 : 1); row.classList.toggle('mod', Math.abs(T[key] - B[key]) > 1e-9); };
+      r.oninput = () => { T[key] = +r.value; show(); changed(); };
+      row.querySelector('button').onclick = () => { T[key] = B[key]; show(); changed(); };
+      row._show = show; show(); fs.appendChild(row);
+    }
+    kn.appendChild(fs);
+  }
+  for (const [key, name] of PALS) {
+    const fs = document.createElement('fieldset'); fs.innerHTML = `<legend>${name}</legend>`;
+    const box = document.createElement('div'); box.className = 'pal';
+    CAT[key].forEach((c, i) => {
+      const inp = document.createElement('input'); inp.type = 'color'; inp.id = `p_${key}_${i}`; inp.value = c; inp.title = name + ' ' + (i + 1);
+      const mark = () => inp.classList.toggle('mod', CAT[key][i] !== PAL0[key][i]);
+      inp.oninput = () => { CAT[key][i] = inp.value; mark(); changed(); };
+      inp._sync = () => { inp.value = CAT[key][i]; mark(); }; mark(); box.appendChild(inp);
+    });
+    fs.appendChild(box); kn.appendChild(fs);
+  }
+
+  // ---------- gente ----------
+  const TEAM = Object.entries(VR.AV2_TEAM).map(([k, v]) => [v[0], Object.assign({}, VR.AV2_DEFAULT, v[1])]);
+  let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  let crowd = [];
+  const newCrowd = () => { crowd = TEAM.map((t) => t[1]); for (let i = 0; i < 4; i++) crowd.push(Object.assign({}, VR.AV2_DEFAULT, VR.av2Random(rnd))); };
+  newCrowd();
+  const quien = $('quien'); TEAM.forEach(([n], i) => { const o = document.createElement('option'); o.value = i; o.textContent = n; quien.appendChild(o); });
+  let anim = 'walk', vs = true, cache = new Map(), oldCache = new Map();
+  const N = { idle: 1, walk: 8, run: 8 };
+  const get = (c, L, d, a, i, k) => { const key = JSON.stringify(L) + d + a + i + k; let f = c.get(key); if (!f) { f = VR.av2Render(L, d, a, i / N[a], k); c.set(key, f); } return f; };
+  const getOld = (L, d, a, i, k) => { // dibujo con los valores del juego (para comparar)
+    const key = JSON.stringify(L) + d + a + i + k; let f = oldCache.get(key); if (f) return f;
+    const cur = Object.assign({}, T), pal = { skin: CAT.skin.slice(), hairColor: CAT.hairColor.slice(), cloth: CAT.cloth.slice(), denim: CAT.denim.slice() };
+    Object.assign(T, B); for (const k2 in PAL0) PAL0[k2].forEach((c, j) => { CAT[k2][j] = c; });
+    f = VR.av2Render(L, d, a, i / N[a], k);
+    Object.assign(T, cur); for (const k2 in pal) pal[k2].forEach((c, j) => { CAT[k2][j] = c; });
+    oldCache.set(key, f); return f;
+  };
+  function changed() { cache = new Map(); writeOut(); save(); }
+  const st = $('street'), sg = st.getContext('2d'); st.width = 24 * crowd.length + 8; st.height = 36;
+  const DIRS = ['down', 'right', 'left', 'up'];
+  function buildClose() {
+    const c = $('close'); c.innerHTML = '';
+    const mk = (label) => { const f = document.createElement('figure'); const cv = document.createElement('canvas'); cv.width = 48; cv.height = 96; f.appendChild(cv); const cap = document.createElement('figcaption'); cap.textContent = label; f.appendChild(cap); c.appendChild(f); return cv; };
+    buildClose.cv = [];
+    if (vs) buildClose.cv.push(['old', 'down', mk('Ahora')]);
+    for (const d of DIRS) buildClose.cv.push(['new', d, mk(vs && d === 'down' ? 'Nuevo' : { down: 'De frente', right: 'Derecha', left: 'Izquierda', up: 'De espaldas' }[d])]);
+  }
+  buildClose();
+  function frame(t) {
+    const i = Math.floor(t / (anim === 'run' ? 75 : 115)) % N[anim];
+    sg.clearRect(0, 0, st.width, st.height);
+    crowd.forEach((L, j) => { const d = DIRS[j % 4 === 3 ? 0 : j % 4]; sg.fillStyle = 'rgba(0,0,0,.28)'; sg.beginPath(); sg.ellipse(8 + j * 24 + 8, 33, 6, 2.2, 0, 0, 7); sg.fill(); sg.drawImage(get(cache, L, d, anim, i, 1), 8 + j * 24, 2); });
+    const L = TEAM[+quien.value][1];
+    for (const [which, d, cv] of buildClose.cv) { const g = cv.getContext('2d'); g.clearRect(0, 0, 48, 96); g.drawImage(which === 'old' ? getOld(L, d, anim, i, 3) : get(cache, L, d, anim, i, 3), 0, 0); }
+    requestAnimationFrame(frame);
+  }
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) anim = 'idle';
+  $('anim').querySelectorAll('button').forEach((b) => { b.classList.toggle('on', b.dataset.a === anim); b.onclick = () => { anim = b.dataset.a; $('anim').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); }; });
+  $('vs').querySelectorAll('button').forEach((b) => b.onclick = () => { vs = b.dataset.v === '1'; $('vs').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); buildClose(); });
+  $('otros').onclick = () => { newCrowd(); };
+
+  // ---------- salida ----------
+  function writeOut() {
+    const tune = {}, pal = {};
+    for (const k in B) if (Math.abs(T[k] - B[k]) > 1e-9) tune[k] = +(+T[k]).toFixed(3);
+    for (const k in PAL0) CAT[k].forEach((c, i) => { if (c !== PAL0[k][i]) (pal[k] = pal[k] || {})[i] = c; });
+    const any = Object.keys(tune).length || Object.keys(pal).length;
+    $('out').value = any ? 'Ajustes del Editor de personas para avatar2.js:\n' + JSON.stringify({ tune, paletas: pal }, null, 1) : 'Todavía no cambiaste nada: todo está como en el juego.';
+  }
+  writeOut();
+  $('copy').onclick = () => {
+    const txt = $('out').value, ok = () => { $('copied').textContent = 'Copiado. Pegalo en el chat.'; };
+    try { navigator.clipboard.writeText(txt).then(ok, () => { $('out').select(); $('copied').textContent = 'Seleccioné el texto: copialo con Ctrl+C o mantené apretado.'; }); }
+    catch (e) { $('out').select(); $('copied').textContent = 'Seleccioné el texto: copialo con Ctrl+C.'; }
+  };
+  $('reset').onclick = () => {
+    Object.assign(T, B); for (const k in PAL0) PAL0[k].forEach((c, i) => { CAT[k][i] = c; });
+    kn.querySelectorAll('.k').forEach((r) => r._show()); kn.querySelectorAll('input[type=color]').forEach((i) => i._sync());
+    changed(); $('copied').textContent = 'Todo volvió a como está en el juego.';
+  };
+  requestAnimationFrame(frame);
+})();
+</script>

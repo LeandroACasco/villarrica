@@ -682,6 +682,9 @@ def main(src, out, preview=None):
         def bbox(b):
             ys, xs = np.nonzero(bid[max(0, y0p - 60):y0p + 60, max(0, x0p - 60):x0p + 60] == b)
             return int(xs.min()) + max(0, x0p - 60), int(xs.max()) + max(0, x0p - 60), int(ys.min()) + max(0, y0p - 60), int(ys.max()) + max(0, y0p - 60)
+        def bbox_any(b):
+            ys, xs = np.nonzero(bid[max(0, y1p_ - 20):y1p_ + 80, max(0, x0p - 60):x1p + 60] == b)
+            return int(xs.min()) + max(0, x0p - 60), int(xs.max()) + max(0, x0p - 60), int(ys.min()) + max(0, y1p_ - 20), int(ys.max()) + max(0, y1p_ - 20)
         def setb(b, fl, wc, shop, awn):
             o = (b - 1) * 8; bdata[o + 2] = fl; bdata[o + 5] = wc; bdata[o + 6] = shop; bdata[o + 7] = awn
         xw, yn = x0p - w_, y0p - n_  # borde de las fachadas (oeste de Coronel Bogado, norte de Mcal. López)
@@ -710,6 +713,20 @@ def main(src, out, preview=None):
             vec = corner_bid(x1_ + 1, x1_ + 6, y1_ - 3, y1_ + 1, x1_ + 1, y1_)
             if vec and vec != ne: setb(vec, 2, 8, 0, 0)
         print('esquina noroeste:', ' '.join(done))
+
+        # ---------- tienda de ropa: esquina sudoeste, del otro lado de la calle sur (Leandro, 05/11/2026) ----------
+        # Nombre inventado ("Ao Porã": ropa linda). Es el primer edificio al sur de la calle sur de la plaza, en la
+        # esquina con Coronel Bogado; mira al norte (a la plaza), así que su frente se ve como toldo y vidriera sobre
+        # la vereda, con maniquíes. La puerta (decorado 'tienda') es donde se entra a comprar.
+        ys0 = y1p_ + s_  # primera fila de edificios del otro lado de la calle sur
+        ti = corner_bid(x0p - 1, x0p + 12, ys0, ys0 + 10, x0p, ys0)
+        if ti:
+            x0_, x1_, y0_, y1_ = bbox_any(ti)
+            setb(ti, 2, 4, 1, 0)
+            sw0 = y0_ - 1  # vereda de la tienda (la fila de arriba del edificio)
+            decals.append({'kind': 'tienda', 'x': x0_, 'y': sw0, 'w': x1_ - x0_ + 1, 'h': 1})
+            labels.append({'text': 'Ao Porã · ropa', 'x': (x0_ + x1_ + 1) * 8, 'y': y0_ * 16 + 20, 'small': 1})
+            print('tienda de ropa: edificio %d, x %d-%d, y %d-%d, vereda y=%d, plaza x %d-%d y %d-%d' % (ti, x0_, x1_, y0_, y1_, sw0, x0p, x1p, y0p, y1p_))
 
     # ---------- punto de inicio: vereda al sur de la Plaza de los Héroes ----------
     spawn = {'x': W * 8, 'y': H * 8}

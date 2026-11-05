@@ -28,6 +28,13 @@
     gender: { m: ['Hombre', 0], f: ['Mujer', 0] },
   };
   VR.AV2_CAT = CAT;
+  // ---------- ajustes del cuerpo base (05/11/2026): se tocan con el "Editor de personas" ----------
+  // Medidas en unidades de la grilla de 16×32 (1 unidad = 1 px en el juego, 3 px en la tienda).
+  VR.AV2_TUNE_BASE = { cabezaAncho: 2.0, cabezaAlto: 2.4, mandibula: 1.6, cabezaY: 3.9, hombros: 3.1, pecho: 1.95, cintura: 2.3, cadera: 2.45,
+    muslo: 6.5, pantorrilla: 6.5, brazo: 4.7, antebrazo: 4.0, grosorPiernas: 1, grosorBrazos: 1,
+    luz: 1.16, sombra: 0.74, bandaLuz: 0.45, separacion: 0.72, contorno: 0.28 };
+  VR.AV2_TUNE = Object.assign({}, VR.AV2_TUNE_BASE);
+  const T = VR.AV2_TUNE;
   VR.AV2_DEFAULT = { gender: 'm', skin: 2, build: 'normal', hair: 'corto', hairColor: 1, beard: 'no', top: 'remera', topColor: 0, topColor2: 1, bottom: 'jean', bottomColor: 0,
     shoes: 'zapatillas', shoesColor: 1, hat: 'ninguno', hatColor: 3, lentes: false, anteojos: false, mochila: false, termo: false, reloj: false, cadenita: false, packColor: 4, print: false };
   VR.av2Price = (L) => {
@@ -73,7 +80,7 @@
     const sw = bd[0] * (fem ? 0.84 : 1), ww = bd[1] * (fem ? 0.84 : 1), hipW = fem ? 1.18 : 1;
     const run = anim === 'run', walk = anim === 'walk', moving = run || walk;
     const S = { sw, ww, hipW, fem, dir, anim, run };
-    const L1 = 6.5, L2 = 6.5;
+    const L1 = T.muslo, L2 = T.pantorrilla;
     const tab = run ? LEG_RUN : LEG_WALK;
     const legAt = (t) => moving ? key(tab, t) : [0, 4, 0];
     const lN = legAt(ph), lF = legAt(ph + 0.5);
@@ -109,11 +116,11 @@
       const hbob = moving ? 0.25 * Math.sin(4 * Math.PI * (ph - 0.15)) : 0; // la cabeza acompaña con retraso
       S.shoulder = [8 + lx * 9.2, 8.4 + bodyY];
       S.neck = [8 + lx * 10.2, 7.0 + bodyY];
-      S.head = [8.35 + lx * 12.2, 3.9 + bodyY + hbob * 0.3];
+      S.head = [8.35 + lx * 12.2, T.cabezaY + bodyY + hbob * 0.3];
       const arm = ([ang, bend]) => {
         const a = ang * D2R, b2 = (ang + bend) * D2R;
-        const e = [S.shoulder[0] + Math.sin(a) * 4.7, S.shoulder[1] + Math.cos(a) * 4.7];
-        return [e, [e[0] + Math.sin(b2) * 4.0, e[1] + Math.cos(b2) * 4.0]];
+        const e = [S.shoulder[0] + Math.sin(a) * T.brazo, S.shoulder[1] + Math.cos(a) * T.brazo];
+        return [e, [e[0] + Math.sin(b2) * T.antebrazo, e[1] + Math.cos(b2) * T.antebrazo]];
       };
       const AN = arm(aN), AF = arm(aF);
       S.elbN = AN[0]; S.wriN = AN[1]; S.elbF = AF[0]; S.wriF = AF[1];
@@ -138,14 +145,14 @@
     S.knee = [PL[0], PR[0]]; S.ank = [PL[1], PR[1]];
     if (run) { S.knee[0][0] -= 0.25; S.knee[1][0] += 0.25; }
     const shY = 8.5 + bodyY, sx = 8 - sway * 0.4;
-    S.sh = [[sx - 3.1 * sw, shY + tilt], [sx + 3.1 * sw, shY - tilt]];
+    S.sh = [[sx - T.hombros * sw, shY + tilt], [sx + T.hombros * sw, shY - tilt]];
     S.neckBase = [sx, 7.1 + bodyY];
-    S.head = [sx - sway * 0.2, 3.9 + bodyY];
+    S.head = [sx - sway * 0.2, T.cabezaY + bodyY];
     const armF = (side, [ang, bend], shp) => {
       const a = ang * D2R, b2 = (ang + bend) * D2R;
       const out = side * (run ? 0.5 : 0.35);
-      const e = [shp[0] + out * 0.6, shp[1] + Math.cos(a) * 4.7 + Math.sin(a) * 4.7 * 0.22 * toward];
-      const w = [e[0] + (run ? -side * Math.sin(Math.max(0, a)) * 1.6 : out * 0.2), e[1] + Math.cos(b2) * 4.0 + Math.sin(b2) * 4.0 * 0.22 * toward];
+      const e = [shp[0] + out * 0.6, shp[1] + Math.cos(a) * T.brazo + Math.sin(a) * T.brazo * 0.22 * toward];
+      const w = [e[0] + (run ? -side * Math.sin(Math.max(0, a)) * 1.6 : out * 0.2), e[1] + Math.cos(b2) * T.antebrazo + Math.sin(b2) * T.antebrazo * 0.22 * toward];
       return [e, w];
     };
     const aLeft = dir === 'down' ? aN : aF, aRight = dir === 'down' ? aF : aN; // brazo opuesto a la pierna del mismo lado
@@ -187,14 +194,14 @@
     const paint = (fn, base, o = {}) => {
       const m = o.mask || raster(fn);
       if (o.clip) for (let i = 0; i < m.length; i++) m[i] &= o.clip[i];
-      const B = RGB(base), Sd = RGB(o.shade || SH(base, 0.74)), Li = RGB(o.light || SH(base, 1.16)), id = layerN++;
-      const s = Math.max(1, Math.round(k * (o.band || 0.45)));
+      const B = RGB(base), Sd = RGB(o.shade || SH(base, T.sombra)), Li = RGB(o.light || SH(base, T.luz)), id = layerN++;
+      const s = Math.max(1, Math.round(k * (o.band || T.bandaLuz)));
       const lightSide = mirror ? 1 : -1; // la luz viene de la izquierda de la pantalla
       if (o.sep !== false && k >= 2) {
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
           const i = y * W + x; if (m[i] || out[i * 4 + 3] === 0) continue;
           if ((x > 0 && m[i - 1]) || (x < W - 1 && m[i + 1]) || (y > 0 && m[i - W]) || (y < H - 1 && m[i + W])) {
-            out[i * 4] *= 0.72; out[i * 4 + 1] *= 0.72; out[i * 4 + 2] *= 0.72;
+            out[i * 4] *= T.separacion; out[i * 4 + 1] *= T.separacion; out[i * 4 + 2] *= T.separacion;
           }
         }
       }
@@ -226,7 +233,7 @@
     const topC = CAT.cloth[L.topColor], top2 = CAT.cloth[L.topColor2];
     const botC = (L.bottom === 'jean' ? CAT.denim : CAT.cloth)[L.bottomColor % (L.bottom === 'jean' ? CAT.denim.length : CAT.cloth.length)];
     const shoeC = CAT.cloth[L.shoesColor], hatC = CAT.cloth[L.hatColor], packC = CAT.cloth[L.packColor];
-    const sw = S.sw, ww = S.ww;
+    const sw = S.sw, ww = S.ww, GP = T.grosorPiernas, GB = T.grosorBrazos;
     const OPEN = L.top === 'campera' || L.top === 'puffer' || L.top === 'hoodieAbierto';
     const LONGTOP = OPEN || L.top === 'sueter' || L.top === 'buzo'; // prendas que tapan la cintura del pantalón
     const longSleeve = L.top === 'camisa' || L.top === 'buzo' || L.top === 'sueter' || OPEN;
@@ -243,7 +250,7 @@
       if (longHair && front) paint((g) => { poly(g, [[8 - 2.6, 3.5 + S.bob], [8 + 2.6, 3.5 + S.bob], [8 + 2.9, 10.8 + S.bob], [8 - 2.9, 10.8 + S.bob]]); }, SH(hair, 0.8), { light: false });
       if (L.mochila && front) paint((g) => { g.fillRect(8 - 3.4 * sw, 8 + S.bob, 6.8 * sw, 7); }, SH(packC, 0.7), { light: false });
       // piernas (piel) y pantalón encima
-      for (const [h, kn, an] of [[hL, kL, aL], [hR, kR, aR]]) paint((g) => { cap(g, h, kn, 2.2 * ww, 1.8); cap(g, kn, an, 1.8, 1.3); }, skin, { shade: skinD });
+      for (const [h, kn, an] of [[hL, kL, aL], [hR, kR, aR]]) paint((g) => { cap(g, h, kn, 2.2 * ww * GP, 1.8 * GP); cap(g, kn, an, 1.8 * GP, 1.3 * GP); }, skin, { shade: skinD });
       if (L.bottom === 'pollera') {
         paint((g) => poly(g, [[8 - 2.4 * ww, 14.6 + S.bob], [8 + 2.4 * ww, 14.6 + S.bob], [8 + 3.2 * ww, 21.2 + S.bob], [8 - 3.2 * ww, 21.2 + S.bob]]), botC);
         if (k >= 2) for (const x of [-1.5, 0, 1.5]) pix(8 + x * ww, 18 + S.bob, SH(botC, 0.78), P, Math.round(3 * k));
@@ -252,7 +259,7 @@
         for (const [h, kn, an, rightLeg] of [[hL, kL, aL, false], [hR, kR, aR, true]]) {
           const end = legLen >= 1 ? an : legLen > 0.5 ? lerp(kn, an, (legLen - 0.5) * 2) : lerp(h, kn, legLen * 2);
           const kn2 = legLen > 0.5 ? kn : end;
-          paint((g) => { cap(g, h, kn2, (2.6 + wide) * ww, 2.2 + wide); if (legLen > 0.5) cap(g, kn, end, 2.2 + wide, L.bottom === 'jogging' ? 1.6 : 1.85 + wide); }, botC, { shade: SH(botC, 0.72) });
+          paint((g) => { cap(g, h, kn2, (2.6 + wide) * ww * GP, (2.2 + wide) * GP); if (legLen > 0.5) cap(g, kn, end, (2.2 + wide) * GP, (L.bottom === 'jogging' ? 1.6 : 1.85 + wide) * GP); }, botC, { shade: SH(botC, 0.72) });
           if (k >= 2) {
             if (L.bottom === 'jean' || L.bottom === 'vestir') pix(kn[0] + (rightLeg ? -0.5 : 0.3), kn[1] + 0.2, SH(botC, 0.78), P, P); // pliegue en la rodilla
             if (L.bottom === 'jogging') for (let t = 0; t <= 1; t += 0.08) { const p = lerp(h, end, t); pix(p[0] + (rightLeg ? 0.9 : -1.1), p[1], '#f2efe6', P, P); }
@@ -284,7 +291,7 @@
       const torsoPts = (ext) => {
         const b = S.bob, e = ext || 0, belly = L.build === 'panza' ? 0.6 : 0, nb = S.neckBase, f = S.fem;
         const [L0, R0] = S.sh, wy = 13.6 + b, hy2 = (LONGTOP && ext >= 0 ? 17.5 : 16.6) + b;
-        const wx = (f ? 1.85 : 2.3) * ww + belly + (LONGTOP ? 0.2 : 0), hx2 = (f ? 2.75 : 2.45) * ww + (LONGTOP ? 0.35 : 0);
+        const wx = T.cintura * (f ? 1.85 / 2.3 : 1) * ww + belly + (LONGTOP ? 0.2 : 0), hx2 = T.cadera * (f ? 2.75 / 2.45 : 1) * ww + (LONGTOP ? 0.35 : 0);
         return [[nb[0] - 1.0 - e * 0.3, nb[1]], [L0[0] + 1.0, L0[1] - 0.75 - e * 0.5], [L0[0] - 0.15 - e, L0[1] + 0.2], [L0[0] + 0.35 - e, L0[1] + 2.3], [8 - wx - e, wy], [8 - hx2 - e, hy2], [8 + hx2 + e, hy2], [8 + wx + e, wy],
           [R0[0] - 0.35 + e, R0[1] + 2.3], [R0[0] + 0.15 + e, R0[1] + 0.2], [R0[0] - 1.0, R0[1] - 0.75 - e * 0.5], [nb[0] + 1.0 + e * 0.3, nb[1]]];
       };
@@ -338,10 +345,10 @@
       if (L.cadenita && front && L.top !== 'buzo') { for (let t = -1; t <= 1; t += 0.25) pix(8 + t * 1.1, 7.6 + Math.abs(t) * -0.5 + 0.9 + S.bob, '#e8c860', P, P); }
       // brazos: piel, manga encima, mano
       for (const [s0, e0, w0, right] of [[sL, eL, wL, false], [sR, eR, wR, true]]) {
-        paint((g) => { cap(g, s0, e0, 1.95 * sw, 1.6); cap(g, e0, w0, 1.6, 1.3); }, skin, { shade: skinD });
+        paint((g) => { cap(g, s0, e0, 1.95 * sw * GB, 1.6 * GB); cap(g, e0, w0, 1.6 * GB, 1.3 * GB); }, skin, { shade: skinD });
         if (sleeveLen > 0) {
           const end = sleeveLen >= 1 ? w0 : lerp(s0, e0, sleeveLen * 1.6);
-          paint((g) => { cap(g, s0, sleeveLen >= 1 ? e0 : end, (2.05 + bulky) * sw, 1.85 + bulky); if (sleeveLen >= 1) cap(g, e0, w0, 1.7 + bulky, 1.5 + bulky); }, topC, { shade: SH(topC, 0.72) });
+          paint((g) => { cap(g, s0, sleeveLen >= 1 ? e0 : end, (2.05 + bulky) * sw * GB, (1.85 + bulky) * GB); if (sleeveLen >= 1) cap(g, e0, w0, (1.7 + bulky) * GB, (1.5 + bulky) * GB); }, topC, { shade: SH(topC, 0.72) });
           if (sleeveLen >= 1 && k >= 2) pix(w0[0] - 0.75, w0[1] - 0.2, SH(topC, 0.78), Math.round(1.5 * k), P); // puño
           if (L.top === 'puffer' && k >= 2) for (let t = 0.2; t < 1; t += 0.22) { const q = lerp(s0, w0, t); pix(q[0] - 0.9, q[1], SH(topC, 0.62), Math.round(1.8 * k), P); }
         }
@@ -353,10 +360,10 @@
         }
       }
       // cuello y cabeza
-      paint((g) => g.fillRect(S.head[0] - 0.7, 5.8 + S.bob, 1.4, 1.8), skinD, { light: false });
+      paint((g) => g.fillRect(S.head[0] - 0.7, S.head[1] + 1.9, 1.4, Math.max(0.6, 7.6 + S.bob - S.head[1] - 1.9)), skinD, { light: false });
       const [hx, hy] = S.head;
-      paint((g) => { ell(g, hx, hy, 2.0, 2.4); ell(g, hx, hy + 1.25, S.fem ? 1.45 : 1.6, 1.5); }, skin, { shade: skinD });
-      paint((g) => { ell(g, hx - 2.0, hy + 0.2, 0.42, 0.65); ell(g, hx + 2.0, hy + 0.2, 0.42, 0.65); }, skinD, { light: false, sep: false });
+      paint((g) => { ell(g, hx, hy, T.cabezaAncho, T.cabezaAlto); ell(g, hx, hy + 1.25, T.mandibula * (S.fem ? 1.45 / 1.6 : 1), 1.5 * T.cabezaAlto / 2.4); }, skin, { shade: skinD });
+      paint((g) => { ell(g, hx - T.cabezaAncho, hy + 0.2, 0.42, 0.65); ell(g, hx + T.cabezaAncho, hy + 0.2, 0.42, 0.65); }, skinD, { light: false, sep: false });
       if (front) {
         // cara
         const ey = hy + 0.05;
@@ -381,24 +388,24 @@
       // ---------- perfil ----------
       const b = S.bob, lx = Math.sin(S.lean * D2R);
       const torso = (ext) => { const e = ext || 0, belly = L.build === 'panza' ? 0.8 : 0, f = S.fem, sh0 = S.shoulder;
-        const chest = f ? 2.15 : 1.95;
+        const chest = T.pecho * (f ? 2.15 / 1.95 : 1);
         return [[S.neck[0] - 0.9 - e, S.neck[1]], [S.neck[0] + 0.8 + e, S.neck[1] + 0.1], [sh0[0] + 1.5 * sw + e, sh0[1] + 0.4], [8 + lx * 5.5 + chest * sw + e, 10.9 + b], [8 + lx * 2.5 + (f ? 1.4 : 1.6) * ww + belly + e, 13.9 + b],
           [8 + (LONGTOP ? 2.0 : 1.7) * ww + e, (LONGTOP ? 17.3 : 16.4) + b], [8 - (f ? 2.0 : 1.7) * ww - (LONGTOP ? 0.3 : 0) - e, (LONGTOP ? 17.5 : 16.6) + b], [8 + lx * 2 - (f ? 1.3 : 1.45) * ww - e, 13.6 + b], [8 + lx * 5 - 1.9 * sw - e, 10.4 + b], [sh0[0] - 1.6 * sw - e, sh0[1] + 0.2]]; };
       const armDraw = (e, w, near) => {
         const sc = near ? 1 : 0.86, s0 = S.shoulder;
-        paint((g) => { cap(g, s0, e, 1.6, 1.4); cap(g, e, w, 1.4, 1.2); }, near ? skin : skinD, { shade: SH(skin, 0.7) });
-        if (sleeveLen > 0) paint((g) => { const end = sleeveLen >= 1 ? e : lerp(s0, e, sleeveLen * 1.6); cap(g, s0, end, 2.0, 1.8); if (sleeveLen >= 1) cap(g, e, w, 1.7, 1.5); }, near ? topC : SH(topC, 0.82));
+        paint((g) => { cap(g, s0, e, 1.6 * GB, 1.4 * GB); cap(g, e, w, 1.4 * GB, 1.2 * GB); }, near ? skin : skinD, { shade: SH(skin, 0.7) });
+        if (sleeveLen > 0) paint((g) => { const end = sleeveLen >= 1 ? e : lerp(s0, e, sleeveLen * 1.6); cap(g, s0, end, 2.0 * GB, 1.8 * GB); if (sleeveLen >= 1) cap(g, e, w, 1.7 * GB, 1.5 * GB); }, near ? topC : SH(topC, 0.82));
         paint((g) => ell(g, w[0] + 0.2, w[1] + 0.6, 0.75, 0.8), near ? skin : skinD, { shade: skinD });
         if (near && L.termo) paint((g) => { g.beginPath(); g.roundRect(w[0] - 0.4, w[1] - 1.5, 1.2, 3.6, 0.3); g.fill(); }, '#2e6fc8');
         void sc;
       };
       const legDraw = (kn, an, near, fa = 0) => {
         const c = near ? 1 : 0.84;
-        paint((g) => { cap(g, S.hip, kn, 2.4 * ww, 1.9); cap(g, kn, an, 1.9, 1.3); }, SH(skin, c), { shade: SH(skin, 0.7 * c) });
+        paint((g) => { cap(g, S.hip, kn, 2.4 * ww * GP, 1.9 * GP); cap(g, kn, an, 1.9 * GP, 1.3 * GP); }, SH(skin, c), { shade: SH(skin, 0.7 * c) });
         if (L.bottom !== 'pollera' && legLen > 0) {
           const end = legLen >= 1 ? an : legLen > 0.5 ? lerp(kn, an, (legLen - 0.5) * 2) : lerp(S.hip, kn, legLen * 2);
           const wide = L.bottom === 'cargo' || L.bottom === 'jogging' ? 0.35 : L.bottom === 'calza' ? -0.3 : 0;
-          paint((g) => { cap(g, S.hip, legLen > 0.5 ? kn : end, (2.7 + wide) * ww, 2.3 + wide); if (legLen > 0.5) cap(g, kn, end, 2.3 + wide, 1.9 + wide); }, SH(botC, c), { shade: SH(botC, 0.7 * c) });
+          paint((g) => { cap(g, S.hip, legLen > 0.5 ? kn : end, (2.7 + wide) * ww * GP, (2.3 + wide) * GP); if (legLen > 0.5) cap(g, kn, end, (2.3 + wide) * GP, (1.9 + wide) * GP); }, SH(botC, c), { shade: SH(botC, 0.7 * c) });
           if (near && k >= 2 && L.bottom === 'jogging') for (let t = 0; t <= 1; t += 0.08) { const p = lerp(S.hip, end, t); pix(p[0] - 0.1, p[1], '#f2efe6', P, P); }
           if (near && k >= 2 && L.bottom === 'cargo') { const p = lerp(S.hip, kn, 0.7); pix(p[0] - 0.6, p[1], SH(botC, 0.7), Math.round(1.2 * k), Math.round(1.3 * k)); }
         }
@@ -432,7 +439,7 @@
       // cuello y cabeza de perfil
       paint((g) => cap(g, [S.neck[0], S.neck[1] + 0.3], [S.head[0] - 0.2, S.head[1] + 1.8], 1.5, 1.5), skinD, { light: false });
       const [hx, hy] = S.head;
-      paint((g) => { ell(g, hx, hy, 2.05, 2.4); ell(g, hx + 0.45, hy + 1.25, S.fem ? 1.45 : 1.6, 1.4); poly(g, [[hx + 1.8, hy - 0.1], [hx + 2.55, hy + 0.85], [hx + 1.8, hy + 1.0]]); }, skin, { shade: skinD });
+      paint((g) => { ell(g, hx, hy, T.cabezaAncho * 1.025, T.cabezaAlto); ell(g, hx + 0.45, hy + 1.25, T.mandibula * (S.fem ? 1.45 / 1.6 : 1), 1.4 * T.cabezaAlto / 2.4); poly(g, [[hx + 1.8, hy - 0.1], [hx + 2.55, hy + 0.85], [hx + 1.8, hy + 1.0]]); }, skin, { shade: skinD });
       paint((g) => ell(g, hx - 0.55, hy + 0.25, 0.45, 0.65), skinD, { light: false, sep: false });
       if (k >= 3) { pix(hx + 1.05, hy + 0.05, '#f4f0e6', Math.round(0.6 * k), P); pix(hx + 1.35, hy + 0.05, '#1a1410', P, P); } else pix(hx + 1.2, hy + 0.05, '#1a1410', P, P);
       if (L.hair !== 'pelado' && L.hair !== 'rapado') pix(hx + 0.8, hy - 0.55, SH(hair, 0.9), Math.round(0.9 * k), P);
@@ -529,7 +536,7 @@
       const i = y * W + x; if (out[i * 4 + 3]) continue;
       let n = -1;
       if (x > 0 && out[(i - 1) * 4 + 3]) n = i - 1; else if (x < W - 1 && out[(i + 1) * 4 + 3]) n = i + 1; else if (y > 0 && out[(i - W) * 4 + 3]) n = i - W; else if (y < H - 1 && out[(i + W) * 4 + 3]) n = i + W;
-      if (n >= 0) { fin[i * 4] = out[n * 4] * 0.28 + 10; fin[i * 4 + 1] = out[n * 4 + 1] * 0.26 + 8; fin[i * 4 + 2] = out[n * 4 + 2] * 0.28 + 12; fin[i * 4 + 3] = 255; }
+      if (n >= 0) { fin[i * 4] = out[n * 4] * T.contorno + 10; fin[i * 4 + 1] = out[n * 4 + 1] * T.contorno * (0.26 / 0.28) + 8; fin[i * 4 + 2] = out[n * 4 + 2] * T.contorno + 12; fin[i * 4 + 3] = 255; }
     }
     const res = document.createElement('canvas'); res.width = W; res.height = H;
     res.getContext('2d').putImageData(new ImageData(fin, W, H), 0, 0);

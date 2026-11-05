@@ -132,7 +132,7 @@ VR.Player = class {
       else if (!dx) { for (const n of [-1, 1]) if (!box(this.x + n * 5, this.y + dy)) { this.x += n * Math.min(Math.abs(dy), 1); break; } }
     }
   }
-  setLook(key) { const t = VR.AV2_TEAM[key] || VR.AV2_TEAM.generico; this.look = key; this.sprites = VR.av2Lazy(t[1]); }
+  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = VR.av2Lazy(this.lookData); }
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);

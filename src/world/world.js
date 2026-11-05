@@ -429,6 +429,15 @@ VR.decorOver = {
       g.fillStyle = 'rgba(255,214,140,.35)'; g.fillRect(X, Y + 7, W, 3);
     }
   },
+  tienda(g, d) { // tienda de ropa "Ao Porã" (05/11/2026): mira al norte, así que desde arriba se ve el toldo sobre la vereda
+    const S = VR.TILE, X = d.x * S + 2, W = d.w * S - 4, Y = (d.y + 1) * S - 9, mid = X + (W >> 1);
+    g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(X + 2, Y + 3, W, 9);
+    for (let x = X; x < X + W; x++) { g.fillStyle = ((x - X) >> 2) & 1 ? '#f4efe6' : '#d0407a'; g.fillRect(x, Y, 1, 8); }
+    g.fillStyle = '#9a2a58'; g.fillRect(X, Y + 7, W, 2);                                   // borde del toldo
+    for (let x = X + 1; x < X + W; x += 4) { g.fillStyle = '#f4efe6'; g.fillRect(x, Y + 9, 2, 1); } // flecos
+    g.fillStyle = '#3a3a44'; g.fillRect(mid - 9, Y + 1, 18, 7); g.fillStyle = '#ffd9ea'; g.fillRect(mid - 7, Y + 3, 14, 1); g.fillRect(mid - 5, Y + 5, 10, 1); // cartel chico
+    g.fillStyle = '#7a3a52'; g.fillRect(mid - 8, Y - 4, 16, 3); g.fillStyle = '#c8607e'; g.fillRect(mid - 8, Y - 4, 16, 1); // alfombra de la entrada
+  },
   mesas(g, d) { // mesitas de madera y macetas en la vereda, frente al café
     const S = VR.TILE, X = d.x * S, Y = d.y * S + 3;
     for (let k = 0, x = X + 6; x < X + d.w * S - 14 && k < 3; x += 22, k++) {
@@ -549,6 +558,24 @@ VR.decorTop = {
           g.fillStyle = '#fff7d8'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
           if (VR.night && k % 4 === 2) VR.night.add(x, yy + 6, 24, '255,224,150', 0.4);
         }
+      }
+    } }];
+  },
+  tienda(d) { // maniquíes en la vereda a los costados de la entrada y un perchero con ropa
+    const S = VR.TILE, X = d.x * S + 2, W = d.w * S - 4, mid = X + (W >> 1), fy = (d.y + 1) * S - 3;
+    const mani = (g, x, c1, c2) => {
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 3, fy - 1, 8, 3);
+      g.fillStyle = '#2a2a30'; g.fillRect(x - 2, fy, 6, 1); g.fillRect(x, fy - 6, 2, 6);  // base y pie
+      g.fillStyle = '#1a1a1e'; g.fillRect(x - 3, fy - 17, 8, 11);                        // contorno del torso
+      g.fillStyle = c2; g.fillRect(x - 2, fy - 10, 6, 4);                                 // pantalón/pollera
+      g.fillStyle = c1; g.fillRect(x - 2, fy - 16, 6, 7); g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(x - 2, fy - 16, 2, 7);
+      g.fillStyle = '#1a1a1e'; g.fillRect(x - 1, fy - 22, 4, 5); g.fillStyle = '#ece8e0'; g.fillRect(x, fy - 21, 2, 4); // cabeza
+    };
+    return [{ sy: fy, draw(g) {
+      mani(g, mid - 22, '#e86aa0', '#2c4a7b'); mani(g, mid + 20, '#3b9a5a', '#2c2c34');
+      if (W > 90) { // perchero con remeras de colores
+        const px = X + 8; g.fillStyle = '#1a1a1e'; g.fillRect(px - 1, fy - 18, 26, 2); g.fillRect(px, fy - 18, 1, 18); g.fillRect(px + 23, fy - 18, 1, 18);
+        ['#c8322a', '#f2efe6', '#2e6fc8', '#e8b830', '#7a4ab0'].forEach((c, i) => { g.fillStyle = '#1a1a1e'; g.fillRect(px + 2 + i * 4, fy - 17, 5, 9); g.fillStyle = c; g.fillRect(px + 3 + i * 4, fy - 16, 3, 7); });
       }
     } }];
   },
