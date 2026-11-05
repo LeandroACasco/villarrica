@@ -49,6 +49,7 @@ VR.Online = class {
       if (!o) { o = { x: m.x, y: m.y }; this.others.set(m.id, o); }
       Object.assign(o, m, { px: o.x, py: o.y, at: performance.now() });
       if (m.L) { o.look = VR.av2Lazy(m.L); o.L = m.L; }
+      if (!m.tz) { o.tz = 0; o.t = null; }
     });
     c.on('close', () => { this.conns = this.conns.filter((o) => o !== c); this.set(this.conns.length ? 'Conectado' : this.host ? 'Sala ' + this.room + ' · esperando' : 'Se cortó la conexión'); });
   }
@@ -167,13 +168,14 @@ VR.Online = class {
   }
   stop() { if (this.host && this.peer) VR.Salas.del(this.room); for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
   // cada cuadro: mandar mi estado (10 por segundo) y olvidar a los que no mandan nada hace 6 s
-  update(dt, player, car) {
+  update(dt, player, car, teatro) {
+    this.teatro = teatro;
     this.myL = player.lookData; this.myBubble = player.bubble ? { text: player.bubble.text, end: performance.now() + player.bubble.t * 1000 } : null;
     this.follow(dt, car || player);
     if (this.host && this.peer && (this.salaT = (this.salaT || 0) + dt) > 30) { this.salaT = 0; VR.Salas.put(this.room, this.nick, this.conns.length + 1); }
     if (!this.peer || !this.conns.length) return;
     this.t += dt; if (this.t < 0.1) return; this.t = 0;
-    const m = { id: this.peer.id, n: this.nick, r: this.ride || undefined, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
+    const m = { id: this.peer.id, n: this.nick, r: this.ride || undefined, tz: this.teatro && this.teatro.on ? 1 : undefined, t: this.teatro && this.teatro.on ? this.teatro.state() : undefined, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
     if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car), car.tune || 0];
     const lk = JSON.stringify(player.lookData); if (this.sendLook || lk !== this.lastLook || Math.random() < 0.02) { m.L = player.lookData; this.sendLook = false; this.lastLook = lk; }
     for (const c of this.conns) if (c.open) c.send(m);
@@ -187,7 +189,7 @@ VR.Online = class {
     if (myCar) for (const o of this.others.values()) if (o.r === me && o.look) this.drawPass(tall, o, myCar.x - cx, myCar.y - cy, myCar.a, myCar.type, cx, cy, 0);
     let pi = 0;
     for (const o of this.others.values()) {
-      if (!o.look) continue;
+      if (!o.look || o.tz) continue; // los que están en el teatro se dibujan adentro
       if (o.r) { // va de pasajero: se dibuja con el conductor
         const d = o.r === me ? null : this.others.get(o.r);
         if (d && d.c && d.sx !== undefined) this.drawPass(tall, o, d.sx - cx, d.sy - cy, d.c[3], d.c[0], cx, cy, pi++);

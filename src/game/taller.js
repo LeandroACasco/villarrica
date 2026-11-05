@@ -45,14 +45,14 @@ VR.Cine = class {
     this.on = online;
     this.d = VR.dlg('cine', '<h2>🎬 Cine en el Teatro Municipal</h2><div id="cnBox"></div><input id="cnUrl" placeholder="Pegá un enlace de YouTube"><div class="seg"><button id="cnPut">Poner</button><button id="cnOut">Salir</button></div><p class="hint">Online: todos los de la sala ven el mismo video.</p>');
     this.d.querySelector('#cnOut').onclick = () => this.close();
-    this.d.querySelector('#cnPut').onclick = () => { const v = VR.ytId(this.d.querySelector('#cnUrl').value.trim()); if (!v) return; VR.cineNow = { v, t0: Date.now() }; online.ev({ e: 'cine', v, t0: VR.cineNow.t0 }); this.show(); };
+    this.d.querySelector('#cnPut').onclick = () => { const v = VR.ytId(this.d.querySelector('#cnUrl').value.trim()); if (!v) return; VR.cineNow = { v, t0: Date.now() }; online.ev({ e: 'cine', v, t0: VR.cineNow.t0 }); this.close(); };
     online.onCine = () => { if (this.d.open) this.show(); };
   }
   show() {
     const c = VR.cineNow, box = this.d.querySelector('#cnBox');
     if (!c) { box.innerHTML = '<p class="hint">La pantalla está apagada. Poné un video.</p>'; return; }
     const st = Math.max(0, Math.floor((Date.now() - c.t0) / 1000));
-    box.innerHTML = '<iframe allow="autoplay; encrypted-media" allowfullscreen src="https://www.youtube-nocookie.com/embed/' + c.v + '?autoplay=1&start=' + st + '"></iframe>';
+    box.innerHTML = '<p class="hint">En pantalla: youtu.be/' + c.v + '</p>'; void st;
   }
   open() { VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal(); this.show(); }
   close() { this.d.querySelector('#cnBox').innerHTML = ''; this.d.close(); VR.input.enabled = true; }

@@ -260,6 +260,9 @@ Salas por código con WebRTC (PeerJS, `vendor/peerjs.min.js`, copiado a `docs/` 
 - **Cine del Teatro Municipal:** puerta en el lado sur de la decal `muni`; `VR.Cine` muestra un video de YouTube (`youtube-nocookie`) y, online, el evento `cine` `{v, t0}` hace que todos lo vean en el mismo segundo (el anfitrión lo repite en `sendWorld` para los que llegan tarde).
 - **Cartelera de salas:** `VR.Salas` en `online.js` usa la API web de Firestore (sin librería) con `VR.FB = { projectId, apiKey }`; la sala se anota al crearla, se renueva cada 30 s y se borra al salir; la lista muestra las de los últimos 2 minutos. Si `VR.FB` es `null`, solo se entra con código.
 
+### 6.14 Interior del Teatro (`teatro.js`)
+Escena aparte (no usa el mapa): `VR.Teatro` con su propio piso, butacas (`seats`), choques (`solid`), cámara con vista un poco más lejana y un `iframe` de YouTube puesto encima del lienzo justo sobre la pantalla del escenario (`SCR`). En `main.js`, si `teatro.on`, `update` y `render` le pasan el control. Online: el estado del jugador lleva `tz: 1` y `t: [x, y, dir, mv, sentado]`; los que están adentro no se dibujan en la calle.
+
 ### 6.11 Tienda (`shop.js` + diálogo en `shell.html`)
 "Ao Porã": vende lo de `VR.AV2_CAT` con sus precios; guarda en `ropa:mia` y `look:propio`; la plata en `plata`. La puerta está en la decal `tienda`.
 

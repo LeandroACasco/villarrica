@@ -136,7 +136,8 @@
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
   let sayIdx = 0, hint = '', hintCar = null, holdT = 0;
   function update(dt) {
-    online.update(dt, player, car);
+    online.update(dt, player, car, teatro);
+    if (teatro.on) { if (VR.input.pressed('menu')) { openMenu(); return; } if (teatro.update(dt, VR.input) === 'out' && cineDoor) { player.x = player.px = cineDoor.x; player.y = player.py = cineDoor.y + 14; player.dir = 'down'; } return; }
     if (mapOpen) {
       if (['map', 'menu'].some((b) => VR.input.pressed(b))) closeMap();
       else if (VR.input.ax || VR.input.ay) { mv.ox -= VR.input.ax * 700 * dt; mv.oy -= VR.input.ay * 700 * dt; mapApply(); }
@@ -172,7 +173,7 @@
       } else {
       hint = nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
       hintCar = nc;
-      const nci = nearCine(); if (nci && !nc && !ns) { hint = VR.input.source === 'touch' ? '🎬 Cine: ACCIÓN' : '🎬 Espacio: cine'; hintCar = { x: nci.x, y: nci.y - 8 }; if (VR.input.pressed('action')) { cine.open(); return; } }
+      const nci = nearCine(); if (nci && !nc && !ns) { hint = VR.input.source === 'touch' ? '🎬 Cine: ACCIÓN' : '🎬 Espacio: cine'; hintCar = { x: nci.x, y: nci.y - 8 }; if (VR.input.pressed('action')) { teatro.enter(); return; } }
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       if (VR.input.pressed('car')) { if (nc) enterCar(nc); else toast('Acercate a un auto o una moto para subir'); }
       else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
@@ -197,6 +198,7 @@
   const tall = [];
   function render(a, dt) {
     const ctx = VR.screen.ctx, sw = VR.screen.w, sh = VR.screen.h;
+    if (teatro.on) { teatro.draw(ctx, sw, sh); return; }
     const [cx, cy] = camView(a);
     ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
     world.draw(ctx, cx, cy, sw, sh);
@@ -290,7 +292,7 @@
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
   // ---- online ----
-  const online = new VR.Online(); cine = new VR.Cine(online); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars });
+  const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
   const goOnline = (host) => {
@@ -604,5 +606,5 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();
