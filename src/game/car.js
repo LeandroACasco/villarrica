@@ -554,6 +554,15 @@ VR.parkCars = (world, n, near) => {
     }
   }
 
+  // Filas pedidas por el mapa (05/11/2026): Mcal. López al oeste de Coronel Bogado, autos en fila contra el
+  // cordón sur mirando al oeste, como en el video de Leandro
+  for (const d of world.decals || []) {
+    if (d.kind !== 'fila') continue;
+    const y = (d.y + 1) * S - 8, x0 = d.x * S + 30, x1 = (d.x + d.w) * S - 30;
+    for (let px = x1; px >= x0; px -= 52) if (rnd() < 0.85) add(px, y, d.dir === 'o' ? -Math.PI / 2 : Math.PI / 2, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+    (world.parkingDemo = world.parkingDemo || []).push({ x0: d.x * S, x1: (d.x + d.w) * S, y0: d.y * S - 40, y1: (d.y + 1) * S });
+  }
+
   // Lugar para estacionar (04/11/2026, menos y mejor repartidos): solo en calles de 5 baldosas (10 m) o más,
   // con cordón a lo largo de ~8 baldosas (lejos de las esquinas) y sin otro vehículo enfrente, así siempre
   // queda lugar para que pasen dos autos.

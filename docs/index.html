@@ -259,7 +259,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 14b1d3f7 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión a58d6cf1 · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -1233,7 +1233,7 @@ VR.World = class {
 // ---------- paleta de edificios (los índices los usa tools/osm_to_map.py) ----------
 VR.BPAL = {
   walls: [[236, 222, 186], [230, 196, 140], [214, 164, 150], [176, 204, 214], [240, 236, 226], [190, 214, 170], [226, 182, 110], [200, 184, 214],
-    [246, 242, 230], [232, 230, 222], [234, 156, 132], [70, 64, 60], [230, 242, 242], [214, 192, 152]], // 8 = catedral, 9 = públicos, 10 = salmón, 11 = gris oscuro (Gleu), 12 = blanco turquesa (Universitaria), 13 = beige (café de la esquina)
+    [246, 242, 230], [232, 230, 222], [234, 156, 132], [70, 64, 60], [230, 242, 242], [214, 192, 152], [64, 64, 70]], // 14 = gris carbón (arcos de Mcal. López) // 8 = catedral, 9 = públicos, 10 = salmón, 11 = gris oscuro (Gleu), 12 = blanco turquesa (Universitaria), 13 = beige (café de la esquina)
   roofs: [
     [[178, 82, 52], [160, 70, 46], [190, 98, 60], [150, 60, 40], [200, 92, 58], [124, 52, 38]], // teja
     [[150, 156, 162], [124, 132, 140], [92, 110, 128], [176, 180, 186], [96, 140, 170], [62, 120, 86]], // chapa
@@ -1244,56 +1244,86 @@ VR.BPAL = {
 };
 
 // ---------- un tramo vertical de edificio: techo arriba, fachada sur abajo (vista 3/4) ----------
+// Con resolución ×2 (05/11/2026) se dibuja con medias unidades: tejas en hileras con luz y sombra, chapa
+// acanalada, losa con manchas, pretil y canaleta; en la fachada, zócalo, ventanas con marco, vidrio con reflejo
+// y alféizar, rejas finas, puertas con picaporte, persianas de los negocios y toldos con festón. Variaciones por
+// edificio (aire acondicionado, tanque, balcón, persiana a medio subir) salen del número de edificio.
 VR.drawBuildingColumn = (g, world, tx, ty0, ty1, id) => {
-  const b = world.buildings[id - 1], S = VR.TILE;
+  const b = world.buildings[id - 1], S = VR.TILE, H0 = VR.hash;
   const X = tx * S, Yt = ty0 * S, Yb = ty1 * S, H = Yb - Yt;
   let fh = Math.min(6 + b.floors * 14, H - 6); if (fh < 10) fh = Math.min(H, 10);
   const re = Yb - fh; // fin del techo
   const sh = (c, k) => `rgb(${Math.min(255, c[0] * k) | 0},${Math.min(255, c[1] * k) | 0},${Math.min(255, c[2] * k) | 0})`;
   const rect = (x, y, w, h, col) => { const a = Math.max(x, X), z = Math.min(x + w, X + S); if (z > a && h > 0) { g.fillStyle = col; g.fillRect(a, y, z - a, h); } };
   const L = (t) => world.b(tx - 1, t), R = (t) => world.b(tx + 1, t);
-  // techo
+  const v = (k) => H0(id, k, 977); // variaciones propias de cada edificio
+  // ---- techo ----
   if (re > Yt) {
-    g.fillStyle = sh(b.roof, 1); g.fillRect(X, Yt, S, re - Yt);
-    if (b.rt === 'teja') {
-      g.fillStyle = sh(b.roof, 0.78);
-      for (let yy = Yt + 3 - (Yt % 4); yy < re - 2; yy += 4) {
-        if (yy < Yt) continue;
-        g.fillRect(X, yy, S, 1);
-        for (let xx = X; xx < X + S; xx++) if ((xx + ((yy >> 2) & 1) * 3) % 6 === 0) g.fillRect(xx, Math.max(Yt, yy - 3), 1, yy - Math.max(Yt, yy - 3));
+    const rh = re - Yt;
+    g.fillStyle = sh(b.roof, 1); g.fillRect(X, Yt, S, rh);
+    if (b.rt === 'teja') { // hileras de tejas: cada teja con su tono, luz arriba y sombra abajo
+      for (let yy = Yt - (Yt % 3); yy < re; yy += 3) {
+        const row = (yy / 3) | 0;
+        for (let xx = X - ((row & 1) ? 1.5 : 0); xx < X + S; xx += 3) {
+          const k = 0.9 + H0(xx * 2 | 0, row, id) * 0.2, y0 = Math.max(yy, Yt), h = Math.min(yy + 3, re) - y0; if (h <= 0) continue;
+          const x0 = Math.max(xx, X), w = Math.min(xx + 3, X + S) - x0; if (w <= 0) continue;
+          g.fillStyle = sh(b.roof, k); g.fillRect(x0, y0, w, h);
+          g.fillStyle = sh(b.roof, k * 1.18); g.fillRect(x0, y0, Math.min(w, 1), Math.min(h, 2));
+          if (xx + 2.5 > X && xx + 2.5 < X + S) { g.fillStyle = sh(b.roof, 0.7); g.fillRect(xx + 2.5, y0, 0.5, h); }
+        }
+        if (yy + 2.5 < re && yy + 2.5 >= Yt) { g.fillStyle = sh(b.roof, 0.62); g.fillRect(X, yy + 2.5, S, 0.5); }
       }
-    } else if (b.rt === 'chapa') {
-      g.fillStyle = sh(b.roof, 0.82); for (let xx = X + 2; xx < X + S; xx += 4) g.fillRect(xx, Yt, 1, re - Yt);
-      g.fillStyle = sh(b.roof, 1.12); for (let xx = X + 3; xx < X + S; xx += 4) g.fillRect(xx, Yt, 1, re - Yt);
-    } else {
-      g.fillStyle = sh(b.roof, 0.9); g.fillRect(X, Yt + 2, S, 1);
-      if (tx === b.x1 - 1 && re - Yt >= 16) { // tanque de agua
-        g.fillStyle = '#2d3d52'; g.fillRect(X + 2, Yt + 4, 9, 9); g.fillStyle = '#4f6a8a'; g.fillRect(X + 3, Yt + 5, 7, 3);
+    } else if (b.rt === 'chapa') { // chapa acanalada, con alguna mancha de óxido
+      for (let xx = X; xx < X + S; xx += 2) { g.fillStyle = sh(b.roof, 1.14); g.fillRect(xx, Yt, 0.5, rh); g.fillStyle = sh(b.roof, 0.8); g.fillRect(xx + 1.5, Yt, 0.5, rh); }
+      for (let yy = Yt + 7; yy < re - 1; yy += 18) { g.fillStyle = sh(b.roof, 0.86); g.fillRect(X, yy, S, 0.5); } // solapes
+      if (v(1) < 0.3) for (let k = 0; k < 3; k++) { const h = H0(tx, k, id); if (h < 0.5) { g.fillStyle = 'rgba(150,80,40,.35)'; g.fillRect(X + h * 24, Yt + H0(k, tx, id) * rh, 2.5, 1.5); } }
+    } else { // losa: hormigón con manchas, pretil, desagüe
+      for (let yy = Yt; yy < re; yy += 2) for (let xx = X; xx < X + S; xx += 2) { const h = H0(xx, yy, id); if (h < 0.2) { g.fillStyle = sh(b.roof, 0.93); g.fillRect(xx, yy, 2, 2); } else if (h > 0.9) { g.fillStyle = sh(b.roof, 1.05); g.fillRect(xx, yy, 1, 1); } }
+      g.fillStyle = sh(b.roof, 1.15); g.fillRect(X, Yt, S, 1.5); g.fillStyle = sh(b.roof, 0.85); g.fillRect(X, Yt + 1.5, S, 0.5);
+      if (tx === b.x1 - 1 && rh >= 16) { // tanque de agua
+        g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(X + 3, Yt + 5, 10, 10);
+        g.fillStyle = '#2d3d52'; g.fillRect(X + 2, Yt + 4, 9, 9); g.fillStyle = '#4f6a8a'; g.fillRect(X + 2.5, Yt + 4.5, 8, 3); g.fillStyle = '#7f9aba'; g.fillRect(X + 3, Yt + 5, 3, 1);
+        g.fillStyle = '#1c2838'; g.beginPath(); g.arc(X + 6.5, Yt + 9.5, 1.6, 0, 7); g.fill();
+      }
+      if (tx === b.x0 + 1 && rh >= 14 && v(2) < 0.5) { // aire acondicionado en el techo
+        g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(X + 3, Yt + 6, 8, 6); g.fillStyle = '#d8d8d2'; g.fillRect(X + 2, Yt + 5, 8, 6); g.fillStyle = '#9a9a96'; g.beginPath(); g.arc(X + 6, Yt + 8, 2.2, 0, 7); g.fill(); g.fillStyle = '#5a5a58'; g.fillRect(X + 4, Yt + 7.75, 4, 0.5); g.fillRect(X + 5.75, Yt + 6, 0.5, 4);
       }
     }
-    g.fillStyle = sh(b.roof, 1.18); g.fillRect(X, Yt, S, 1);
+    g.fillStyle = sh(b.roof, 1.2); g.fillRect(X, Yt, S, 0.5);
     for (let t = ty0; t < ty1; t++) {
       const y0 = t * S, y1 = Math.min(re, y0 + S); if (y1 <= y0) break;
       const l = L(t), r = R(t);
-      if (l !== id) { g.fillStyle = l ? sh(b.roof, 0.5) : sh(b.roof, 1.18); g.fillRect(X, y0, 1, y1 - y0); }
-      if (r !== id) { g.fillStyle = sh(b.roof, 0.62); g.fillRect(X + S - 1, y0, 1, y1 - y0); }
+      if (l !== id) { g.fillStyle = l ? sh(b.roof, 0.5) : sh(b.roof, 1.22); g.fillRect(X, y0, 1, y1 - y0); }
+      if (r !== id) { g.fillStyle = sh(b.roof, 0.6); g.fillRect(X + S - 1, y0, 1, y1 - y0); }
     }
-    g.fillStyle = sh(b.roof, 0.62); g.fillRect(X, re - 2, S, 2);
+    // alero / canaleta sobre la fachada
+    g.fillStyle = sh(b.roof, 0.55); g.fillRect(X, re - 2, S, 1); g.fillStyle = sh(b.roof, 0.78); g.fillRect(X, re - 1, S, 0.5); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(X, re - 0.5, S, 0.5);
   }
-  // fachada
+  // ---- fachada ----
   const fy = Math.max(Yt, re);
   g.fillStyle = sh(b.wall, 1); g.fillRect(X, fy, S, Yb - fy);
-  g.fillStyle = sh(b.wall, 0.8); g.fillRect(X, fy, S, 2);
-  g.fillStyle = sh(b.wall, 0.55); g.fillRect(X, Yb - 1, S, 1);
+  for (let yy = fy + 1; yy < Yb; yy += 2) for (let xx = X; xx < X + S; xx += 2) if (H0(xx, yy, id + 5) < 0.12) { g.fillStyle = sh(b.wall, 0.95); g.fillRect(xx, yy, 1, 1); } // revoque
+  g.fillStyle = sh(b.wall, 0.78); g.fillRect(X, fy, S, 1.5);
+  g.fillStyle = sh(b.wall, 1.12); g.fillRect(X, fy + 1.5, S, 0.5);
   const lb = L(ty1 - 1), rb = R(ty1 - 1);
-  const glass = '#2c4258', glassHi = '#7fa3c0', bx = b.x0 * S;
-  // pisos de arriba: ventanas
+  const glass = '#2c4258', glassHi = '#7fa3c0', glassMid = '#3c5878', bx = b.x0 * S;
+  const win = (wx, wy, w, h) => { // ventana con marco, vidrio con reflejo y alféizar
+    rect(wx - 0.5, wy - 0.5, w + 1, h + 1, sh(b.wall, 0.62));
+    rect(wx, wy, w, h, glass); rect(wx, wy, w, h * 0.45, glassMid);
+    rect(wx + 1, wy + 0.5, 0.5, h * 0.5, glassHi); rect(wx + 1.5, wy + 0.5, 0.5, h * 0.25, glassHi);
+    rect(wx + w / 2 - 0.25, wy, 0.5, h, sh(b.wall, 0.75)); // hoja
+    rect(wx - 1, wy + h + 0.5, w + 2, 1, sh(b.wall, 1.18)); rect(wx - 1, wy + h + 1.5, w + 2, 0.5, sh(b.wall, 0.6));
+  };
+  // pisos de arriba: ventanas (y algún balcón)
   for (let f = b.floors - 1; f >= 1; f--) {
     const wy = fy + 4 + (b.floors - 1 - f) * 14;
     if (wy + 8 > Yb - 15) continue;
+    const balc = v(10 + f) < 0.25;
     for (let wx = bx + 4; wx < X + S; wx += 11) {
       if (wx + 6 <= X) continue;
-      rect(wx, wy, 6, 7, glass); rect(wx + 1, wy + 1, 1, 2, glassHi); rect(wx - 1, wy + 7, 8, 1, sh(b.wall, 1.15));
+      win(wx, wy, 6, 7);
+      if (balc) { rect(wx - 1.5, wy + 7, 9, 2, sh(b.wall, 0.8)); for (let k = 0; k < 9; k += 1.5) rect(wx - 1.5 + k, wy + 3.5, 0.5, 3.5, '#2a2a30'); rect(wx - 1.5, wy + 3.5, 9, 0.5, '#2a2a30'); }
+      else if (v(20 + f) < 0.35 && ((wx / 11) | 0) % 3 === 1) { rect(wx + 0.5, wy + 7.5, 5, 3, '#e6e6e0'); rect(wx + 1, wy + 8, 4, 0.5, '#9a9a96'); rect(wx + 1, wy + 9, 4, 0.5, '#9a9a96'); } // aire acondicionado
     }
   }
   // planta baja
@@ -1301,27 +1331,42 @@ VR.drawBuildingColumn = (g, world, tx, ty0, ty1, id) => {
   if (gy >= fy + 1) {
     if (b.shop) {
       const a = X + (lb === id ? 0 : 3), z = X + S - (rb === id ? 0 : 3);
+      const half = v(30) < 0.3; // persiana a medio subir
       g.fillStyle = glass; g.fillRect(a, gy + 4, z - a, 10);
-      g.fillStyle = glassHi; for (let x = a; x < z; x++) if (x % 9 === 2) g.fillRect(x, gy + 5, 1, 3);
+      g.fillStyle = glassMid; g.fillRect(a, gy + 4, z - a, 4);
+      g.fillStyle = glassHi; for (let x = a; x < z; x += 0.5) if ((x * 2 | 0) % 18 === 4) { g.fillRect(x, gy + 5, 0.5, 4); g.fillRect(x + 1, gy + 5, 0.5, 2); }
+      // mercadería en la vidriera
+      for (let x = a + 1; x < z - 1; x += 2) { const h = H0(x * 2 | 0, ty1, id); if (h < 0.45) { g.fillStyle = ['#c84a3a', '#e8c040', '#4a8ac8', '#e8e4dc', '#6aa84a'][(h * 11 | 0) % 5]; g.fillRect(x, gy + 10.5 - h * 4, 1.5, 3 + h * 4); } }
+      if (half) { g.fillStyle = '#9a9ca0'; g.fillRect(a, gy + 4, z - a, 5); g.fillStyle = '#7a7c80'; for (let y = gy + 4.5; y < gy + 9; y += 1) g.fillRect(a, y, z - a, 0.5); }
       g.fillStyle = sh(b.wall, 0.7); for (let x = a; x < z; x++) if (x % 12 === 0) g.fillRect(x, gy + 4, 1, 10);
-      for (let x = X + (lb === id ? 0 : 1); x < X + S - (rb === id ? 0 : 1); x++) { g.fillStyle = ((x >> 2) & 1) ? '#f1ece0' : b.awning; g.fillRect(x, gy, 1, 4); }
-      g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(a, gy + 4, z - a, 1);
+      // toldo a rayas con festón
+      for (let x = X + (lb === id ? 0 : 1); x < X + S - (rb === id ? 0 : 1); x += 0.5) {
+        const st = ((x / 2) | 0) & 1; g.fillStyle = st ? '#f1ece0' : b.awning; g.fillRect(x, gy - 0.5, 0.5, 4);
+        if (((x * 2) | 0) % 4 < 2) { g.fillStyle = st ? '#d8d2c4' : sh([parseInt(b.awning.slice(1, 3), 16), parseInt(b.awning.slice(3, 5), 16), parseInt(b.awning.slice(5, 7), 16)], 0.8); g.fillRect(x, gy + 3.5, 0.5, 1); }
+      }
+      g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(X, gy - 0.5, S, 0.5);
+      g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(a, gy + 4.5, z - a, 1);
     } else {
       const doorHere = tx === b.door, dx = X + 4;
       if (doorHere) {
-        g.fillStyle = '#5a3720'; g.fillRect(dx, gy + 2, 8, 12); g.fillStyle = '#7a4d2c'; g.fillRect(dx + 1, gy + 3, 6, 11);
-        g.fillStyle = '#e0c060'; g.fillRect(dx + 5, gy + 8, 1, 1);
+        g.fillStyle = sh(b.wall, 0.6); g.fillRect(dx - 1, gy + 1, 10, 13);
+        g.fillStyle = '#5a3720'; g.fillRect(dx, gy + 2, 8, 12); g.fillStyle = '#7a4d2c'; g.fillRect(dx + 0.5, gy + 2.5, 7, 11.5);
+        g.fillStyle = '#6a4226'; g.fillRect(dx + 1.5, gy + 3.5, 2, 4); g.fillRect(dx + 4.5, gy + 3.5, 2, 4); g.fillRect(dx + 1.5, gy + 9, 2, 4); g.fillRect(dx + 4.5, gy + 9, 2, 4); // tableros
+        g.fillStyle = '#e0c060'; g.fillRect(dx + 6, gy + 8, 1, 1); g.fillStyle = sh(b.wall, 1.15); g.fillRect(dx - 1, gy + 14, 10, 1); // picaporte y umbral
       }
       for (let wx = bx + 4; wx < X + S; wx += 11) {
         if (wx + 6 <= X || (doorHere && wx + 6 > dx - 1 && wx < dx + 9)) continue;
-        rect(wx, gy + 4, 6, 6, glass); rect(wx + 1, gy + 5, 1, 2, glassHi);
-        for (let k = 0; k < 6; k += 2) rect(wx + k, gy + 4, 1, 6, '#3b3b40'); // rejas
+        win(wx, gy + 4, 6, 6);
+        for (let k = 0.5; k < 6; k += 1.5) rect(wx + k, gy + 3.5, 0.5, 7, '#2a2a30'); // rejas
+        rect(wx - 0.5, gy + 3.5, 7, 0.5, '#2a2a30'); rect(wx - 0.5, gy + 6.5, 7, 0.5, '#2a2a30');
       }
     }
   }
-  // bordes y medianeras
+  // zócalo, medianeras y sombra al pie
+  g.fillStyle = sh(b.wall, 0.72); g.fillRect(X, Yb - 1.5, S, 1); g.fillStyle = sh(b.wall, 0.5); g.fillRect(X, Yb - 0.5, S, 0.5);
   if (rb !== id) { g.fillStyle = sh(b.wall, 0.62); g.fillRect(X + S - 1, fy, 1, Yb - fy); }
   if (lb && lb !== id) { g.fillStyle = sh(b.wall, 0.5); g.fillRect(X, fy, 1, Yb - fy); }
+  else if (!lb) { g.fillStyle = sh(b.wall, 1.12); g.fillRect(X, fy, 0.5, Yb - fy); }
 };
 
 // ---------- maceta vista desde arriba (en unidades del mundo, con detalle de medio píxel) ----------
@@ -1437,6 +1482,33 @@ VR.decorOver = {
     for (let x = X + 1; x < X + W; x += 4) { g.fillStyle = '#f4efe6'; g.fillRect(x, Y + 9, 2, 1); } // flecos
     g.fillStyle = '#3a3a44'; g.fillRect(mid - 9, Y + 1, 18, 7); g.fillStyle = '#ffd9ea'; g.fillRect(mid - 7, Y + 3, 14, 1); g.fillRect(mid - 5, Y + 5, 10, 1); // cartel chico
     g.fillStyle = '#7a3a52'; g.fillRect(mid - 8, Y - 4, 16, 3); g.fillStyle = '#c8607e'; g.fillRect(mid - 8, Y - 4, 16, 1); // alfombra de la entrada
+  },
+  arcos(g, d) { // Mcal. López, lado norte (video de Leandro): edificio gris carbón con arcos altos y una puerta roja
+    const S = VR.TILE, X0 = d.x * S, X1 = (d.x + d.w) * S, Yb = (d.y + 1) * S, top = Yb - 33;
+    g.fillStyle = '#404048'; g.fillRect(X0, top, X1 - X0, Yb - top);                                          // la fachada entera, lisa
+    for (let yy = top + 2; yy < Yb; yy += 2) for (let xx = X0; xx < X1; xx += 2) if (VR.hash(xx, yy, 71) < 0.1) { g.fillStyle = '#46464e'; g.fillRect(xx, yy, 1, 1); }
+    g.fillStyle = '#4a4a52'; g.fillRect(X0, top, X1 - X0, 2); g.fillStyle = '#76767e'; g.fillRect(X0, top, X1 - X0, 0.5); // cornisa
+    const n = Math.max(2, Math.floor((X1 - X0 - 4) / 13)), step = (X1 - X0) / n;
+    for (let i = 0; i < n; i++) {
+      const cx = X0 + step * (i + 0.5), w = Math.min(9, step - 4), x = cx - w / 2, y0 = top + 4, r = w / 2;
+      g.fillStyle = '#5a5a62'; g.beginPath(); g.moveTo(x - 1, Yb - 1); g.lineTo(x - 1, y0 + r); g.arc(cx, y0 + r, r + 1, Math.PI, 0); g.lineTo(x + w + 1, Yb - 1); g.closePath(); g.fill(); // marco
+      const red = i === Math.floor(n * 0.6);
+      g.fillStyle = red ? '#a8302c' : '#24242a'; g.beginPath(); g.moveTo(x, Yb - 1); g.lineTo(x, y0 + r); g.arc(cx, y0 + r, r, Math.PI, 0); g.lineTo(x + w, Yb - 1); g.closePath(); g.fill();
+      if (red) { g.fillStyle = '#c84a42'; g.fillRect(x + 0.5, y0 + r, 1, Yb - y0 - r - 2); g.fillStyle = '#e0c060'; g.fillRect(cx + 1.5, Yb - 9, 1, 1); }
+      else { g.fillStyle = '#34343c'; for (let k = 1; k < w; k += 1.5) g.fillRect(x + k, y0 + r + 1, 0.5, Yb - y0 - r - 3); g.fillStyle = '#44444c'; g.fillRect(x, y0 + r + 6, w, 0.5); } // persianas de hierro
+    }
+    g.fillStyle = '#3a3a40'; g.fillRect(X0, Yb - 1.5, X1 - X0, 1.5);
+  },
+  pilastras(g, d) { // Mcal. López, lado sur: locales blancos con pilastras de piedra y marquesinas negras (miran al norte)
+    const S = VR.TILE, X0 = d.x * S, X1 = (d.x + d.w) * S, Y = (d.y + 1) * S;
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(X0, Y - 2, X1 - X0, 2);
+    g.fillStyle = '#f4f2ec'; g.fillRect(X0, Y, X1 - X0, 3); g.fillStyle = '#d8d4cc'; g.fillRect(X0, Y + 2.5, X1 - X0, 0.5);       // pretil blanco
+    for (let x = X0 + 1; x < X1 - 1; x += 11) { g.fillStyle = '#8a6a4c'; g.fillRect(x, Y - 1, 3, 4.5); g.fillStyle = '#a8866a'; g.fillRect(x, Y - 1, 3, 1); g.fillStyle = '#6a5038'; g.fillRect(x + 2.5, Y - 1, 0.5, 4.5); } // pilastras de piedra
+    for (let x = X0 + 6.5; x < X1 - 8; x += 22) { // marquesinas negras curvas sobre las puertas
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(x + 4.5, Y - 1, 5, 3.5, 0, Math.PI, 0); g.fill();
+      g.fillStyle = '#1c1c22'; g.beginPath(); g.ellipse(x + 4, Y - 0.5, 4.5, 4, 0, Math.PI, 0); g.fill();
+      g.fillStyle = '#3a3a44'; g.beginPath(); g.ellipse(x + 4, Y - 0.5, 3.5, 3, 0, Math.PI, Math.PI * 1.5); g.fill();
+    }
   },
   mesas(g, d) { // mesitas de madera y macetas en la vereda, frente al café
     const S = VR.TILE, X = d.x * S, Y = d.y * S + 3;
@@ -1560,6 +1632,34 @@ VR.decorTop = {
         }
       }
     } }];
+  },
+  pilastras(d) { // arbustos en macetas junto a las vidrieras y un cartel colgante azul (sin texto)
+    const S = VR.TILE, X0 = d.x * S, X1 = (d.x + d.w) * S, Y = (d.y + 1) * S;
+    const parts = [];
+    for (let x = X0 + 14; x < X1 - 8; x += 22) parts.push({ sy: Y - 1, draw(g) { VR.drawPot(g, x, Y - 9, 0, 0.3); } });
+    if (d.n === 3) { const px = X0 + (X1 - X0) * 0.4; parts.push({ sy: Y + 1, draw(g) {
+      g.fillStyle = '#2a2a30'; g.fillRect(px, Y - 26, 1, 26); g.fillRect(px - 6, Y - 26, 7, 1);
+      g.fillStyle = '#1a1a1e'; g.fillRect(px - 7, Y - 25, 7, 16); g.fillStyle = '#2a4aa8'; g.fillRect(px - 6.5, Y - 24.5, 6, 15); g.fillStyle = '#e8c040'; g.fillRect(px - 5.5, Y - 21, 4, 1); g.fillRect(px - 5.5, Y - 15, 4, 1); g.fillStyle = '#5a7ad8'; g.fillRect(px - 6.5, Y - 24.5, 6, 1.5);
+    } }); }
+    return parts;
+  },
+  topiarios(d) { // frente a la financiera: arbolitos podados en bola, en macetas negras, y tachos de basura negros
+    const S = VR.TILE, X0 = d.x * S, X1 = (d.x + d.w) * S, Y = (d.y + 1) * S - 2, parts = [];
+    let k = 0; const n = Math.min(7, Math.floor((X1 - X0 - 12) / 24)), start = X0 + 10;
+    for (let x = start; k < n; x += 24, k++) {
+      const tree = k % 2 === 0, cx = x;
+      parts.push({ sy: Y, draw(g) {
+        g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(cx + 1.5, Y + 0.5, 4, 1.5, 0, 0, 7); g.fill();
+        if (tree) {
+          g.fillStyle = '#1a1a1e'; g.fillRect(cx - 3, Y - 6, 6, 6.5); g.fillStyle = '#34343c'; g.fillRect(cx - 3, Y - 6, 6, 1.5); // maceta
+          g.fillStyle = '#5a3a20'; g.fillRect(cx - 0.5, Y - 13, 1, 7);                                                        // tronquito
+          for (const [r, col, ox, oy] of [[5, '#1f4a22', 0.5, 0.5], [4.5, '#2f6a30', 0, 0], [2.5, '#4f9a48', -1.3, -1.3], [1, '#7cc070', -2, -2]]) { g.fillStyle = col; g.beginPath(); g.arc(cx + ox, Y - 17 + oy, r, 0, 7); g.fill(); }
+        } else { // tacho de basura
+          g.fillStyle = '#121216'; g.fillRect(cx - 2.5, Y - 9, 5, 9.5); g.fillStyle = '#2c2c34'; g.fillRect(cx - 2.5, Y - 9, 5, 1.5); g.fillStyle = '#3c3c46'; g.fillRect(cx - 2, Y - 7, 1, 6);
+        }
+      } });
+    }
+    return parts;
   },
   banco(d) { // banco de plaza (05/11/2026): tablas pintadas de verde, hierro negro; la gente sentada la pone VR.Peds
     const S = VR.TILE, X = d.x * S, Y = d.y * S;
@@ -3072,6 +3172,15 @@ VR.parkCars = (world, n, near) => {
         }
       }
     }
+  }
+
+  // Filas pedidas por el mapa (05/11/2026): Mcal. López al oeste de Coronel Bogado, autos en fila contra el
+  // cordón sur mirando al oeste, como en el video de Leandro
+  for (const d of world.decals || []) {
+    if (d.kind !== 'fila') continue;
+    const y = (d.y + 1) * S - 8, x0 = d.x * S + 30, x1 = (d.x + d.w) * S - 30;
+    for (let px = x1; px >= x0; px -= 52) if (rnd() < 0.85) add(px, y, d.dir === 'o' ? -Math.PI / 2 : Math.PI / 2, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+    (world.parkingDemo = world.parkingDemo || []).push({ x0: d.x * S, x1: (d.x + d.w) * S, y0: d.y * S - 40, y1: (d.y + 1) * S });
   }
 
   // Lugar para estacionar (04/11/2026, menos y mejor repartidos): solo en calles de 5 baldosas (10 m) o más,

@@ -714,6 +714,50 @@ def main(src, out, preview=None):
             if vec and vec != ne: setb(vec, 2, 8, 0, 0)
         print('esquina noroeste:', ' '.join(done))
 
+        # ---------- Mcal. López al oeste de Coronel Bogado (video de Leandro, 04/11/2026; reenviado el 05/11) ----------
+        # Mirando al oeste desde el banco: del lado norte, un edificio gris oscuro con arcos altos (y puerta roja);
+        # del lado sur, después de la financiera (que tiene arbolitos en macetas y tachos negros en la vereda), una
+        # fila de locales blancos de 2 pisos con pilastras de piedra marrón, marquesinas negras curvas sobre las
+        # puertas, vidrieras con maniquíes y plantas. Autos estacionados en fila contra el cordón sur.
+        def row_ids(y, xa, xb):
+            out = []
+            for x in range(xa, xb, -1):
+                b_ = int(bid[y, x]) if 0 <= x < W else 0
+                if b_ and (not out or out[-1][0] != b_):
+                    out.append([b_, x, x])
+                elif b_ and out:
+                    out[-1][2] = x
+            return out
+        if no and so:
+            nx0, nx1, ny0, ny1 = bbox(no)
+            north = [r for r in row_ids(ny1, nx0 - 1, nx0 - 45) if r[0] != no]
+            sx0, sx1, sy0, sy1 = bbox(so)
+            south = [r for r in row_ids(sy0, sx0 - 1, sx0 - 45) if r[0] not in (so, lila)]
+            print('Mcal. López oeste, norte:', [(r[0], r[2], r[1]) for r in north[:6]], 'sur:', [(r[0], r[2], r[1]) for r in south[:8]])
+            # norte: el primer edificio grande al oeste del banco es el gris oscuro con arcos
+            for r in north[:2]:
+                a0, a1, b0, b1 = bbox(r[0])
+                if a1 - a0 < 4: continue
+                setb(r[0], 2, 14, 0, 0)
+                decals.append({'kind': 'arcos', 'x': a0, 'y': b1, 'w': a1 - a0 + 1, 'h': 1})
+                print('  arcos: edificio %d, x %d-%d, y %d-%d' % (r[0], a0, a1, b0, b1))
+                break
+            # sur: locales blancos con pilastras marrones hasta ~40 m al oeste de la financiera
+            ls = []
+            for r in south:
+                a0, a1, b0, b1 = bbox(r[0])
+                if sx0 - a1 > 22: break
+                setb(r[0], 2, 8, 0, 0); ls.append((a0, a1, b0))
+                decals.append({'kind': 'pilastras', 'x': a0, 'y': b0 - 1, 'w': a1 - a0 + 1, 'h': 1, 'n': len(ls)})
+            # financiera: arbolitos en macetas y tachos negros sobre Mcal. López
+            decals.append({'kind': 'topiarios', 'x': sx0, 'y': sy0 - 1, 'w': sx1 - sx0 + 1, 'h': 1})
+            # autos en fila contra el cordón sur, desde la esquina hasta el final de los locales
+            xs_end = min([l[0] for l in ls] + [sx0])
+            curb_y = sy0 - 1
+            while curb_y > 0 and tiles[curb_y, sx0] in (SIDEWALK, CHECKER): curb_y -= 1
+            decals.append({'kind': 'fila', 'x': int(xs_end), 'y': int(curb_y), 'w': int(sx1 - xs_end - 2), 'h': 1, 'dir': 'o'})
+            print('Mcal. López oeste: arcos al norte, %d locales al sur, fila de autos en y=%d' % (len(ls), curb_y))
+
         # ---------- tienda de ropa: esquina sudoeste, del otro lado de la calle sur (Leandro, 05/11/2026) ----------
         # Nombre inventado ("Ao Porã": ropa linda). Es el primer edificio al sur de la calle sur de la plaza, en la
         # esquina con Coronel Bogado; mira al norte (a la plaza), así que su frente se ve como toldo y vidriera sobre
