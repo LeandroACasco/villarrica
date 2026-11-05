@@ -287,7 +287,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión ed5e1eb0 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d64e0bad · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -5498,7 +5498,7 @@ VR.Weapons = class {
 'use strict';
 // Cartelera de salas (Firestore por su API web, sin librería). Proyecto de Firebase propio de Villarrica:
 // completar con los datos de la consola (Configuración del proyecto → Tus apps → web). Sin datos, solo con código.
-VR.FB = null; // { projectId: 'villarrica-…', apiKey: 'AIza…' }
+VR.FB = { projectId: 'villarrica-juego', apiKey: 'AIzaSyD3JaREpx9D26GGQu1U1IrbxQV-jmcRgIA' }; // proyecto de Firebase propio de Villarrica
 VR.Salas = {
   url(id) { const f = VR.FB; return 'https://firestore.googleapis.com/v1/projects/' + f.projectId + '/databases/(default)/documents/villarrica_salas' + (id ? '/' + encodeURIComponent(id) : '') + '?key=' + f.apiKey; },
   async put(room, nick, n) { if (!VR.FB) return; try { await fetch(this.url(room), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { n: { stringValue: room }, h: { stringValue: nick }, j: { integerValue: String(n) }, at: { integerValue: String(Date.now()) } } }) }); } catch (e) {} },

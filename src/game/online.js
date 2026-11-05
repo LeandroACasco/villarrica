@@ -7,7 +7,7 @@
 'use strict';
 // Cartelera de salas (Firestore por su API web, sin librería). Proyecto de Firebase propio de Villarrica:
 // completar con los datos de la consola (Configuración del proyecto → Tus apps → web). Sin datos, solo con código.
-VR.FB = null; // { projectId: 'villarrica-…', apiKey: 'AIza…' }
+VR.FB = { projectId: 'villarrica-juego', apiKey: 'AIzaSyD3JaREpx9D26GGQu1U1IrbxQV-jmcRgIA' }; // proyecto de Firebase propio de Villarrica
 VR.Salas = {
   url(id) { const f = VR.FB; return 'https://firestore.googleapis.com/v1/projects/' + f.projectId + '/databases/(default)/documents/villarrica_salas' + (id ? '/' + encodeURIComponent(id) : '') + '?key=' + f.apiKey; },
   async put(room, nick, n) { if (!VR.FB) return; try { await fetch(this.url(room), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { n: { stringValue: room }, h: { stringValue: nick }, j: { integerValue: String(n) }, at: { integerValue: String(Date.now()) } } }) }); } catch (e) {} },
