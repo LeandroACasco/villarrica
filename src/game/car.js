@@ -152,14 +152,18 @@ VR.drawPati = (pal, t = {}) => VR.vbase(6, 14, (T) => { // manubrio en T, tabla 
   T.rr(2.2, 12, 1.6, 0.6, 0.3, '#e8302a');
 });
 // Conductor visto desde arriba (10×20 unidades): casco o pelo, hombros con sombra, brazos al manubrio, rodillas.
-VR.drawRiderBase = (shirt, head) => VR.vbase(10, 20, (T) => {
-  const helmet = head !== '#2a1b12';
-  T.line(2, 9, 1, 5.4, 1.4, shirt[1]); T.line(8, 9, 9, 5.4, 1.4, shirt[1]);              // brazos
-  T.ell(1, 5.1, 0.6, 0.6, '#a76c42'); T.ell(9, 5.1, 0.6, 0.6, '#a76c42');                // manos
-  T.ell(2.6, 12.6, 1.1, 1.6, '#2c3e6b'); T.ell(7.4, 12.6, 1.1, 1.6, '#2c3e6b');          // rodillas
+// o (05/11/2026): colores del personaje que maneja (piel, pantalón, pelo o gorra), así el jugador se ve como el
+// personaje que eligió o se armó en la tienda.
+VR.drawRiderBase = (shirt, head, o = {}) => VR.vbase(10, 20, (T) => {
+  const helmet = o.helmet !== undefined ? o.helmet : head !== '#2a1b12', skin = o.skin || '#a76c42', pants = o.pants || '#2c3e6b';
+  T.line(2, 9, 1, 5.4, 1.4, o.sleeves === false ? skin : shirt[1]); T.line(8, 9, 9, 5.4, 1.4, o.sleeves === false ? skin : shirt[1]); // brazos
+  T.ell(1, 5.1, 0.6, 0.6, skin); T.ell(9, 5.1, 0.6, 0.6, skin);                          // manos
+  T.ell(2.6, 12.6, 1.1, 1.6, pants); T.ell(7.4, 12.6, 1.1, 1.6, pants);                  // rodillas
+  if (o.long) T.rr(2.2, 6.8, 5.6, 4.6, 1.6, VR.shadeHex(head, 0.85));                    // pelo largo sobre la espalda
   T.rr(1.4, 7.4, 7.2, 5.4, 2.4, T.hg(1.4, 8.6, [VR.shadeHex(shirt[0], 1.2), shirt[0], shirt[1]])); // espalda
   T.ell(5, 7, helmet ? 2.2 : 1.9, helmet ? 2.3 : 2, T.hg(3, 7, [VR.shadeHex(head, 1.4), head, VR.shadeHex(head, 0.7)])); // cabeza
   if (helmet) T.rr(3.6, 5, 2.8, 0.8, 0.4, '#1e2430'); else T.ell(4.4, 6.2, 0.6, 0.4, 'rgba(255,255,255,.18)');
+  if (o.cap) T.rr(3.4, 3.6, 3.2, 1.6, 0.6, VR.shadeHex(head, 0.7));                       // visera
 });
 
 // Rota un sprite a 64 ángulos. Los dibujos suaves (VR.vbase) se rotan grandes con suavizado, se contornean y
@@ -256,10 +260,10 @@ VR.vframes = (() => {
 })();
 VR.riderFrames = (() => {
   const cache = new Map();
-  return (shirt, head) => {
-    const key = shirt.join() + head;
+  return (shirt, head, o) => {
+    const key = shirt.join() + head + (o ? JSON.stringify(o) : '');
     let f = cache.get(key);
-    if (!f) { f = VR.rotFrames(VR.drawRiderBase(shirt, head), Math.round(24 * VR.VK) + 2); cache.set(key, f); }
+    if (!f) { f = VR.rotFrames(VR.drawRiderBase(shirt, head, o), Math.round(24 * VR.VK) + 2); cache.set(key, f); }
     return f;
   };
 })();
@@ -462,8 +466,11 @@ VR.Car = class {
     if (this.tune && this.tune.neon !== 'no' && (this.driven || this.ai)) VR.drawNeon(ctx, x, y, a, this.LEN, this.WID, VR.NEON[this.tune.neon], VR.night ? 0.35 + VR.night.level * 0.65 : 0.4);
     ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
     ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
-    if (this.rider) {
-      const R = VR.riderFrames(this.rider.shirt, this.rider.head), rh = R.S >> 1;
+    if (this.rider && this.rider.look) { // el personaje de verdad (avatar 2), sentado en la moto, mirando hacia donde va
+      const ro = this.spec.riderOff || 0, q = ((Math.round(a / (Math.PI / 2)) % 4) + 4) % 4, dir = ['up', 'right', 'down', 'left'][q];
+      ctx.drawImage(this.rider.look.get(dir, 'sit', 0), x - 8 + shake + Math.round(Math.sin(a) * ro), y - 24 - Math.round(Math.cos(a) * ro), 16, 32);
+    } else if (this.rider) {
+      const R = VR.riderFrames(this.rider.shirt, this.rider.head, this.rider.o), rh = R.S >> 1;
       const ro = this.spec.riderOff || 0;
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro), R.S, R.S);
     }

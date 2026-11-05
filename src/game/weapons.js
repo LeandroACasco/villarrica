@@ -115,6 +115,7 @@ VR.Weapons = class {
   }
   scare(x, y, r, kind) {
     if (!this.peds || (this.scareT || 0) > this.t) return; this.scareT = this.t + 0.3;
+    this.peds.scatter(x, y, r * 1.3);
     for (const p of this.peds.list) {
       if (p.mode === 'down' || p.mode === 'flee' && p.t > 0.5) continue;
       if (Math.hypot(p.x - x, p.y - y) > r) continue;

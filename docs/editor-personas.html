@@ -130,6 +130,15 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
   const T = VR.AV2_TUNE;
   VR.AV2_DEFAULT = { gender: 'm', skin: 2, build: 'normal', hair: 'corto', hairColor: 1, beard: 'no', top: 'remera', topColor: 0, topColor2: 1, bottom: 'jean', bottomColor: 0,
     shoes: 'zapatillas', shoesColor: 1, hat: 'ninguno', hatColor: 3, lentes: false, anteojos: false, mochila: false, termo: false, reloj: false, cadenita: false, packColor: 4, print: false };
+  // colores del conductor de la moto para un look (05/11/2026): remera, pelo o gorra, piel, pantalón
+  VR.av2Rider = (L) => {
+    L = Object.assign({}, VR.AV2_DEFAULT, L);
+    const top = L.top === 'top' ? CAT.skin[L.skin] : CAT.cloth[L.topColor], hair = CAT.hairColor[L.hairColor];
+    const cap = L.hat !== 'ninguno' && L.hat !== 'casco', head = L.hat === 'piri' ? '#d8b870' : cap ? CAT.cloth[L.hatColor] : L.hair === 'pelado' ? CAT.skin[L.skin] : hair;
+    const pants = (L.bottom === 'jean' ? CAT.denim : CAT.cloth)[L.bottomColor % (L.bottom === 'jean' ? CAT.denim.length : CAT.cloth.length)];
+    const long = ['largo', 'ondulado', 'onduladoFlequillo', 'trenza', 'medio'].includes(L.hair) && !cap;
+    return { shirt: [top, SH(top, 0.72)], head, o: { helmet: false, skin: CAT.skin[L.skin], pants: L.bottom === 'pollera' || L.bottom.includes('hort') ? CAT.skin[L.skin] : pants, cap, long, sleeves: !(L.top === 'musculosa' || L.top === 'top') } };
+  };
   VR.av2Price = (L) => {
     let t = CAT.hair[L.hair][1] + CAT.top[L.top][1] + CAT.bottom[L.bottom][1] + CAT.shoes[L.shoes][1] + CAT.hat[L.hat][1];
     for (const k in CAT.extra) if (L[k]) t += CAT.extra[k][1];

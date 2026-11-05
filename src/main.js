@@ -41,13 +41,13 @@
     if (emer) emer.clear();
     toast(msg);
   }
-  const ME = { shirt: ['#d23c2c', '#9f2a20'], head: '#2a1b12' }; // así se ve el jugador arriba de la moto
+  const me = () => Object.assign(VR.av2Rider(player.lookData), { look: player.sprites }); // así se ve el jugador arriba de la moto: su personaje (05/11/2026)
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];
     if (!c || c.type !== (sc.type || 'car') || (sc.model && c.model !== sc.model)) { c = new VR.Car(world, sc.x, sc.y, sc.a, sc.color || 0, sc.type || 'car', sc.model, sc.tune || null); cars.push(c); }
     world.removeBox(c); c.x = c.px = sc.x; c.y = c.py = sc.y; c.a = c.pa = sc.a; world.addBox(c);
-    if (sc.in && c.type === 'moto') c.rider = ME;
+    if (sc.in && c.type === 'moto') c.rider = me();
     if (sc.in) { car = c; c.driven = true; player.x = player.px = c.x; player.y = player.py = c.y; VR.screen.setBase(DRIVE_BASE); setTimeout(() => driveLabels(true)); }
   }
   const LABELS = { action: [['✋', 'ACCIÓN'], ['📯', 'BOCINA']], run: [['»', 'CORRER'], ['⏹', 'FRENO']], car: [['🚗', 'AUTO'], ['🚪', 'BAJAR']] };
@@ -66,7 +66,7 @@
   function enterCar(c) {
     if (emer) emer.stolen(c);
     if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : '🚗 ¡Te llevaste el auto!'); }
-    if (c.type === 'moto') c.rider = ME;
+    if (c.type === 'moto') c.rider = me();
     car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
   }
@@ -92,7 +92,7 @@
   const nearShop = () => shopDoor && !car && Math.abs(player.x - shopDoor.x) < 26 && player.y > shopDoor.y - 30 && player.y < shopDoor.y + 4 ? shopDoor : null;
   const shop = new VR.Shop({
     onClose: () => { VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; },
-    onBuy: (L, tot) => { settings.pj = 'propio'; VR.store.set('pj', 'propio'); player.setLook('propio'); paintPj(); toast(tot ? '🛍 ¡Aguyje! Pagaste ' + VR.fmtGs(tot) : '👕 Listo, te cambiaste'); },
+    onBuy: (L, tot) => { settings.pj = 'propio'; VR.store.set('pj', 'propio'); player.setLook('propio'); if (car && car.rider) car.rider = me(); paintPj(); toast(tot ? '🛍 ¡Aguyje! Pagaste ' + VR.fmtGs(tot) : '👕 Listo, te cambiaste'); },
   });
   function openShop() { VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; shop.open(player.lookData); }
   VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()); };
@@ -266,7 +266,7 @@
   };
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
-  const paintPj = seg('segPj', 'pj', () => player.setLook(settings.pj));
+  const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
   $('optSnd').checked = emer ? emer.sound : true; $('optSnd').onchange = (e) => { if (emer) emer.sound = e.target.checked; VR.audio.setOn(e.target.checked); VR.store.set('snd', e.target.checked); };

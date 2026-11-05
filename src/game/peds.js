@@ -25,6 +25,7 @@ VR.Peds = class {
       for (let i = 0; i < n; i++) {
         const L = VR.av2Random(SR); L.termo = SR() < 0.35; L.mochila = false; if (L.hat === 'casco') L.hat = 'ninguno';
         const o = n === 2 ? (i ? 3.5 : -3.5) : 0;
+        L.sitIdx = this.sitters.length;
         if (d.fa !== undefined) { // banco girado: la persona mira hacia donde mira el banco
           const fx = Math.cos(d.fa), fy = Math.sin(d.fa), tx = -fy, ty = fx;
           const dir = fy > 0.3 ? 'down' : fy < -0.75 ? 'up' : fx > 0 ? 'right' : 'left';
@@ -73,7 +74,22 @@ VR.Peds = class {
     if (best) { best.mode = 'idle'; best.t = 2.5; best.vx = best.vy = 0; best.dir = Math.abs(px - best.x) > Math.abs(py - best.y) ? (px > best.x ? 'right' : 'left') : (py > best.y ? 'down' : 'up'); setTimeout(() => this.talk(best, 'greet', 2.4), 500); }
     return best;
   }
+  // la gente sentada se levanta y sale corriendo (disparos, fuego, explosiones o un auto que se le viene encima);
+  // después de un rato, si estás lejos, vuelve a su banco (05/11/2026)
+  scatter(x, y, r, from) {
+    for (const s of this.sitters) {
+      if (s.gone || Math.hypot(s.x - x, s.y - y) > r) continue;
+      s.gone = true; s.goneT = 0;
+      let pal = this.sprites.indexOf(s.look); if (pal < 0) { this.sprites.push(s.look); pal = this.sprites.length - 1; }
+      const p = { x: s.x, y: s.y + 2, px: s.x, py: s.y + 2, dir: s.dir, vx: 0, vy: 0, anim: 0, mode: 'flee', t: 3 + this.rnd() * 2, sp: 30, pal, say: null, sitter: s };
+      if (!this.free(p.x, p.y)) this.toWalkable(p);
+      this.awayFrom(p, from || { x, y }); if (this.rnd() < 0.5) this.talk(p, 'flee', 1.4);
+      this.list.push(p);
+    }
+  }
   update(dt, focus, view, car) {
+    for (const s of this.sitters) if (s.gone) { s.goneT += dt; if (s.goneT > 40 && Math.hypot(s.x - focus.x, s.y - focus.y) > 600 && !this.list.some((p) => p.sitter === s)) s.gone = false; }
+    if (car) { const sp = Math.hypot(car.vx || 0, car.vy || 0); if (sp > 45) { const ax = car.x + (car.vx / sp) * 30, ay = car.y + (car.vy / sp) * 30; for (const s of this.sitters) if (!s.gone && Math.hypot(s.x - ax, s.y - ay) < 45) this.scatter(s.x, s.y, 50, car); } }
     if (this.list.length < this.max(focus)) this.spawn(focus, view);
     for (let i = this.list.length - 1; i >= 0; i--) if (Math.hypot(this.list[i].x - focus.x, this.list[i].y - focus.y) > 900) this.list.splice(i, 1);
     const cs = car ? Math.hypot(car.vx || 0, car.vy || 0) : 0;
@@ -140,6 +156,7 @@ VR.Peds = class {
   }
   collect(camX, camY, sw, sh, al, out) {
     for (const p of this.sitters) {
+      if (p.gone) continue;
       const x = Math.round(p.x - camX), y = Math.round(p.y - camY);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: p.y + 2, draw: (ctx) => ctx.drawImage(p.look.get(p.dir, 'sit', 0), x - 8, y - 31, 16, 32) });

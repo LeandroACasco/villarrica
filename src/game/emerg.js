@@ -89,6 +89,7 @@ VR.Emergency = class {
       const k = 1 - d / 60; o.hp = (o.hp ?? 100) - 75 * k; if (o.hp <= 0 && !o.burning && !o.wreck) this.ignite(o);
       if (o.vx === undefined) { o.vx = 0; o.vy = 0; o.w = 0; } o.vx += (o.x - v.x) / (d || 1) * 160 * k / o.mass; o.vy += (o.y - v.y) / (d || 1) * 160 * k / o.mass; o.w += (this.rnd() - 0.5) * 4 * k; this.world.wake(o, 200);
     }
+    if (this.peds) this.peds.scatter(v.x, v.y, 260, v);
     if (this.peds) for (const p of this.peds.list) { const d = Math.hypot(p.x - v.x, p.y - v.y); if (d < 55 && p.mode !== 'down') { p.mode = 'down'; p.t = 2.5; p.vx = (p.x - v.x) / (d || 1) * 120; p.vy = (p.y - v.y) / (d || 1) * 120; if (d < 38) { p.injured = true; p.t = 40; this.dispatch('ambulancia', p); } } }
     if (this.player && !this.inCar && Math.hypot(this.player.x - v.x, this.player.y - v.y) < 45) this.player.say('¡Ay, Dios mío!', 1.6);
     if (v.driven) { this.onWasted(); return; }

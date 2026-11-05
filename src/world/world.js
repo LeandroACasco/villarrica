@@ -114,7 +114,7 @@ VR.World = class {
   // Índice espacial: qué árboles y decorados tocan cada chunk (con margen para sombras y copas).
   buildIndex() {
     const CH = this.CH * VR.TILE, cw = Math.ceil(this.w / this.CH), chh = Math.ceil(this.h / this.CH);
-    this.index = Array.from({ length: cw * chh }, () => ({ t: [], d: [] }));
+    this.index = Array.from({ length: cw * chh }, () => ({ t: [], d: [], r: [] }));
     const add = (list, item, px0, py0, px1, py1) => {
       for (let cy = Math.max(0, Math.floor(py0 / CH)); cy <= Math.min(chh - 1, Math.floor(py1 / CH)); cy++)
         for (let cx = Math.max(0, Math.floor(px0 / CH)); cx <= Math.min(cw - 1, Math.floor(px1 / CH)); cx++)
@@ -123,6 +123,7 @@ VR.World = class {
     const S = VR.TILE;
     for (const t of this.trees) { const cx = t.x * S + 8, cy = t.y * S - 4; add('t', t, cx - t.r - 8, cy - t.r - 8, cx + t.r + 8, cy + t.r + 12); }
     for (const d of this.decals) add('d', d, d.x * S, d.y * S, (d.x + d.w) * S, (d.y + d.h) * S);
+    for (const e of this.diag || []) { const m = e.hs + 40; add('r', e, Math.min(e.ax, e.bx) - m, Math.min(e.ay, e.by) - m, Math.max(e.ax, e.bx) + m, Math.max(e.ay, e.by) + m); }
     this.cw = cw; this.chh = chh;
   }
 
@@ -230,6 +231,8 @@ VR.World = class {
         }
       }
     }
+    // 3b) calles en diagonal (05/11/2026): las baldosas quedan escalonadas, así que encima se dibujan lisas
+    if (idx.r.length) VR.drawDiagonals(g, this, idx.r, tx0, ty0, tx1, ty1);
     // 4) sombras (sol del noroeste): árboles, y edificios hacia el este y el sur
     g.fillStyle = 'rgba(10,20,10,.28)';
     for (const t of idx.t) { g.beginPath(); g.ellipse(t.x * S + 11, t.y * S + 4, t.r, t.r * 0.7, 0, 0, Math.PI * 2); g.fill(); }
@@ -429,6 +432,106 @@ VR.drawBuildingColumn = (g, world, tx, ty0, ty1, id) => {
   if (rb !== id) { g.fillStyle = sh(b.wall, 0.62); g.fillRect(X + S - 1, fy, 1, Yb - fy); }
   if (lb && lb !== id) { g.fillStyle = sh(b.wall, 0.5); g.fillRect(X, fy, 1, Yb - fy); }
   else if (!lb) { g.fillStyle = sh(b.wall, 1.12); g.fillRect(X, fy, 0.5, Yb - fy); }
+};
+
+// ---------- calles en diagonal (Ruta 8 por Santa Lucía y otras; Leandro, 05/11/2026) ----------
+// Las baldosas de 2 m solo pueden ser horizontales o verticales: una calle en diagonal queda en escalera. Para que
+// se vea bien, cada tramo de la red de calles que va en diagonal (entre 12° y 78°) se dibuja encima, liso:
+// primero la vereda (una banda un poco más ancha que tapa los escalones), después la calzada con su piso, el
+// pedacito de las calles que llegan a cada esquina (para que la vereda no las tape) y los cordones. La colisión
+// sigue usando las baldosas.
+VR.findDiagonals = (R) => {
+  if (!R) return [];
+  const S = VR.TILE, N = R.nodes, E = R.edges, adj = new Map(), out = [];
+  const node = (i) => [N[i * 2], N[i * 2 + 1]];
+  for (let i = 0; i < E.length; i += 4) for (const n of [E[i], E[i + 1]]) { let l = adj.get(n); if (!l) adj.set(n, l = []); l.push(i); }
+  const MAIN = ['trunk', 'primary', 'secondary', 'tertiary'];
+  const info = (i) => { const k = E[i + 2] & 15, [ax, ay] = node(E[i]), [bx, by] = node(E[i + 1]); return { a: E[i], b: E[i + 1], ax, ay, bx, by, surf: E[i + 2] >> 4, hr: R.widths[k] * S / 2, sw: (R.swidths ? R.swidths[k] : 1) * S, main: MAIN.includes(R.kinds[k]) }; };
+  const isDiag = (e) => { const L = Math.hypot(e.bx - e.ax, e.by - e.ay), ang = Math.atan2(Math.abs(e.by - e.ay), Math.abs(e.bx - e.ax)) * 180 / Math.PI; return L > 24 && ang > 12 && ang < 78; };
+  for (let i = 0; i < E.length; i += 4) {
+    const e = info(i); if (!isDiag(e)) continue;
+    e.side = e.surf !== VR.T.DIRTROAD && e.sw > 0;
+    e.hs = e.hr + (e.side ? e.sw : 0) + 8;
+    e.stubs = []; e.cut = {};
+    for (const [n, px, py] of [[e.a, e.ax, e.ay], [e.b, e.bx, e.by]]) {
+      const others = (adj.get(n) || []).filter((j) => j !== i).map(info);
+      let cut = 0;
+      for (const o of others) {
+        const ox = o.a === n ? o.bx : o.ax, oy = o.a === n ? o.by : o.ay, L = Math.hypot(ox - px, oy - py) || 1, l = Math.min(L, e.hs + 20);
+        e.stubs.push({ ax: px, ay: py, bx: px + (ox - px) / L * l, by: py + (oy - py) / L * l, hr: o.hr, surf: o.surf });
+        if (others.length >= 2 || !isDiag(o)) cut = Math.max(cut, o.hr + 6);
+      }
+      e.cut[n] = cut;
+    }
+    out.push(e);
+  }
+  return out;
+};
+VR.drawDiagonals = (g, world, list, tx0, ty0, tx1, ty1) => {
+  const S = VR.TILE, T = VR.T;
+  const band = (path, ax, ay, bx, by, h, capA = true, capB = true) => {
+    const L = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / L * h, ny = (bx - ax) / L * h;
+    path.moveTo(ax + nx, ay + ny); path.lineTo(bx + nx, by + ny); path.lineTo(bx - nx, by - ny); path.lineTo(ax - nx, ay - ny); path.closePath();
+    if (capA) { path.moveTo(ax + h, ay); path.arc(ax, ay, h, 0, Math.PI * 2); }
+    if (capB) { path.moveTo(bx + h, by); path.arc(bx, by, h, 0, Math.PI * 2); }
+  };
+  const fill = (path, type) => {
+    g.save(); g.clip(path, 'nonzero');
+    for (let ty = ty0; ty < ty1; ty++) for (let tx = tx0; tx < tx1; tx++) VR.tileset.draw(g, type, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
+    g.restore();
+  };
+  // 1) veredas: en tiras cortas a cada lado; donde del otro lado hay otra calle (un cruce), esa tira no va
+  const isRd = (px, py) => { const t = world.get(Math.floor(px / S), Math.floor(py / S)); return t === T.ROAD || t === T.STONE || t === T.DIRTROAD; };
+  const side = new Path2D(); let anySide = false;
+  for (const e of list) {
+    if (!e.side) continue;
+    const L = Math.hypot(e.bx - e.ax, e.by - e.ay), ux = (e.bx - e.ax) / L, uy = (e.by - e.ay) / L, nx = -uy, ny = ux, st = 6;
+    e.ok = { '-1': [], '1': [] };
+    for (const sd of [-1, 1]) for (let t = 0; t < L; t += st) {
+      const t2 = Math.min(L, t + st + 0.5), tm = (t + t2) / 2, ox = e.ax + ux * tm + nx * sd * (e.hs - 5), oy = e.ay + uy * tm + ny * sd * (e.hs - 5);
+      const ok = !isRd(ox, oy); e.ok[sd].push(ok); if (!ok) continue;
+      const a0 = e.hr - 2, a1 = e.hs;
+      side.moveTo(e.ax + ux * t + nx * sd * a0, e.ay + uy * t + ny * sd * a0); side.lineTo(e.ax + ux * t2 + nx * sd * a0, e.ay + uy * t2 + ny * sd * a0);
+      side.lineTo(e.ax + ux * t2 + nx * sd * a1, e.ay + uy * t2 + ny * sd * a1); side.lineTo(e.ax + ux * t + nx * sd * a1, e.ay + uy * t + ny * sd * a1); side.closePath(); anySide = true;
+    }
+    for (const [n, px, py] of [[e.a, e.ax, e.ay], [e.b, e.bx, e.by]]) if (!e.cut[n]) { side.moveTo(px + e.hs, py); side.arc(px, py, e.hs, 0, Math.PI * 2); } // curva entre dos tramos en diagonal
+  }
+  if (anySide) fill(side, T.SIDEWALK);
+  // 2) calzadas (y los pedacitos de las calles que llegan), agrupadas por piso
+  const bySurf = new Map(), add = (surf, f) => { let p = bySurf.get(surf); if (!p) bySurf.set(surf, p = new Path2D()); f(p); };
+  for (const e of list) {
+    add(e.surf, (p) => band(p, e.ax, e.ay, e.bx, e.by, e.hr));
+    for (const s of e.stubs) add(s.surf, (p) => band(p, s.ax, s.ay, s.bx, s.by, s.hr, true, false));
+  }
+  for (const surf of [T.DIRTROAD, T.STONE, T.ROAD]) if (bySurf.has(surf)) fill(bySurf.get(surf), surf); // el asfalto gana en los cruces
+  // 2b) línea amarilla del medio en las rutas y avenidas de asfalto (cortada en los cruces)
+  g.save(); g.setLineDash([9, 7]); g.lineCap = 'butt'; g.strokeStyle = '#e2bf45'; g.lineWidth = 2;
+  for (const e of list) {
+    if (!e.main || e.surf !== T.ROAD) continue;
+    const L = Math.hypot(e.bx - e.ax, e.by - e.ay), ux = (e.bx - e.ax) / L, uy = (e.by - e.ay) / L, c0 = (e.cut[e.a] || 0) + 6, c1 = L - (e.cut[e.b] || 0) - 6;
+    if (c1 - c0 < 8) continue;
+    g.lineDashOffset = -((e.ax * ux + e.ay * uy + c0) % 16);
+    g.beginPath(); g.moveTo(e.ax + ux * c0, e.ay + uy * c0); g.lineTo(e.ax + ux * c1, e.ay + uy * c1); g.stroke();
+  }
+  g.restore();
+  // 3) cordones a los costados de la calzada, solo donde hay vereda de ese lado
+  g.lineCap = 'butt';
+  for (const e of list) {
+    if (!e.side || !e.ok) continue;
+    const L = Math.hypot(e.bx - e.ax, e.by - e.ay), ux = (e.bx - e.ax) / L, uy = (e.by - e.ay) / L, nx = -uy, ny = ux, st = 6;
+    const c0 = e.cut[e.a] || 0, c1 = L - (e.cut[e.b] || 0);
+    for (const sd of [-1, 1]) {
+      const okl = e.ok[sd]; let t = 0;
+      for (let k = 0; k < okl.length; k++) {
+        if (!okl[k]) continue; let k2 = k; while (k2 + 1 < okl.length && okl[k2 + 1]) k2++;
+        const t0 = Math.max(c0, k * st), t1 = Math.min(c1, (k2 + 1) * st); k = k2; if (t1 - t0 < 2) continue;
+        const o = sd * (e.hr + 0.8), x0 = e.ax + ux * t0 + nx * o, y0 = e.ay + uy * t0 + ny * o, x1 = e.ax + ux * t1 + nx * o, y1 = e.ay + uy * t1 + ny * o;
+        g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 2.2; g.beginPath(); g.moveTo(x0 - nx * sd, y0 - ny * sd + 0.6); g.lineTo(x1 - nx * sd, y1 - ny * sd + 0.6); g.stroke();
+        g.strokeStyle = '#d8d2c4'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+        g.strokeStyle = '#f6f2e8'; g.lineWidth = 0.5; g.beginPath(); g.moveTo(x0 + nx * sd * 0.5, y0 + ny * sd * 0.5); g.lineTo(x1 + nx * sd * 0.5, y1 + ny * sd * 0.5); g.stroke();
+      }
+    }
+  }
 };
 
 // ---------- maceta vista desde arriba (en unidades del mundo, con detalle de medio píxel) ----------
@@ -1029,6 +1132,7 @@ VR.loadMap = async (url) => {
   w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
   w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
   w.roads = meta.roads || null; w.special = meta.special || {};
+  w.diag = VR.findDiagonals(w.roads);
   w.buildIndex();
   return w;
 };

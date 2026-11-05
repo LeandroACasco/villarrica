@@ -1017,7 +1017,7 @@ def main(src, out, preview=None):
             blabels.append({'text': nm, 'x': int(np.median(xs)) * 4 * 16, 'y': int(np.median(ys)) * 4 * 16})
 
     # ---------- empaquetar ----------
-    roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
+    roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'swidths': [ROADS[k][1] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
     meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
             'spawn': spawn, 'nb': len(ids), 'nt': len(trees), 'bounds': [mnla, mnlo, mxla, mxlo], 'rot': round(ang, 3),
             'credit': '© colaboradores de OpenStreetMap (ODbL) · barrios: INE Paraguay'}
