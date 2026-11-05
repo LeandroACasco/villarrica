@@ -136,6 +136,12 @@
   .seg button.on { background: var(--accent); color: #111; }
   .online input { width: 48%; margin: 0 1% 6px; padding: 7px; font: inherit; border-radius: 6px; border: 1px solid var(--line); background: #1a1a20; color: #fff; box-sizing: border-box; }
   .online .hint { font-size: 12px; opacity: .75; margin: 4px 0 0; }
+  #chatLog { position: fixed; left: calc(env(safe-area-inset-left) + 8px); top: calc(env(safe-area-inset-top) + 74px); max-width: 46vw; font: 12px/1.35 sans-serif; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; z-index: 5; }
+  #chatLog div { background: rgba(0,0,0,.35); border-radius: 6px; padding: 2px 7px; margin-bottom: 3px; transition: opacity 1s; }
+  #chatLog b { color: #ffd84a; }
+  #chatBox { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 12px); transform: translateX(-50%); width: min(420px, 86vw); z-index: 30; }
+  #chatBox input { width: 100%; box-sizing: border-box; padding: 9px 12px; font: 15px sans-serif; border-radius: 10px; border: 2px solid #ffd84a; background: rgba(20,20,26,.92); color: #fff; }
+  #onList { font-size: 13px; margin: 6px 0 0; }
   #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
@@ -201,7 +207,10 @@
 <div id="dbg" hidden></div>
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
+<div id="chatLog"></div>
+<form id="chatBox" hidden><input id="chatIn" maxlength="80" placeholder="Escribí y apretá Enter" autocomplete="off"></form>
 <div id="topbar">
+  <button class="icon-btn" id="btnChat" title="Hablar / chat (C)">💬</button>
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
   <button class="icon-btn" id="btnFull" title="Pantalla completa">⛶</button>
   <button class="icon-btn" id="btnMenu" title="Menú (Esc)">☰</button>
@@ -232,6 +241,7 @@
     <h3>Online (jugar con amigos)</h3>
     <div class="online"><input id="onNick" maxlength="14" placeholder="Tu nombre"><input id="onRoom" maxlength="8" placeholder="Código de sala">
     <div class="seg"><button id="onHost">Crear sala</button><button id="onJoin">Unirse</button><button id="onStop">Salir</button></div>
+    <p id="onList"></p>
     <p id="onStatus" class="hint">Sin conectar · una persona crea la sala con un código y la otra se une con el mismo código</p></div>
     <h3>Hora del día</h3>
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
@@ -265,7 +275,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión e2ef5072 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 278de21e · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -5489,6 +5499,34 @@ VR.Online = class {
     c.on('close', () => { this.conns = this.conns.filter((o) => o !== c); this.set(this.conns.length ? 'Conectado' : this.host ? 'Sala ' + this.room + ' · esperando' : 'Se cortó la conexión'); });
   }
 
+  names() { return [this.nick + ' (vos)' + (this.host ? ' · sala' : '')].concat([...this.others.values()].map((o) => o.n + (o.id === 'villarrica-' + (this.room || '').toLowerCase() ? ' · sala' : ''))); }
+  // pasajero: el vehículo de otro jugador a menos de 34 px, con lugar (moto: 1 pasajero; auto: 4)
+  nearRide(p) {
+    let best = null, bd = 34;
+    for (const o of this.others.values()) {
+      if (!o.c || o.r) continue; const d = Math.hypot(o.x - p.x, o.y - p.y); if (d > bd) continue;
+      const used = [...this.others.values()].filter((q) => q.r === o.id).length, cap = o.c[0] === 'moto' ? (o.c[1] === 'pati' ? 0 : 1) : o.c[1] === 'karumbe' ? 2 : 4;
+      if (used < cap) { bd = d; best = o; }
+    }
+    return best;
+  }
+  leave(player, world) {
+    const d = this.others.get(this.ride); this.ride = null;
+    if (d) { const a = d.c ? d.c[3] : 0; let x = player.x + Math.cos(a) * 22, y = player.y - 10 + Math.sin(a) * 22; if (world.solid(Math.floor(x / 16), Math.floor(y / 16))) { x = player.x - Math.cos(a) * 22; y = player.y - 10 - Math.sin(a) * 22; } player.x = player.px = x; player.y = player.py = y; }
+  }
+  bubble(ctx, o, wx, wy, cx, cy) {
+    if (!o.bubble) return; const t = (o.bubble.end - performance.now()) / 1000; if (t <= 0) { o.bubble = null; return; }
+    VR.Player.prototype.drawBubble.call({ bubble: { text: o.bubble.text, t }, px: wx, x: wx, py: wy, y: wy }, ctx, cx, cy, 1);
+  }
+  // pasajero: en moto, sentado atrás del conductor; en auto, solo el nombre al costado
+  drawPass(tall, o, x, y, ang, type, cx, cy, i) {
+    tall.push({ sy: y + cy + 1, draw: (ctx) => {
+      if (type === 'moto') { const R = VR.riderTopFrames(o.L, { gy: -1.4, gx: 3.6, hip: 6.2 }), h = R.S >> 1, k = ((Math.round(ang / (Math.PI * 2) * 64) % 64) + 64) % 64; ctx.drawImage(R.get(k), x - h, y - h, R.S, R.S); }
+      const tx = x + 14 + i * 2, ty = y - 18 - i * 9; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)';
+      const s = '👥 ' + o.n; ctx.strokeText(s, tx, ty); ctx.fillStyle = '#9fe0ff'; ctx.fillText(s, tx, ty);
+      this.bubble(ctx, o, x + cx, y + cy - 10, cx, cy);
+    } });
+  }
   flags(v) { return (v.burning ? 1 : 0) | (v.wreck ? 2 : 0) | (v.siren ? 4 : 0); }
   // fuego y explosión de una copia según lo que manda el dueño
   fx(v, f) {
@@ -5503,6 +5541,7 @@ VR.Online = class {
     m.id = this.peer.id; for (const c of this.conns) if (c.open) c.send(m);
   }
   onEv(m) {
+    if (m.e === 'chat') { const o = this.others.get(m.id), n = o ? o.n : 'Alguien'; if (o) o.bubble = { text: m.t, end: performance.now() + 4500 }; VR.chatLine && VR.chatLine(n, m.t); return; }
     const W = this.weapons;
     if (m.e === 'shot' && W) W.shoot(null, [m.x, m.y, m.a]);
     else if (m.e === 'fl' && W) { for (let i = 0; i < 4; i++) W.flame(0.03, null, [m.x, m.y, m.a]); W.remote = false; }
@@ -5568,21 +5607,31 @@ VR.Online = class {
   stop() { for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
   // cada cuadro: mandar mi estado (10 por segundo) y olvidar a los que no mandan nada hace 6 s
   update(dt, player, car) {
+    this.myL = player.lookData; this.myBubble = player.bubble ? { text: player.bubble.text, end: performance.now() + player.bubble.t * 1000 } : null;
     this.follow(dt, car || player);
     if (!this.peer || !this.conns.length) return;
     this.t += dt; if (this.t < 0.1) return; this.t = 0;
-    const m = { id: this.peer.id, n: this.nick, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
+    const m = { id: this.peer.id, n: this.nick, r: this.ride || undefined, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
     if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car)];
     const lk = JSON.stringify(player.lookData); if (this.sendLook || lk !== this.lastLook || Math.random() < 0.02) { m.L = player.lookData; this.sendLook = false; this.lastLook = lk; }
     for (const c of this.conns) if (c.open) c.send(m);
     if (this.host && (this.wT = (this.wT || 0) + 1) % 2 === 0) this.sendWorld(); // el mundo, 5 veces por segundo
     const now = performance.now(); for (const [k, o] of this.others) if (now - o.at > 6000) this.others.delete(k);
   }
-  collect(cx, cy, a, tall) {
-    const now = performance.now();
+  collect(cx, cy, a, tall, myCar) {
+    const now = performance.now(), me = this.peer && this.peer.id;
+    // pasajeros arriba de mi vehículo (lo veo yo)
+    if (myCar) for (const o of this.others.values()) if (o.r === me && o.look) this.drawPass(tall, o, myCar.x - cx, myCar.y - cy, myCar.a, myCar.type, cx, cy, 0);
+    let pi = 0;
     for (const o of this.others.values()) {
       if (!o.look) continue;
-      const k = Math.min(1, (now - o.at) / 100), x = VR.lerp(o.px, o.x, k) - cx, y = VR.lerp(o.py, o.y, k) - cy;
+      if (o.r) { // va de pasajero: se dibuja con el conductor
+        const d = o.r === me ? null : this.others.get(o.r);
+        if (d && d.c && d.sx !== undefined) this.drawPass(tall, o, d.sx - cx, d.sy - cy, d.c[3], d.c[0], cx, cy, pi++);
+        continue;
+      }
+      const k = Math.min(1, (now - o.at) / 100), x = VR.lerp(o.px, o.x, k) - cx, y = VR.lerp(o.py, o.y, k) - cy; o.sx = x + cx; o.sy = y + cy;
+      if (this.ride === o.id && o.c && this.myL) this.drawPass(tall, { L: this.myL, n: this.nick || 'Vos', bubble: this.myBubble }, x, y, o.c[3], o.c[0], cx, cy, 0);
       tall.push({ sy: y + cy, draw: (ctx) => {
         if (o.c) {
           const [type, model, color, ang] = o.c;
@@ -5595,6 +5644,7 @@ VR.Online = class {
         }
         const ty = o.c ? y - 22 : y - 38; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center';
         ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(o.n, x, ty); ctx.fillStyle = '#ffd84a'; ctx.fillText(o.n, x, ty);
+        this.bubble(ctx, o, x + cx, y + cy - (o.c ? 6 : 8), cx, cy);
       } });
     }
   }
@@ -6160,13 +6210,25 @@ VR.showVehicleCard = (v) => {
       if (VR.input.pressed('car')) { if (Math.abs(car.v) < 45) exitCar(); else toast('Frená para bajarte'); }
       if (player.bubble) { player.bubble.t -= dt; if (player.bubble.t <= 0) player.bubble = null; }
     } else {
+      if (online.ride) { // de pasajero en el vehículo de otro jugador
+        const d = online.others.get(online.ride);
+        if (!d || !d.c) { online.leave(player, world); toast('Te bajaste'); }
+        else { player.px = player.x; player.py = player.y; player.x = d.sx ?? d.x; player.y = (d.sy ?? d.y) + 10; player.moving = false;
+          hint = VR.input.source === 'touch' ? '👥 Bajar' : 'F: bajar'; hintCar = null;
+          if (VR.input.pressed('car')) { online.leave(player, world); toast('Te bajaste'); } }
+      } else {
       player.update(dt, VR.input);
-      const nc = nearCar(), ns = nearShop();
+      const nc = nearCar(), ns = nearShop(), rd = online.nearRide(player);
+      if (rd && (!nc || Math.hypot(rd.x - player.x, rd.y - player.y) < Math.hypot(nc.x - player.x, nc.y - player.y))) {
+        hint = (VR.input.source === 'touch' ? '👥 ' : 'F: ') + 'subir con ' + rd.n; hintCar = { x: rd.x, y: rd.y - 8 };
+        if (VR.input.pressed('car')) { online.ride = rd.id; toast('👥 Vas con ' + rd.n); }
+      } else {
       hint = nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
       hintCar = nc;
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       if (VR.input.pressed('car')) { if (nc) enterCar(nc); else toast('Acercate a un auto o una moto para subir'); }
       else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      } }
     }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
@@ -6194,8 +6256,8 @@ VR.showVehicleCard = (v) => {
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
-    if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall);
+    if (!car && !online.ride) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
+    online.collect(cx, cy, a, tall, car);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
@@ -6211,7 +6273,7 @@ VR.showVehicleCard = (v) => {
       const lx = l.x - cx, ly = l.y - cy;
       if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, l.small ? '#ffe9a8' : '#fff6d8', { center: true, shadow: '#1a1a1e', size: l.small ? 7 : 8 });
     }
-    player.drawBubble(ctx, cx, cy, a);
+    if (!online.ride) player.drawBubble(ctx, cx, cy, a);
     drawMini(dt || 0);
     drawGpsArrow(ctx, cx, cy, a);
     if (traffic) for (const v of traffic.list) if (v.honkT > 0) VR.gfx.text(ctx, v.honkTxt, Math.round(v.x - cx), Math.round(v.y - cy - 28), '#fff6d8', { center: true, shadow: '#1a1a1e' });
@@ -6287,6 +6349,16 @@ VR.showVehicleCard = (v) => {
     const nick = $('onNick').value.trim() || 'Jugador', room = $('onRoom').value.trim().replace(/[^a-z0-9]/gi, '') || String(1000 + ((Math.random() * 9000) | 0));
     $('onRoom').value = room; VR.store.set('nick', nick); VR.store.set('sala', room); online.set('Conectando…'); online.start(nick, room, host);
   };
+  // ---- chat: el personaje lo dice (globo) y, online, les llega a todos ----
+  const chatLog = $('chatLog'), chatBox = $('chatBox'), chatIn = $('chatIn');
+  VR.chatLine = (n, t) => { const d = document.createElement('div'); d.innerHTML = '<b></b> '; d.firstChild.textContent = n + ':'; d.append(t); chatLog.append(d); while (chatLog.children.length > 6) chatLog.firstChild.remove(); setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 1000); }, 12000); };
+  const openChat = () => { chatBox.hidden = false; VR.input.releaseAll(); chatIn.focus(); };
+  const closeChat = () => { chatBox.hidden = true; chatIn.value = ''; chatIn.blur(); };
+  $('btnChat').onclick = () => (chatBox.hidden ? openChat() : closeChat());
+  chatBox.onsubmit = (e) => { e.preventDefault(); const t = chatIn.value.trim(); if (t) { player.say(t, 4); VR.chatLine(online.nick || VR.store.get('nick', '') || 'Vos', t); online.ev({ e: 'chat', t }); } closeChat(); };
+  chatIn.addEventListener('keydown', (e) => { if (e.code === 'Escape') { e.stopPropagation(); closeChat(); } });
+  addEventListener('keydown', (e) => { if (e.code === 'KeyC' && chatBox.hidden && !/INPUT/.test(e.target.tagName) && !document.querySelector('dialog[open]')) { e.preventDefault(); openChat(); } });
+  setInterval(() => { $('onList').textContent = online.peer ? 'Conectados: ' + online.names().join(', ') : ''; }, 1000);
   $('onHost').onclick = () => goOnline(true); $('onJoin').onclick = () => goOnline(false); $('onStop').onclick = () => online.stop();
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };

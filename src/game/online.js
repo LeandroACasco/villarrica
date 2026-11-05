@@ -40,6 +40,34 @@ VR.Online = class {
     c.on('close', () => { this.conns = this.conns.filter((o) => o !== c); this.set(this.conns.length ? 'Conectado' : this.host ? 'Sala ' + this.room + ' · esperando' : 'Se cortó la conexión'); });
   }
 
+  names() { return [this.nick + ' (vos)' + (this.host ? ' · sala' : '')].concat([...this.others.values()].map((o) => o.n + (o.id === 'villarrica-' + (this.room || '').toLowerCase() ? ' · sala' : ''))); }
+  // pasajero: el vehículo de otro jugador a menos de 34 px, con lugar (moto: 1 pasajero; auto: 4)
+  nearRide(p) {
+    let best = null, bd = 34;
+    for (const o of this.others.values()) {
+      if (!o.c || o.r) continue; const d = Math.hypot(o.x - p.x, o.y - p.y); if (d > bd) continue;
+      const used = [...this.others.values()].filter((q) => q.r === o.id).length, cap = o.c[0] === 'moto' ? (o.c[1] === 'pati' ? 0 : 1) : o.c[1] === 'karumbe' ? 2 : 4;
+      if (used < cap) { bd = d; best = o; }
+    }
+    return best;
+  }
+  leave(player, world) {
+    const d = this.others.get(this.ride); this.ride = null;
+    if (d) { const a = d.c ? d.c[3] : 0; let x = player.x + Math.cos(a) * 22, y = player.y - 10 + Math.sin(a) * 22; if (world.solid(Math.floor(x / 16), Math.floor(y / 16))) { x = player.x - Math.cos(a) * 22; y = player.y - 10 - Math.sin(a) * 22; } player.x = player.px = x; player.y = player.py = y; }
+  }
+  bubble(ctx, o, wx, wy, cx, cy) {
+    if (!o.bubble) return; const t = (o.bubble.end - performance.now()) / 1000; if (t <= 0) { o.bubble = null; return; }
+    VR.Player.prototype.drawBubble.call({ bubble: { text: o.bubble.text, t }, px: wx, x: wx, py: wy, y: wy }, ctx, cx, cy, 1);
+  }
+  // pasajero: en moto, sentado atrás del conductor; en auto, solo el nombre al costado
+  drawPass(tall, o, x, y, ang, type, cx, cy, i) {
+    tall.push({ sy: y + cy + 1, draw: (ctx) => {
+      if (type === 'moto') { const R = VR.riderTopFrames(o.L, { gy: -1.4, gx: 3.6, hip: 6.2 }), h = R.S >> 1, k = ((Math.round(ang / (Math.PI * 2) * 64) % 64) + 64) % 64; ctx.drawImage(R.get(k), x - h, y - h, R.S, R.S); }
+      const tx = x + 14 + i * 2, ty = y - 18 - i * 9; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)';
+      const s = '👥 ' + o.n; ctx.strokeText(s, tx, ty); ctx.fillStyle = '#9fe0ff'; ctx.fillText(s, tx, ty);
+      this.bubble(ctx, o, x + cx, y + cy - 10, cx, cy);
+    } });
+  }
   flags(v) { return (v.burning ? 1 : 0) | (v.wreck ? 2 : 0) | (v.siren ? 4 : 0); }
   // fuego y explosión de una copia según lo que manda el dueño
   fx(v, f) {
@@ -54,6 +82,7 @@ VR.Online = class {
     m.id = this.peer.id; for (const c of this.conns) if (c.open) c.send(m);
   }
   onEv(m) {
+    if (m.e === 'chat') { const o = this.others.get(m.id), n = o ? o.n : 'Alguien'; if (o) o.bubble = { text: m.t, end: performance.now() + 4500 }; VR.chatLine && VR.chatLine(n, m.t); return; }
     const W = this.weapons;
     if (m.e === 'shot' && W) W.shoot(null, [m.x, m.y, m.a]);
     else if (m.e === 'fl' && W) { for (let i = 0; i < 4; i++) W.flame(0.03, null, [m.x, m.y, m.a]); W.remote = false; }
@@ -119,21 +148,31 @@ VR.Online = class {
   stop() { for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
   // cada cuadro: mandar mi estado (10 por segundo) y olvidar a los que no mandan nada hace 6 s
   update(dt, player, car) {
+    this.myL = player.lookData; this.myBubble = player.bubble ? { text: player.bubble.text, end: performance.now() + player.bubble.t * 1000 } : null;
     this.follow(dt, car || player);
     if (!this.peer || !this.conns.length) return;
     this.t += dt; if (this.t < 0.1) return; this.t = 0;
-    const m = { id: this.peer.id, n: this.nick, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
+    const m = { id: this.peer.id, n: this.nick, r: this.ride || undefined, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
     if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car)];
     const lk = JSON.stringify(player.lookData); if (this.sendLook || lk !== this.lastLook || Math.random() < 0.02) { m.L = player.lookData; this.sendLook = false; this.lastLook = lk; }
     for (const c of this.conns) if (c.open) c.send(m);
     if (this.host && (this.wT = (this.wT || 0) + 1) % 2 === 0) this.sendWorld(); // el mundo, 5 veces por segundo
     const now = performance.now(); for (const [k, o] of this.others) if (now - o.at > 6000) this.others.delete(k);
   }
-  collect(cx, cy, a, tall) {
-    const now = performance.now();
+  collect(cx, cy, a, tall, myCar) {
+    const now = performance.now(), me = this.peer && this.peer.id;
+    // pasajeros arriba de mi vehículo (lo veo yo)
+    if (myCar) for (const o of this.others.values()) if (o.r === me && o.look) this.drawPass(tall, o, myCar.x - cx, myCar.y - cy, myCar.a, myCar.type, cx, cy, 0);
+    let pi = 0;
     for (const o of this.others.values()) {
       if (!o.look) continue;
-      const k = Math.min(1, (now - o.at) / 100), x = VR.lerp(o.px, o.x, k) - cx, y = VR.lerp(o.py, o.y, k) - cy;
+      if (o.r) { // va de pasajero: se dibuja con el conductor
+        const d = o.r === me ? null : this.others.get(o.r);
+        if (d && d.c && d.sx !== undefined) this.drawPass(tall, o, d.sx - cx, d.sy - cy, d.c[3], d.c[0], cx, cy, pi++);
+        continue;
+      }
+      const k = Math.min(1, (now - o.at) / 100), x = VR.lerp(o.px, o.x, k) - cx, y = VR.lerp(o.py, o.y, k) - cy; o.sx = x + cx; o.sy = y + cy;
+      if (this.ride === o.id && o.c && this.myL) this.drawPass(tall, { L: this.myL, n: this.nick || 'Vos', bubble: this.myBubble }, x, y, o.c[3], o.c[0], cx, cy, 0);
       tall.push({ sy: y + cy, draw: (ctx) => {
         if (o.c) {
           const [type, model, color, ang] = o.c;
@@ -146,6 +185,7 @@ VR.Online = class {
         }
         const ty = o.c ? y - 22 : y - 38; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center';
         ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(o.n, x, ty); ctx.fillStyle = '#ffd84a'; ctx.fillText(o.n, x, ty);
+        this.bubble(ctx, o, x + cx, y + cy - (o.c ? 6 : 8), cx, cy);
       } });
     }
   }

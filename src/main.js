@@ -150,13 +150,25 @@
       if (VR.input.pressed('car')) { if (Math.abs(car.v) < 45) exitCar(); else toast('Frená para bajarte'); }
       if (player.bubble) { player.bubble.t -= dt; if (player.bubble.t <= 0) player.bubble = null; }
     } else {
+      if (online.ride) { // de pasajero en el vehículo de otro jugador
+        const d = online.others.get(online.ride);
+        if (!d || !d.c) { online.leave(player, world); toast('Te bajaste'); }
+        else { player.px = player.x; player.py = player.y; player.x = d.sx ?? d.x; player.y = (d.sy ?? d.y) + 10; player.moving = false;
+          hint = VR.input.source === 'touch' ? '👥 Bajar' : 'F: bajar'; hintCar = null;
+          if (VR.input.pressed('car')) { online.leave(player, world); toast('Te bajaste'); } }
+      } else {
       player.update(dt, VR.input);
-      const nc = nearCar(), ns = nearShop();
+      const nc = nearCar(), ns = nearShop(), rd = online.nearRide(player);
+      if (rd && (!nc || Math.hypot(rd.x - player.x, rd.y - player.y) < Math.hypot(nc.x - player.x, nc.y - player.y))) {
+        hint = (VR.input.source === 'touch' ? '👥 ' : 'F: ') + 'subir con ' + rd.n; hintCar = { x: rd.x, y: rd.y - 8 };
+        if (VR.input.pressed('car')) { online.ride = rd.id; toast('👥 Vas con ' + rd.n); }
+      } else {
       hint = nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
       hintCar = nc;
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       if (VR.input.pressed('car')) { if (nc) enterCar(nc); else toast('Acercate a un auto o una moto para subir'); }
       else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      } }
     }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
@@ -184,8 +196,8 @@
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
-    if (!car) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall);
+    if (!car && !online.ride) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
+    online.collect(cx, cy, a, tall, car);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
@@ -201,7 +213,7 @@
       const lx = l.x - cx, ly = l.y - cy;
       if (lx > -80 && lx < sw + 80 && ly > -20 && ly < sh + 20) VR.gfx.text(ctx, l.text, lx, ly, l.small ? '#ffe9a8' : '#fff6d8', { center: true, shadow: '#1a1a1e', size: l.small ? 7 : 8 });
     }
-    player.drawBubble(ctx, cx, cy, a);
+    if (!online.ride) player.drawBubble(ctx, cx, cy, a);
     drawMini(dt || 0);
     drawGpsArrow(ctx, cx, cy, a);
     if (traffic) for (const v of traffic.list) if (v.honkT > 0) VR.gfx.text(ctx, v.honkTxt, Math.round(v.x - cx), Math.round(v.y - cy - 28), '#fff6d8', { center: true, shadow: '#1a1a1e' });
@@ -277,6 +289,16 @@
     const nick = $('onNick').value.trim() || 'Jugador', room = $('onRoom').value.trim().replace(/[^a-z0-9]/gi, '') || String(1000 + ((Math.random() * 9000) | 0));
     $('onRoom').value = room; VR.store.set('nick', nick); VR.store.set('sala', room); online.set('Conectando…'); online.start(nick, room, host);
   };
+  // ---- chat: el personaje lo dice (globo) y, online, les llega a todos ----
+  const chatLog = $('chatLog'), chatBox = $('chatBox'), chatIn = $('chatIn');
+  VR.chatLine = (n, t) => { const d = document.createElement('div'); d.innerHTML = '<b></b> '; d.firstChild.textContent = n + ':'; d.append(t); chatLog.append(d); while (chatLog.children.length > 6) chatLog.firstChild.remove(); setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 1000); }, 12000); };
+  const openChat = () => { chatBox.hidden = false; VR.input.releaseAll(); chatIn.focus(); };
+  const closeChat = () => { chatBox.hidden = true; chatIn.value = ''; chatIn.blur(); };
+  $('btnChat').onclick = () => (chatBox.hidden ? openChat() : closeChat());
+  chatBox.onsubmit = (e) => { e.preventDefault(); const t = chatIn.value.trim(); if (t) { player.say(t, 4); VR.chatLine(online.nick || VR.store.get('nick', '') || 'Vos', t); online.ev({ e: 'chat', t }); } closeChat(); };
+  chatIn.addEventListener('keydown', (e) => { if (e.code === 'Escape') { e.stopPropagation(); closeChat(); } });
+  addEventListener('keydown', (e) => { if (e.code === 'KeyC' && chatBox.hidden && !/INPUT/.test(e.target.tagName) && !document.querySelector('dialog[open]')) { e.preventDefault(); openChat(); } });
+  setInterval(() => { $('onList').textContent = online.peer ? 'Conectados: ' + online.names().join(', ') : ''; }, 1000);
   $('onHost').onclick = () => goOnline(true); $('onJoin').onclick = () => goOnline(false); $('onStop').onclick = () => online.stop();
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };

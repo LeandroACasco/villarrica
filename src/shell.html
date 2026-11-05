@@ -136,6 +136,12 @@
   .seg button.on { background: var(--accent); color: #111; }
   .online input { width: 48%; margin: 0 1% 6px; padding: 7px; font: inherit; border-radius: 6px; border: 1px solid var(--line); background: #1a1a20; color: #fff; box-sizing: border-box; }
   .online .hint { font-size: 12px; opacity: .75; margin: 4px 0 0; }
+  #chatLog { position: fixed; left: calc(env(safe-area-inset-left) + 8px); top: calc(env(safe-area-inset-top) + 74px); max-width: 46vw; font: 12px/1.35 sans-serif; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; z-index: 5; }
+  #chatLog div { background: rgba(0,0,0,.35); border-radius: 6px; padding: 2px 7px; margin-bottom: 3px; transition: opacity 1s; }
+  #chatLog b { color: #ffd84a; }
+  #chatBox { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 12px); transform: translateX(-50%); width: min(420px, 86vw); z-index: 30; }
+  #chatBox input { width: 100%; box-sizing: border-box; padding: 9px 12px; font: 15px sans-serif; border-radius: 10px; border: 2px solid #ffd84a; background: rgba(20,20,26,.92); color: #fff; }
+  #onList { font-size: 13px; margin: 6px 0 0; }
   #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
@@ -198,7 +204,10 @@
 <div id="dbg" hidden></div>
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
+<div id="chatLog"></div>
+<form id="chatBox" hidden><input id="chatIn" maxlength="80" placeholder="Escribí y apretá Enter" autocomplete="off"></form>
 <div id="topbar">
+  <button class="icon-btn" id="btnChat" title="Hablar / chat (C)">💬</button>
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
   <button class="icon-btn" id="btnFull" title="Pantalla completa">⛶</button>
   <button class="icon-btn" id="btnMenu" title="Menú (Esc)">☰</button>
@@ -229,6 +238,7 @@
     <h3>Online (jugar con amigos)</h3>
     <div class="online"><input id="onNick" maxlength="14" placeholder="Tu nombre"><input id="onRoom" maxlength="8" placeholder="Código de sala">
     <div class="seg"><button id="onHost">Crear sala</button><button id="onJoin">Unirse</button><button id="onStop">Salir</button></div>
+    <p id="onList"></p>
     <p id="onStatus" class="hint">Sin conectar · una persona crea la sala con un código y la otra se une con el mismo código</p></div>
     <h3>Hora del día</h3>
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
