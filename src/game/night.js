@@ -63,6 +63,7 @@ VR.Night = class {
       else if (d.kind === 'cartel') for (let x = X + 12; x < X + w; x += 32) this.put(x, Y + S - 14, 40, d.style === 'banco' ? '170,190,255' : CALIDO, 0.9);
       else if (d.kind === 'mesas') this.put(X + w / 2, Y + 8, 50, CALIDO, 0.7);
       else if (d.kind === 'cuartel') { this.put((d.x + 5) * S, (d.y + d.h) * S - 10, 60, CALIDO, 0.9); this.put((d.x + 8) * S, (d.y + d.h) * S - 10, 60, CALIDO, 0.9); this.put((d.x + 1.4) * S, (d.y + 3) * S - 14, 26, CALIDO, 0.8); }
+      else if (d.kind === 'taller') this.put(X + w / 2, Y + 10, 50, '255,230,170', 0.9);
       else if (d.kind === 'tienda') { for (let x = X + 24; x < X + w - 8; x += 40) this.put(x, Y + 10, 46, CALIDO, 0.9); this.put(X + w / 2, Y + 4, 30, '255,150,200', 0.8); }
       else if (d.kind === 'terraza') this.put(X + 16, Y + h / 2, 60, CALIDO, 0.8);
       else if (d.kind === 'monumento') this.put(X + 16, Y + 16, 56, LED, 0.9);

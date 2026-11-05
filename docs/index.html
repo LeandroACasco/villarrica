@@ -145,6 +145,11 @@
   #onHud { position: fixed; left: calc(env(safe-area-inset-left) + 8px); bottom: calc(env(safe-area-inset-bottom) + 8px); font: 11px/1.4 sans-serif; color: #fff; background: rgba(0,0,0,.4); border-radius: 8px; padding: 4px 8px; pointer-events: none; z-index: 5; max-width: 40vw; }
   #onHud b { color: #ffd84a; }
   #onDlg { max-width: min(420px, 92vw); }
+  .vrdlg { max-width: min(560px, 94vw); max-height: 92vh; overflow: auto; }
+  .vrdlg canvas { width: 100%; max-width: 320px; display: block; margin: 0 auto 6px; background: #2a2a30; border-radius: 8px; }
+  .vrdlg label { display: inline-block; width: 48%; margin: 0 1% 6px; font-size: 13px; } .vrdlg select, .vrdlg input { width: 100%; padding: 6px; box-sizing: border-box; font: inherit; }
+  .vrdlg iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; background: #000; }
+  #onSalas button { display: block; width: 100%; margin: 3px 0; text-align: left; }
   #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
@@ -247,6 +252,7 @@
     <h3>Online (jugar con amigos)</h3>
     <div class="online"><input id="onNick" maxlength="14" placeholder="Tu nombre"><input id="onRoom" maxlength="8" placeholder="Código de sala">
     <div class="seg"><button id="onHost">Crear sala</button><button id="onJoin">Unirse</button><button id="onStop">Salir</button></div>
+    <button id="onRef">🌐 Ver salas abiertas</button><div id="onSalas"></div>
     <p id="onList"></p>
     <p id="onStatus" class="hint">Sin conectar · una persona crea la sala con un código y la otra se une con el mismo código</p></div>
     <h3>Hora del día</h3>
@@ -281,7 +287,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d7431b08 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión ed5e1eb0 · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -1731,6 +1737,16 @@ VR.decorOver = {
     g.fillStyle = '#2a2a30'; g.fillRect(X + 26, fy + 6, 8, 7); g.fillStyle = '#4a5a6a'; g.fillRect(X + 26.5, fy + 6.5, 7, 6); // ventana
     g.fillStyle = '#fff6c8'; g.fillRect(X + 22, fy + 3, 2, 1.5); // farolito
   },
+  taller(g, d) { // taller "Pyahu": persiana gris, cartel amarillo con llave, cubiertas apiladas y manchas de aceite
+    const S = VR.TILE, X = d.x * S + 2, W = d.w * S - 4, Y = (d.y + 1) * S - 9, mid = X + (W >> 1);
+    g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(X + 2, Y + 3, W, 9);
+    for (let x = X; x < X + W; x++) { g.fillStyle = ((x - X) >> 2) & 1 ? '#2a2a2e' : '#e8b830'; g.fillRect(x, Y + 6, 1, 3); }
+    g.fillStyle = '#6a6e76'; g.fillRect(X, Y, W, 6); g.fillStyle = '#80848c'; for (let y = Y + 1; y < Y + 6; y += 2) g.fillRect(X, y, W, 1);
+    g.fillStyle = '#2a2a30'; g.fillRect(mid - 14, Y - 1, 28, 8); g.fillStyle = '#e8b830'; g.fillRect(mid - 13, Y, 26, 6);
+    g.fillStyle = '#2a2a30'; g.fillRect(mid - 4, Y + 2, 8, 2); g.fillRect(mid - 6, Y + 1, 2, 4); g.fillRect(mid + 4, Y + 1, 2, 4); // llave
+    for (const [tx, ty] of [[X + 4, Y - 10], [X + 4, Y - 6], [X + W - 9, Y - 8]]) { g.fillStyle = '#16161a'; g.beginPath(); g.ellipse(tx + 2.5, ty + 2, 3, 2.2, 0, 0, 7); g.fill(); g.fillStyle = '#4a4a52'; g.fillRect(tx + 1.5, ty + 1.5, 2, 1); }
+    g.fillStyle = 'rgba(20,18,16,.35)'; g.beginPath(); g.ellipse(mid - 10, Y - 6, 6, 2.5, 0, 0, 7); g.ellipse(mid + 12, Y - 4, 4, 2, 0, 0, 7); g.fill();
+  },
   tienda(g, d) { // tienda de ropa "Ao Porã" (05/11/2026): mira al norte, así que desde arriba se ve el toldo sobre la vereda
     const S = VR.TILE, X = d.x * S + 2, W = d.w * S - 4, Y = (d.y + 1) * S - 9, mid = X + (W >> 1);
     g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(X + 2, Y + 3, W, 9);
@@ -2124,6 +2140,8 @@ VR.loadMap = async (url) => {
   w.inSenda = (tx, ty) => { for (const d of w.sendas) { const ux = d.bx - d.ax, uy = d.by - d.ay, L = Math.hypot(ux, uy), px = tx + 0.5 - d.ax, py = ty + 0.5 - d.ay, t = (px * ux + py * uy) / (L * L);
     if (t > -0.02 && t < 1.02 && Math.abs(px * uy - py * ux) / L < d.hw + 0.9) return true; } return false; };
   w.plazaSet = new Set(); (meta.areas || []).forEach((n, i) => { if (/plaza/i.test(n)) w.plazaSet.add(i + 1); });
+  { const t = (meta.decals || []).find((d) => d.kind === 'tienda'), T = VR.T; // taller (05/11/2026): cerca del Centro, misma vereda que la tienda, hacia el oeste
+    if (t) for (let x = t.x - 6; x > t.x - 120; x--) { let ok = true; for (let k = 0; k < 7 && ok; k++) ok = w.get(x - k, t.y) === T.SIDEWALK && w.get(x - k, t.y + 1) === T.BUILDING; if (ok) { meta.decals.push({ kind: 'taller', x: x - 6, y: t.y, w: 7, h: 1 }); break; } } }
   w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
   w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
   w.roads = meta.roads || null; w.special = meta.special || {};
@@ -4600,6 +4618,7 @@ VR.Night = class {
       else if (d.kind === 'cartel') for (let x = X + 12; x < X + w; x += 32) this.put(x, Y + S - 14, 40, d.style === 'banco' ? '170,190,255' : CALIDO, 0.9);
       else if (d.kind === 'mesas') this.put(X + w / 2, Y + 8, 50, CALIDO, 0.7);
       else if (d.kind === 'cuartel') { this.put((d.x + 5) * S, (d.y + d.h) * S - 10, 60, CALIDO, 0.9); this.put((d.x + 8) * S, (d.y + d.h) * S - 10, 60, CALIDO, 0.9); this.put((d.x + 1.4) * S, (d.y + 3) * S - 14, 26, CALIDO, 0.8); }
+      else if (d.kind === 'taller') this.put(X + w / 2, Y + 10, 50, '255,230,170', 0.9);
       else if (d.kind === 'tienda') { for (let x = X + 24; x < X + w - 8; x += 40) this.put(x, Y + 10, 46, CALIDO, 0.9); this.put(X + w / 2, Y + 4, 30, '255,150,200', 0.8); }
       else if (d.kind === 'terraza') this.put(X + 16, Y + h / 2, 60, CALIDO, 0.8);
       else if (d.kind === 'monumento') this.put(X + 16, Y + 16, 56, LED, 0.9);
@@ -5477,6 +5496,19 @@ VR.Weapons = class {
 // quien está cerca del anfitrión (< NEAR) deja de simular los suyos y ve los del anfitrión (copias con choque).
 // Eventos al momento: tiros, lanzallamas, fuego y explosiones de vehículos, sirenas, robar un auto del anfitrión.
 'use strict';
+// Cartelera de salas (Firestore por su API web, sin librería). Proyecto de Firebase propio de Villarrica:
+// completar con los datos de la consola (Configuración del proyecto → Tus apps → web). Sin datos, solo con código.
+VR.FB = null; // { projectId: 'villarrica-…', apiKey: 'AIza…' }
+VR.Salas = {
+  url(id) { const f = VR.FB; return 'https://firestore.googleapis.com/v1/projects/' + f.projectId + '/databases/(default)/documents/villarrica_salas' + (id ? '/' + encodeURIComponent(id) : '') + '?key=' + f.apiKey; },
+  async put(room, nick, n) { if (!VR.FB) return; try { await fetch(this.url(room), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { n: { stringValue: room }, h: { stringValue: nick }, j: { integerValue: String(n) }, at: { integerValue: String(Date.now()) } } }) }); } catch (e) {} },
+  async del(room) { if (!VR.FB) return; try { await fetch(this.url(room), { method: 'DELETE' }); } catch (e) {} },
+  async list() {
+    if (!VR.FB) return null;
+    const j = await (await fetch(this.url() + '&pageSize=100')).json(), F = (d, k) => d.fields[k] && (d.fields[k].stringValue ?? +d.fields[k].integerValue);
+    return (j.documents || []).map((d) => ({ n: F(d, 'n'), h: F(d, 'h'), j: F(d, 'j'), at: F(d, 'at') })).filter((s) => Date.now() - s.at < 120000);
+  },
+};
 VR.Online = class {
   bind(o) { Object.assign(this, o); VR.onlineEv = (m, every) => this.ev(m, every); }
   constructor() { this.proxies = new Map(); this.taken = new Set(); this.pp = []; this.evT = {}; this.nid = 0; this.mirror = false; this.peer = null; this.conns = []; this.others = new Map(); this.status = 'Sin conectar'; this.t = 0; this.onStatus = null; }
@@ -5492,7 +5524,7 @@ VR.Online = class {
     const op = window.__peerOpts || {}; this.peer = host ? new Peer(id, op) : new Peer(op);
     this.peer.on('error', (e) => this.set(e.type === 'unavailable-id' ? 'Esa sala ya existe: unite en vez de crearla' : e.type === 'peer-unavailable' ? 'No existe la sala ' + room : 'Error: ' + e.type));
     this.peer.on('open', () => {
-      if (host) this.set('Sala ' + room + ' creada · esperando');
+      if (host) { this.set('Sala ' + room + ' creada · esperando'); VR.Salas.put(room, this.nick, 1); this.salaT = 0; }
       else this.hook(this.peer.connect(id, { reliable: true }));
     });
     this.peer.on('connection', (c) => this.hook(c));
@@ -5502,7 +5534,7 @@ VR.Online = class {
     c.on('data', (m) => {
       if (this.host) for (const o of this.conns) if (o !== c && o.open) o.send(m); // el anfitrión reenvía
       if (m.e) { this.onEv(m); return; }
-      if (m.w) { this.W = m; this.Wat = performance.now(); m.at = this.Wat / 1000; return; }
+      if (m.w) { this.W = m; this.Wat = performance.now(); m.at = this.Wat / 1000; if (m.cine && (!VR.cineNow || VR.cineNow.t0 !== m.cine.t0)) { VR.cineNow = m.cine; if (this.onCine) this.onCine(); } return; }
       if (m.bye) { this.others.delete(m.id); return; }
       let o = this.others.get(m.id);
       if (!o) { o = { x: m.x, y: m.y }; this.others.set(m.id, o); }
@@ -5554,6 +5586,7 @@ VR.Online = class {
     m.id = this.peer.id; for (const c of this.conns) if (c.open) c.send(m);
   }
   onEv(m) {
+    if (m.e === 'cine') { VR.cineNow = { v: m.v, t0: m.t0 }; if (this.onCine) this.onCine(); return; }
     if (m.e === 'chat') { const o = this.others.get(m.id), n = o ? o.n : 'Alguien'; if (o) o.bubble = { text: m.t, end: performance.now() + 4500 }; VR.chatLine && VR.chatLine(n, m.t); return; }
     const W = this.weapons;
     if (m.e === 'shot' && W) W.shoot(null, [m.x, m.y, m.a]);
@@ -5576,7 +5609,7 @@ VR.Online = class {
       c.push([v._nid, Math.round(v.x), Math.round(v.y), Math.round(v.a * 100), v.type === 'moto' ? 1 : 0, v.model, v.color || 0, this.flags(v), ri, sp[0], sp[1]]);
     }
     if (this.peds) for (const q of this.peds.list) { q._nid = q._nid || (this.pid = (this.pid || 0) + 1e6); p.push([q._nid, Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]); }
-    const m = { w: 1, c, p }; for (const k of this.conns) if (k.open) k.send(m);
+    const m = { w: 1, c, p, cine: VR.cineNow || undefined }; for (const k of this.conns) if (k.open) k.send(m);
   }
   // ---- invitado: cerca del anfitrión, ver lo suyo ----
   follow(dt, me) {
@@ -5623,15 +5656,16 @@ VR.Online = class {
     }
     this.pmap = keep;
   }
-  stop() { for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
+  stop() { if (this.host && this.peer) VR.Salas.del(this.room); for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
   // cada cuadro: mandar mi estado (10 por segundo) y olvidar a los que no mandan nada hace 6 s
   update(dt, player, car) {
     this.myL = player.lookData; this.myBubble = player.bubble ? { text: player.bubble.text, end: performance.now() + player.bubble.t * 1000 } : null;
     this.follow(dt, car || player);
+    if (this.host && this.peer && (this.salaT = (this.salaT || 0) + dt) > 30) { this.salaT = 0; VR.Salas.put(this.room, this.nick, this.conns.length + 1); }
     if (!this.peer || !this.conns.length) return;
     this.t += dt; if (this.t < 0.1) return; this.t = 0;
     const m = { id: this.peer.id, n: this.nick, r: this.ride || undefined, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
-    if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car)];
+    if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car), car.tune || 0];
     const lk = JSON.stringify(player.lookData); if (this.sendLook || lk !== this.lastLook || Math.random() < 0.02) { m.L = player.lookData; this.sendLook = false; this.lastLook = lk; }
     for (const c of this.conns) if (c.open) c.send(m);
     if (this.host) VR.extraFoci = [...this.others.values()].filter((o) => !o.r).map((o) => ({ x: o.x, y: o.y }));
@@ -5655,7 +5689,7 @@ VR.Online = class {
       tall.push({ sy: y + cy, draw: (ctx) => {
         if (o.c) {
           const [type, model, color, ang] = o.c;
-          if (!o.car || o.car.model !== model || o.car.type !== type) { o.car = new VR.Car(VR.world || window.__vr.world, 0, 0, ang, color, type, model); } if (type === 'moto') o.car.rider = { L: o.L };
+          const tk = o.c[5] ? VR.tuneKey(o.c[5]) : ''; if (!o.car || o.car.model !== model || o.car.type !== type || o.car.tk !== tk) { o.car = new VR.Car(VR.world || window.__vr.world, 0, 0, ang, color, type, model, o.c[5] || null); o.car.tk = tk; } if (type === 'moto') o.car.rider = { L: o.L };
           const v = o.car; v.px = v.x = x + cx; v.py = v.y = y + cy; v.pa = v.a = ang; v.siren = !!(o.c[4] & 4); this.fx(v, o.c[4]); v.draw(ctx, cx, cy, 1);
         } else {
           o.car = null;
@@ -5670,6 +5704,67 @@ VR.Online = class {
   }
 };
 VR.Online.NEAR = 900; // px: más cerca que esto del anfitrión, se ve su tránsito y su gente
+
+// ===== game/taller.js =====
+// Taller y cine (05/11/2026, pedidos de Leandro).
+// Taller "Pyahu" en una calle del Centro: entrás con el vehículo, ACCIÓN, elegís piezas (catálogo de tune.js),
+// ves el costado en alta y pagás con la billetera. El tuneo se guarda con el vehículo y se ve online.
+// Cine en el Teatro Municipal: en la entrada sur, ACCIÓN; pegás un enlace de YouTube y, online, todos ven el
+// mismo video en el mismo momento (VR.cineNow = { v, t0 }).
+'use strict';
+VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; d.className = 'vrdlg'; d.innerHTML = html; document.body.append(d); return d; };
+VR.Garage = class {
+  constructor() {
+    this.d = VR.dlg('garage', '<h2>🔧 Taller Pyahu</h2><canvas id="grPrev" width="320" height="180"></canvas><div id="grParts"></div><p id="grTot"></p><div class="seg"><button id="grBuy">Comprar</button><button id="grOut">Salir</button></div>');
+    this.d.querySelector('#grOut').onclick = () => this.close();
+    this.d.querySelector('#grBuy').onclick = () => this.buy();
+  }
+  open(car, toast) {
+    this.car = car; this.toast = toast; const m = car.model, M = VR.TUNE_MODELS[m];
+    if (!M) { toast('Este vehículo no se puede tunear'); return; }
+    this.old = Object.assign(VR.tuneDefault(m), car.tune || {}); this.t = { ...this.old };
+    const box = this.d.querySelector('#grParts'); box.innerHTML = '';
+    for (const p of M.parts) {
+      const P = VR.TUNE_PARTS[p], s = document.createElement('select'); s.dataset.p = p;
+      const opts = p === 'color' || p === 'color2' ? VR.TUNE_COLORS.map((c, i) => [i, c[0]]) : Object.entries(P.opts).map(([k, o]) => [k, o[0]]);
+      for (const [k, name] of opts) { const o = document.createElement('option'); o.value = k; o.textContent = name; s.append(o); }
+      s.value = this.t[p]; s.onchange = () => { this.t[p] = p === 'color' || p === 'color2' || p === 'polarizado' || p === 'bajo' ? +s.value : s.value; this.paint(); };
+      const l = document.createElement('label'); l.textContent = P.name + ' '; l.append(s); box.append(l);
+    }
+    VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal(); this.paint();
+  }
+  cost() { const m = this.car.model; return VR.TUNE_MODELS[m].parts.reduce((s, p) => s + (String(this.t[p]) !== String(this.old[p]) ? VR.tunePartPrice(m, p, this.t) : 0), 0); }
+  paint() {
+    const c = this.d.querySelector('#grPrev'), g = c.getContext('2d'); g.clearRect(0, 0, 320, 180);
+    try { g.drawImage(VR.drawSideHD(this.car.model, VR.tunePal(this.t.color), this.t, 320, 180), 0, 0); } catch (e) {}
+    this.d.querySelector('#grTot').textContent = 'Total: ' + VR.fmtGs(this.cost()) + ' · tenés ' + VR.fmtGs(VR.Wallet.get());
+  }
+  buy() {
+    const n = this.cost(); if (n > VR.Wallet.get()) { this.toast('💸 No te alcanza la plata'); return; }
+    VR.Wallet.add(-n); const c = this.car; c.tune = { ...this.t };
+    c.frames = VR.vframes(c.type, c.color, c.model, c.tune); c.spec = VR.tuneSpec(VR.vspec(c.type, c.model), c.tune);
+    this.toast(n ? '🔧 ¡Quedó joya! ' + VR.fmtGs(n) : 'Sin cambios'); this.close();
+  }
+  close() { this.d.close(); VR.input.enabled = true; }
+};
+VR.ytId = (s) => { const m = String(s).match(/(?:youtu\.be\/|v=|shorts\/|live\/|embed\/)([\w-]{11})/) || String(s).match(/^([\w-]{11})$/); return m ? m[1] : null; };
+VR.Cine = class {
+  constructor(online) {
+    this.on = online;
+    this.d = VR.dlg('cine', '<h2>🎬 Cine en el Teatro Municipal</h2><div id="cnBox"></div><input id="cnUrl" placeholder="Pegá un enlace de YouTube"><div class="seg"><button id="cnPut">Poner</button><button id="cnOut">Salir</button></div><p class="hint">Online: todos los de la sala ven el mismo video.</p>');
+    this.d.querySelector('#cnOut').onclick = () => this.close();
+    this.d.querySelector('#cnPut').onclick = () => { const v = VR.ytId(this.d.querySelector('#cnUrl').value.trim()); if (!v) return; VR.cineNow = { v, t0: Date.now() }; online.ev({ e: 'cine', v, t0: VR.cineNow.t0 }); this.show(); };
+    online.onCine = () => { if (this.d.open) this.show(); };
+  }
+  show() {
+    const c = VR.cineNow, box = this.d.querySelector('#cnBox');
+    if (!c) { box.innerHTML = '<p class="hint">La pantalla está apagada. Poné un video.</p>'; return; }
+    const st = Math.max(0, Math.floor((Date.now() - c.t0) / 1000));
+    box.innerHTML = '<iframe allow="autoplay; encrypted-media" allowfullscreen src="https://www.youtube-nocookie.com/embed/' + c.v + '?autoplay=1&start=' + st + '"></iframe>';
+  }
+  open() { VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal(); this.show(); }
+  close() { this.d.querySelector('#cnBox').innerHTML = ''; this.d.close(); VR.input.enabled = true; }
+};
 
 // ===== game/vcard.js =====
 // Tarjeta del vehículo: al subirte aparece un dibujito de costado con el nombre (inventado) y una línea
@@ -6170,6 +6265,11 @@ VR.showVehicleCard = (v) => {
   // ---------- tienda de ropa (puerta en la vereda, frente a la plaza) ----------
   const shopDecal = (world.decals || []).find((d) => d.kind === 'tienda');
   const shopDoor = shopDecal ? { x: (shopDecal.x + shopDecal.w / 2) * VR.TILE, y: (shopDecal.y + 1) * VR.TILE } : null;
+  const garD = (world.decals || []).find((d) => d.kind === 'taller'), garDoor = garD ? { x: (garD.x + garD.w / 2) * VR.TILE, y: garD.y * VR.TILE + 4 } : null;
+  const muD = (world.decals || []).find((d) => d.kind === 'muni'), cineDoor = muD ? { x: (muD.bx + (muD.tx || muD.bw / 2)) * VR.TILE, y: (muD.y + muD.bh) * VR.TILE + 10 } : null;
+  const garage = new VR.Garage(); let cine = null;
+  const nearGarage = () => garDoor && car && Math.hypot(car.x - garDoor.x, car.y - garDoor.y) < 44 && Math.abs(car.v) < 40 ? garDoor : null;
+  const nearCine = () => cineDoor && !car && Math.hypot(player.x - cineDoor.x, player.y - cineDoor.y) < 40 ? cineDoor : null;
   const nearShop = () => shopDoor && !car && Math.abs(player.x - shopDoor.x) < 26 && player.y > shopDoor.y - 30 && player.y < shopDoor.y + 4 ? shopDoor : null;
   const shop = new VR.Shop({
     onClose: () => { VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; },
@@ -6222,6 +6322,8 @@ VR.showVehicleCard = (v) => {
     if (car) {
       car.update(dt, VR.input);
       player.px = player.x; player.py = player.y; player.x = car.x; player.y = car.y;
+      const ng = nearGarage(); hint = ng ? (VR.input.source === 'touch' ? '🔧 Taller: ACCIÓN' : VR.input.source === 'pad' ? '🔧 A: taller' : '🔧 Espacio: taller') : ''; hintCar = ng;
+      if (ng && VR.input.pressed('action')) { car.v = 0; garage.open(car, toast); return; }
       if (car.spec.emer) { // sirena (tocar) y, en el camión bomba, cañón de agua (mantener)
         if (VR.input.down('action')) holdT += dt;
         else { if (holdT > 0 && holdT <= 0.22) { car.siren = !car.siren; toast(car.siren ? '🚨 Sirena prendida' : 'Sirena apagada'); } holdT = 0; }
@@ -6245,6 +6347,7 @@ VR.showVehicleCard = (v) => {
       } else {
       hint = nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
       hintCar = nc;
+      const nci = nearCine(); if (nci && !nc && !ns) { hint = VR.input.source === 'touch' ? '🎬 Cine: ACCIÓN' : '🎬 Espacio: cine'; hintCar = { x: nci.x, y: nci.y - 8 }; if (VR.input.pressed('action')) { cine.open(); return; } }
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       if (VR.input.pressed('car')) { if (nc) enterCar(nc); else toast('Acercate a un auto o una moto para subir'); }
       else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
@@ -6362,7 +6465,7 @@ VR.showVehicleCard = (v) => {
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
   // ---- online ----
-  const online = new VR.Online(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars });
+  const online = new VR.Online(); cine = new VR.Cine(online); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
   const goOnline = (host) => {
@@ -6385,6 +6488,13 @@ VR.showVehicleCard = (v) => {
     $('onList').textContent = online.peer ? 'Conectados: ' + n.join(', ') : '';
     $('onHud').hidden = !on; if (on) $('onHud').innerHTML = '<b>🌐 Sala ' + online.room + '</b><br>' + n.map((s) => s.replace(/[<>&]/g, '')).join('<br>');
   }, 1000);
+  $('onRef').onclick = async () => {
+    const box = $('onSalas'); box.textContent = 'Buscando…';
+    let L; try { L = await VR.Salas.list(); } catch (e) { box.textContent = 'No se pudo ver la lista (¿hay internet?)'; return; }
+    if (!L) { box.textContent = 'La lista de salas todavía no está configurada: entrá con código.'; return; }
+    box.textContent = L.length ? '' : 'No hay salas abiertas. ¡Creá una!';
+    for (const s of L) { const b = document.createElement('button'); b.textContent = '▶ ' + s.n + ' · de ' + s.h + ' · ' + s.j + ' jugando'; b.onclick = () => { $('onRoom').value = s.n; goOnline(false); }; box.append(b); }
+  };
   $('onHost').onclick = () => goOnline(true); $('onJoin').onclick = () => goOnline(false); $('onStop').onclick = () => online.stop();
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };
@@ -6669,7 +6779,7 @@ VR.showVehicleCard = (v) => {
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();
 
 </script>

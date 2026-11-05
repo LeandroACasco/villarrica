@@ -145,6 +145,11 @@
   #onHud { position: fixed; left: calc(env(safe-area-inset-left) + 8px); bottom: calc(env(safe-area-inset-bottom) + 8px); font: 11px/1.4 sans-serif; color: #fff; background: rgba(0,0,0,.4); border-radius: 8px; padding: 4px 8px; pointer-events: none; z-index: 5; max-width: 40vw; }
   #onHud b { color: #ffd84a; }
   #onDlg { max-width: min(420px, 92vw); }
+  .vrdlg { max-width: min(560px, 94vw); max-height: 92vh; overflow: auto; }
+  .vrdlg canvas { width: 100%; max-width: 320px; display: block; margin: 0 auto 6px; background: #2a2a30; border-radius: 8px; }
+  .vrdlg label { display: inline-block; width: 48%; margin: 0 1% 6px; font-size: 13px; } .vrdlg select, .vrdlg input { width: 100%; padding: 6px; box-sizing: border-box; font: inherit; }
+  .vrdlg iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; background: #000; }
+  #onSalas button { display: block; width: 100%; margin: 3px 0; text-align: left; }
   #segPj { flex-wrap: wrap; } #segPj button { flex: 1 0 30%; border-top: 1px solid var(--line); margin-top: -1px; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   td { padding: 4px 6px; border-bottom: 1px solid var(--line); } td:first-child { color: var(--muted); white-space: nowrap; }
@@ -244,6 +249,7 @@
     <h3>Online (jugar con amigos)</h3>
     <div class="online"><input id="onNick" maxlength="14" placeholder="Tu nombre"><input id="onRoom" maxlength="8" placeholder="Código de sala">
     <div class="seg"><button id="onHost">Crear sala</button><button id="onJoin">Unirse</button><button id="onStop">Salir</button></div>
+    <button id="onRef">🌐 Ver salas abiertas</button><div id="onSalas"></div>
     <p id="onList"></p>
     <p id="onStatus" class="hint">Sin conectar · una persona crea la sala con un código y la otra se une con el mismo código</p></div>
     <h3>Hora del día</h3>

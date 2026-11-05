@@ -736,6 +736,16 @@ VR.decorOver = {
     g.fillStyle = '#2a2a30'; g.fillRect(X + 26, fy + 6, 8, 7); g.fillStyle = '#4a5a6a'; g.fillRect(X + 26.5, fy + 6.5, 7, 6); // ventana
     g.fillStyle = '#fff6c8'; g.fillRect(X + 22, fy + 3, 2, 1.5); // farolito
   },
+  taller(g, d) { // taller "Pyahu": persiana gris, cartel amarillo con llave, cubiertas apiladas y manchas de aceite
+    const S = VR.TILE, X = d.x * S + 2, W = d.w * S - 4, Y = (d.y + 1) * S - 9, mid = X + (W >> 1);
+    g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(X + 2, Y + 3, W, 9);
+    for (let x = X; x < X + W; x++) { g.fillStyle = ((x - X) >> 2) & 1 ? '#2a2a2e' : '#e8b830'; g.fillRect(x, Y + 6, 1, 3); }
+    g.fillStyle = '#6a6e76'; g.fillRect(X, Y, W, 6); g.fillStyle = '#80848c'; for (let y = Y + 1; y < Y + 6; y += 2) g.fillRect(X, y, W, 1);
+    g.fillStyle = '#2a2a30'; g.fillRect(mid - 14, Y - 1, 28, 8); g.fillStyle = '#e8b830'; g.fillRect(mid - 13, Y, 26, 6);
+    g.fillStyle = '#2a2a30'; g.fillRect(mid - 4, Y + 2, 8, 2); g.fillRect(mid - 6, Y + 1, 2, 4); g.fillRect(mid + 4, Y + 1, 2, 4); // llave
+    for (const [tx, ty] of [[X + 4, Y - 10], [X + 4, Y - 6], [X + W - 9, Y - 8]]) { g.fillStyle = '#16161a'; g.beginPath(); g.ellipse(tx + 2.5, ty + 2, 3, 2.2, 0, 0, 7); g.fill(); g.fillStyle = '#4a4a52'; g.fillRect(tx + 1.5, ty + 1.5, 2, 1); }
+    g.fillStyle = 'rgba(20,18,16,.35)'; g.beginPath(); g.ellipse(mid - 10, Y - 6, 6, 2.5, 0, 0, 7); g.ellipse(mid + 12, Y - 4, 4, 2, 0, 0, 7); g.fill();
+  },
   tienda(g, d) { // tienda de ropa "Ao Porã" (05/11/2026): mira al norte, así que desde arriba se ve el toldo sobre la vereda
     const S = VR.TILE, X = d.x * S + 2, W = d.w * S - 4, Y = (d.y + 1) * S - 9, mid = X + (W >> 1);
     g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(X + 2, Y + 3, W, 9);
@@ -1129,6 +1139,8 @@ VR.loadMap = async (url) => {
   w.inSenda = (tx, ty) => { for (const d of w.sendas) { const ux = d.bx - d.ax, uy = d.by - d.ay, L = Math.hypot(ux, uy), px = tx + 0.5 - d.ax, py = ty + 0.5 - d.ay, t = (px * ux + py * uy) / (L * L);
     if (t > -0.02 && t < 1.02 && Math.abs(px * uy - py * ux) / L < d.hw + 0.9) return true; } return false; };
   w.plazaSet = new Set(); (meta.areas || []).forEach((n, i) => { if (/plaza/i.test(n)) w.plazaSet.add(i + 1); });
+  { const t = (meta.decals || []).find((d) => d.kind === 'tienda'), T = VR.T; // taller (05/11/2026): cerca del Centro, misma vereda que la tienda, hacia el oeste
+    if (t) for (let x = t.x - 6; x > t.x - 120; x--) { let ok = true; for (let k = 0; k < 7 && ok; k++) ok = w.get(x - k, t.y) === T.SIDEWALK && w.get(x - k, t.y + 1) === T.BUILDING; if (ok) { meta.decals.push({ kind: 'taller', x: x - 6, y: t.y, w: 7, h: 1 }); break; } } }
   w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
   w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
   w.roads = meta.roads || null; w.special = meta.special || {};

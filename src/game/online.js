@@ -5,6 +5,19 @@
 // quien está cerca del anfitrión (< NEAR) deja de simular los suyos y ve los del anfitrión (copias con choque).
 // Eventos al momento: tiros, lanzallamas, fuego y explosiones de vehículos, sirenas, robar un auto del anfitrión.
 'use strict';
+// Cartelera de salas (Firestore por su API web, sin librería). Proyecto de Firebase propio de Villarrica:
+// completar con los datos de la consola (Configuración del proyecto → Tus apps → web). Sin datos, solo con código.
+VR.FB = null; // { projectId: 'villarrica-…', apiKey: 'AIza…' }
+VR.Salas = {
+  url(id) { const f = VR.FB; return 'https://firestore.googleapis.com/v1/projects/' + f.projectId + '/databases/(default)/documents/villarrica_salas' + (id ? '/' + encodeURIComponent(id) : '') + '?key=' + f.apiKey; },
+  async put(room, nick, n) { if (!VR.FB) return; try { await fetch(this.url(room), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { n: { stringValue: room }, h: { stringValue: nick }, j: { integerValue: String(n) }, at: { integerValue: String(Date.now()) } } }) }); } catch (e) {} },
+  async del(room) { if (!VR.FB) return; try { await fetch(this.url(room), { method: 'DELETE' }); } catch (e) {} },
+  async list() {
+    if (!VR.FB) return null;
+    const j = await (await fetch(this.url() + '&pageSize=100')).json(), F = (d, k) => d.fields[k] && (d.fields[k].stringValue ?? +d.fields[k].integerValue);
+    return (j.documents || []).map((d) => ({ n: F(d, 'n'), h: F(d, 'h'), j: F(d, 'j'), at: F(d, 'at') })).filter((s) => Date.now() - s.at < 120000);
+  },
+};
 VR.Online = class {
   bind(o) { Object.assign(this, o); VR.onlineEv = (m, every) => this.ev(m, every); }
   constructor() { this.proxies = new Map(); this.taken = new Set(); this.pp = []; this.evT = {}; this.nid = 0; this.mirror = false; this.peer = null; this.conns = []; this.others = new Map(); this.status = 'Sin conectar'; this.t = 0; this.onStatus = null; }
@@ -20,7 +33,7 @@ VR.Online = class {
     const op = window.__peerOpts || {}; this.peer = host ? new Peer(id, op) : new Peer(op);
     this.peer.on('error', (e) => this.set(e.type === 'unavailable-id' ? 'Esa sala ya existe: unite en vez de crearla' : e.type === 'peer-unavailable' ? 'No existe la sala ' + room : 'Error: ' + e.type));
     this.peer.on('open', () => {
-      if (host) this.set('Sala ' + room + ' creada · esperando');
+      if (host) { this.set('Sala ' + room + ' creada · esperando'); VR.Salas.put(room, this.nick, 1); this.salaT = 0; }
       else this.hook(this.peer.connect(id, { reliable: true }));
     });
     this.peer.on('connection', (c) => this.hook(c));
@@ -30,7 +43,7 @@ VR.Online = class {
     c.on('data', (m) => {
       if (this.host) for (const o of this.conns) if (o !== c && o.open) o.send(m); // el anfitrión reenvía
       if (m.e) { this.onEv(m); return; }
-      if (m.w) { this.W = m; this.Wat = performance.now(); m.at = this.Wat / 1000; return; }
+      if (m.w) { this.W = m; this.Wat = performance.now(); m.at = this.Wat / 1000; if (m.cine && (!VR.cineNow || VR.cineNow.t0 !== m.cine.t0)) { VR.cineNow = m.cine; if (this.onCine) this.onCine(); } return; }
       if (m.bye) { this.others.delete(m.id); return; }
       let o = this.others.get(m.id);
       if (!o) { o = { x: m.x, y: m.y }; this.others.set(m.id, o); }
@@ -82,6 +95,7 @@ VR.Online = class {
     m.id = this.peer.id; for (const c of this.conns) if (c.open) c.send(m);
   }
   onEv(m) {
+    if (m.e === 'cine') { VR.cineNow = { v: m.v, t0: m.t0 }; if (this.onCine) this.onCine(); return; }
     if (m.e === 'chat') { const o = this.others.get(m.id), n = o ? o.n : 'Alguien'; if (o) o.bubble = { text: m.t, end: performance.now() + 4500 }; VR.chatLine && VR.chatLine(n, m.t); return; }
     const W = this.weapons;
     if (m.e === 'shot' && W) W.shoot(null, [m.x, m.y, m.a]);
@@ -104,7 +118,7 @@ VR.Online = class {
       c.push([v._nid, Math.round(v.x), Math.round(v.y), Math.round(v.a * 100), v.type === 'moto' ? 1 : 0, v.model, v.color || 0, this.flags(v), ri, sp[0], sp[1]]);
     }
     if (this.peds) for (const q of this.peds.list) { q._nid = q._nid || (this.pid = (this.pid || 0) + 1e6); p.push([q._nid, Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]); }
-    const m = { w: 1, c, p }; for (const k of this.conns) if (k.open) k.send(m);
+    const m = { w: 1, c, p, cine: VR.cineNow || undefined }; for (const k of this.conns) if (k.open) k.send(m);
   }
   // ---- invitado: cerca del anfitrión, ver lo suyo ----
   follow(dt, me) {
@@ -151,15 +165,16 @@ VR.Online = class {
     }
     this.pmap = keep;
   }
-  stop() { for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
+  stop() { if (this.host && this.peer) VR.Salas.del(this.room); for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
   // cada cuadro: mandar mi estado (10 por segundo) y olvidar a los que no mandan nada hace 6 s
   update(dt, player, car) {
     this.myL = player.lookData; this.myBubble = player.bubble ? { text: player.bubble.text, end: performance.now() + player.bubble.t * 1000 } : null;
     this.follow(dt, car || player);
+    if (this.host && this.peer && (this.salaT = (this.salaT || 0) + dt) > 30) { this.salaT = 0; VR.Salas.put(this.room, this.nick, this.conns.length + 1); }
     if (!this.peer || !this.conns.length) return;
     this.t += dt; if (this.t < 0.1) return; this.t = 0;
     const m = { id: this.peer.id, n: this.nick, r: this.ride || undefined, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
-    if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car)];
+    if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car), car.tune || 0];
     const lk = JSON.stringify(player.lookData); if (this.sendLook || lk !== this.lastLook || Math.random() < 0.02) { m.L = player.lookData; this.sendLook = false; this.lastLook = lk; }
     for (const c of this.conns) if (c.open) c.send(m);
     if (this.host) VR.extraFoci = [...this.others.values()].filter((o) => !o.r).map((o) => ({ x: o.x, y: o.y }));
@@ -183,7 +198,7 @@ VR.Online = class {
       tall.push({ sy: y + cy, draw: (ctx) => {
         if (o.c) {
           const [type, model, color, ang] = o.c;
-          if (!o.car || o.car.model !== model || o.car.type !== type) { o.car = new VR.Car(VR.world || window.__vr.world, 0, 0, ang, color, type, model); } if (type === 'moto') o.car.rider = { L: o.L };
+          const tk = o.c[5] ? VR.tuneKey(o.c[5]) : ''; if (!o.car || o.car.model !== model || o.car.type !== type || o.car.tk !== tk) { o.car = new VR.Car(VR.world || window.__vr.world, 0, 0, ang, color, type, model, o.c[5] || null); o.car.tk = tk; } if (type === 'moto') o.car.rider = { L: o.L };
           const v = o.car; v.px = v.x = x + cx; v.py = v.y = y + cy; v.pa = v.a = ang; v.siren = !!(o.c[4] & 4); this.fx(v, o.c[4]); v.draw(ctx, cx, cy, 1);
         } else {
           o.car = null;
