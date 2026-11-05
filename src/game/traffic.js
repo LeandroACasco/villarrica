@@ -117,10 +117,15 @@ VR.Traffic = class {
   update(dt, focus, view, playerBody, onHonk) {
     if (!this.ok) return;
     // aparecer de a uno por cuadro hasta completar; borrar los que quedaron lejos
-    if (this.list.length < this.max) this.spawn(focus.x, focus.y, view);
+    // online (anfitrión): también alrededor de los demás jugadores (VR.extraFoci), así ven tránsito donde estén
+    const F = [focus].concat(VR.extraFoci || []), max = this.max + 14 * Math.min(F.length - 1, 4);
+    // cupo por jugador: aparece donde hay menos (cada uno tiene su parte)
+    const near = (f) => this.list.reduce((n, v) => n + (Math.hypot(v.x - f.x, v.y - f.y) < 900 ? 1 : 0), 0);
+    if (F.length > 1) { let f = null, bn = 1e9; for (const g of F) { const n = near(g); if (n < this.max && n < bn) { bn = n; f = g; } } if (f) this.spawn(f.x, f.y, f === focus ? view : { x0: f.x - 280, y0: f.y - 200, x1: f.x + 280, y1: f.y + 200 }); }
+    else if (this.list.length < max) { const f = F[(this.fi = (this.fi || 0) + 1) % F.length]; this.spawn(f.x, f.y, f === focus ? view : { x0: f.x - 280, y0: f.y - 200, x1: f.x + 280, y1: f.y + 200 }); }
     for (let i = this.list.length - 1; i >= 0; i--) {
       const v = this.list[i];
-      if (Math.hypot(v.x - focus.x, v.y - focus.y) > 1300) this.remove(v);
+      if (F.every((f) => Math.hypot(v.x - f.x, v.y - f.y) > 1300)) this.remove(v);
     }
     const W = this.world;
     // vehículos con la sirena prendida (unidades y el tuyo)

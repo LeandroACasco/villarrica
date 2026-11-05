@@ -21,7 +21,7 @@ VR.Online = class {
     this.peer.on('error', (e) => this.set(e.type === 'unavailable-id' ? 'Esa sala ya existe: unite en vez de crearla' : e.type === 'peer-unavailable' ? 'No existe la sala ' + room : 'Error: ' + e.type));
     this.peer.on('open', () => {
       if (host) this.set('Sala ' + room + ' creada · esperando');
-      else this.hook(this.peer.connect(id, { reliable: false }));
+      else this.hook(this.peer.connect(id, { reliable: true }));
     });
     this.peer.on('connection', (c) => this.hook(c));
   }
@@ -30,7 +30,7 @@ VR.Online = class {
     c.on('data', (m) => {
       if (this.host) for (const o of this.conns) if (o !== c && o.open) o.send(m); // el anfitrión reenvía
       if (m.e) { this.onEv(m); return; }
-      if (m.w) { this.W = m; this.Wat = performance.now(); return; }
+      if (m.w) { this.W = m; this.Wat = performance.now(); m.at = this.Wat / 1000; return; }
       if (m.bye) { this.others.delete(m.id); return; }
       let o = this.others.get(m.id);
       if (!o) { o = { x: m.x, y: m.y }; this.others.set(m.id, o); }
@@ -102,13 +102,13 @@ VR.Online = class {
       const ri = v.rider && v.rider.L && VR.RIDER_LOOKS ? VR.RIDER_LOOKS.indexOf(v.rider.L) : -1;
       c.push([v._nid, Math.round(v.x), Math.round(v.y), Math.round(v.a * 100), v.type === 'moto' ? 1 : 0, v.model, v.color || 0, this.flags(v), ri]);
     }
-    if (this.peds) for (const q of this.peds.list) p.push([Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]);
+    if (this.peds) for (const q of this.peds.list) { q._nid = q._nid || (this.pid = (this.pid || 0) + 1e6); p.push([q._nid, Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]); }
     const m = { w: 1, c, p }; for (const k of this.conns) if (k.open) k.send(m);
   }
   // ---- invitado: cerca del anfitrión, ver lo suyo ----
   follow(dt, me) {
     const H = this.host ? null : this.others.get('villarrica-' + (this.room || '').toLowerCase());
-    const near = !!(H && this.W && performance.now() - this.Wat < 3000 && Math.hypot(H.x - me.x, H.y - me.y) < VR.Online.NEAR);
+    const near = !!(this.peer && !this.host && this.W && performance.now() - this.Wat < 3000);
     if (near && !this.mirror) { // dejar de simular lo propio
       this.mirror = true;
       if (this.traffic) for (const v of this.traffic.list.slice()) this.traffic.remove(v);
@@ -119,8 +119,10 @@ VR.Online = class {
       if (this.peds) this.peds.list = [];
     }
     if (!this.mirror) return;
-    const W = this.W, seen = new Set(), k = Math.min(1, dt * 9);
-    for (const [id, x, y, a100, moto, model, color, f, ri] of W.c) {
+    const W = this.W, fresh = W !== this.lastW, k = Math.min(1, dt * 9);
+    if (fresh) { this.lastW = W; this.seen = new Set(); }
+    const seen = this.seen;
+    if (fresh) for (const [id, x, y, a100, moto, model, color, f, ri] of W.c) {
       if (this.taken.has(id)) continue;
       seen.add(id); let v = this.proxies.get(id);
       if (!v) {
@@ -128,22 +130,25 @@ VR.Online = class {
         if (moto && ri >= 0 && VR.RIDER_LOOKS) v.rider = { L: VR.RIDER_LOOKS[ri] };
         this.world.addBox(v); this.proxies.set(id, v);
       }
+      const gap = Math.max(0.05, (W.at || 0) - (v.wat || 0)) || 0.2; v.evx = (x - v.tx) / gap; v.evy = (y - v.ty) / gap; if (Math.hypot(v.evx, v.evy) > 400) v.evx = v.evy = 0; v.wat = W.at;
       v.tx = x; v.ty = y; v.ta = a100 / 100; v.siren = !!(f & 4); this.fx(v, f);
     }
     for (const [id, v] of this.proxies) {
       if (!seen.has(id)) { this.world.removeBox(v); this.proxies.delete(id); continue; }
-      v.px = v.x; v.py = v.y; v.pa = v.a;
+      v.px = v.x; v.py = v.y; v.pa = v.a; v.tx += (v.evx || 0) * dt; v.ty += (v.evy || 0) * dt;
       if (Math.hypot(v.tx - v.x, v.ty - v.y) > 120) { v.x = v.tx; v.y = v.ty; } else { v.x += (v.tx - v.x) * k; v.y += (v.ty - v.y) * k; }
       v.a += Math.atan2(Math.sin(v.ta - v.a), Math.cos(v.ta - v.a)) * k; this.world.moveBox(v);
     }
     // gente: copias livianas con el mismo dibujo (los 32 looks salen igual en todos los teléfonos)
-    const D = ['up', 'right', 'down', 'left'], M = ['walk', 'idle', 'flee', 'down'], P = this.pp;
-    P.length = W.p.length;
-    W.p.forEach(([x, y, d, md, pal], i) => {
-      let q = P[i]; if (!q || q.pal !== pal || Math.hypot(q.x - x, q.y - y) > 80) q = P[i] = { x, y, px: x, py: y, anim: 0, say: null };
+    const D = ['up', 'right', 'down', 'left'], M = ['walk', 'idle', 'flee', 'down'], P = this.pp, by = this.pmap || (this.pmap = new Map()), keep = new Map();
+    P.length = 0;
+    for (const [id, x, y, d, md, pal] of W.p) {
+      let q = by.get(id); if (!q || Math.hypot(q.x - x, q.y - y) > 120) q = { x, y, px: x, py: y, anim: 0, say: null };
+      keep.set(id, q); P.push(q);
       q.px = q.x; q.py = q.y; q.x += (x - q.x) * k; q.y += (y - q.y) * k; q.dir = D[d] || 'down'; q.mode = M[md]; q.pal = pal;
       q.anim += dt * (q.mode === 'flee' ? 15 : 9.5);
-    });
+    }
+    this.pmap = keep;
   }
   stop() { for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
   // cada cuadro: mandar mi estado (10 por segundo) y olvidar a los que no mandan nada hace 6 s
@@ -156,6 +161,7 @@ VR.Online = class {
     if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car)];
     const lk = JSON.stringify(player.lookData); if (this.sendLook || lk !== this.lastLook || Math.random() < 0.02) { m.L = player.lookData; this.sendLook = false; this.lastLook = lk; }
     for (const c of this.conns) if (c.open) c.send(m);
+    if (this.host) VR.extraFoci = [...this.others.values()].filter((o) => !o.r).map((o) => ({ x: o.x, y: o.y }));
     if (this.host && (this.wT = (this.wT || 0) + 1) % 2 === 0) this.sendWorld(); // el mundo, 5 veces por segundo
     const now = performance.now(); for (const [k, o] of this.others) if (now - o.at > 6000) this.others.delete(k);
   }

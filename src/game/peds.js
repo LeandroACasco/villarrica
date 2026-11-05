@@ -90,8 +90,10 @@ VR.Peds = class {
   update(dt, focus, view, car) {
     for (const s of this.sitters) if (s.gone) { s.goneT += dt; if (s.goneT > 40 && Math.hypot(s.x - focus.x, s.y - focus.y) > 600 && !this.list.some((p) => p.sitter === s)) s.gone = false; }
     if (car) { const sp = Math.hypot(car.vx || 0, car.vy || 0); if (sp > 45) { const ax = car.x + (car.vx / sp) * 30, ay = car.y + (car.vy / sp) * 30; for (const s of this.sitters) if (!s.gone && Math.hypot(s.x - ax, s.y - ay) < 45) this.scatter(s.x, s.y, 50, car); } }
-    if (this.list.length < this.max(focus)) this.spawn(focus, view);
-    for (let i = this.list.length - 1; i >= 0; i--) if (Math.hypot(this.list[i].x - focus.x, this.list[i].y - focus.y) > 900) this.list.splice(i, 1);
+    const F = [focus].concat(VR.extraFoci || []), mx = F.reduce((s, f) => s + this.max(f), 0);
+    let f0 = focus; if (F.length > 1) { f0 = null; let bn = 1e9; for (const g of F) { const n = this.list.reduce((s, q) => s + (Math.hypot(q.x - g.x, q.y - g.y) < 700 ? 1 : 0), 0); if (n < this.max(g) && n < bn) { bn = n; f0 = g; } } }
+    if (f0 && this.list.length < mx) { const f = f0; const p = this.spawn(f, f === focus ? view : { x0: f.x - 280, y0: f.y - 200, x1: f.x + 280, y1: f.y + 200 }); if (p) p._nid = this.nid = (this.nid || 0) + 1; }
+    for (let i = this.list.length - 1; i >= 0; i--) { const q = this.list[i]; if (F.every((f) => Math.hypot(q.x - f.x, q.y - f.y) > 900)) this.list.splice(i, 1); }
     const cs = car ? Math.hypot(car.vx || 0, car.vy || 0) : 0;
     for (const p of this.list) {
       p.px = p.x; p.py = p.y;

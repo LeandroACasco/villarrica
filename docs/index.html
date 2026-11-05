@@ -275,7 +275,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 278de21e · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 4bffea9c · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -4156,10 +4156,15 @@ VR.Traffic = class {
   update(dt, focus, view, playerBody, onHonk) {
     if (!this.ok) return;
     // aparecer de a uno por cuadro hasta completar; borrar los que quedaron lejos
-    if (this.list.length < this.max) this.spawn(focus.x, focus.y, view);
+    // online (anfitrión): también alrededor de los demás jugadores (VR.extraFoci), así ven tránsito donde estén
+    const F = [focus].concat(VR.extraFoci || []), max = this.max + 14 * Math.min(F.length - 1, 4);
+    // cupo por jugador: aparece donde hay menos (cada uno tiene su parte)
+    const near = (f) => this.list.reduce((n, v) => n + (Math.hypot(v.x - f.x, v.y - f.y) < 900 ? 1 : 0), 0);
+    if (F.length > 1) { let f = null, bn = 1e9; for (const g of F) { const n = near(g); if (n < this.max && n < bn) { bn = n; f = g; } } if (f) this.spawn(f.x, f.y, f === focus ? view : { x0: f.x - 280, y0: f.y - 200, x1: f.x + 280, y1: f.y + 200 }); }
+    else if (this.list.length < max) { const f = F[(this.fi = (this.fi || 0) + 1) % F.length]; this.spawn(f.x, f.y, f === focus ? view : { x0: f.x - 280, y0: f.y - 200, x1: f.x + 280, y1: f.y + 200 }); }
     for (let i = this.list.length - 1; i >= 0; i--) {
       const v = this.list[i];
-      if (Math.hypot(v.x - focus.x, v.y - focus.y) > 1300) this.remove(v);
+      if (F.every((f) => Math.hypot(v.x - f.x, v.y - f.y) > 1300)) this.remove(v);
     }
     const W = this.world;
     // vehículos con la sirena prendida (unidades y el tuyo)
@@ -4437,8 +4442,10 @@ VR.Peds = class {
   update(dt, focus, view, car) {
     for (const s of this.sitters) if (s.gone) { s.goneT += dt; if (s.goneT > 40 && Math.hypot(s.x - focus.x, s.y - focus.y) > 600 && !this.list.some((p) => p.sitter === s)) s.gone = false; }
     if (car) { const sp = Math.hypot(car.vx || 0, car.vy || 0); if (sp > 45) { const ax = car.x + (car.vx / sp) * 30, ay = car.y + (car.vy / sp) * 30; for (const s of this.sitters) if (!s.gone && Math.hypot(s.x - ax, s.y - ay) < 45) this.scatter(s.x, s.y, 50, car); } }
-    if (this.list.length < this.max(focus)) this.spawn(focus, view);
-    for (let i = this.list.length - 1; i >= 0; i--) if (Math.hypot(this.list[i].x - focus.x, this.list[i].y - focus.y) > 900) this.list.splice(i, 1);
+    const F = [focus].concat(VR.extraFoci || []), mx = F.reduce((s, f) => s + this.max(f), 0);
+    let f0 = focus; if (F.length > 1) { f0 = null; let bn = 1e9; for (const g of F) { const n = this.list.reduce((s, q) => s + (Math.hypot(q.x - g.x, q.y - g.y) < 700 ? 1 : 0), 0); if (n < this.max(g) && n < bn) { bn = n; f0 = g; } } }
+    if (f0 && this.list.length < mx) { const f = f0; const p = this.spawn(f, f === focus ? view : { x0: f.x - 280, y0: f.y - 200, x1: f.x + 280, y1: f.y + 200 }); if (p) p._nid = this.nid = (this.nid || 0) + 1; }
+    for (let i = this.list.length - 1; i >= 0; i--) { const q = this.list[i]; if (F.every((f) => Math.hypot(q.x - f.x, q.y - f.y) > 900)) this.list.splice(i, 1); }
     const cs = car ? Math.hypot(car.vx || 0, car.vy || 0) : 0;
     for (const p of this.list) {
       p.px = p.x; p.py = p.y;
@@ -5480,7 +5487,7 @@ VR.Online = class {
     this.peer.on('error', (e) => this.set(e.type === 'unavailable-id' ? 'Esa sala ya existe: unite en vez de crearla' : e.type === 'peer-unavailable' ? 'No existe la sala ' + room : 'Error: ' + e.type));
     this.peer.on('open', () => {
       if (host) this.set('Sala ' + room + ' creada · esperando');
-      else this.hook(this.peer.connect(id, { reliable: false }));
+      else this.hook(this.peer.connect(id, { reliable: true }));
     });
     this.peer.on('connection', (c) => this.hook(c));
   }
@@ -5489,7 +5496,7 @@ VR.Online = class {
     c.on('data', (m) => {
       if (this.host) for (const o of this.conns) if (o !== c && o.open) o.send(m); // el anfitrión reenvía
       if (m.e) { this.onEv(m); return; }
-      if (m.w) { this.W = m; this.Wat = performance.now(); return; }
+      if (m.w) { this.W = m; this.Wat = performance.now(); m.at = this.Wat / 1000; return; }
       if (m.bye) { this.others.delete(m.id); return; }
       let o = this.others.get(m.id);
       if (!o) { o = { x: m.x, y: m.y }; this.others.set(m.id, o); }
@@ -5561,13 +5568,13 @@ VR.Online = class {
       const ri = v.rider && v.rider.L && VR.RIDER_LOOKS ? VR.RIDER_LOOKS.indexOf(v.rider.L) : -1;
       c.push([v._nid, Math.round(v.x), Math.round(v.y), Math.round(v.a * 100), v.type === 'moto' ? 1 : 0, v.model, v.color || 0, this.flags(v), ri]);
     }
-    if (this.peds) for (const q of this.peds.list) p.push([Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]);
+    if (this.peds) for (const q of this.peds.list) { q._nid = q._nid || (this.pid = (this.pid || 0) + 1e6); p.push([q._nid, Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]); }
     const m = { w: 1, c, p }; for (const k of this.conns) if (k.open) k.send(m);
   }
   // ---- invitado: cerca del anfitrión, ver lo suyo ----
   follow(dt, me) {
     const H = this.host ? null : this.others.get('villarrica-' + (this.room || '').toLowerCase());
-    const near = !!(H && this.W && performance.now() - this.Wat < 3000 && Math.hypot(H.x - me.x, H.y - me.y) < VR.Online.NEAR);
+    const near = !!(this.peer && !this.host && this.W && performance.now() - this.Wat < 3000);
     if (near && !this.mirror) { // dejar de simular lo propio
       this.mirror = true;
       if (this.traffic) for (const v of this.traffic.list.slice()) this.traffic.remove(v);
@@ -5578,8 +5585,10 @@ VR.Online = class {
       if (this.peds) this.peds.list = [];
     }
     if (!this.mirror) return;
-    const W = this.W, seen = new Set(), k = Math.min(1, dt * 9);
-    for (const [id, x, y, a100, moto, model, color, f, ri] of W.c) {
+    const W = this.W, fresh = W !== this.lastW, k = Math.min(1, dt * 9);
+    if (fresh) { this.lastW = W; this.seen = new Set(); }
+    const seen = this.seen;
+    if (fresh) for (const [id, x, y, a100, moto, model, color, f, ri] of W.c) {
       if (this.taken.has(id)) continue;
       seen.add(id); let v = this.proxies.get(id);
       if (!v) {
@@ -5587,22 +5596,25 @@ VR.Online = class {
         if (moto && ri >= 0 && VR.RIDER_LOOKS) v.rider = { L: VR.RIDER_LOOKS[ri] };
         this.world.addBox(v); this.proxies.set(id, v);
       }
+      const gap = Math.max(0.05, (W.at || 0) - (v.wat || 0)) || 0.2; v.evx = (x - v.tx) / gap; v.evy = (y - v.ty) / gap; if (Math.hypot(v.evx, v.evy) > 400) v.evx = v.evy = 0; v.wat = W.at;
       v.tx = x; v.ty = y; v.ta = a100 / 100; v.siren = !!(f & 4); this.fx(v, f);
     }
     for (const [id, v] of this.proxies) {
       if (!seen.has(id)) { this.world.removeBox(v); this.proxies.delete(id); continue; }
-      v.px = v.x; v.py = v.y; v.pa = v.a;
+      v.px = v.x; v.py = v.y; v.pa = v.a; v.tx += (v.evx || 0) * dt; v.ty += (v.evy || 0) * dt;
       if (Math.hypot(v.tx - v.x, v.ty - v.y) > 120) { v.x = v.tx; v.y = v.ty; } else { v.x += (v.tx - v.x) * k; v.y += (v.ty - v.y) * k; }
       v.a += Math.atan2(Math.sin(v.ta - v.a), Math.cos(v.ta - v.a)) * k; this.world.moveBox(v);
     }
     // gente: copias livianas con el mismo dibujo (los 32 looks salen igual en todos los teléfonos)
-    const D = ['up', 'right', 'down', 'left'], M = ['walk', 'idle', 'flee', 'down'], P = this.pp;
-    P.length = W.p.length;
-    W.p.forEach(([x, y, d, md, pal], i) => {
-      let q = P[i]; if (!q || q.pal !== pal || Math.hypot(q.x - x, q.y - y) > 80) q = P[i] = { x, y, px: x, py: y, anim: 0, say: null };
+    const D = ['up', 'right', 'down', 'left'], M = ['walk', 'idle', 'flee', 'down'], P = this.pp, by = this.pmap || (this.pmap = new Map()), keep = new Map();
+    P.length = 0;
+    for (const [id, x, y, d, md, pal] of W.p) {
+      let q = by.get(id); if (!q || Math.hypot(q.x - x, q.y - y) > 120) q = { x, y, px: x, py: y, anim: 0, say: null };
+      keep.set(id, q); P.push(q);
       q.px = q.x; q.py = q.y; q.x += (x - q.x) * k; q.y += (y - q.y) * k; q.dir = D[d] || 'down'; q.mode = M[md]; q.pal = pal;
       q.anim += dt * (q.mode === 'flee' ? 15 : 9.5);
-    });
+    }
+    this.pmap = keep;
   }
   stop() { for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
   // cada cuadro: mandar mi estado (10 por segundo) y olvidar a los que no mandan nada hace 6 s
@@ -5615,6 +5627,7 @@ VR.Online = class {
     if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car)];
     const lk = JSON.stringify(player.lookData); if (this.sendLook || lk !== this.lastLook || Math.random() < 0.02) { m.L = player.lookData; this.sendLook = false; this.lastLook = lk; }
     for (const c of this.conns) if (c.open) c.send(m);
+    if (this.host) VR.extraFoci = [...this.others.values()].filter((o) => !o.r).map((o) => ({ x: o.x, y: o.y }));
     if (this.host && (this.wT = (this.wT || 0) + 1) % 2 === 0) this.sendWorld(); // el mundo, 5 veces por segundo
     const now = performance.now(); for (const [k, o] of this.others) if (now - o.at > 6000) this.others.delete(k);
   }
