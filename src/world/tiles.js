@@ -71,10 +71,14 @@ VR.tileset = {
           if (v === 2 && id < 0.15 && !T.joint && Math.hypot(T.lx - 2, T.ly - 2) < 1.2) { r -= 14; g -= 14; b -= 10; } // mancha
           break;
         }
-        case VR.T.PAVING: { // baldosas rojizas de plaza en damero, con junta y bisel
-          const T = tile(x, y, 4), alt = (T.i + T.j + v) & 1, k = (H(T.i + v * 5, T.j, 51) - 0.5) * 12 + (h - 0.5) * 8;
-          r = (alt ? 198 : 180) + k; g = (alt ? 148 : 128) + k; b = (alt ? 110 : 96) + k;
-          if (T.joint) { r = 128; g = 92; b = 70; } else if (T.hi) { r += 14; g += 12; b += 10; } else if (T.lo) { r -= 14; g -= 12; b -= 10; }
+        case VR.T.PAVING: { // piedra laja irregular (Street View de la plaza, 05/11/2026): rosada y parda, juntas de tierra
+          const st = stones(x, y, 4, 2.6, 200 + v * 3), k = (st.id - 0.5) * 26 + (h - 0.5) * 8, tint = H((st.id * 97) | 0, v, 211);
+          r = 184 + k + (tint < 0.3 ? 8 : 0); g = 146 + k - (tint < 0.3 ? 6 : 0); b = 116 + k * 0.9 + (tint > 0.8 ? 10 : 0);
+          const sh = st.dx + st.dy;
+          if (st.edge < 0.32) { r = 122; g = 98; b = 80; }
+          else if (st.edge < 0.62 && sh > 0) { r -= 14; g -= 13; b -= 11; }
+          else if (st.edge < 0.8 && sh < 0) { r += 12; g += 11; b += 9; }
+          if (h2 > 0.992) { r -= 26; g -= 24; b -= 20; } // manchita
           break;
         }
         case VR.T.DIRT: { // tierra colorada con terrones y piedritas

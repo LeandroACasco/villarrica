@@ -484,7 +484,7 @@ VR.Car = class {
 VR.parkCars = (world, n, near) => {
   const T = VR.T, rnd = VR.rng(2006), S = VR.TILE, cars = [];
   const road = (x, y) => { const t = world.get(x, y); return t === T.ROAD || t === T.STONE; };
-  const curb = (x, y) => { const t = world.get(x, y); return t === T.SIDEWALK || t === T.CHECKER; };
+  const curb = (x, y) => { const t = world.get(x, y); return t === T.SIDEWALK || t === T.CHECKER || t === T.PAVING; };
   const add = (x, y, a, color, type = 'car', model) => { const m = model || (type === 'moto' ? VR.pickMoto(rnd, true) : VR.pickCar(rnd, true)); const c = new VR.Car(world, x, y, a, m === 'pati' ? color % VR.PATI_COLORS.length : color, type, m); world.addBox(c); cars.push(c); return c; };
   let first = null;
   // ¿entran motos en batería (de punta contra el cordón) y además los autos y un carril libre? Si la calle es

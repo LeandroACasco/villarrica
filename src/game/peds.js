@@ -25,7 +25,11 @@ VR.Peds = class {
       for (let i = 0; i < n; i++) {
         const L = VR.av2Random(SR); L.termo = SR() < 0.35; L.mochila = false; if (L.hat === 'casco') L.hat = 'ninguno';
         const o = n === 2 ? (i ? 3.5 : -3.5) : 0;
-        if (d.f === 's') this.sitters.push({ x: X + 8 + o, y: Y + 15.5, dir: 'down', look: VR.av2Lazy(L), d });
+        if (d.fa !== undefined) { // banco girado: la persona mira hacia donde mira el banco
+          const fx = Math.cos(d.fa), fy = Math.sin(d.fa), tx = -fy, ty = fx;
+          const dir = fy > 0.3 ? 'down' : fy < -0.75 ? 'up' : fx > 0 ? 'right' : 'left';
+          this.sitters.push({ x: d.px + tx * o + fx * 1.5, y: d.py + ty * o + fy * 1.5 + 6, dir, look: VR.av2Lazy(L), d });
+        } else if (d.f === 's') this.sitters.push({ x: X + 8 + o, y: Y + 15.5, dir: 'down', look: VR.av2Lazy(L), d });
         else this.sitters.push({ x: d.f === 'e' ? X + 7.5 : X + 8.5, y: Y + 11 + o * 1.6, dir: d.f === 'e' ? 'right' : 'left', look: VR.av2Lazy(L), d });
       }
     }

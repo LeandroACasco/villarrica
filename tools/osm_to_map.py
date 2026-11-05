@@ -422,7 +422,31 @@ def main(src, out, preview=None):
             east = (u > 0.66) & (v > 0.2) & (v < 0.97) & ((u - 0.66) * 1.6 > (0.34 - v))
             mx, my = int(x0b + 0.49 * Wd), int(y0b + 0.44 * Hd)
             ring = (np.abs(gx - mx) <= 3) & (np.abs(gy - my) <= 3)
-            pave = border | (dist <= 1.3) | east | ring
+            pave = border | east | ring
+            # camino diagonal (Street View y satélite, 05/11/2026): piedra laja con canteros de borde blanco; las
+            # celdas quedan de tierra (sin árboles) y el camino liso lo dibuja el decorado 'senda'
+            pathm = (dist <= 2.0) & sub & ~pave
+            HW = 1.5
+            A_ = (x0b + ax_, y0b + ay_); B_ = (x0b + bx_, y0b + by_)
+            segs, cur = [], None
+            for k in range(0, 101):
+                t_ = k / 100; qx, qy = A_[0] + (B_[0] - A_[0]) * t_, A_[1] + (B_[1] - A_[1]) * t_
+                ok = 0 <= int(qy) - y0b < pathm.shape[0] and 0 <= int(qx) - x0b < pathm.shape[1] and pathm[int(qy) - y0b, int(qx) - x0b]
+                if ok and cur is None: cur = t_
+                if not ok and cur is not None: segs.append([round(cur, 3), round(t_, 3)]); cur = None
+            if cur is not None: segs.append([round(cur, 3), 1.0])
+            ang_ = math.atan2(B_[1] - A_[1], B_[0] - A_[0]); nx_, ny_ = -math.sin(ang_), math.cos(ang_)
+            decals.append({'kind': 'senda', 'x': int(min(A_[0], B_[0])) - 2, 'y': int(min(A_[1], B_[1])) - 2, 'w': int(abs(B_[0] - A_[0])) + 5, 'h': int(abs(A_[1] - B_[1])) + 5,
+                           'ax': round(A_[0], 2), 'ay': round(A_[1], 2), 'bx': round(B_[0], 2), 'by': round(B_[1], 2), 'hw': HW, 'segs': segs})
+            plen = math.hypot(B_[0] - A_[0], B_[1] - A_[1]); bench_cells = []
+            for t0_, t1_ in segs:
+                L_ = (t1_ - t0_) * plen; n_b = int(L_ // 6)
+                for i_ in range(n_b):
+                    t_ = t0_ + (i_ + 0.5) / max(1, n_b) * (t1_ - t0_); sd = 1 if i_ % 2 == 0 else -1
+                    qx = A_[0] + (B_[0] - A_[0]) * t_ + nx_ * sd * (HW + 0.75); qy = A_[1] + (B_[1] - A_[1]) * t_ + ny_ * sd * (HW + 0.75)
+                    fa = math.atan2(-ny_ * sd, -nx_ * sd)  # mira hacia el camino
+                    decals.append({'kind': 'banco', 'x': int(qx), 'y': int(qy), 'w': 1, 'h': 1, 'f': 'd', 'px': round(qx * 16, 1), 'py': round(qy * 16, 1), 'fa': round(fa, 3)})
+                    bench_cells.append((int(qx), int(qy)))
             # hoyos de árbol en el sector de baldosas (cada 5 tiles)
             pits = east & (((gx - x0b) % 5) == 2) & (((gy - y0b) % 5) == 2) & ~((u > 0.8) & (u < 0.96) & (((v > 0.3) & (v < 0.5)) | ((v > 0.62) & (v < 0.82))))
             pave &= ~pits
@@ -443,6 +467,10 @@ def main(src, out, preview=None):
         keep = tsub == MONUMENT
         tsub[sub & pave & ~keep] = PAVING
         tsub[sub & ~pave & ~keep] = GRASS
+        if heroes:
+            tsub[pathm & ~keep] = PLAZADIRT
+            for bx2, by2 in bench_cells:
+                tsub[max(0, by2 - y0b - 1):by2 - y0b + 2, max(0, bx2 - x0b - 1):bx2 - x0b + 2][sub[max(0, by2 - y0b - 1):by2 - y0b + 2, max(0, bx2 - x0b - 1):bx2 - x0b + 2] & (tsub[max(0, by2 - y0b - 1):by2 - y0b + 2, max(0, bx2 - x0b - 1):bx2 - x0b + 2] == GRASS)] = PLAZADIRT
         if 'Héroes' in p['name']:
             tiles[cy - 1:cy + 1, cx - 1:cx + 1] = MONUMENT
             decals.append({'kind': 'monumento', 'x': cx - 1, 'y': cy - 1, 'w': 2, 'h': 2})
@@ -453,7 +481,7 @@ def main(src, out, preview=None):
             # Street View (enero 2025, 05/11/2026): juegos infantiles amarillos al norte, al oeste del centro, y
             # mesas y sillas plásticas rojas en el sector sudoeste. Ahí no van árboles.
             jx, jy = int(x0b + 0.36 * Wd), int(y0b + 0.12 * Hd)
-            sx_, sy_ = int(x0b + 0.12 * Wd), int(y0b + 0.78 * Hd)
+            sx_, sy_ = int(x0b + 0.16 * Wd), int(y0b + 0.55 * Hd)
             free_ = lambda x, y, w, h: [(cx_, cy_) for (cx_, cy_) in cand if not (x - 1 <= cx_ <= x + w and y - 1 <= cy_ <= y + h)]
             cand = free_(jx, jy, 4, 3); cand = free_(sx_, sy_, 4, 4)
             decals.append({'kind': 'juegos', 'x': jx, 'y': jy, 'w': 4, 'h': 3})
@@ -791,7 +819,7 @@ def main(src, out, preview=None):
     if plazas:
         inplaza = np.isin(area, plazas)
         ys_, xs_ = np.nonzero(inplaza & (tiles == PAVING))
-        green = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] in (GRASS, TREE)
+        green = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] in (GRASS, TREE, PLAZADIRT)
         for y, x in zip(ys_, xs_):
             if y < 2 or x < 2 or y >= H - 2 or x >= W - 2:
                 continue
@@ -809,6 +837,60 @@ def main(src, out, preview=None):
             decals.append({'kind': 'banco', 'x': int(x), 'y': int(y), 'w': 1, 'h': 1, 'f': f})
     print('bancos en las plazas: %d' % len(benches))
 
+    # ---------- alrededor de la Plaza de los Héroes (Street View de Leandro, 05/11/2026) ----------
+    # La vereda de la plaza es de la misma piedra laja que adentro, hasta el cordón. Las cuatro esquinas son
+    # redondeadas (radio ~6 m), con el cordón pintado de amarillo y dos rampas azules para sillas de ruedas, una
+    # hacia cada cruce. En cada esquina hay un banco en diagonal que mira a la esquina.
+    rounded = np.zeros((H, W), bool)
+    if hero:
+        ROADS_ = (ROAD, STONE, DIRTROAD)
+        def width_out(xs_, ys_, dx, dy):
+            out = []
+            for x, y in zip(xs_, ys_):
+                n = 0
+                while n < 6 and tiles[y + dy * (n + 1), x + dx * (n + 1)] not in ROADS_ and tiles[y + dy * (n + 1), x + dx * (n + 1)] != BUILDING: n += 1
+                out.append(n)
+            return int(np.median(out)) if out else 0
+        my_, mx_ = (y0p + y1p_) // 2, (x0p + x1p) // 2
+        wN = width_out([mx_ - 6, mx_, mx_ + 6], [y0p] * 3, 0, -1); wS = width_out([mx_ - 6, mx_, mx_ + 6], [y1p_] * 3, 0, 1)
+        wW = width_out([x0p] * 3, [my_ - 6, my_, my_ + 6], -1, 0); wE = width_out([x1p] * 3, [my_ - 6, my_, my_ + 6], 1, 0)
+        X0, X1, Y0, Y1 = x0p - wW, x1p + wE, y0p - wN, y1p_ + wS
+        ring_ = np.zeros((H, W), bool); ring_[Y0:Y1 + 1, X0:X1 + 1] = True; ring_[y0p:y1p_ + 1, x0p:x1p + 1] = False
+        conv = ring_ & np.isin(tiles, (SIDEWALK, GRASS, DIRT, TREE, CHECKER, PAVING))
+        tiles[conv] = PAVING
+        trees[:] = [t for t in trees if not conv[t[1], t[0]]]
+        R_ = 3
+        for (cxe, cye, sx_, sy_, q) in ((X1 + 1, Y0, -1, 1, 'ne'), (X0, Y0, 1, 1, 'nw'), (X1 + 1, Y1 + 1, -1, -1, 'se'), (X0, Y1 + 1, 1, -1, 'sw')):
+            ccx, ccy = cxe + sx_ * R_, cye + sy_ * R_
+            for k_ in range(R_):
+                for j_ in range(R_):
+                    x = cxe + (sx_ * k_ if sx_ > 0 else -k_ - 1); y = cye + (sy_ * j_ if sy_ > 0 else -j_ - 1)
+                    if math.hypot(x + 0.5 - ccx, y + 0.5 - ccy) > R_:
+                        tiles[y, x] = ROAD; rounded[y, x] = True
+            decals.append({'kind': 'esquina', 'x': min(cxe, ccx), 'y': min(cye, ccy), 'w': R_, 'h': R_, 'cx': cxe, 'cy': cye, 'q': q, 'r': R_})
+            # banco en diagonal mirando a la esquina, en el centro del arco, y sin árboles alrededor
+            bxc, byc = ccx + sx_ * 0.6, ccy + sy_ * 0.6
+            fa = math.atan2(-sy_, -sx_)
+            decals.append({'kind': 'banco', 'x': int(bxc), 'y': int(byc), 'w': 1, 'h': 1, 'f': 'd', 'px': round(bxc * 16, 1), 'py': round(byc * 16, 1), 'fa': round(fa, 3)})
+            clr = lambda x, y: abs(x + 0.5 - bxc) < 2.6 and abs(y + 0.5 - byc) < 2.6
+            trees[:] = [t for t in trees if not clr(t[0], t[1])]
+            for y in range(int(byc) - 2, int(byc) + 3):
+                for x in range(int(bxc) - 2, int(bxc) + 3):
+                    if clr(x, y) and tiles[y, x] in (TREE, GRASS, PLAZADIRT, DIRT): tiles[y, x] = PAVING
+        print('plaza: vereda de laja N%d S%d O%d E%d, 4 esquinas redondeadas' % (wN, wS, wW, wE))
+
+        # ---------- galería colonial en la esquina de Mcal. López y Gral. Díaz (Street View de Leandro) ----------
+        # Del otro lado de Mcal. López, frente a la esquina noreste de la plaza: casona blanca de una planta alta con
+        # arcos sobre la vereda, pilastras y cornisa; adentro, una librería y una tienda de ropa con maniquíes.
+        if no is not None:
+            gal = corner_bid(x1p - 14, x1p + 2, yn - 14, yn, x1p, yn - 1)
+            if gal and gal not in (ne, no, so):
+                ys, xs = np.nonzero(bid[yn - 30:yn, x1p - 40:x1p + 3] == gal)
+                ga0, ga1, gb1 = int(xs.min()) + x1p - 40, int(xs.max()) + x1p - 40, int(ys.max()) + yn - 30
+                setb(gal, 2, 8, 0, 0)
+                decals.append({'kind': 'galeria', 'x': ga0, 'y': gb1, 'w': ga1 - ga0 + 1, 'h': 1})
+                print('galería: edificio %d, x %d-%d, y %d' % (gal, ga0, ga1, gb1))
+
     # ---------- cebras en las esquinas del Centro (05/11/2026) ----------
     # Cada cruce (celdas que pisan 2 calles o más) es un rectángulo; en cada brazo, justo afuera del cruce, se pintan
     # 2 baldosas (4 m) de cebra sobre el asfalto, de cordón a cordón. Solo en el barrio Centro.
@@ -824,7 +906,7 @@ def main(src, out, preview=None):
                 continue
             arms = [(range(y0_ - 2, y0_), range(x0_, x1_ + 1), 3), (range(y1_ + 1, y1_ + 3), range(x0_, x1_ + 1), 3),
                     (range(y0_, y1_ + 1), range(x0_ - 2, x0_), 4), (range(y0_, y1_ + 1), range(x1_ + 1, x1_ + 3), 4)]
-            road_at = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] in (ROAD, STONE, DIRTROAD)
+            road_at = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] in (ROAD, STONE, DIRTROAD) and not rounded[y, x]
             for ys_, xs_, val in arms:
                 cells = [(y, x) for y in ys_ for x in xs_ if 0 <= y < H and 0 <= x < W and paved_rd[y, x]]
                 # el brazo tiene que ser una calle que sale del cruce: a sus costados, vereda (no más calle)
