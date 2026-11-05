@@ -846,23 +846,36 @@ VR.decorOver = {
     // entrada del Teatro Municipal (Street View, enero 2025): arriba una fila de ventanas en arco, abajo tres
     // arcos grandes; adelante, escalinata
     {
-      const x0 = tcx - tw / 2, top = RE - 2;
-      g.fillStyle = C.CREAM; g.fillRect(x0 - 2, top, tw + 4, 4);              // cornisa con parapeto
-      for (let k = 0; k < tw; k += 6) { g.fillStyle = C.CREAM_D; g.fillRect(x0 + k + 2, top + 1, 2, 2); }
-      g.fillStyle = C.SAL; g.fillRect(x0, top + 4, tw, FH - 1);
-      g.fillStyle = C.SAL_D; g.fillRect(x0 + tw - 2, top + 4, 2, FH - 1);
-      g.fillStyle = C.CREAM; g.fillRect(x0, top + 21, tw, 2);
-      for (let k = 0; k < 7; k++) { // ventanas en arco del piso alto
-        const wx = x0 + 3 + k * 9;
-        g.fillStyle = C.CREAM_D; g.fillRect(wx, top + 8, 7, 11);
-        g.fillStyle = C.GLASS; g.fillRect(wx + 1, top + 10, 5, 9); g.fillRect(wx + 2, top + 9, 3, 1);
+      // (foto de Leandro, 05/11/2026) fachada blanca: cartel iluminado celeste arriba, 6 ventanas en arco con
+      // banderas, cornisa, tres arcos grandes con puertas de madera y vidrio, luces en la base
+      const x0 = tcx - tw / 2, top = RE - 6, bot = Y0 + H, WH = '#f2f0ea', WD = '#d4d0c6', WL = '#ffffff';
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x0 + 3, top + 3, tw, bot - top);
+      g.fillStyle = WH; g.fillRect(x0, top, tw, bot - top);                                   // muro blanco
+      g.fillStyle = WD; g.fillRect(x0 + tw - 3, top, 3, bot - top); g.fillStyle = WL; g.fillRect(x0, top, 2, bot - top);
+      // ático con el cartel iluminado
+      g.fillStyle = '#d8f2ff'; g.fillRect(x0 + 8, top - 6, tw - 16, 7); g.fillStyle = '#4ac0f0'; g.fillRect(x0 + 9, top - 5, tw - 18, 5);
+      g.fillStyle = 'rgba(120,220,255,.35)'; g.fillRect(x0 + 6, top - 8, tw - 12, 11);
+      g.save(); g.fillStyle = '#ffffff'; g.font = 'bold 3.6px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('TEATRO MUNICIPAL DE VILLARRICA', tcx, top - 2.4, tw - 20); g.restore();
+      g.fillStyle = WD; g.fillRect(x0 - 2, top + 1, tw + 4, 2); g.fillStyle = WL; g.fillRect(x0 - 2, top + 1, tw + 4, 1); // cornisa alta
+      // piso alto: 6 ventanas en arco con banderas paraguayas entre ellas
+      const fy = top + 6;
+      for (let k = 0; k < 6; k++) {
+        const wx = x0 + 6 + k * 9.2;
+        g.fillStyle = WD; g.fillRect(wx - 1, fy, 8, 12); g.fillStyle = '#2a3a5a'; g.fillRect(wx, fy + 2, 6, 10); g.fillRect(wx + 1, fy + 1, 4, 1);
+        g.fillStyle = '#5a7ab8'; g.fillRect(wx + 1, fy + 3, 2, 4); g.fillStyle = WL; g.fillRect(wx, fy + 7, 6, 1); g.fillRect(wx + 3, fy + 2, 1, 10);
+        if (k < 5) { const fx = wx + 7.4; g.fillStyle = '#8a8a90'; g.fillRect(fx, fy + 1, 0.6, 9); g.fillStyle = '#d52b1e'; g.fillRect(fx + 0.6, fy + 1, 2.6, 1); g.fillStyle = '#ffffff'; g.fillRect(fx + 0.6, fy + 2, 2.6, 1); g.fillStyle = '#0038a8'; g.fillRect(fx + 0.6, fy + 3, 2.6, 1); }
       }
-      for (let k = 0; k < 3; k++) { // tres arcos grandes de entrada
-        const ax = x0 + 6 + k * 19;
-        g.fillStyle = C.CREAM_D; g.fillRect(ax - 1, top + 24, 16, FH - 21);
-        g.fillStyle = '#2a2a30'; g.fillRect(ax, top + 27, 14, FH - 24); g.fillRect(ax + 2, top + 25, 10, 2);
-        g.fillStyle = '#4a3a2c'; g.fillRect(ax + 3, top + 31, 8, FH - 28);
+      g.fillStyle = WD; g.fillRect(x0 - 3, fy + 13, tw + 6, 3); g.fillStyle = WL; g.fillRect(x0 - 3, fy + 13, tw + 6, 1); // cornisa del medio
+      // planta baja: tres arcos grandes con puertas de madera y vidrio cuadriculado
+      const ay = fy + 17, ah = bot - ay - 2;
+      for (let k = 0; k < 3; k++) {
+        const ax = x0 + 7 + k * 18;
+        g.fillStyle = WD; g.fillRect(ax - 1, ay, 15, ah + 1); g.fillStyle = '#e8e4da'; g.fillRect(ax + 2, ay - 1, 9, 2);
+        g.fillStyle = '#9a4a1c'; g.fillRect(ax, ay + 2, 13, ah - 1); g.fillRect(ax + 2, ay + 1, 9, 1);
+        g.fillStyle = '#f0b878'; for (let yy = ay + 3; yy < ay + ah; yy += 3) for (let xx = ax + 1; xx < ax + 12; xx += 3) g.fillRect(xx, yy, 2, 2);
+        g.fillStyle = '#6a3010'; g.fillRect(ax + 6, ay + 2, 1, ah - 1);
       }
+      for (let k = 0; k < 4; k++) { const lx = x0 + 4 + k * 18.6; g.fillStyle = '#fff6c8'; g.fillRect(lx, bot - 2, 3, 1); g.fillStyle = 'rgba(255,240,190,.35)'; g.fillRect(lx - 1, bot - 9, 5, 7); } // luces en la base
       // escalinata
       const by = Y0 + H;
       for (let k = 0; k < 3; k++) { g.fillStyle = k % 2 ? '#d8d6d0' : '#eceae4'; g.fillRect(x0 - 4 - k * 3, by + k * 3, tw + 8 + k * 6, 3); }

@@ -20,6 +20,19 @@ VR.Teatro = class {
     this.btn = document.createElement('button'); this.btn.textContent = '🎬 Poner video'; this.btn.className = 'icon-btn'; this.btn.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:6;display:none;width:auto;padding:0 14px';
     document.body.append(this.btn);
   }
+  // sincronía del video (05/11/2026): cada 3 s se pregunta al reproductor en qué segundo va y, si se separó
+  // más de 1,2 s del reloj de la sala, se lo corrige (seekTo). Así todos ven lo mismo aunque carguen distinto.
+  yt(func, args = []) { try { this.ifr.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args }), '*'); } catch (e) {} }
+  sync(c) {
+    if (!this.listen) { this.listen = true; addEventListener('message', (e) => { if (e.source !== this.ifr.contentWindow) return; let d; try { d = JSON.parse(e.data); } catch (x) { return; } if (d && d.info && typeof d.info.currentTime === 'number') { this.vt = d.info.currentTime; this.vtAt = performance.now(); if (typeof d.info.playerState === 'number') this.vstate = d.info.playerState; } }); }
+    const now = performance.now(); if (now < (this.syncT || 0)) return; this.syncT = now + 3000;
+    try { this.ifr.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*'); } catch (e) {}
+    const target = (VR.netNow() - c.t0) / 1000; if (target < 0) return;
+    if (this.vt == null) return;
+    const cur = this.vt + (this.vstate === 1 ? (now - this.vtAt) / 1000 : 0);
+    if (Math.abs(cur - target) > 1.2) this.yt('seekTo', [target, true]);
+    if (this.vstate === 2 || this.vstate === -1 || this.vstate === 5) this.yt('playVideo');
+  }
   enter() { this.on = true; Object.assign(this.t = this.t || {}, { x: 180, y: 500, dir: 'up', moving: false, anim: 0, sit: null }); this.btn.style.display = ''; this.cur = null; this.toast('🎭 Teatro Municipal · ACCIÓN para sentarte'); }
   exit() { this.on = false; this.ifr.style.display = 'none'; this.ifr.src = 'about:blank'; this.cur = null; this.btn.style.display = 'none'; }
   hit(x, y) { for (const r of this.solid) if (x > r.x - 4 && x < r.x + r.w + 4 && y > r.y - 2 && y < r.y + r.h + 2) return true; return false; }
@@ -90,8 +103,9 @@ VR.Teatro = class {
     // el video, encima de la pantalla
     const c = VR.cineNow, k = z * VR.screen.scale / (window.devicePixelRatio || 1), r = VR.screen.canvas.getBoundingClientRect();
     if (c) {
-      const src = 'https://www.youtube-nocookie.com/embed/' + c.v + '?autoplay=1&controls=0&start=' + Math.max(0, Math.floor((Date.now() - c.t0) / 1000));
-      if (this.cur !== c.v + c.t0) { this.cur = c.v + c.t0; this.ifr.src = src; }
+      const src = 'https://www.youtube-nocookie.com/embed/' + c.v + '?autoplay=1&controls=0&enablejsapi=1&origin=' + encodeURIComponent(location.origin) + '&start=' + Math.max(0, Math.floor((VR.netNow() - c.t0) / 1000));
+      if (this.cur !== c.v + c.t0) { this.cur = c.v + c.t0; this.ifr.src = src; this.vt = null; this.syncT = performance.now() + 2500; }
+      this.sync(c);
       Object.assign(this.ifr.style, { display: '', left: r.left + (S.x - cx) * k + 'px', top: r.top + (S.y - cy) * k + 'px', width: S.w * k + 'px', height: S.h * k + 'px' });
     } else this.ifr.style.display = 'none';
   }

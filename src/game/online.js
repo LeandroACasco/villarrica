@@ -5,6 +5,7 @@
 // quien está cerca del anfitrión (< NEAR) deja de simular los suyos y ve los del anfitrión (copias con choque).
 // Eventos al momento: tiros, lanzallamas, fuego y explosiones de vehículos, sirenas, robar un auto del anfitrión.
 'use strict';
+VR.netOffset = 0; VR.netNow = () => Date.now() + VR.netOffset; // reloj común de la sala (el del anfitrión)
 // Cartelera de salas (Firestore por su API web, sin librería). Proyecto de Firebase propio de Villarrica:
 // completar con los datos de la consola (Configuración del proyecto → Tus apps → web). Sin datos, solo con código.
 VR.FB = { projectId: 'villarrica-juego', apiKey: 'AIzaSyD3JaREpx9D26GGQu1U1IrbxQV-jmcRgIA' }; // proyecto de Firebase propio de Villarrica
@@ -43,7 +44,7 @@ VR.Online = class {
     c.on('data', (m) => {
       if (this.host) for (const o of this.conns) if (o !== c && o.open) o.send(m); // el anfitrión reenvía
       if (m.e) { this.onEv(m); return; }
-      if (m.w) { this.W = m; this.Wat = performance.now(); m.at = this.Wat / 1000; if (m.cine && (!VR.cineNow || VR.cineNow.t0 !== m.cine.t0)) { VR.cineNow = m.cine; if (this.onCine) this.onCine(); } return; }
+      if (m.w) { if (m.now) { const off = m.now - Date.now(); VR.netOffset = this.offN ? VR.netOffset * 0.8 + off * 0.2 : off; this.offN = 1; } this.W = m; this.Wat = performance.now(); m.at = this.Wat / 1000; if (m.cine && (!VR.cineNow || VR.cineNow.t0 !== m.cine.t0)) { VR.cineNow = m.cine; if (this.onCine) this.onCine(); } return; }
       if (m.bye) { this.others.delete(m.id); return; }
       let o = this.others.get(m.id);
       if (!o) { o = { x: m.x, y: m.y }; this.others.set(m.id, o); }
@@ -119,7 +120,7 @@ VR.Online = class {
       c.push([v._nid, Math.round(v.x), Math.round(v.y), Math.round(v.a * 100), v.type === 'moto' ? 1 : 0, v.model, v.color || 0, this.flags(v), ri, sp[0], sp[1]]);
     }
     if (this.peds) for (const q of this.peds.list) { q._nid = q._nid || (this.pid = (this.pid || 0) + 1e6); p.push([q._nid, Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]); }
-    const m = { w: 1, c, p, cine: VR.cineNow || undefined }; for (const k of this.conns) if (k.open) k.send(m);
+    const m = { w: 1, c, p, cine: VR.cineNow || undefined, now: Date.now() }; for (const k of this.conns) if (k.open) k.send(m);
   }
   // ---- invitado: cerca del anfitrión, ver lo suyo ----
   follow(dt, me) {
@@ -166,7 +167,7 @@ VR.Online = class {
     }
     this.pmap = keep;
   }
-  stop() { if (this.host && this.peer) VR.Salas.del(this.room); for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
+  stop() { VR.netOffset = 0; this.offN = 0; if (this.host && this.peer) VR.Salas.del(this.room); for (const c of this.conns) try { c.send({ id: this.peer.id, bye: 1 }); c.close(); } catch (e) {} if (this.peer) this.peer.destroy(); this.peer = null; this.conns = []; this.others.clear(); this.W = null; this.set('Sin conectar'); }
   // cada cuadro: mandar mi estado (10 por segundo) y olvidar a los que no mandan nada hace 6 s
   update(dt, player, car, teatro) {
     this.teatro = teatro;

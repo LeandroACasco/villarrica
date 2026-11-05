@@ -45,7 +45,7 @@ VR.Cine = class {
     this.on = online;
     this.d = VR.dlg('cine', '<h2>🎬 Cine en el Teatro Municipal</h2><div id="cnBox"></div><input id="cnUrl" placeholder="Pegá un enlace de YouTube"><div class="seg"><button id="cnPut">Poner</button><button id="cnOut">Salir</button></div><p class="hint">Online: todos los de la sala ven el mismo video.</p>');
     this.d.querySelector('#cnOut').onclick = () => this.close();
-    this.d.querySelector('#cnPut').onclick = () => { const v = VR.ytId(this.d.querySelector('#cnUrl').value.trim()); if (!v) return; VR.cineNow = { v, t0: Date.now() }; online.ev({ e: 'cine', v, t0: VR.cineNow.t0 }); this.close(); };
+    this.d.querySelector('#cnPut').onclick = () => { const v = VR.ytId(this.d.querySelector('#cnUrl').value.trim()); if (!v) return; VR.cineNow = { v, t0: VR.netNow() }; online.ev({ e: 'cine', v, t0: VR.cineNow.t0 }); this.close(); };
     online.onCine = () => { if (this.d.open) this.show(); };
   }
   show() {
