@@ -259,7 +259,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión f43fb9c5 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión eaeda5db · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -1420,6 +1420,13 @@ VR.drawPot = (g, x, y, kind, h) => {
 
 // ---------- decorados ----------
 VR.decor = {
+  cuartel(g, d) { // piso de cemento del cuartel de bomberos, con juntas y manchas de aceite
+    const S = VR.TILE, X = (d.x + 3) * S, Y = d.y * S, W = (d.w - 3) * S, H = Math.min(d.h + 2, d.ry - d.y) * S;
+    g.fillStyle = '#b4b2ac'; g.fillRect(X, Y, W, H);
+    for (let yy = Y; yy < Y + H; yy += 2) for (let xx = X; xx < X + W; xx += 2) { const h = VR.hash(xx, yy, 517); if (h < 0.12) { g.fillStyle = '#a8a6a0'; g.fillRect(xx, yy, 2, 2); } else if (h > 0.96) { g.fillStyle = '#c4c2bc'; g.fillRect(xx, yy, 1, 1); } }
+    g.fillStyle = '#96948e'; for (let x = X + 32; x < X + W; x += 32) g.fillRect(x, Y, 0.5, H); for (let y = Y + 32; y < Y + H; y += 32) g.fillRect(X, y, W, 0.5);
+    for (const [ox, oy] of [[30, 60], [78, 66]]) { g.fillStyle = 'rgba(40,36,30,.25)'; g.beginPath(); g.ellipse(X + ox, Y + oy, 7, 10, 0, 0, 7); g.fill(); }
+  },
   senda(g, d) { // camino diagonal de la plaza: laja lisa, con cordoncitos blancos de los canteros a los costados
     const S = VR.TILE, ax = d.ax * S, ay = d.ay * S, bx = d.bx * S, by = d.by * S, hw = d.hw * S;
     const L = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / L, uy = (by - ay) / L, nx = -uy, ny = ux;
@@ -1586,6 +1593,17 @@ VR.decorOver = {
     }
     for (let i = 0; i <= n; i++) { const px = X0 + step * i - 2; g.fillStyle = '#ffffff'; g.fillRect(Math.max(X0, px), top + 6, 4, Yb - top - 6); g.fillStyle = '#c8c4ba'; g.fillRect(Math.max(X0, px) + 3.5, top + 6, 0.5, Yb - top - 6); g.fillStyle = '#e4e0d6'; g.fillRect(Math.max(X0, px) - 0.5, Yb - 3, 5, 3); } // pilastras
     g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(X0, Yb, X1 - X0, 2);
+  },
+  cuartel(g, d) { // casita amarilla del cuartel (vista 3/4: techo de chapa arriba, frente amarillo al sur)
+    const S = VR.TILE, X = d.x * S, Y = d.y * S, W = 3 * S, H = 3 * S, fy = Y + H - 22;
+    g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(X + W, Y + 4, 5, H - 2); g.fillRect(X + 4, Y + H, W, 3);
+    g.fillStyle = '#c8ccce'; g.fillRect(X, Y, W, fy - Y); for (let x = X + 1; x < X + W; x += 2) { g.fillStyle = '#e0e4e6'; g.fillRect(x, Y, 0.5, fy - Y); g.fillStyle = '#a4a8ac'; g.fillRect(x + 1.2, Y, 0.5, fy - Y); }
+    g.fillStyle = '#8a8e92'; g.fillRect(X, fy - 2, W, 2);
+    g.fillStyle = '#ecd66a'; g.fillRect(X, fy, W, Y + H - fy); g.fillStyle = '#f8e888'; g.fillRect(X, fy, 1, Y + H - fy); g.fillStyle = '#c8b048'; g.fillRect(X + W - 1, fy, 1, Y + H - fy);
+    g.fillStyle = '#d4bc50'; g.fillRect(X, Y + H - 2, W, 2);                                                          // zócalo
+    g.fillStyle = '#5a3a20'; g.fillRect(X + 8, fy + 5, 9, 17); g.fillStyle = '#8a5a32'; g.fillRect(X + 8.5, fy + 5.5, 8, 16.5); g.fillStyle = '#7a4c28'; for (let k = 10; k < 16; k += 2) g.fillRect(X + k, fy + 6, 0.5, 16); g.fillStyle = '#e0c060'; g.fillRect(X + 15, fy + 13, 1, 1); // puerta de madera
+    g.fillStyle = '#2a2a30'; g.fillRect(X + 26, fy + 6, 8, 7); g.fillStyle = '#4a5a6a'; g.fillRect(X + 26.5, fy + 6.5, 7, 6); // ventana
+    g.fillStyle = '#fff6c8'; g.fillRect(X + 22, fy + 3, 2, 1.5); // farolito
   },
   tienda(g, d) { // tienda de ropa "Ao Porã" (05/11/2026): mira al norte, así que desde arriba se ve el toldo sobre la vereda
     const S = VR.TILE, X = d.x * S + 2, W = d.w * S - 4, Y = (d.y + 1) * S - 9, mid = X + (W >> 1);
@@ -1758,6 +1776,26 @@ VR.decorTop = {
           if (VR.night && k % 4 === 2) VR.night.add(x, yy + 6, 24, '255,224,150', 0.4);
         }
       }
+    } }];
+  },
+  cuartel(d) { // galpón de chapa a dos aguas sobre columnas de reticulado; el techo se ve levantado (vista 3/4)
+    const S = VR.TILE, X0 = (d.x + 3) * S - 4, X1 = (d.x + d.w) * S + 4, Y0 = d.y * S - 6, Y1 = (d.y + d.h) * S, L = 26, mid = (X0 + X1) / 2;
+    const col = (g, x) => { g.fillStyle = '#1a1a1e'; g.fillRect(x - 2, Y1 - L, 4, L); g.fillStyle = '#6a6a72'; g.fillRect(x - 1.5, Y1 - L, 0.75, L); g.fillRect(x + 0.75, Y1 - L, 0.75, L);
+      g.fillStyle = '#8a8a92'; for (let y = Y1 - L; y < Y1; y += 3) { g.fillRect(x - 1.5, y, 3, 0.5); g.fillRect(x - 1.25, y + 1.5, 0.5, 0.5); } };
+    return [{ sy: Y1 + 2, draw(g) {
+      g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(X0 + 6, Y0 - L + 8, X1 - X0, Y1 - Y0); // sombra del techo en el piso
+      for (const x of [X0 + 3, mid, X1 - 3]) col(g, x);
+      // techo: dos aguas con la cumbrera de norte a sur; chapa acanalada (líneas de este a oeste)
+      const top = Y0 - L, bot = Y1 - L;
+      g.fillStyle = '#1a1a1e'; g.fillRect(X0 - 1, top - 1, X1 - X0 + 2, bot - top + 2);
+      g.fillStyle = '#8a8478'; g.fillRect(X0, top, mid - X0, bot - top); g.fillStyle = '#6a665e'; g.fillRect(mid, top, X1 - mid, bot - top);
+      for (let y = top + 1; y < bot; y += 2) { g.fillStyle = '#a49e90'; g.fillRect(X0, y, mid - X0, 0.5); g.fillStyle = '#7e7a70'; g.fillRect(mid, y, X1 - mid, 0.5); }
+      for (let i = 0; i < 6; i++) { const h = VR.hash(i, d.x, 41); if (h < 0.6) { g.fillStyle = 'rgba(140,70,30,.35)'; g.fillRect(X0 + h * (X1 - X0 - 10), top + VR.hash(i, d.y, 43) * (bot - top - 6), 6, 3); } } // óxido
+      g.fillStyle = '#b8b2a4'; g.fillRect(mid - 1, top, 2, bot - top); g.fillStyle = '#d0cabc'; g.fillRect(mid - 1, top, 0.75, bot - top); // cumbrera
+      // frente: viga de reticulado (zigzag) debajo del alero
+      g.fillStyle = '#1a1a1e'; g.fillRect(X0, bot, X1 - X0, 5); g.fillStyle = '#5a5a62'; g.fillRect(X0, bot + 0.5, X1 - X0, 1); g.fillRect(X0, bot + 3.5, X1 - X0, 1);
+      g.strokeStyle = '#7a7a84'; g.lineWidth = 0.6; g.beginPath(); for (let x = X0, k = 0; x <= X1; x += 3, k++) { const y = k % 2 ? bot + 1 : bot + 4; k ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+      g.fillStyle = '#fff6d0'; for (const x of [X0 + 24, mid + 24]) g.fillRect(x, bot + 5.5, 2, 1.5); // lamparitas
     } }];
   },
   pilastras(d) { // arbustos en macetas junto a las vidrieras y un cartel colgante azul (sin texto)
@@ -1956,6 +1994,7 @@ VR.loadMap = async (url) => {
   }
   for (let i = 0; i < meta.nt; i++) w.trees.push({ x: tr[i * 4], y: tr[i * 4 + 1], r: tr[i * 4 + 2], pal: tr[i * 4 + 3] });
   w.sendas = (meta.decals || []).filter((d) => d.kind === 'senda');
+  { const c = (meta.decals || []).find((d) => d.kind === 'cuartel'); if (c) w.firehouse = { x: (c.x + 6) * VR.TILE, y: (c.ry + 1) * VR.TILE + 2, d: c }; }
   w.inSenda = (tx, ty) => { for (const d of w.sendas) { const ux = d.bx - d.ax, uy = d.by - d.ay, L = Math.hypot(ux, uy), px = tx + 0.5 - d.ax, py = ty + 0.5 - d.ay, t = (px * ux + py * uy) / (L * L);
     if (t > -0.02 && t < 1.02 && Math.abs(px * uy - py * ux) / L < d.hw + 0.9) return true; } return false; };
   w.plazaSet = new Set(); (meta.areas || []).forEach((n, i) => { if (/plaza/i.test(n)) w.plazaSet.add(i + 1); });
@@ -3340,6 +3379,14 @@ VR.parkCars = (world, n, near) => {
     }
   }
 
+  // camiones en el cuartel de bomberos de la Plaza Pettirossi, mirando a San Roque González
+  for (const d of world.decals || []) {
+    if (d.kind !== 'cuartel') continue;
+    const X = (d.x + 3) * S, Y = d.y * S;
+    for (const ox of [26, 70]) { const c = add(X + ox, Y + d.h * S - 34, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; }
+    (world.parkingDemo = world.parkingDemo || []).push({ x0: X - 20, x1: (d.x + d.w) * S + 20, y0: Y - 20, y1: (d.ry + 4) * S });
+  }
+
   // Filas pedidas por el mapa (05/11/2026): Mcal. López al oeste de Coronel Bogado, autos en fila contra el
   // cordón sur mirando al oeste, como en el video de Leandro
   for (const d of world.decals || []) {
@@ -4242,6 +4289,7 @@ VR.Night = class {
       }
       else if (d.kind === 'cartel') for (let x = X + 12; x < X + w; x += 32) this.put(x, Y + S - 14, 40, d.style === 'banco' ? '170,190,255' : CALIDO, 0.9);
       else if (d.kind === 'mesas') this.put(X + w / 2, Y + 8, 50, CALIDO, 0.7);
+      else if (d.kind === 'cuartel') { this.put((d.x + 5) * S, (d.y + d.h) * S - 10, 60, CALIDO, 0.9); this.put((d.x + 8) * S, (d.y + d.h) * S - 10, 60, CALIDO, 0.9); this.put((d.x + 1.4) * S, (d.y + 3) * S - 14, 26, CALIDO, 0.8); }
       else if (d.kind === 'tienda') { for (let x = X + 24; x < X + w - 8; x += 40) this.put(x, Y + 10, 46, CALIDO, 0.9); this.put(X + w / 2, Y + 4, 30, '255,150,200', 0.8); }
       else if (d.kind === 'terraza') this.put(X + 16, Y + h / 2, 60, CALIDO, 0.8);
       else if (d.kind === 'monumento') this.put(X + 16, Y + 16, 56, LED, 0.9);
@@ -4470,8 +4518,11 @@ VR.Emergency = class {
   dispatch(model, target) {
     const kind = model === 'bomba' ? 'bomberos' : model === 'ambulancia' ? 'ambulancia' : 'policia';
     if (kind !== 'policia' && this.units.some((u) => u.kind === kind && !u.dead && u.task !== 'leave')) { const u = this.units.find((q) => q.kind === kind && q.task !== 'leave'); if (u && !u.queue.includes(target)) u.queue.push(target); return; }
-    const p = this.spawnPoint(); if (!p) return null;
-    const ang = Math.atan2(this.focus.x - p[0], -(this.focus.y - p[1]));
+    // los bomberos salen del cuartel de la Plaza Pettirossi si el fuego no queda demasiado lejos (05/11/2026)
+    const fh = this.world.firehouse, fromHouse = kind === 'bomberos' && fh && target && Math.hypot(target.x - fh.x, target.y - fh.y) < 9000 && !this.world.boxOverlap(fh.x - 34, fh.y - 14, fh.x + 34, fh.y + 14);
+    const p = fromHouse ? [fh.x, fh.y] : this.spawnPoint(); if (!p) return null;
+    const ang = fromHouse ? (target.x >= fh.x ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(this.focus.x - p[0], -(this.focus.y - p[1]));
+    if (fromHouse && Math.hypot(this.focus.x - fh.x, this.focus.y - fh.y) < 600) this.toast('🚒 Salen los bomberos del cuartel');
     const v = new VR.Car(this.world, p[0], p[1], ang, 0, 'car', model);
     v.siren = true; v.hp = 140;
     const u = { v, kind, model, task: kind === 'policia' ? 'chase' : 'goto', target, queue: [], path: null, pi: 0, repath: this.rnd() * 0.5, stuck: 0, rev: 0, crew: [], wait: 0, age: 0 };
@@ -4633,7 +4684,9 @@ VR.Emergency = class {
       } else if (u.task === 'regroup') { this.halt(u, dt); if (!u.crew.length) { u.task = 'leave'; } }
       if (u.task === 'leave') {
         v.siren = false;
-        if (!u.away) u.away = this.spawnPoint(700, 1100) || [v.x + 800, v.y];
+        const fh = this.world.firehouse;
+        if (!u.away) u.away = (u.kind === 'bomberos' && fh && Math.hypot(v.x - fh.x, v.y - fh.y) < 9000 ? [fh.x, fh.y] : null) || this.spawnPoint(700, 1100) || [v.x + 800, v.y];
+        if (u.kind === 'bomberos' && fh && u.away[0] === fh.x && Math.hypot(v.x - fh.x, v.y - fh.y) < 50 && !v.driven) { this.world.removeBox(v); this.units.splice(i, 1); continue; } // volvió al cuartel
         if (!v.wreck && !v.burning && !v.driven) this.drive(u, dt, u.away[0], u.away[1], 20, false);
         const off = v.x < view.x0 - 60 || v.x > view.x1 + 60 || v.y < view.y0 - 60 || v.y > view.y1 + 60;
         if (!v.driven && (off && Math.hypot(v.x - focus.x, v.y - focus.y) > 450 || Math.hypot(v.x - focus.x, v.y - focus.y) > 1400)) { if (!v.wreck) this.world.removeBox(v); this.units.splice(i, 1); }

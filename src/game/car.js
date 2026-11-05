@@ -552,6 +552,14 @@ VR.parkCars = (world, n, near) => {
     }
   }
 
+  // camiones en el cuartel de bomberos de la Plaza Pettirossi, mirando a San Roque González
+  for (const d of world.decals || []) {
+    if (d.kind !== 'cuartel') continue;
+    const X = (d.x + 3) * S, Y = d.y * S;
+    for (const ox of [26, 70]) { const c = add(X + ox, Y + d.h * S - 34, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; }
+    (world.parkingDemo = world.parkingDemo || []).push({ x0: X - 20, x1: (d.x + d.w) * S + 20, y0: Y - 20, y1: (d.ry + 4) * S });
+  }
+
   // Filas pedidas por el mapa (05/11/2026): Mcal. López al oeste de Coronel Bogado, autos en fila contra el
   // cordón sur mirando al oeste, como en el video de Leandro
   for (const d of world.decals || []) {

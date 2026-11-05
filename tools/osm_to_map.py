@@ -891,6 +891,29 @@ def main(src, out, preview=None):
                 decals.append({'kind': 'galeria', 'x': ga0, 'y': gb1, 'w': ga1 - ga0 + 1, 'h': 1})
                 print('galería: edificio %d, x %d-%d, y %d' % (gal, ga0, ga1, gb1))
 
+    # ---------- cuartel de bomberos en la Plaza Silvio Pettirossi (foto de Leandro, 05/11/2026) ----------
+    # En la esquina sudoeste de la plaza (Bahía Negra y San Roque González): un galpón de chapa a dos aguas sobre
+    # columnas de reticulado, piso de cemento, los camiones adentro mirando a San Roque González y, al oeste, una
+    # casita amarilla con puerta de madera. De acá salen los bomberos.
+    if 'Plaza Silvio Pettirossi' in area_names:
+        pi_ = area_names.index('Plaza Silvio Pettirossi') + 1
+        ys_, xs_ = np.nonzero(area == pi_)
+        qx0, qx1, qy0, qy1 = int(xs_.min()), int(xs_.max()), int(ys_.min()), int(ys_.max())
+        sx0 = qx0 + 1
+        SW_, SH_ = 9, 6
+        # San Roque González: primera fila de calle bajando por la columna del medio del galpón
+        ry = qy0
+        while ry < qy1 and tiles[ry, sx0 + 5] not in (ROAD, STONE, DIRTROAD): ry += 1
+        y1s = ry - 2; y0s = y1s - SH_ + 1; bot = ry - 1
+        for y in range(y0s - 1, ry):
+            for x in range(sx0, sx0 + SW_ + 1):
+                if tiles[y, x] in (GRASS, TREE, DIRT, PAVING, PLAZADIRT, BUILDING): tiles[y, x] = SIDEWALK; bid[y, x] = 0
+        trees[:] = [t for t in trees if not (sx0 - 2 <= t[0] <= sx0 + SW_ + 2 and y0s - 3 <= t[1] <= bot + 1)]
+        for y in range(y0s, y0s + 3):
+            for x in range(sx0, sx0 + 3): tiles[y, x] = MONUMENT  # casita amarilla (sólida)
+        decals.append({'kind': 'cuartel', 'x': sx0, 'y': y0s, 'w': SW_, 'h': SH_, 'ry': ry})
+        print('cuartel de bomberos: x %d-%d, y %d-%d, calle en y=%d (%s)' % (sx0, sx0 + SW_ - 1, y0s, y1s, ry, 'ok' if tiles[ry, sx0 + 6] in (ROAD, STONE, DIRTROAD) else 'sin calle'))
+
     # ---------- cebras en las esquinas del Centro (05/11/2026) ----------
     # Cada cruce (celdas que pisan 2 calles o más) es un rectángulo; en cada brazo, justo afuera del cruce, se pintan
     # 2 baldosas (4 m) de cebra sobre el asfalto, de cordón a cordón. Solo en el barrio Centro.

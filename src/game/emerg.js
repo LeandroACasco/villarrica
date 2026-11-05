@@ -148,8 +148,11 @@ VR.Emergency = class {
   dispatch(model, target) {
     const kind = model === 'bomba' ? 'bomberos' : model === 'ambulancia' ? 'ambulancia' : 'policia';
     if (kind !== 'policia' && this.units.some((u) => u.kind === kind && !u.dead && u.task !== 'leave')) { const u = this.units.find((q) => q.kind === kind && q.task !== 'leave'); if (u && !u.queue.includes(target)) u.queue.push(target); return; }
-    const p = this.spawnPoint(); if (!p) return null;
-    const ang = Math.atan2(this.focus.x - p[0], -(this.focus.y - p[1]));
+    // los bomberos salen del cuartel de la Plaza Pettirossi si el fuego no queda demasiado lejos (05/11/2026)
+    const fh = this.world.firehouse, fromHouse = kind === 'bomberos' && fh && target && Math.hypot(target.x - fh.x, target.y - fh.y) < 9000 && !this.world.boxOverlap(fh.x - 34, fh.y - 14, fh.x + 34, fh.y + 14);
+    const p = fromHouse ? [fh.x, fh.y] : this.spawnPoint(); if (!p) return null;
+    const ang = fromHouse ? (target.x >= fh.x ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(this.focus.x - p[0], -(this.focus.y - p[1]));
+    if (fromHouse && Math.hypot(this.focus.x - fh.x, this.focus.y - fh.y) < 600) this.toast('🚒 Salen los bomberos del cuartel');
     const v = new VR.Car(this.world, p[0], p[1], ang, 0, 'car', model);
     v.siren = true; v.hp = 140;
     const u = { v, kind, model, task: kind === 'policia' ? 'chase' : 'goto', target, queue: [], path: null, pi: 0, repath: this.rnd() * 0.5, stuck: 0, rev: 0, crew: [], wait: 0, age: 0 };
@@ -311,7 +314,9 @@ VR.Emergency = class {
       } else if (u.task === 'regroup') { this.halt(u, dt); if (!u.crew.length) { u.task = 'leave'; } }
       if (u.task === 'leave') {
         v.siren = false;
-        if (!u.away) u.away = this.spawnPoint(700, 1100) || [v.x + 800, v.y];
+        const fh = this.world.firehouse;
+        if (!u.away) u.away = (u.kind === 'bomberos' && fh && Math.hypot(v.x - fh.x, v.y - fh.y) < 9000 ? [fh.x, fh.y] : null) || this.spawnPoint(700, 1100) || [v.x + 800, v.y];
+        if (u.kind === 'bomberos' && fh && u.away[0] === fh.x && Math.hypot(v.x - fh.x, v.y - fh.y) < 50 && !v.driven) { this.world.removeBox(v); this.units.splice(i, 1); continue; } // volvió al cuartel
         if (!v.wreck && !v.burning && !v.driven) this.drive(u, dt, u.away[0], u.away[1], 20, false);
         const off = v.x < view.x0 - 60 || v.x > view.x1 + 60 || v.y < view.y0 - 60 || v.y > view.y1 + 60;
         if (!v.driven && (off && Math.hypot(v.x - focus.x, v.y - focus.y) > 450 || Math.hypot(v.x - focus.x, v.y - focus.y) > 1400)) { if (!v.wreck) this.world.removeBox(v); this.units.splice(i, 1); }
