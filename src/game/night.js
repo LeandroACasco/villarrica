@@ -53,6 +53,13 @@ VR.Night = class {
         }
       }
     }
+    // ventanas prendidas (pulido, 05/11/2026): en las fachadas sur, ~1 de cada 5 ventanas con luz cálida
+    { const B = VR.T.BUILDING, w = W.w, tl = W.tiles;
+      for (let ty = 0; ty < W.h - 1; ty++) for (let tx = 1; tx < w; tx += 2) {
+        const i = ty * w + tx; if (tl[i] !== B || tl[i + w] === B) continue;
+        if (((Math.imul(tx, 73856093) ^ Math.imul(ty, 19349663)) >>> 0) % 5) continue;
+        this.put(tx * S + 8, (ty + 1) * S - 7, 13, (tx & 6) ? '255,206,120' : '220,232,255', 0.55);
+      } }
     // lugares dibujados a mano
     for (const d of W.decals) {
       const X = d.x * S, Y = d.y * S, w = d.w * S, h = d.h * S;

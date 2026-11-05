@@ -308,7 +308,7 @@
   chatBox.onsubmit = (e) => { e.preventDefault(); const t = chatIn.value.trim(); if (t) { player.say(t, 4); VR.chatLine(online.nick || VR.store.get('nick', '') || 'Vos', t); online.ev({ e: 'chat', t }); } closeChat(); };
   chatIn.addEventListener('keydown', (e) => { if (e.code === 'Escape') { e.stopPropagation(); closeChat(); } });
   addEventListener('keydown', (e) => { if (e.code === 'KeyC' && chatBox.hidden && !/INPUT/.test(e.target.tagName) && !document.querySelector('dialog[open]')) { e.preventDefault(); openChat(); } });
-  { const box = document.querySelector('.online'), dlg = $('onDlg'); $('onSlot').append(box); box.previousElementSibling && box.previousElementSibling.tagName === 'H3' && box.previousElementSibling.remove();
+  { const box = document.querySelector('.online'), dlg = $('onDlg'); $('onSlot').append(box); for (const h of document.querySelectorAll('#menu h3')) if (/Online/.test(h.textContent)) h.remove();
     $('btnOnline').onclick = () => { VR.input.releaseAll(); dlg.showModal(); }; $('onClose').onclick = () => dlg.close(); }
   setInterval(() => {
     const on = !!(online.peer && online.conns.length), n = online.names();
@@ -386,6 +386,11 @@
     if (!mv.k) { mv.k = fitK(); mapApply(); } else mapCenterOn(f.x, f.y);
     drawMapRoute();
   }
+  const drawMapFriends = () => { // amigos en el mapa grande: punto celeste con el nombre (tocalo para ir)
+    $('mapFriends').innerHTML = [...online.others.values()].map((o) => { const x = o.x / 16 * mv.k + mv.ox, y = o.y / 16 * mv.k + mv.oy, n = String(o.n || '').replace(/[<>&"]/g, '');
+      return `<div style="position:absolute;left:${x - 8}px;top:${y - 8}px;width:16px;height:16px;border-radius:50%;background:#3fd3ff;border:2px solid #0b2a36;box-sizing:border-box"></div><div style="position:absolute;left:${x}px;top:${y - 26}px;transform:translateX(-50%);font:700 13px system-ui;color:#fff;text-shadow:0 0 3px #0b2a36,0 0 3px #0b2a36;white-space:nowrap">${n}</div>`; }).join('');
+  };
+  setInterval(() => { if (mapOpen) drawMapFriends(); }, 500);
   function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }
   $('btnMap').onclick = () => (mapOpen ? closeMap() : openMap());
@@ -457,6 +462,7 @@
     const tx = (cx - mv.ox) / mv.k, ty = (cy - mv.oy) / mv.k;
     if (tx < 0 || ty < 0 || tx >= world.w || ty >= world.h) return;
     let best = null, bd = 26;
+    for (const o of online.others.values()) { const d = Math.hypot(o.x / 16 * mv.k + mv.ox - cx, o.y / 16 * mv.k + mv.oy - cy); if (d < 26) { setDest({ x: o.x, y: o.y, name: o.n }); return; } } // tocar a un amigo
     for (const l of world.labels) { const d = Math.hypot(l.x / 16 * mv.k + mv.ox - cx, l.y / 16 * mv.k + mv.oy - cy - 6); if (d < bd) { bd = d; best = l; } }
     if (best) setDest({ x: best.x, y: best.y + 20, name: best.text });
     else { const x = tx * 16, y = ty * 16; setDest({ x, y, name: world.placeName(x, y) || 'el destino' }); }
@@ -563,6 +569,12 @@
       for (let i = 0; i < route.length; i += 2) { const px = (route[i] / VR.TILE - sx) * k, py = (route[i + 1] / VR.TILE - sy) * k; i ? mctx.lineTo(px, py) : mctx.moveTo(px, py); }
       mctx.strokeStyle = '#0b2a36'; mctx.lineWidth = 6 * D / 112; mctx.stroke();
       mctx.strokeStyle = '#3fd3ff'; mctx.lineWidth = 3.5 * D / 112; mctx.stroke();
+    }
+    for (const o of online.others.values()) { // amigos online: punto celeste con la inicial
+      let px = (o.x / VR.TILE - sx) * k, py = (o.y / VR.TILE - sy) * k; const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 8 * D / 112;
+      if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
+      const R0 = 6 * D / 112; mctx.fillStyle = '#0b2a36'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = '#3fd3ff'; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
+      mctx.fillStyle = '#0b2a36'; mctx.font = `bold ${Math.round(8 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText((o.n || '?')[0].toUpperCase(), px, py + 0.5);
     }
     if (dest) {
       let px = (dest.x / VR.TILE - sx) * k, py = (dest.y / VR.TILE - sy) * k;

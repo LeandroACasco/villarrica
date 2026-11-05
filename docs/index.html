@@ -237,7 +237,7 @@
 <button id="weapon" hidden></button>
 <div id="vcard"><canvas width="256" height="144"></canvas><div><b></b><span></span></div></div>
 <div id="mapView" hidden>
-  <div id="mapBox"><div id="mapInner"><canvas id="mapCanvas"></canvas><svg id="mapRoute"><polyline id="routeBg" stroke="#0b2a36" stroke-width="7"/><polyline id="routeFg" stroke="#3fd3ff" stroke-width="4"/></svg><div id="mapLabels"></div><div id="mapDest" hidden>🏁</div><div id="mapMe"></div></div></div>
+  <div id="mapBox"><div id="mapFriends" style="position:absolute;inset:0;pointer-events:none;z-index:3"></div><div id="mapInner"><canvas id="mapCanvas"></canvas><svg id="mapRoute"><polyline id="routeBg" stroke="#0b2a36" stroke-width="7"/><polyline id="routeFg" stroke="#3fd3ff" stroke-width="4"/></svg><div id="mapLabels"></div><div id="mapDest" hidden>🏁</div><div id="mapMe"></div></div></div>
   <div id="mapTools"><button id="mzClose" title="Volver (M)">✕</button><button id="mzIn" title="Acercar (+)">＋</button><button id="mzOut" title="Alejar (−)">－</button><button id="mzMe" title="Ir a donde estoy">📍</button><button id="mzGo" class="wide" hidden title="Teletransportarme (T)">✨ Ir ahí</button><button id="mzClear" class="wide" hidden>Quitar destino</button></div>
   <p id="mapHelp">Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar un destino (y ✨ para aparecer ahí) · arrastrá o pellizcá para moverte</p>
 </div>
@@ -287,7 +287,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 4ee89990 · 2026-11-05</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión de74bd5e · 2026-11-05</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -4621,6 +4621,13 @@ VR.Night = class {
         }
       }
     }
+    // ventanas prendidas (pulido, 05/11/2026): en las fachadas sur, ~1 de cada 5 ventanas con luz cálida
+    { const B = VR.T.BUILDING, w = W.w, tl = W.tiles;
+      for (let ty = 0; ty < W.h - 1; ty++) for (let tx = 1; tx < w; tx += 2) {
+        const i = ty * w + tx; if (tl[i] !== B || tl[i + w] === B) continue;
+        if (((Math.imul(tx, 73856093) ^ Math.imul(ty, 19349663)) >>> 0) % 5) continue;
+        this.put(tx * S + 8, (ty + 1) * S - 7, 13, (tx & 6) ? '255,206,120' : '220,232,255', 0.55);
+      } }
     // lugares dibujados a mano
     for (const d of W.decals) {
       const X = d.x * S, Y = d.y * S, w = d.w * S, h = d.h * S;
@@ -6613,7 +6620,7 @@ VR.showVehicleCard = (v) => {
   chatBox.onsubmit = (e) => { e.preventDefault(); const t = chatIn.value.trim(); if (t) { player.say(t, 4); VR.chatLine(online.nick || VR.store.get('nick', '') || 'Vos', t); online.ev({ e: 'chat', t }); } closeChat(); };
   chatIn.addEventListener('keydown', (e) => { if (e.code === 'Escape') { e.stopPropagation(); closeChat(); } });
   addEventListener('keydown', (e) => { if (e.code === 'KeyC' && chatBox.hidden && !/INPUT/.test(e.target.tagName) && !document.querySelector('dialog[open]')) { e.preventDefault(); openChat(); } });
-  { const box = document.querySelector('.online'), dlg = $('onDlg'); $('onSlot').append(box); box.previousElementSibling && box.previousElementSibling.tagName === 'H3' && box.previousElementSibling.remove();
+  { const box = document.querySelector('.online'), dlg = $('onDlg'); $('onSlot').append(box); for (const h of document.querySelectorAll('#menu h3')) if (/Online/.test(h.textContent)) h.remove();
     $('btnOnline').onclick = () => { VR.input.releaseAll(); dlg.showModal(); }; $('onClose').onclick = () => dlg.close(); }
   setInterval(() => {
     const on = !!(online.peer && online.conns.length), n = online.names();
@@ -6691,6 +6698,11 @@ VR.showVehicleCard = (v) => {
     if (!mv.k) { mv.k = fitK(); mapApply(); } else mapCenterOn(f.x, f.y);
     drawMapRoute();
   }
+  const drawMapFriends = () => { // amigos en el mapa grande: punto celeste con el nombre (tocalo para ir)
+    $('mapFriends').innerHTML = [...online.others.values()].map((o) => { const x = o.x / 16 * mv.k + mv.ox, y = o.y / 16 * mv.k + mv.oy, n = String(o.n || '').replace(/[<>&"]/g, '');
+      return `<div style="position:absolute;left:${x - 8}px;top:${y - 8}px;width:16px;height:16px;border-radius:50%;background:#3fd3ff;border:2px solid #0b2a36;box-sizing:border-box"></div><div style="position:absolute;left:${x}px;top:${y - 26}px;transform:translateX(-50%);font:700 13px system-ui;color:#fff;text-shadow:0 0 3px #0b2a36,0 0 3px #0b2a36;white-space:nowrap">${n}</div>`; }).join('');
+  };
+  setInterval(() => { if (mapOpen) drawMapFriends(); }, 500);
   function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }
   $('btnMap').onclick = () => (mapOpen ? closeMap() : openMap());
@@ -6762,6 +6774,7 @@ VR.showVehicleCard = (v) => {
     const tx = (cx - mv.ox) / mv.k, ty = (cy - mv.oy) / mv.k;
     if (tx < 0 || ty < 0 || tx >= world.w || ty >= world.h) return;
     let best = null, bd = 26;
+    for (const o of online.others.values()) { const d = Math.hypot(o.x / 16 * mv.k + mv.ox - cx, o.y / 16 * mv.k + mv.oy - cy); if (d < 26) { setDest({ x: o.x, y: o.y, name: o.n }); return; } } // tocar a un amigo
     for (const l of world.labels) { const d = Math.hypot(l.x / 16 * mv.k + mv.ox - cx, l.y / 16 * mv.k + mv.oy - cy - 6); if (d < bd) { bd = d; best = l; } }
     if (best) setDest({ x: best.x, y: best.y + 20, name: best.text });
     else { const x = tx * 16, y = ty * 16; setDest({ x, y, name: world.placeName(x, y) || 'el destino' }); }
@@ -6868,6 +6881,12 @@ VR.showVehicleCard = (v) => {
       for (let i = 0; i < route.length; i += 2) { const px = (route[i] / VR.TILE - sx) * k, py = (route[i + 1] / VR.TILE - sy) * k; i ? mctx.lineTo(px, py) : mctx.moveTo(px, py); }
       mctx.strokeStyle = '#0b2a36'; mctx.lineWidth = 6 * D / 112; mctx.stroke();
       mctx.strokeStyle = '#3fd3ff'; mctx.lineWidth = 3.5 * D / 112; mctx.stroke();
+    }
+    for (const o of online.others.values()) { // amigos online: punto celeste con la inicial
+      let px = (o.x / VR.TILE - sx) * k, py = (o.y / VR.TILE - sy) * k; const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 8 * D / 112;
+      if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
+      const R0 = 6 * D / 112; mctx.fillStyle = '#0b2a36'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = '#3fd3ff'; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
+      mctx.fillStyle = '#0b2a36'; mctx.font = `bold ${Math.round(8 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText((o.n || '?')[0].toUpperCase(), px, py + 0.5);
     }
     if (dest) {
       let px = (dest.x / VR.TILE - sx) * k, py = (dest.y / VR.TILE - sy) * k;
