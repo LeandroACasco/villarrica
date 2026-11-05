@@ -56,9 +56,12 @@ VR.Weapons = class {
   // Se sostiene con la mano derecha a la altura del pecho, apuntando para adelante (05/11/2026: antes salía de la cadera)
   hand(x, y, a) { const fx = Math.sin(a), fy = -Math.cos(a), rx = Math.cos(a), ry = Math.sin(a); return [x + fx * 3 + rx * 2.5, y - 18 + fy * 2 + ry * 1.5]; }
   muzzle(player) { const a = this.aim, [hx, hy] = this.hand(player.x, player.y, a), L = this.cur === 'pistola' ? 7 : 12; return [hx + Math.sin(a) * L, hy - Math.cos(a) * L * 0.75]; }
-  shoot(player) {
-    const W = VR.WEAPONS.pistola, [x, y] = this.muzzle(player), a = this.aim + (this.rnd() - 0.5) * 0.04;
-    this.shots.push({ x, y, px: x, py: y, vx: Math.sin(a) * W.speed, vy: -Math.cos(a) * W.speed, left: W.range });
+  shoot(player, at) { // at = [x, y, ángulo]: disparo de otro jugador (online), sin estrellas para vos
+    const W = VR.WEAPONS.pistola, [x, y] = at || this.muzzle(player), a = at ? at[2] : this.aim + (this.rnd() - 0.5) * 0.04;
+    this.shots.push({ x, y, px: x, py: y, vx: Math.sin(a) * W.speed, vy: -Math.cos(a) * W.speed, left: W.range, rem: !!at });
+    if (at) { this.remote = true; VR.audio.shot(x, y); this.scare(x, y, 170, 'shots'); this.remote = false; return; }
+    this.remote = false;
+    if (VR.onlineEv) VR.onlineEv({ e: 'shot', x: Math.round(x), y: Math.round(y), a: +a.toFixed(3) });
     this.flash = 0.06; VR.audio.shot(x, y); if (VR.input.buzz) VR.input.buzz(12);
     this.scare(x, y, 170, 'shots');
     this.crime('disparo', x, y);
@@ -66,7 +69,7 @@ VR.Weapons = class {
   updateShots(dt) {
     const W = VR.WEAPONS.pistola;
     for (let i = this.shots.length - 1; i >= 0; i--) {
-      const s = this.shots[i]; s.px = s.x; s.py = s.y;
+      const s = this.shots[i]; s.px = s.x; s.py = s.y; this.remote = s.rem;
       const steps = 4, sx = s.vx * dt / steps, sy = s.vy * dt / steps;
       let gone = false;
       for (let k = 0; k < steps && !gone; k++) {
@@ -83,8 +86,9 @@ VR.Weapons = class {
   spark(x, y) { if (!this.emer) return; for (let i = 0; i < 4; i++) { const a = this.rnd() * Math.PI * 2; this.emer.fx.push({ k: 'fire', x, y, vx: Math.cos(a) * 60, vy: Math.sin(a) * 60, life: 0.15, max: 0.3, r: 1.2 }); } }
 
   // ---------- lanzallamas ----------
-  flame(dt, player) {
-    const W = VR.WEAPONS.lanzallamas, [x, y] = this.muzzle(player), a = this.aim;
+  flame(dt, player, at) {
+    const W = VR.WEAPONS.lanzallamas, [x, y] = at || this.muzzle(player), a = at ? at[2] : this.aim;
+    this.remote = !!at; if (!at && VR.onlineEv) VR.onlineEv({ e: 'fl', x: Math.round(x), y: Math.round(y), a: +a.toFixed(3) }, 0.1);
     if (this.emer) for (let i = 0; i < 3; i++) {
       const aa = a + (this.rnd() - 0.5) * W.cone, sp = 170 + this.rnd() * 90;
       this.emer.fx.push({ k: 'fire', x, y, vx: Math.sin(aa) * sp, vy: -Math.cos(aa) * sp, life: 0.42, max: 0.5, r: 2 + this.rnd() * 3 });
@@ -107,7 +111,7 @@ VR.Weapons = class {
   }
   hitCar(c, dmg, vx, vy, burn) {
     if (c.spec.noFire) { if (!c.horseT || c.horseT < this.t) { c.horseT = this.t + 2; if (this.peds) { c.honkT = 1.4; c.honkTxt = '¡Hiiii!'; } } return; } // el caballo se asusta, pero no se prende
-    c.hp = (c.hp ?? 100) - dmg * (c.unit ? 0.6 : 1); c.byPlayer = true; c.hitByPlayer = this.emer ? this.emer.t : 0;
+    c.hp = (c.hp ?? 100) - dmg * (c.unit ? 0.6 : 1); if (!this.remote) { c.byPlayer = true; c.hitByPlayer = this.emer ? this.emer.t : 0; }
     if (vx || vy) { if (c.vx === undefined) { c.vx = 0; c.vy = 0; c.w = 0; } c.vx += vx * 0.02 / (c.mass || 1); c.vy += vy * 0.02 / (c.mass || 1); this.world.wake(c, 30); }
     if (c.hp <= 0 && !c.burning && this.emer) this.emer.ignite(c);
     else if (burn && c.hp < 30 && !c.burning && this.emer) this.emer.ignite(c);
@@ -123,7 +127,7 @@ VR.Weapons = class {
       if (!p.say && this.rnd() < 0.35) this.peds.talk(p, kind, 1.6);
     }
   }
-  crime(kind, x, y, sure) { if (!this.noStars && this.emer) this.emer.crime(kind, VR.WEAPONS[this.cur].stars, x, y, sure); }
+  crime(kind, x, y, sure) { if (this.remote) return; if (!this.noStars && this.emer) this.emer.crime(kind, VR.WEAPONS[this.cur].stars, x, y, sure); }
 
   // ---------- dibujo ----------
   // el arma en la mano (se dibuja encima del personaje)
