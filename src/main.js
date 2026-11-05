@@ -298,7 +298,13 @@
   chatBox.onsubmit = (e) => { e.preventDefault(); const t = chatIn.value.trim(); if (t) { player.say(t, 4); VR.chatLine(online.nick || VR.store.get('nick', '') || 'Vos', t); online.ev({ e: 'chat', t }); } closeChat(); };
   chatIn.addEventListener('keydown', (e) => { if (e.code === 'Escape') { e.stopPropagation(); closeChat(); } });
   addEventListener('keydown', (e) => { if (e.code === 'KeyC' && chatBox.hidden && !/INPUT/.test(e.target.tagName) && !document.querySelector('dialog[open]')) { e.preventDefault(); openChat(); } });
-  setInterval(() => { $('onList').textContent = online.peer ? 'Conectados: ' + online.names().join(', ') : ''; }, 1000);
+  { const box = document.querySelector('.online'), dlg = $('onDlg'); $('onSlot').append(box); box.previousElementSibling && box.previousElementSibling.tagName === 'H3' && box.previousElementSibling.remove();
+    $('btnOnline').onclick = () => { VR.input.releaseAll(); dlg.showModal(); }; $('onClose').onclick = () => dlg.close(); }
+  setInterval(() => {
+    const on = !!(online.peer && online.conns.length), n = online.names();
+    $('onList').textContent = online.peer ? 'Conectados: ' + n.join(', ') : '';
+    $('onHud').hidden = !on; if (on) $('onHud').innerHTML = '<b>🌐 Sala ' + online.room + '</b><br>' + n.map((s) => s.replace(/[<>&]/g, '')).join('<br>');
+  }, 1000);
   $('onHost').onclick = () => goOnline(true); $('onJoin').onclick = () => goOnline(false); $('onStop').onclick = () => online.stop();
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };

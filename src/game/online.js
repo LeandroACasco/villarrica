@@ -100,7 +100,8 @@ VR.Online = class {
       if (v.driven) continue;
       v._nid = v._nid || ++this.nid;
       const ri = v.rider && v.rider.L && VR.RIDER_LOOKS ? VR.RIDER_LOOKS.indexOf(v.rider.L) : -1;
-      c.push([v._nid, Math.round(v.x), Math.round(v.y), Math.round(v.a * 100), v.type === 'moto' ? 1 : 0, v.model, v.color || 0, this.flags(v), ri]);
+      const sp = v.vx !== undefined ? [Math.round(v.vx), Math.round(v.vy)] : [Math.round(Math.sin(v.a) * (v.v || 0)), Math.round(-Math.cos(v.a) * (v.v || 0))];
+      c.push([v._nid, Math.round(v.x), Math.round(v.y), Math.round(v.a * 100), v.type === 'moto' ? 1 : 0, v.model, v.color || 0, this.flags(v), ri, sp[0], sp[1]]);
     }
     if (this.peds) for (const q of this.peds.list) { q._nid = q._nid || (this.pid = (this.pid || 0) + 1e6); p.push([q._nid, Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]); }
     const m = { w: 1, c, p }; for (const k of this.conns) if (k.open) k.send(m);
@@ -122,7 +123,7 @@ VR.Online = class {
     const W = this.W, fresh = W !== this.lastW, k = Math.min(1, dt * 9);
     if (fresh) { this.lastW = W; this.seen = new Set(); }
     const seen = this.seen;
-    if (fresh) for (const [id, x, y, a100, moto, model, color, f, ri] of W.c) {
+    if (fresh) for (const [id, x, y, a100, moto, model, color, f, ri, svx, svy] of W.c) {
       if (this.taken.has(id)) continue;
       seen.add(id); let v = this.proxies.get(id);
       if (!v) {
@@ -130,14 +131,14 @@ VR.Online = class {
         if (moto && ri >= 0 && VR.RIDER_LOOKS) v.rider = { L: VR.RIDER_LOOKS[ri] };
         this.world.addBox(v); this.proxies.set(id, v);
       }
-      const gap = Math.max(0.05, (W.at || 0) - (v.wat || 0)) || 0.2; v.evx = (x - v.tx) / gap; v.evy = (y - v.ty) / gap; if (Math.hypot(v.evx, v.evy) > 400) v.evx = v.evy = 0; v.wat = W.at;
+      v.evx = svx || 0; v.evy = svy || 0; // velocidad real que manda el anfitrión (antes se adivinaba y los autos bailaban)
       v.tx = x; v.ty = y; v.ta = a100 / 100; v.siren = !!(f & 4); this.fx(v, f);
     }
     for (const [id, v] of this.proxies) {
       if (!seen.has(id)) { this.world.removeBox(v); this.proxies.delete(id); continue; }
       v.px = v.x; v.py = v.y; v.pa = v.a; v.tx += (v.evx || 0) * dt; v.ty += (v.evy || 0) * dt;
-      if (Math.hypot(v.tx - v.x, v.ty - v.y) > 120) { v.x = v.tx; v.y = v.ty; } else { v.x += (v.tx - v.x) * k; v.y += (v.ty - v.y) * k; }
-      v.a += Math.atan2(Math.sin(v.ta - v.a), Math.cos(v.ta - v.a)) * k; this.world.moveBox(v);
+      if (Math.hypot(v.tx - v.x, v.ty - v.y) > 120) { v.x = v.tx; v.y = v.ty; } else { const kk = Math.min(1, dt * 4); v.x += (v.evx || 0) * dt + (v.tx - v.x) * kk; v.y += (v.evy || 0) * dt + (v.ty - v.y) * kk; }
+      v.a += Math.atan2(Math.sin(v.ta - v.a), Math.cos(v.ta - v.a)) * k; v.vx = v.vy = v.w = 0; v.v = Math.hypot(v.evx || 0, v.evy || 0); this.world.moveBox(v);
     }
     // gente: copias livianas con el mismo dibujo (los 32 looks salen igual en todos los teléfonos)
     const D = ['up', 'right', 'down', 'left'], M = ['walk', 'idle', 'flee', 'down'], P = this.pp, by = this.pmap || (this.pmap = new Map()), keep = new Map();
