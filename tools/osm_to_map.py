@@ -975,6 +975,15 @@ def main(src, out, preview=None):
             reserve(nx0 - 1, ny0 - 1, nx0 + 7, ny0 + 6)
             paint(nx0, ny0, nx0 + 6, ny0 + 4, PLAZADIRT)
             decals.append({'kind': 'naciente', 'x': nx0, 'y': ny0, 'w': 7, 'h': 5})
+            # caminos secundarios de tierra con bordes blancos: de la costa a la naciente y de la costa a la entrada de la cancha
+            for cxp, cya, cyb in ((nx0 + 3, ny0 + 5, None), (fxa + 5, fyb + 2, None)):
+                if cxp in col_t:
+                    cyb = col_t[cxp][0] - 3
+                    if cxp == nx0 + 3: cyb = min(cyb, cya + 5)  # este camino termina contra la plaza de ladrillo del embarcadero
+                    if cyb > cya:
+                        reserve(cxp - 1, cya, cxp + 2, cyb)
+                        paint(cxp, cya, cxp + 1, cyb, PLAZADIRT, only=(GRASS, DIRT, PLAZADIRT, TREE))
+                        decals.append({'kind': 'camino_tierra', 'x': cxp, 'y': cya, 'w': 2, 'h': cyb - cya + 1})
             vx_ = int(lx0 + 0.76 * (lx1 - lx0 + 1))
             jard = [[x, col_t[x][0] - 2] for x in (vx_ - 5, vx_ - 1, vx_ + 3) if x in col_t]
             if jard: decals.append({'kind': 'jardineras', 'x': min(a for a, _ in jard) - 1, 'y': min(b for _, b in jard) - 1, 'w': 12, 'h': 4, 'pts': jard})
@@ -1036,7 +1045,8 @@ def main(src, out, preview=None):
             def tpal():  # 12 % tajy rosado y de esos casi la mitad amarillo (idea de Deisy), el resto verdes
                 p_ = 3 if rnd.random() < 0.12 else rnd.choice([0, 0, 1, 1, 2])
                 return 5 if (p_ == 3 and rnd.random() < 0.45) else p_
-            plant(cand, 0.92, 2, lambda x, y: (x, y, rnd.randint(15, 19), tpal()))
+            xeast = lx0 + 0.55 * (lx1 - lx0)  # sector este: árboles más altos (copas más grandes) y más juntos
+            plant(cand, 0.97, 2, lambda x, y: (x, y, rnd.randint(19, 23) if x > xeast else rnd.randint(15, 19), tpal()))
             ys2, xs2 = np.nonzero(okk & near7)
             cand = [(int(x), int(y)) for y, x in zip(ys2, xs2)]; rnd.shuffle(cand)
             plant(cand, 0.2, 4, lambda x, y: (x, y, rnd.randint(11, 14), rnd.choice([0, 1, 1, 3, 5])))

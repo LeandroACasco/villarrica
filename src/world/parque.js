@@ -368,6 +368,13 @@
       R(g, 'rgba(0,0,0,.3)', gx - (e ? 0 : 1), Y + (Hh >> 1) - 7, 4, 15); R(g, '#e8e8e2', gx - (e ? 2 : 0), Y + (Hh >> 1) - 8, 3, 1); R(g, '#e8e8e2', gx - (e ? 2 : 0), Y + (Hh >> 1) + 7, 3, 1); R(g, '#e8e8e2', gx - (e ? 2 : -1), Y + (Hh >> 1) - 8, 1, 16);
     }
   };
+  // Camino secundario de tierra con bordes blancos (cordoncitos de cal), de la costa a la naciente o a la cancha.
+  VR.decor.camino_tierra = (g, d) => {
+    const x0 = d.x * S, x1 = (d.x + d.w) * S, y0 = d.y * S, y1 = (d.y + d.h) * S;
+    for (const [xa, w] of [[x0, 1.6], [x1 - 1.6, 1.6]]) { R(g, 'rgba(0,0,0,.18)', xa + (xa === x0 ? w : -1), y0, 1, y1 - y0); R(g, '#f0eee6', xa, y0, w, y1 - y0); R(g, '#c8c4b6', xa + (xa === x0 ? 0 : w - 0.5), y0, 0.5, y1 - y0); }
+    for (let i = 0; i < d.h * 3; i++) R(g, i & 1 ? 'rgba(90,60,40,.18)' : 'rgba(255,240,220,.16)', x0 + 3 + H(i, d.x, 701) * (x1 - x0 - 6), y0 + H(i, d.y, 703) * (y1 - y0), 1.2, 0.8); // piedritas
+  };
+
   VR.decorTop.cancha_sint = (d) => {
     const X = d.x * S, Y = d.y * S, W = d.w * S, Hh = d.h * S, gate = [X + W / 2 - 14, X + W / 2 + 14], out = [], post = 2;
     const fence = (g, x0, y0, x1, y1, tall) => { // alambrado: postes grises y malla clara
