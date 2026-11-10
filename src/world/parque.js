@@ -97,48 +97,52 @@
     g.strokeStyle = '#17171b'; g.lineWidth = 1.1; g.beginPath(); g.ellipse(cx, cy, rx + 5.5, ry + 5.5, 0, a0, a1); g.stroke();
     g.lineWidth = 0.7; g.beginPath(); g.ellipse(cx, cy, rx + 3.2, ry + 3.2, 0, a0, a1); g.stroke();
     for (let i = 0; i <= N; i++) { const a = a0 + (a1 - a0) * i / N, x = cx + Math.cos(a) * (rx + 5.5), y = cy + Math.sin(a) * (ry + 5.5); R(g, '#17171b', x - 0.4, y - 2.2, 0.8, 2.4); R(g, '#4a4a52', x - 0.7, y - 2.8, 1.4, 0.8); }
-    // base de piedra gris (2 × 2 baldosas): tapa clara, frente con las placas
+    // base de rocas grises amontonadas (2 × 2 baldosas) con una forma oscura tallada a la derecha
     const X = d.bx * S, Y = d.by * S;
-    disc(g, 'rgba(0,0,0,.2)', X + 18, Y + 20, 20, 12);
-    R(g, '#6a6860', X - 0.5, Y - 6.5, 33, 39); R(g, '#a8a69c', X, Y - 6, 32, 27); R(g, '#c4c2b8', X, Y - 6, 32, 1.5); R(g, '#c4c2b8', X, Y - 6, 1.5, 27);
-    R(g, '#8c8a80', X, Y + 21, 32, 11); R(g, '#706e66', X, Y + 30, 32, 2); R(g, '#b0aea4', X, Y + 21, 32, 1);
-    for (let i = 0; i < 40; i++) R(g, i & 1 ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.12)', X + H(i, d.bx, 651) * 31, Y - 5 + H(i, d.by, 653) * 36, 1, 1); // granito
-    // placa con el retrato (poeta con sombrero) en el frente
-    R(g, '#2c2620', X + 9, Y + 22.5, 14, 8.5); R(g, '#a88a4c', X + 9.5, Y + 23, 13, 7.5); R(g, '#46382a', X + 10.5, Y + 24, 11, 5.5);
-    disc(g, '#d8b08a', X + 16, Y + 27, 2.1, 2.5); R(g, '#1c1612', X + 13.4, Y + 25.2, 5.2, 1.1); R(g, '#1c1612', X + 14.6, Y + 24.2, 2.8, 1.4); // sombrero
-    R(g, '#2a2a30', X + 13.6, Y + 28.8, 4.8, 1.6);                                                               // saco
-    // placa con versos (rayitas, sin texto) sobre la tapa
-    R(g, '#2c2620', X + 6, Y + 5, 20, 9); R(g, '#9a8a60', X + 6.5, Y + 5.5, 19, 8);
-    for (let i = 0; i < 4; i++) R(g, '#3a3226', X + 8.5, Y + 7 + i * 1.8, 11 + H(i, d.bx, 659) * 5, 0.6);
+    disc(g, 'rgba(0,0,0,.22)', X + 18, Y + 22, 21, 11);
+    const rock = (x, y, rx, ry, k) => { disc(g, '#4a4842', x, y + 0.6, rx + 0.8, ry + 0.8); disc(g, k ? '#9a988f' : '#8e8c86', x, y, rx, ry); disc(g, '#b4b2a8', x - rx * 0.3, y - ry * 0.35, rx * 0.55, ry * 0.45); disc(g, 'rgba(0,0,0,.18)', x + rx * 0.3, y + ry * 0.4, rx * 0.5, ry * 0.4); };
+    [[6, 22, 7, 5, 0], [14, 25, 8, 5.5, 1], [24, 24, 8, 5, 0], [10, 17, 6, 4.5, 1], [21, 18, 6.5, 4.5, 0], [29, 19, 4.5, 4, 1], [4, 15, 4, 3.5, 0]].forEach(([a, b, c, e, k]) => rock(X + a, Y + b, c, e, k));
+    poly(g, '#1a1a1e', [[X + 25, Y + 19], [X + 28, Y + 8], [X + 31, Y + 11], [X + 32, Y + 22], [X + 27, Y + 24]]); poly(g, '#34343a', [[X + 27, Y + 12], [X + 29, Y + 9], [X + 30, Y + 16], [X + 28, Y + 20]]); // forma oscura
+    // placa del retrato: marco marrón con el poeta de sombrero marrón, apoyada en las rocas
+    R(g, '#2c2018', X + 8, Y + 19, 12, 9); R(g, '#7a5430', X + 8.6, Y + 19.6, 10.8, 7.8); R(g, '#cfc3a4', X + 10, Y + 21, 8, 5);
+    disc(g, '#d8b08a', X + 14, Y + 24, 1.7, 2); R(g, '#5a3a1c', X + 11.6, Y + 21.6, 4.8, 1); R(g, '#6e4624', X + 12.6, Y + 20.8, 2.8, 1.2); R(g, '#2a2a30', X + 12.4, Y + 25.6, 3.2, 1.2);
+    // placa blanca con los versos
+    R(g, '#8a8780', X + 1.5, Y + 24, 8, 6); R(g, '#f2f0ea', X + 2, Y + 24.4, 7, 5);
+    for (let i = 0; i < 3; i++) R(g, '#6a665e', X + 3, Y + 25.6 + i * 1.3, 4 + H(i, d.bx, 659) * 2, 0.5);
   };
   VR.decorTop.panambi = (d) => {
-    const X = d.bx * S, Y = d.by * S, mx = X + 16, by = Y + 11, Ht = 48;
+    const X = d.bx * S, Y = d.by * S, mx = X + 14, by = Y + 14;
     return [{ sy: Y + 33, draw(g) {
-      const t = now() / 1000;
-      poly(g, 'rgba(0,0,0,.24)', [[mx - 4, by], [mx + 5, by], [mx + 24, by + 9], [mx + 12, by + 9]]);   // sombra sobre la tapa y el piso
-      // tronco: ancho abajo y más fino arriba, con luz a la izquierda y sombra a la derecha
-      const w0 = 12, w1 = 8;
-      poly(g, '#2a1c12', [[mx - w0 / 2 - 0.8, by + 1], [mx + w0 / 2 + 0.8, by + 1], [mx + w1 / 2 + 0.8, by - Ht], [mx - w1 / 2 - 0.8, by - Ht]]);
-      poly(g, '#9a6a3c', [[mx - w0 / 2, by], [mx + w0 / 2, by], [mx + w1 / 2, by - Ht], [mx - w1 / 2, by - Ht]]);
-      poly(g, '#bc8a52', [[mx - w0 / 2, by], [mx - 1, by], [mx - 1, by - Ht], [mx - w1 / 2, by - Ht]]);
-      poly(g, '#6a4426', [[mx + 2, by], [mx + w0 / 2, by], [mx + w1 / 2, by - Ht], [mx + 1.5, by - Ht]]);
-      for (let i = 0; i < 7; i++) { const yy = by - 3 - i * 6.6 - H(i, d.bx, 661) * 2, xx = mx - 4 + H(i, d.by, 663) * 8; R(g, '#5a3a20', xx, yy, 0.8, 4 + H(i, d.bx, 667) * 3); R(g, '#d0a068', xx - 0.8, yy, 0.6, 3); } // tallado (vetas)
-      R(g, '#5a3a20', mx - 5, by - 30, 2.4, 1.2); R(g, '#5a3a20', mx + 3, by - 21, 2.4, 1.2);                           // muñones de ramas
-      // corte de arriba, con anillos
-      disc(g, '#6a4426', mx, by - Ht, w1 / 2 + 1, 2.6); disc(g, '#d8aa6c', mx, by - Ht - 0.3, w1 / 2, 2.1); disc(g, '#b88a50', mx, by - Ht - 0.3, w1 / 2 - 1.4, 1.3); disc(g, '#d8aa6c', mx, by - Ht - 0.3, w1 / 2 - 2.6, 0.5);
-      // hiedra trepando (hojitas verdes)
-      for (let i = 0; i < 46; i++) {
-        const f = H(i, d.bx, 671), yy = by - 2 - f * (Ht - 6), side = H(i, d.by, 673), sp = (w0 - (w0 - w1) * f) / 2;
-        const xx = mx - sp + 1 + (i % 3 === 0 ? 0 : H(i, d.bx, 677) * sp * 1.6) + (i % 5 === 0 ? -1.5 : 0);
-        if (side > 0.82) continue;
-        R(g, ['#2e6a34', '#3f8a42', '#58a84c', '#79c25a'][(H(i, d.by, 679) * 4) | 0], xx, yy, 2.2, 1.8);
-      }
-      R(g, '#3f8a42', mx - 6.5, by - 14, 1.6, 12); R(g, '#2e6a34', mx - 6.9, by - 16, 1.2, 8);                           // enredadera que cuelga
-      // mariposa naranja arriba (aletea)
-      const f = Math.abs(Math.sin(t * 7)), bx = mx + Math.sin(t * 1.3) * 1.2, byy = by - Ht - 6 + Math.sin(t * 2) * 1.2;
-      disc(g, '#e8781c', bx - 2.6 * f - 0.5, byy - 0.8, 2.6 * f + 0.4, 2); disc(g, '#e8781c', bx + 2.6 * f + 0.5, byy - 0.8, 2.6 * f + 0.4, 2);
-      disc(g, '#f6a94a', bx - 2.4 * f - 0.4, byy + 0.9, 1.8 * f + 0.4, 1.4); disc(g, '#f6a94a', bx + 2.4 * f + 0.4, byy + 0.9, 1.8 * f + 0.4, 1.4);
-      R(g, '#2a1810', bx - 0.4, byy - 1.8, 0.8, 4);
+      const t = now() / 1000, LT = '#c98f55', MD = '#b57c44', DK = '#a8703a', OL = '#3a2412';
+      const br = (pts, w0, w1) => { // rama: lista de puntos, ancho que se afina
+        for (let pass = 0; pass < 3; pass++) for (let i = 0; i < pts.length - 1; i++) {
+          const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], a = w0 + (w1 - w0) * i / (pts.length - 1), b = w0 + (w1 - w0) * (i + 1) / (pts.length - 1);
+          const c = pass === 0 ? OL : pass === 1 ? MD : LT, o = pass === 0 ? 1.6 : pass === 1 ? 0 : -1.2;
+          if (pass === 2 && (a + o < 0.6)) continue;
+          poly(g, c, [[x0 - a / 2 - o / 2, y0], [x0 + a / 2 + o / 2, y0], [x1 + b / 2 + o / 2, y1], [x1 - b / 2 - o / 2, y1]].map(([x, y], j) => [pass === 2 ? (j % 2 ? x - 0.9 : x - 0.4) - (j % 2 ? a * 0.1 : 0) : x, y]));
+        }
+      };
+      poly(g, 'rgba(0,0,0,.24)', [[mx - 4, by], [mx + 5, by], [mx + 26, by + 9], [mx + 12, by + 9]]);
+      // tronco retorcido (se tuerce de izquierda a derecha) y ramas bifurcadas sin hojas
+      const trunk = [[mx, by], [mx - 1.5, by - 9], [mx + 1, by - 18], [mx - 1, by - 27], [mx + 0.5, by - 34]];
+      br(trunk, 11, 7);
+      br([[mx + 0.5, by - 34], [mx - 4, by - 41], [mx - 7, by - 50], [mx - 8, by - 57]], 5, 1.4);
+      br([[mx + 0.5, by - 34], [mx + 3, by - 43], [mx + 3.5, by - 52], [mx + 5.5, by - 59]], 4.6, 1.4);
+      br([[mx - 3.5, by - 42], [mx - 0.5, by - 48], [mx - 0.5, by - 55]], 2.4, 1);
+      br([[mx + 3, by - 44], [mx + 8, by - 48], [mx + 10, by - 53]], 2.2, 0.9);
+      for (let i = 0; i < 8; i++) { const yy = by - 3 - i * 4, xx = mx - 3.5 + H(i, d.bx, 663) * 6; R(g, DK, xx, yy, 0.8, 3.5); R(g, '#dcae78', xx - 0.9, yy, 0.6, 2.4); } // vetas talladas
+      R(g, OL, mx - 1.5, by - 22, 3, 1.1); R(g, '#e0b27c', mx - 1.2, by - 22.4, 1.6, 0.6);                      // hueco tallado
+      // enredaderas verde azuladas: espiral en el tronco y un cordón que cuelga
+      const gr = ['#1f7a6a', '#2f9a82', '#58b89a', '#7ed0a8'];
+      for (let i = 0; i < 38; i++) { const f = i / 37, yy = by - 2 - f * 40, xx = mx + Math.sin(f * 11) * 5.2 * (1 - f * 0.4); R(g, gr[(H(i, d.by, 679) * 4) | 0], xx - 1, yy, 2.2, 1.8); }
+      R(g, '#2f9a82', mx - 7, by - 24, 1, 22); for (let i = 0; i < 7; i++) R(g, gr[1 + (i & 1)], mx - 7.8, by - 22 + i * 3, 2, 1.4);
+      R(g, '#2f9a82', mx + 5.5, by - 40, 0.9, 12);
+      // mariposa naranja y negra arriba (aletea)
+      const f = Math.abs(Math.sin(t * 7)), bx = mx + 5.5 + Math.sin(t * 1.3) * 1.2, byy = by - 63 + Math.sin(t * 2) * 1.2;
+      disc(g, '#1c1410', bx - 2.9 * f - 0.6, byy - 0.8, 2.9 * f + 0.7, 2.3); disc(g, '#1c1410', bx + 2.9 * f + 0.6, byy - 0.8, 2.9 * f + 0.7, 2.3);
+      disc(g, '#f08a1c', bx - 2.6 * f - 0.5, byy - 0.8, 2.6 * f + 0.3, 1.9); disc(g, '#f08a1c', bx + 2.6 * f + 0.5, byy - 0.8, 2.6 * f + 0.3, 1.9);
+      disc(g, '#f6a94a', bx - 2.3 * f - 0.4, byy + 0.9, 1.7 * f + 0.4, 1.3); disc(g, '#f6a94a', bx + 2.3 * f + 0.4, byy + 0.9, 1.7 * f + 0.4, 1.3);
+      R(g, '#1c1410', bx - 0.4, byy - 1.8, 0.8, 4);
     } }];
   };
 
