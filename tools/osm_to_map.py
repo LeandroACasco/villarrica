@@ -1173,6 +1173,10 @@ def main(src, out, preview=None):
             cxe = cx_cell if sx_ > 0 else cx_cell + 1; cye = cy_cell if sy_ > 0 else cy_cell + 1
             if (cxe, cye) in done_c or rounded[cy_cell, cx_cell] or any(abs(px_ - cxe) <= 4 and abs(py_ - cye) <= 4 for px_, py_ in plaza_c):
                 continue
+            # una esquina de verdad: la calle corre recta pegada a la vereda hacia los dos lados (3 baldosas). Si el borde
+            # de la calle da un escalón (diagonales, retornos, senderos que llegan a la calle) no se redondea (10/11/2026)
+            if not (all(tiles[cy_cell - sy_, cx_cell + sx_ * k] in RD for k in range(3)) and all(tiles[cy_cell + sy_ * k, cx_cell - sx_] in RD for k in range(3))):
+                continue
             t0 = tiles[cy_cell, cx_cell]
             R_ = 0
             for r_try in (2, 1):
