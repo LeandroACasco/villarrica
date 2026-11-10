@@ -138,7 +138,7 @@
       R(g, '#2f9a82', mx - 7, by - 24, 1, 22); for (let i = 0; i < 7; i++) R(g, gr[1 + (i & 1)], mx - 7.8, by - 22 + i * 3, 2, 1.4);
       R(g, '#2f9a82', mx + 5.5, by - 40, 0.9, 12);
       // mariposa naranja y negra arriba (aletea)
-      const f = Math.abs(Math.sin(t * 7)), bx = mx + 5.5 + Math.sin(t * 1.3) * 1.2, byy = by - 63 + Math.sin(t * 2) * 1.2;
+      const f = 0.9, bx = mx + 5.5, byy = by - 63; // escultura: quieta
       disc(g, '#1c1410', bx - 2.9 * f - 0.6, byy - 0.8, 2.9 * f + 0.7, 2.3); disc(g, '#1c1410', bx + 2.9 * f + 0.6, byy - 0.8, 2.9 * f + 0.7, 2.3);
       disc(g, '#f08a1c', bx - 2.6 * f - 0.5, byy - 0.8, 2.6 * f + 0.3, 1.9); disc(g, '#f08a1c', bx + 2.6 * f + 0.5, byy - 0.8, 2.6 * f + 0.3, 1.9);
       disc(g, '#f6a94a', bx - 2.3 * f - 0.4, byy + 0.9, 1.7 * f + 0.4, 1.3); disc(g, '#f6a94a', bx + 2.3 * f + 0.4, byy + 0.9, 1.7 * f + 0.4, 1.3);
