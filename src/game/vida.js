@@ -96,7 +96,7 @@ VR.Vida = class {
     const s = this.s; if (s.pieza.fuera) { this.msg('🏠 Ña Ramona te sacó las cosas: pagale lo que debés para volver'); return false; }
     if (!this.puedeDormir()) { this.msg('😴 Todavía es temprano para dormir (desde las 18:00)'); return false; }
     const d0 = Math.floor(s.min / 1440) + (this.hora >= 18 ? 1 : 0), dm = d0 * 1440 + 6 * 60 - s.min;
-    this.tick(dm / 0.8); s.hambre = Math.max(5, s.hambre - 10); this.sync(); this.save(); this.msg('😴 Dormiste en la pieza · ' + this.diaSemana + ' 6:00 · partida guardada'); return true;
+    const h = s.hambre; s.hambre = 100; this.tick(dm / 0.8); s.hambre = Math.max(5, h - 15); // dormido no te desmayás: la noche baja solo un poco el hambre (antes te podías desmayar durmiendo y pagabas el hospital) this.sync(); this.save(); this.msg('😴 Dormiste en la pieza · ' + this.diaSemana + ' 6:00 · partida guardada'); return true;
   }
   // comprarle chipa a Doña Chela para el canasto (se paga con lo que hay y el resto queda fiado)
   llenaCanasto(n, fiar) {
