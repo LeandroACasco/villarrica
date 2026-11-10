@@ -211,6 +211,19 @@ VR.World = class {
         if (edge(0, 1)) g.fillRect(x, y + S - 2, S, 2);
         if (edge(-1, 0)) g.fillRect(x, y, 2, S);
         if (edge(1, 0)) g.fillRect(x + S - 2, y, 2, S);
+      } else if (t === T.LAGUNA) { // orilla de la laguna Ykua Pytã: barro oscuro y un brillo verde claro; el borde del sendero lo pinta aparte
+        const bank = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n !== T.LAGUNA && n !== -1 && n !== T.PAVING && n !== T.MONUMENT && n !== T.LADRILLO; };
+        if (bank(0, -1)) { g.fillStyle = '#4a4030'; g.fillRect(x, y, S, 2); g.fillStyle = '#9db27a'; g.fillRect(x, y + 2, S, 0.75); }
+        if (bank(0, 1)) { g.fillStyle = '#3e5a34'; g.fillRect(x, y + S - 3, S, 1); g.fillStyle = '#4a4030'; g.fillRect(x, y + S - 2, S, 2); }
+        if (bank(-1, 0)) { g.fillStyle = '#4a4030'; g.fillRect(x, y, 2, S); g.fillStyle = '#9db27a'; g.fillRect(x + 2, y, 0.75, S); }
+        if (bank(1, 0)) { g.fillStyle = '#4a4030'; g.fillRect(x + S - 2, y, 2, S); }
+      } else if (t === T.SENDERO) { // borde de piedra blanca del camino de la laguna donde se junta con el pasto o la tierra
+        const G = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n === T.GRASS || n === T.PLAZADIRT || n === T.TREE || n === T.DIRT; };
+        const wc = '#ece9e0', sc = 'rgba(0,0,0,.2)';
+        if (G(0, -1)) { g.fillStyle = wc; g.fillRect(x, y, S, 1); g.fillStyle = sc; g.fillRect(x, y + 1, S, 0.5); }
+        if (G(0, 1)) { g.fillStyle = wc; g.fillRect(x, y + S - 1.5, S, 1.5); g.fillStyle = '#b4b0a6'; g.fillRect(x, y + S - 0.5, S, 0.5); }
+        if (G(-1, 0)) { g.fillStyle = wc; g.fillRect(x, y, 1, S); g.fillStyle = sc; g.fillRect(x + 1, y, 0.5, S); }
+        if (G(1, 0)) { g.fillStyle = wc; g.fillRect(x + S - 1, y, 1, S); g.fillStyle = '#c4c0b6'; g.fillRect(x + S - 1, y, 0.5, S); }
       } else if (t === T.WATER) {
         const W = T.WATER, bank = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n !== W && n !== -1; };
         if (bank(0, -1)) { g.fillStyle = '#6b5a3a'; g.fillRect(x, y, S, 2); g.fillStyle = '#9cc6e6'; g.fillRect(x, y + 2, S, 1); }
@@ -245,7 +258,7 @@ VR.World = class {
     // 5) troncos
     for (const t of idx.t) {
       g.fillStyle = '#4b2f1b'; g.fillRect(t.x * S + 6, t.y * S + 2, 4, 10); g.fillStyle = '#6e4628'; g.fillRect(t.x * S + 6, t.y * S + 2, 2, 10);
-      if (this.plazaSet && this.plazaSet.has(this.area[t.y * this.w + t.x])) { // tronco pintado con cal (Street View de la plaza)
+      if (this.calSet && this.calSet.has(this.area[t.y * this.w + t.x])) { // tronco pintado con cal (Street View de la plaza)
         g.fillStyle = '#e9e7df'; g.fillRect(t.x * S + 6, t.y * S + 6, 4, 6); g.fillStyle = '#ffffff'; g.fillRect(t.x * S + 6, t.y * S + 6, 1.5, 6); g.fillStyle = '#c4c0b4'; g.fillRect(t.x * S + 9, t.y * S + 6, 1, 6);
       }
     }
@@ -1152,6 +1165,7 @@ VR.loadMap = async (url) => {
   w.inSenda = (tx, ty) => { for (const d of w.sendas) { const ux = d.bx - d.ax, uy = d.by - d.ay, L = Math.hypot(ux, uy), px = tx + 0.5 - d.ax, py = ty + 0.5 - d.ay, t = (px * ux + py * uy) / (L * L);
     if (t > -0.02 && t < 1.02 && Math.abs(px * uy - py * ux) / L < d.hw + 0.9) return true; } return false; };
   w.plazaSet = new Set(); (meta.areas || []).forEach((n, i) => { if (/plaza/i.test(n)) w.plazaSet.add(i + 1); });
+  w.calSet = new Set(w.plazaSet); (meta.areas || []).forEach((n, i) => { if (/parque manuel ortiz/i.test(n)) w.calSet.add(i + 1); }); // troncos pintados con cal (plazas y parque Ortiz Guerrero)
   { const t = (meta.decals || []).find((d) => d.kind === 'tienda'), T = VR.T; // taller (05/11/2026): cerca del Centro, misma vereda que la tienda, hacia el oeste
     if (t) for (let x = t.x - 6; x > t.x - 120; x--) { let ok = true; for (let k = 0; k < 7 && ok; k++) ok = w.get(x - k, t.y) === T.SIDEWALK && w.get(x - k, t.y + 1) === T.BUILDING; if (ok) { meta.decals.push({ kind: 'taller', x: x - 6, y: t.y, w: 7, h: 1 }); break; } } }
   w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;

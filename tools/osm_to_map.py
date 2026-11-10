@@ -22,7 +22,8 @@ M_PER_TILE = 2.0
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BARRIOS = ROOT / 'data/barrios_ine.json'
 # tipos de tile (iguales a VR.T en src/world/tiles.js)
-GRASS, ROAD, SIDEWALK, BUILDING, PAVING, TREE, MONUMENT, DIRT, WATER, STONE, DIRTROAD, CHECKER, PLAZADIRT = range(13)
+GRASS, ROAD, SIDEWALK, BUILDING, PAVING, TREE, MONUMENT, DIRT, WATER, STONE, DIRTROAD, CHECKER, PLAZADIRT, LAGUNA, SENDERO, LADRILLO = range(16)
+# LAGUNA: agua verde oliva de la laguna Ykua Pytã; SENDERO: tierra clara apisonada; LADRILLO: piso de ladrillo del parque (10/11/2026)
 # ancho de calzada y de vereda (en tiles) según el tipo de calle
 ROADS = {
     'trunk': (6, 2), 'primary': (6, 2), 'secondary': (5, 1.5), 'tertiary': (5, 1.5), 'trunk_link': (4, 1), 'tertiary_link': (4, 1),
@@ -837,6 +838,202 @@ def main(src, out, preview=None):
             decals.append({'kind': 'banco', 'x': int(x), 'y': int(y), 'w': 1, 'h': 1, 'f': f})
     print('bancos en las plazas: %d' % len(benches))
 
+    # ---------- parque Manuel Ortiz Guerrero (laguna Ykua Pytã): plano de Claude del 10/11/2026 ----------
+    # Ver claude/parque-ykua-plan.md. Todo se ubica desde la máscara de agua de la laguna y el polígono del parque
+    # (no con números fijos), así sobrevive a una actualización de OpenStreetMap. Los dibujos están en
+    # src/world/parque.js; acá se deciden las posiciones, el piso (agua verde, sendero de tierra clara, ladrillo),
+    # los árboles tupidos con tronco pintado con cal, los bancos y los faroles del anillo.
+    if 'Parque Manuel Ortiz Guerrero' in area_names:
+        pk = area_names.index('Parque Manuel Ortiz Guerrero') + 1
+        pys_, pxs_ = np.nonzero(area == pk)
+        px0, px1, py0, py1 = int(pxs_.min()), int(pxs_.max()), int(pys_.min()), int(pys_.max())
+        pbox = np.zeros((H, W), bool); pbox[py0:py1 + 1, px0:px1 + 1] = True
+        lag = (tiles == WATER) & pbox
+        ly_, lx_ = np.nonzero(lag)
+        if len(lx_) > 200:
+            lx0, lx1, ly0, ly1 = int(lx_.min()), int(lx_.max()), int(ly_.min()), int(ly_.max())
+            lcx, lcy = int(lx_.mean()), int(ly_.mean())
+            row_l = {int(y): (int(np.nonzero(lag[y])[0].min()), int(np.nonzero(lag[y])[0].max())) for y in range(ly0, ly1 + 1) if lag[y].any()}
+            col_t = {int(x): (int(np.nonzero(lag[:, x])[0].min()), int(np.nonzero(lag[:, x])[0].max())) for x in range(lx0, lx1 + 1) if lag[:, x].any()}
+            tiles[lag] = LAGUNA
+            near3 = dilate(lag, 3)
+            land = (GRASS, DIRT, PLAZADIRT, TREE, SENDERO, PAVING)
+            ring0 = (tiles == PAVING) & near3 & (area == pk)
+            tiles[ring0] = SENDERO  # el camino de la laguna: de laja a tierra clara apisonada
+            reserved = np.zeros((H, W), bool)   # donde no van árboles ni bancos
+
+            def reserve(xa, ya, xb, yb):  # saca los árboles de un rectángulo (baldosas, incluido) y lo reserva
+                xa, ya, xb, yb = max(0, xa), max(0, ya), min(W - 1, xb), min(H - 1, yb)
+                keep = []
+                for t in trees:
+                    if xa <= t[0] <= xb and ya <= t[1] <= yb:
+                        tiles[t[1], t[0]] = GRASS; tree_at[t[1], t[0]] = False
+                    else:
+                        keep.append(t)
+                trees[:] = keep
+                reserved[ya:yb + 1, xa:xb + 1] = True
+
+            def paint(xa, ya, xb, yb, kind, only=None):  # cambia el tipo de las baldosas de un rectángulo (sin pisar calles ni edificios)
+                for y in range(max(0, ya), min(H, yb + 1)):
+                    for x in range(max(0, xa), min(W, xb + 1)):
+                        t = tiles[y, x]
+                        if (only is not None and t not in only) or (only is None and t in (ROAD, STONE, DIRTROAD, BUILDING, SIDEWALK, MONUMENT)):
+                            continue
+                        tiles[y, x] = kind
+                        if kind in (SENDERO, LADRILLO, MONUMENT): area[y, x] = pk
+
+            def is_lag(x, y): return 0 <= y < H and 0 <= x < W and bool(lag[int(y), int(x)])
+
+            # -- Fuente de los Enamorados (Leandro): en la franja entre la fachada este del estadio y el camino de
+            #    Gral. Caballero; pileta hexagonal de mosaico, nicho blanco con arcos terracota atrás, capillita
+            #    terracota con cúpula al norte y motos contra la fachada --
+            bl = (tiles == BUILDING)
+
+            def facade(y):  # borde este del estadio en esa fila (el edificio más cercano al oeste del parque)
+                a = max(0, px0 - 40); xs = np.nonzero(bl[y, a:px0 - 1])[0]
+                return int(xs.max()) + a if len(xs) else None
+            yt = ly0 + 1
+            fxs = [v for v in (facade(y) for y in range(yt - 3, yt + 4)) if v is not None]
+            if fxs and px0 - max(fxs) - 1 >= 5:
+                fx = max(fxs)
+                pxp, nx = px0 - 4, fx + 1
+                reserve(fx + 1, yt - 8, px0 - 1, yt + 8)
+                paint(fx + 1, yt - 2, px0 - 1, yt + 4, LADRILLO)
+                paint(pxp, yt, pxp + 2, yt + 2, MONUMENT)      # la pileta (sólida)
+                paint(nx, yt, nx, yt + 2, MONUMENT)            # el nicho
+                paint(pxp + 1, yt - 4, pxp + 1, yt - 4, MONUMENT)  # la capillita
+                decals.append({'kind': 'fuente_amor', 'x': fx + 1, 'y': yt - 1, 'w': px0 - fx - 1, 'h': 5, 'px': pxp, 'py': yt, 'nx': nx})
+                decals.append({'kind': 'capillita', 'x': pxp, 'y': yt - 7, 'w': 3, 'h': 4, 'bx': pxp + 1, 'by': yt - 4})
+                pts = []
+                for k in range(3):
+                    yy = (yt - 7) * 16 + 8 + k * 14; f_ = facade(yt - 7 + k // 2) or fx
+                    pts.append([(f_ + 1) * 16 + 13, yy, round(math.pi / 2 - 0.06 + (0.12 if k == 1 else 0), 3)])
+                decals.append({'kind': 'motosparque', 'x': fx + 1, 'y': yt - 8, 'w': 2, 'h': 3, 'pts': pts})
+                labels.append({'text': 'Fuente de los Enamorados', 'x': (pxp + 1) * 16 + 8, 'y': (yt + 5) * 16 + 2, 'small': 1})
+                print('fuente de los enamorados: pileta en x %d, y %d (fachada del estadio en x=%d)' % (pxp, yt, fx))
+
+            # -- Embarcadero de los cisnes: costa norte, un poco al este del medio --
+            xe = int(lcx + 0.12 * (lx1 - lx0))
+            while xe not in col_t and xe < lx1: xe += 1
+            yn = col_t[xe][0]
+            reserve(xe - 7, yn - 7, xe + 7, yn - 1)
+            paint(xe - 4, yn - 3, xe + 4, yn - 1, LADRILLO)
+            paint(xe - 1, yn, xe + 1, yn + 1, PAVING)          # el muelle: se camina (las tablas las pinta el decorado)
+            sw_ = []
+            for dx_, dy_, col_, a_ in ((-3.4, 1.8, 'azul', 1.25), (3.9, 2.9, 'azul', 1.9), (0.6, 4.6, 'blanco', 2.9)):
+                if is_lag(int(xe + dx_), int(yn + dy_)): sw_.append([round(xe + dx_, 2), round(yn + dy_, 2), col_, a_])
+            bote = [round(xe + 2.9, 2), round(yn + 0.7, 2), -0.3] if is_lag(xe + 2, yn + 1) else None
+            decals.append({'kind': 'embarcadero', 'x': xe - 7, 'y': yn - 3, 'w': 15, 'h': 10, 'xe': xe, 'yn': yn, 'cisnes': sw_, 'bote': bote})
+            decals.append({'kind': 'banco', 'x': xe + 3, 'y': yn - 2, 'w': 1, 'h': 1, 'f': 'd', 'px': (xe + 3) * 16 + 8, 'py': (yn - 2) * 16 + 8, 'fa': round(math.pi / 2, 3)})
+            labels.append({'text': 'Paseo en cisne', 'x': xe * 16 + 8, 'y': (yn - 4) * 16 + 4, 'small': 1})
+
+            # -- plataforma flotante en el centro de la laguna y dos surtidores --
+            cxp_, cyp_ = lcx + 3, lcy - 2
+            if all(is_lag(cxp_ + i, cyp_ + j) for i in range(-3, 5) for j in range(-1, 4)):
+                paint(cxp_ - 1, cyp_ - 1, cxp_ + 1, cyp_ + 1, MONUMENT, only=(LAGUNA,))
+                decals.append({'kind': 'plataforma', 'x': cxp_ - 2, 'y': cyp_ - 2, 'w': 5, 'h': 5})
+                for jx, jy in ((cxp_ + 3, cyp_ - 1), (cxp_ + 3, cyp_ + 2)):
+                    decals.append({'kind': 'surtidor', 'x': jx - 1, 'y': jy - 3, 'w': 3, 'h': 4, 'px': jx * 16 + 8, 'py': jy * 16 + 8})
+
+            # -- glorieta de columnas: costa este, un poco al norte del medio --
+            yc = int(ly0 + 0.42 * (ly1 - ly0))
+            while yc not in row_l and yc < ly1: yc += 1
+            x0t = row_l[yc][1] - 1
+            reserve(x0t - 1, yc - 9, x0t + 12, yc + 6)
+            paint(x0t, yc - 5, x0t + 7, yc + 5, LADRILLO)
+            decals.append({'kind': 'glorieta', 'x': x0t - 1, 'y': yc - 7, 'w': 11, 'h': 15, 'x0': x0t, 'cx': x0t + 3, 'cy': yc, 'rx': 3, 'ry': 4})
+            decals.append({'kind': 'banderas_v', 'x': x0t + 9, 'y': yc - 8, 'w': 2, 'h': 14, 'n': 10, 'y0': yc - 5})
+
+            # -- pasarela con balaustres y pérgola: oeste, entre el camino de Gral. Caballero y la laguna --
+            yp = lcy - 1
+            while yp not in row_l and yp < ly1: yp += 1
+            lw_ = row_l[yp][0]
+            reserve(lw_ - 14, yp - 7, lw_ - 2, yp + 5)
+            paint(lw_ - 13, yp, lw_ - 3, yp + 2, SENDERO, only=(GRASS, DIRT, PLAZADIRT, TREE, SENDERO))
+            decals.append({'kind': 'balaustres', 'x': lw_ - 11, 'y': yp - 1, 'w': 9, 'h': 5, 'x0': lw_ - 10, 'x1': lw_ - 3, 'y0': yp, 'y1': yp + 3})
+            decals.append({'kind': 'pergola', 'x': lw_ - 10, 'y': yp - 7, 'w': 6, 'h': 5, 'px': lw_ - 9, 'py': yp - 6, 'pw': 4, 'ph': 3})
+
+            # -- monumento al Panambi Vera: noroeste de la laguna, en la orilla --
+            kk = int(np.argmin(lx_ + ly_)); sx_, sy_ = int(lx_[kk]), int(ly_[kk])
+            cxo, cyo = sx_ - 2.5, sy_ - 1.5
+            reserve(int(cxo) - 5, int(cyo) - 6, int(cxo) + 4, int(cyo) + 3)
+            bx_, by_ = int(round(cxo)) - 1, int(round(cyo)) - 1
+            paint(bx_, by_, bx_ + 1, by_ + 1, MONUMENT)
+            decals.append({'kind': 'panambi', 'x': int(cxo) - 4, 'y': int(cyo) - 6, 'w': 9, 'h': 10, 'cx': round(cxo * 16 + 8, 1), 'cy': round(cyo * 16 + 8, 1), 'bx': bx_, 'by': by_})
+            labels.append({'text': 'Panambi Vera', 'x': int(cxo * 16 + 8), 'y': int((cyo - 3.6) * 16)})
+
+            # -- orilla sur: troncos caídos y matas, sobre Curupayty --
+            lg = []
+            for k in range(5):
+                x = lcx - 9 + int(k * 4.4) + rnd.randint(0, 2)
+                if x in col_t: lg.append([round(x + rnd.random(), 2), round(col_t[x][1] + 1.6 + rnd.random() * 0.4, 2), round(rnd.uniform(-0.5, 0.5) + (math.pi / 2 if k % 3 == 1 else 0), 2), rnd.randint(22, 34)])
+            decals.append({'kind': 'troncos', 'x': lcx - 11, 'y': ly1 - 1, 'w': 24, 'h': 6, 'pts': lg})
+
+            # -- el anillo de la laguna: faroles blancos cada ~7 baldosas y bancos de madera mirando al agua --
+            ring = (tiles == SENDERO) & near3 & (area == pk) & ~reserved
+            rys, rxs = np.nonzero(ring)
+            order = np.argsort(np.arctan2(rys - lcy, (rxs - lcx) * 1.0))
+            near1 = dilate(lag, 1)
+            lamps, bench_at = [], []
+            for i_ in order:
+                y, x = int(rys[i_]), int(rxs[i_])
+                if near1[y, x]: continue
+                if any(abs(a - x) + abs(b - y) < 8 for a, b in lamps): continue
+                lamps.append((x, y)); decals.append({'kind': 'farol_parque', 'x': x, 'y': y - 2, 'w': 1, 'h': 3})
+            for i_ in order:
+                y, x = int(rys[i_]), int(rxs[i_])
+                if near1[y, x] or (x, y) in lamps: continue
+                if any(abs(a - x) + abs(b - y) < 6 for a, b in bench_at) or any(abs(a - x) + abs(b - y) < 3 for a, b in lamps): continue
+                wt = None
+                for r_ in range(1, 5):
+                    for dy_ in range(-r_, r_ + 1):
+                        for dx_ in range(-r_, r_ + 1):
+                            if wt is None and max(abs(dx_), abs(dy_)) == r_ and is_lag(x + dx_, y + dy_): wt = (x + dx_, y + dy_)
+                if wt is None: continue
+                fa = math.atan2(wt[1] - y, wt[0] - x)
+                bench_at.append((x, y))
+                decals.append({'kind': 'banco', 'x': x, 'y': y, 'w': 1, 'h': 1, 'f': 'd', 'px': round((x + 0.5) * 16, 1), 'py': round((y + 0.5) * 16, 1), 'fa': round(fa, 3)})
+
+            # -- árboles tupidos con tronco pintado con cal (como la Plaza de los Héroes); cerca del agua queda pasto
+            #    abierto (carpinchos); palmeras al oeste y al sudeste; algún tajy --
+            keep = []
+            for t in trees:
+                if area[t[1], t[0]] == pk and not reserved[t[1], t[0]]:
+                    tiles[t[1], t[0]] = GRASS; tree_at[t[1], t[0]] = False
+                else:
+                    keep.append(t)
+            trees[:] = keep
+            near7 = dilate(lag, 7)
+            roadish = dilate(np.isin(tiles, (ROAD, STONE, DIRTROAD, SIDEWALK, BUILDING, MONUMENT, LADRILLO)), 1)
+            okk = (tiles == GRASS) & (area == pk) & ~reserved & ~roadish
+            n0 = len(trees)
+            # palmeras: borde oeste del parque (sobre el camino de Gral. Caballero) y rincón sudeste
+            for (xa_, xb_, ya_, yb_, step) in ((px0 + 2, px0 + 6, py0 + 6, ly0 + 8, 6), (lx1 + 6, lx1 + 24, ly1 - 6, py1 - 4, 5)):
+                ys3, xs3 = np.nonzero(okk[ya_:yb_ + 1, xa_:xb_ + 1]); cc = [(int(x) + xa_, int(y) + ya_) for y, x in zip(ys3, xs3)]; rnd.shuffle(cc)
+                got = []
+                for x, y in cc:
+                    if any(abs(a - x) + abs(b - y) < step for a, b in got) or tree_at[max(0, y - 1):y + 2, max(0, x - 1):x + 2].any(): continue
+                    got.append((x, y)); tree_at[y, x] = True; trees.append((x, y, rnd.randint(12, 15), 4))
+            ys2, xs2 = np.nonzero(okk & ~near7)
+            cand = [(int(x), int(y)) for y, x in zip(ys2, xs2)]; rnd.shuffle(cand)
+            def tpal():  # 12 % tajy rosado y de esos casi la mitad amarillo (idea de Deisy), el resto verdes
+                p_ = 3 if rnd.random() < 0.12 else rnd.choice([0, 0, 1, 1, 2])
+                return 5 if (p_ == 3 and rnd.random() < 0.45) else p_
+            plant(cand, 0.92, 2, lambda x, y: (x, y, rnd.randint(15, 19), tpal()))
+            ys2, xs2 = np.nonzero(okk & near7)
+            cand = [(int(x), int(y)) for y, x in zip(ys2, xs2)]; rnd.shuffle(cand)
+            plant(cand, 0.2, 4, lambda x, y: (x, y, rnd.randint(11, 14), rnd.choice([0, 1, 1, 3, 5])))
+            for x, y, _, _ in trees[n0:]:
+                tiles[y, x] = TREE
+            # bajo los árboles tupidos, tierra parda con pasto ralo (como la plaza)
+            dens = np.zeros((H, W), bool)
+            for x, y, r_, _ in trees[n0:]:
+                if r_ >= 15: dens[max(0, y - 1):y + 2, max(0, x - 1):x + 2] = True
+            dens = dilate(dens, 1) & (tiles == GRASS) & (area == pk) & ~near7 & ~reserved & (noise < 0.42)
+            tiles[dens] = PLAZADIRT
+            print('parque Ortiz Guerrero: laguna x %d-%d, y %d-%d; embarcadero en x=%d, glorieta en y=%d, pasarela en y=%d; %d árboles nuevos, %d bancos, %d faroles' %
+                  (lx0, lx1, ly0, ly1, xe, yc, yp, len(trees) - n0, len(bench_at), len(lamps)))
+
     # ---------- alrededor de la Plaza de los Héroes (Street View de Leandro, 05/11/2026) ----------
     # La vereda de la plaza es de la misma piedra laja que adentro, hasta el cordón. Las cuatro esquinas son
     # redondeadas (radio ~6 m), con el cordón pintado de amarillo y dos rampas azules para sillas de ruedas, una
@@ -1034,7 +1231,7 @@ def main(src, out, preview=None):
 
     if preview:
         pal = np.array([(92, 158, 58), (120, 120, 128), (200, 192, 176), (200, 120, 90), (196, 146, 108),
-                        (40, 100, 40), (230, 230, 230), (168, 92, 58), (70, 130, 200), (96, 92, 90), (150, 84, 52), (190, 188, 184), (140, 114, 86)], np.uint8)
+                        (40, 100, 40), (230, 230, 230), (168, 92, 58), (70, 130, 200), (96, 92, 90), (150, 84, 52), (190, 188, 184), (140, 114, 86), (86, 106, 70), (206, 188, 152), (168, 92, 66)], np.uint8)
         img = pal[tiles]
         img[line > 0] = (226, 191, 69)
         Image.fromarray(img).save(preview)

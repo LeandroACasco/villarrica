@@ -700,6 +700,13 @@ VR.parkCars = (world, n, near) => {
     (world.parkingDemo = world.parkingDemo || []).push({ x0: d.x * S, x1: (d.x + d.w) * S, y0: d.y * S - 40, y1: (d.y + 1) * S });
   }
 
+  // Motos del parque Ortiz Guerrero (10/11/2026): 3 en batería contra la fachada este del estadio, junto a la capillita
+  for (const d of world.decals || []) {
+    if (d.kind !== 'motosparque') continue;
+    for (const [x, y, a] of d.pts) add(x, y, a, (rnd() * VR.MOTO_COLORS.length) | 0, 'moto');
+    (world.parkingDemo = world.parkingDemo || []).push({ x0: d.x * S, x1: (d.x + d.w) * S, y0: d.y * S, y1: (d.y + d.h) * S });
+  }
+
   // Lugar para estacionar (04/11/2026, menos y mejor repartidos): solo en calles de 5 baldosas (10 m) o más,
   // con cordón a lo largo de ~8 baldosas (lejos de las esquinas) y sin otro vehículo enfrente, así siempre
   // queda lugar para que pasen dos autos.

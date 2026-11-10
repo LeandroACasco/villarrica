@@ -76,6 +76,15 @@ VR.Night = class {
       else if (d.kind === 'monumento') this.put(X + 16, Y + 16, 56, LED, 0.9);
       else if (d.kind === 'monumento_bajo') this.put(X + 16, Y + 16, 30, '120,190,255', 0.9);
       else if (d.kind === 'anfiteatro') { this.put(X + w - 24, Y + h / 2, 64, LED, 0.7); }
+      // parque Manuel Ortiz Guerrero (10/11/2026): faroles blancos en el anillo, surtidores celestes, glorieta cálida,
+      // la fuente de los enamorados con luz rosada suave (por la leyenda) y el embarcadero
+      else if (d.kind === 'farol_parque') this.put(X + 8, Y + 2 * S - 8, 60, LED, 0.85);
+      else if (d.kind === 'surtidor') this.put(d.px, d.py - 8, 36, '150,220,255', 0.9);
+      else if (d.kind === 'fuente_amor') this.put((d.px + 1.5) * S, (d.py + 1.5) * S, 56, '255,170,205', 0.7);
+      else if (d.kind === 'capillita') this.put(d.bx * S + 8, (d.by + 1) * S - 4, 34, CALIDO, 0.7);
+      else if (d.kind === 'glorieta') for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI / 4; this.put(d.cx * S + Math.cos(a) * d.rx * S, d.cy * S + Math.sin(a) * d.ry * S - 8, 42, CALIDO, 0.85); }
+      else if (d.kind === 'embarcadero') { this.put(d.xe * S + 8, (d.yn - 2) * S, 58, CALIDO, 0.9); this.put(d.xe * S + 8, (d.yn + 1) * S, 40, CALIDO, 0.6); }
+      else if (d.kind === 'panambi') this.put(d.cx, d.cy + 10, 50, CALIDO, 0.7);
       else if (d.kind === 'muni') { // reflectores sobre la fachada oeste y el teatro al sur
         const fx = d.bx * S, py = (d.y + d.p1) * S;
         this.put(fx, py - 60, 70, LED, 0.9); this.put(fx, py, 80, LED, 1); this.put(fx, py + 60, 70, LED, 0.9);

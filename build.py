@@ -7,7 +7,7 @@ import hashlib, json, pathlib, shutil, datetime, subprocess, sys
 root = pathlib.Path(__file__).parent
 # orden de carga de los scripts (todo queda en un solo index.html)
 SCRIPTS = ['engine/inflate.js', 'engine/core.js', 'engine/input.js', 'engine/gfx.js', 'engine/audio.js',
-           'world/tiles.js', 'world/world.js', 'world/testmap.js',
+           'world/tiles.js', 'world/world.js', 'world/parque.js', 'world/testmap.js',
            'game/avatar2.js', 'game/player.js', 'game/car.js', 'game/autos.js', 'game/tune.js', 'game/traffic.js', 'game/gps.js', 'game/peds.js', 'game/night.js', 'game/emerg.js', 'game/weapons.js', 'game/shop.js', 'game/online.js', 'game/taller.js', 'game/teatro.js', 'game/changas.js', 'game/panel.js', 'game/vcard.js', 'game/sidehd.js', 'main.js']
 
 

@@ -1,9 +1,9 @@
 // Tiles generados por código, con 4 variantes cada uno para que el piso no se vea repetido.
 'use strict';
-VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8, STONE: 9, DIRTROAD: 10, CHECKER: 11, PLAZADIRT: 12 }; // 12: tierra de plaza bajo los árboles, con hojas secas (Street View)
+VR.T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, BUILDING: 3, PAVING: 4, TREE: 5, MONUMENT: 6, DIRT: 7, WATER: 8, STONE: 9, DIRTROAD: 10, CHECKER: 11, PLAZADIRT: 12, LAGUNA: 13, SENDERO: 14, LADRILLO: 15 }; // 12: tierra de plaza bajo los árboles, con hojas secas (Street View)
 // calzadas: asfalto, empedrado y calle de tierra
 VR.ROADLIKE = new Uint8Array(16); VR.ROADLIKE[VR.T.ROAD] = 1; VR.ROADLIKE[VR.T.STONE] = 1; VR.ROADLIKE[VR.T.DIRTROAD] = 1;
-VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] = 1; VR.SOLID[VR.T.MONUMENT] = 1; VR.SOLID[VR.T.WATER] = 1;
+VR.SOLID = new Uint8Array(16); VR.SOLID[VR.T.BUILDING] = 1; VR.SOLID[VR.T.TREE] = 1; VR.SOLID[VR.T.MONUMENT] = 1; VR.SOLID[VR.T.WATER] = 1; VR.SOLID[VR.T.LAGUNA] = 1;
 // tile que se dibuja debajo de cada tipo
 VR.GROUND_OF = { [VR.T.TREE]: VR.T.GRASS, [VR.T.BUILDING]: VR.T.SIDEWALK, [VR.T.MONUMENT]: VR.T.PAVING };
 
@@ -13,7 +13,7 @@ VR.GROUND_OF = { [VR.T.TREE]: VR.T.GRASS, [VR.T.BUILDING]: VR.T.SIDEWALK, [VR.T.
 // vereda con junta y bisel, empedrado de piedras irregulares con luz y sombra, tierra colorada con terrones.
 // Los patrones se repiten cada 2 m sin costuras (el ruido y las piedras "dan la vuelta" en el borde).
 VR.tileset = {
-  VARS: 4, TYPES: 13, _c: null, _r: 0,
+  VARS: 4, TYPES: 16, _c: null, _r: 0,
   build(R) {
     const S = VR.TILE, Q = Math.round(S * R), VARS = this.VARS, TYPES = this.TYPES;
     const c = VR.canvas(Q * VARS, Q * TYPES), ctx = c.getContext('2d');
@@ -122,6 +122,30 @@ VR.tileset = {
           if (m2 > 0.72) { r -= 14; g -= 12; b -= 8; } // más pisada
           if (h2 > 0.965) { const f = H(px, py, 180 + v); r = f < 0.5 ? 168 : 112; g = f < 0.5 ? 124 : 84; b = f < 0.5 ? 60 : 44; } // hoja seca
           else if (h2 < 0.03 && m < 0.45) { r = 92; g = 132; b = 58; } // matita de pasto
+          break;
+        }
+        case VR.T.LAGUNA: { // laguna Ykua Pytã (10/11/2026): agua verde oliva y turbia, con ondas claras y algo de lama
+          const m = vnoise(x, y, 8, 91 + v), m2 = vnoise(x, y, 4, 95 + v), k = (h - 0.5) * 5 + (m - 0.5) * 12;
+          r = 74 + k; g = 98 + k; b = 62 + k * 0.8;
+          if (m2 > 0.66) { r += 6; g += 10; b -= 4; } // lama
+          const w = Math.sin((x * 0.9 + vnoise(x, y, 4, 99) * 6 + v * 3) * 1.6) + Math.sin(y * 1.9 + m * 4);
+          if (w > 1.55 && Math.floor(y * 2) % 3 === 0) { r += 40; g += 44; b += 30; }
+          break;
+        }
+        case VR.T.SENDERO: { // tierra clara apisonada, con granos y piedritas blancas
+          const m = vnoise(x, y, 4, 191 + v), m2 = vnoise(x, y, 8, 197 + v), k = (h - 0.5) * 12 + (m - 0.5) * 16;
+          r = 206 + k; g = 186 + k * 0.95; b = 152 + k * 0.8;
+          if (m2 > 0.7) { r -= 12; g -= 12; b -= 10; } // más pisada
+          if (h2 > 0.975) { r += 30; g += 30; b += 28; } else if (h2 < 0.02) { r -= 36; g -= 34; b -= 30; }
+          break;
+        }
+        case VR.T.LADRILLO: { // ladrillos de 25 × 12 cm en hiladas corridas, con junta clara
+          const rowH = 1, ri = Math.floor(y / rowH), off = (ri % 2) * 1, bw = 2, xx = wrap(x + off), lx = xx % bw, ly = y % rowH;
+          const id = H(Math.floor(xx / bw) + ri * 7, ri, 251 + v), k = (id - 0.5) * 26 + (h - 0.5) * 8;
+          r = 170 + k; g = 86 + k * 0.7; b = 62 + k * 0.5;
+          if (lx < u * 0.9 || ly < u * 0.9) { r = 204; g = 188; b = 168; }  // junta
+          else if (ly > rowH - u * 1.1) { r -= 18; g -= 12; b -= 10; }       // sombra del ladrillo
+          if (h2 > 0.985) { r -= 30; g -= 20; b -= 16; }
           break;
         }
         default: r = 255; g = 0; b = 255;
