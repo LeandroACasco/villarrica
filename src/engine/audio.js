@@ -53,6 +53,11 @@ VR.audio = {
     const g = ac.createGain(); g.gain.value = 0; g.connect(this.master);
     let L;
     if (name === 'flame') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 700; s.connect(f); f.connect(g); s.start(); L = { g }; }
+    else if (name === 'lago') { // olitas suaves en la orilla: ruido grave que sube y baja despacio
+      const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 520;
+      const m = ac.createGain(); m.gain.value = 0.6; const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 0.17; lg.gain.value = 0.4; lfo.connect(lg); lg.connect(m.gain); lfo.start();
+      s.connect(f); f.connect(m); m.connect(g); s.start(); L = { g };
+    }
     else if (name === 'water') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.6; s.connect(f); f.connect(g); s.start(); L = { g }; }
     else { // motor: diente de sierra + sub, por un pasabajos; la frecuencia sigue a las vueltas
       const o = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(); o.type = 'sawtooth'; o2.type = 'square'; f.type = 'lowpass'; f.frequency.value = 600; f.Q.value = 2;
@@ -73,5 +78,6 @@ VR.audio = {
     L.g.gain.setTargetAtTime(0.035 + rpm * 0.03, t, 0.06);
   },
   flame(on) { const L = this.loop('flame'); if (L) L.g.gain.setTargetAtTime(on && this.on ? 0.14 : 0, this.ac.currentTime, 0.06); },
+  lago(v) { if (!this.noiseBuf) { this.ctx(); } const L = this.loop('lago'); if (L && this.on) L.g.gain.setTargetAtTime(Math.max(0, v) * 0.045, this.ac.currentTime, 0.3); else if (L) L.g.gain.setTargetAtTime(0, this.ac.currentTime, 0.1); },
   water(on) { const L = this.loop('water'); if (L) L.g.gain.setTargetAtTime(on && this.on ? 0.05 : 0, this.ac.currentTime, 0.05); },
 };
