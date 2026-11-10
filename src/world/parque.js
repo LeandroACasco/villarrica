@@ -156,11 +156,11 @@
     g.strokeStyle = P.d; g.lineWidth = 0.8; for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(sd * 2, -3); g.quadraticCurveTo(sd * 6.4, 2, sd * 3.6, 10); g.stroke(); }   // alas en relieve
     disc(g, '#20222c', -2.4, 1.2, 2.1, 2.4); disc(g, '#20222c', 2.4, 1.2, 2.1, 2.4); disc(g, P.d, -2.4, 1.4, 1.5, 1.8); disc(g, P.d, 2.4, 1.4, 1.5, 1.8); // asientos
     R(g, '#2a2a30', -3.6, 5.2, 7.2, 1);                                                            // barra de pedales
-    // cuello curvo y cabeza con pico naranja, hacia adelante
-    g.strokeStyle = '#1e2230'; g.lineWidth = 3.8; g.lineCap = 'round'; g.beginPath(); g.moveTo(0, -8); g.quadraticCurveTo(2.8, -13.5, 0.6, -17.5); g.stroke();
-    g.strokeStyle = P.n; g.lineWidth = 2.8; g.beginPath(); g.moveTo(0, -8); g.quadraticCurveTo(2.8, -13.5, 0.6, -17.5); g.stroke();
-    g.strokeStyle = P.l; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-0.6, -9); g.quadraticCurveTo(1.6, -13.5, -0.2, -17); g.stroke();
-    disc(g, '#1e2230', 0.6, -18.6, 2.8, 2.8); disc(g, P.n, 0.6, -18.6, 2.3, 2.3); poly(g, '#e87a1c', [[-0.6, -20], [1.8, -20], [0.6, -23.6]]); R(g, '#16161a', 1.6, -19.2, 0.8, 0.8);
+    // cuello largo y curvo (en S suave) con la cabeza adelante y pico naranja
+    const NK = [[0, -7], [3.6, -11], [-1.6, -16], [1.4, -21]];
+    const neck = (w, c) => { g.strokeStyle = c; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(NK[0][0], NK[0][1]); g.bezierCurveTo(NK[1][0], NK[1][1], NK[2][0], NK[2][1], NK[3][0], NK[3][1]); g.stroke(); };
+    neck(4.2, '#1e2230'); neck(3, P.n); neck(0.9, P.l);
+    disc(g, '#1e2230', 1.4, -22.4, 2.8, 2.8); disc(g, P.n, 1.4, -22.4, 2.3, 2.3); poly(g, '#e87a1c', [[0.2, -23.8], [2.6, -23.8], [1.4, -27.4]]); R(g, '#16161a', 2.4, -23, 0.8, 0.8);
     g.restore();
   };
   VR.decor.embarcadero = (g, d) => {
@@ -270,12 +270,12 @@
 
   // ---------------------------------------------------------------- Fila de mástiles (vertical), detrás de la glorieta
   VR.decorTop.banderas_v = (d) => {
-    const out = [], X = d.x * S + 8;
+    const out = [];
     for (let i = 0; i < d.n; i++) {
-      const Y = (d.y0 + i) * S + 12;
+      const Y = (d.y0 + i) * S + 12, X = d.x * S + 8 + i * 3;
       out.push({ sy: Y + 2, draw(g) {
         const t = now() / 260;
-        R(g, 'rgba(0,0,0,.25)', X - 1, Y, 4, 2); R(g, '#5a5852', X, Y - 46, 2, 46); R(g, '#e8e6e0', X, Y - 46, 1, 46); R(g, '#d8d4c4', X - 0.5, Y - 47, 3, 1.4);
+        R(g, 'rgba(0,0,0,.25)', X - 1, Y, 4, 2); R(g, '#5a5852', X, Y - 46, 2, 46); R(g, '#e8e6e0', X, Y - 46, 1, 46); R(g, '#d8d4c4', X - 0.5, Y - 47, 3, 1.4); R(g, '#8a8a84', X - 1, Y - 2, 4, 2);
         for (let k = 0; k < 12; k++) {
           const o = Math.round(Math.sin(t + k * 0.5 + i) * 1.2), x = X + 2 + k;
           R(g, '#d0302a', x, Y - 46 + o, 1, 3); R(g, '#ffffff', x, Y - 43 + o, 1, 3); R(g, '#2050a8', x, Y - 40 + o, 1, 3);
@@ -371,7 +371,7 @@
   VR.decorTop.cancha_sint = (d) => {
     const X = d.x * S, Y = d.y * S, W = d.w * S, Hh = d.h * S, gate = [X + W / 2 - 14, X + W / 2 + 14], out = [], post = 2;
     const fence = (g, x0, y0, x1, y1, tall) => { // alambrado: postes grises y malla clara
-      g.fillStyle = 'rgba(210,214,206,.35)'; g.fillRect(Math.min(x0, x1), Math.min(y0, y1) - tall, Math.max(1, Math.abs(x1 - x0)), Math.max(1, Math.abs(y1 - y0)) + (x0 === x1 ? 0 : 0));
+      const bx = Math.min(x0, x1), by = Math.min(y0, y1) - tall, bw = Math.max(1, Math.abs(x1 - x0)), bh = Math.max(1, Math.abs(y1 - y0)) + tall; g.fillStyle = 'rgba(214,220,210,.55)'; g.fillRect(bx, by, bw, bh); g.strokeStyle = 'rgba(60,66,60,.6)'; g.lineWidth = 0.45; g.beginPath(); for (let k = -bh; k < bw; k += 2.5) { g.moveTo(bx + k, by + bh); g.lineTo(bx + k + bh, by); } g.stroke();
       g.strokeStyle = 'rgba(40,44,40,.55)'; g.lineWidth = 0.5; g.beginPath(); g.moveTo(x0, y0 - tall); g.lineTo(x1, y1 - tall); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
     };
     // lados norte, este y oeste: se ordenan por su altura en pantalla; el sur, con la entrada
