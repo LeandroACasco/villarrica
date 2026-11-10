@@ -52,6 +52,7 @@ VR.Changas = class {
     if (VR.vida && k !== 'chipa' && !VR.vida.saldoOk()) { this.toast('📱 Sin saldo no te llegan changas por la app. Cargá saldo (solo la chipa se hace en persona)'); return; }
     if (k === 'delivery' && !(car && car.type === 'moto')) { this.toast('🏍 Para el delivery necesitás una moto'); return; }
     if (k === 'chipa' && car) { this.toast('🚶 Bajate para vender chipa'); return; }
+    if (k === 'chipa' && VR.vida && !(VR.vida.s.canasto && VR.vida.s.stock > 0)) { this.toast(VR.vida.s.canasto ? '🧺 El canasto está vacío: reponé chipa con Doña Chela (plaza)' : '🧺 Necesitás el canasto de Doña Chela (plaza)'); return; }
     this.job = { k, stage: 0, t: 0, n: 0 };
     if (!force) this.tutorial(k); // si la empieza una misión, ya lo explicó el diálogo
     if (k === 'delivery') { this.go(this.helad || this.spot(200, 600, p), 'Retirá el pedido'); }
@@ -74,8 +75,8 @@ VR.Changas = class {
     const q = this.peds.greet(player.x, player.y); if (!q) { player.say('¡Chipa, chipa calentita!', 1.5); return true; }
     if (q.chipa) { q.say = { text: 'Ya te compré, che', t: 1.6 }; return true; }
     if (VR.mis && !VR.Barrios.enPunto(this.world, player.x, player.y)) { q.say = { text: 'Ndaikuaái ndéve, che...', t: 1.6 }; return true; }
-    q.chipa = true;
-    if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; this.pay(5000, 'chipa ' + this.job.n + '/10'); if (VR.mis) VR.mis.emit('venta', { que: 'chipa' }); if (this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
+    q.chipa = true; const V = VR.vida;
+    if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; if (V) V.s.stock--; this.pay(5000, V ? 'chipa (quedan ' + V.s.stock + ')' : 'chipa ' + this.job.n + '/10'); if (VR.mis) VR.mis.emit('venta', { que: 'chipa' }); if (V && V.s.stock <= 0) { this.end('🧺 ¡Se terminó la chipa! Reponé con Doña Chela'); return true; } if (!V && this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
     else q.say = { text: ['Nahániri', 'Otro día', 'Ya comí'][(this.rnd() * 3) | 0], t: 1.6 };
     return true;
   }
@@ -96,7 +97,7 @@ VR.Changas = class {
     if ((this.hT = (this.hT || 0) - dt) < 0) {
       this.hT = 0.25; this.hud.hidden = false;
       const ico = { delivery: '🍦', taxi: '🚖', chipa: '🥐' }[J.k];
-      this.hud.textContent = J.k === 'chipa' ? ico + ' Chipa vendidas: ' + J.n + '/10' : ico + ' ' + J.msg + (D && D.name ? ' · ' + D.name : '') + (J.k === 'delivery' && J.stage === 1 ? ' · ⏱ ' + Math.max(0, Math.ceil(J.lim - J.t)) + ' s' : '');
+      this.hud.textContent = J.k === 'chipa' ? (VR.vida ? ico + ' En el canasto: ' + VR.vida.s.stock + ' chipas · vendidas ' + J.n : ico + ' Chipa vendidas: ' + J.n + '/10') : ico + ' ' + J.msg + (D && D.name ? ' · ' + D.name : '') + (J.k === 'delivery' && J.stage === 1 ? ' · ⏱ ' + Math.max(0, Math.ceil(J.lim - J.t)) + ' s' : '');
     }
   }
 };

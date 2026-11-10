@@ -17,6 +17,7 @@ VR.PRECIOS = { // en guaraníes (referencias de Leandro, 10/11/2026)
   heladoKilo: 45000,
   saldo: 10000, // 3 días
   remedios: 120000, // hospital
+  canasto: 40000, chipaMayor: 3000, canastoMax: 20, // Doña Chela (J3): canasto y chipa al por mayor
 };
 VR.METAS = [ // lista de sueños (Menú → Metas): se van tachando con las etapas J3–J6
   ['Celular nuevo', 1200000], ['Bici usada', 450000], ['Casco', 180000], ['Licencia de conducir', 250000],
@@ -27,7 +28,7 @@ VR.DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 VR.Vida = class {
   constructor() {
-    const d = { min: 7 * 60, hambre: 80, saldo: 0, debe: 0, pieza: { saldo: 0, vence: 5 * 1440 + 12 * 60, fuera: false }, mov: [], metas: [], aviso: 0 };
+    const d = { min: 7 * 60, hambre: 80, saldo: 0, debe: 0, canasto: false, stock: 0, fiado: 0, pieza: { saldo: 0, vence: 5 * 1440 + 12 * 60, fuera: false }, mov: [], metas: [], aviso: 0 };
     const s = VR.store.get('vida', null);
     this.s = Object.assign(d, s || {}); this.s.pieza = Object.assign(d.pieza, (s && s.pieza) || {});
     this.nueva = !s; this.onMsg = null; this.onDesmayo = null; this._hud = ''; this._acc = 0; this._save = 0;
@@ -88,11 +89,29 @@ VR.Vida = class {
     if (VR.mis) VR.mis.emit('pieza', { n });
     return true;
   }
+  // ---- J3: dormir en la pieza, canasto de chipa y fiado de Doña Chela ----
+  // dormir: desde las 18:00 (o con mucho sueño de madrugada) hasta las 6:00; guarda la partida
+  puedeDormir() { const h = this.hora; return h >= 18 || h < 5; }
+  dormir() {
+    const s = this.s; if (s.pieza.fuera) { this.msg('🏠 Ña Ramona te sacó las cosas: pagale lo que debés para volver'); return false; }
+    if (!this.puedeDormir()) { this.msg('😴 Todavía es temprano para dormir (desde las 18:00)'); return false; }
+    const d0 = Math.floor(s.min / 1440) + (this.hora >= 18 ? 1 : 0), dm = d0 * 1440 + 6 * 60 - s.min;
+    this.tick(dm / 0.8); s.hambre = Math.max(5, s.hambre - 10); this.sync(); this.save(); this.msg('😴 Dormiste en la pieza · ' + this.diaSemana + ' 6:00 · partida guardada'); return true;
+  }
+  // comprarle chipa a Doña Chela para el canasto (se paga con lo que hay y el resto queda fiado)
+  llenaCanasto(n, fiar) {
+    const s = this.s, P = VR.PRECIOS; n = Math.min(n, P.canastoMax - s.stock); if (n <= 0) return 0;
+    const tot = n * P.chipaMayor, paga = fiar ? 0 : tot; // fiar: Doña Chela te lo anota todo
+    if (!fiar && VR.Wallet.get() < tot) { this.msg('💸 No te alcanza: ' + VR.fmtGs(tot)); return 0; }
+    if (paga > 0) this.mueve(-paga, n + ' chipas para el canasto'); if (tot > paga) { s.fiado += tot - paga; this.log(0, 'Fiado de Doña Chela +' + VR.fmtGs(tot - paga)); }
+    s.stock += n; return n;
+  }
+  pagaFiado() { const s = this.s, n = Math.min(s.fiado, VR.Wallet.get()); if (n <= 0) return 0; this.mueve(-n, 'Le pagaste a Doña Chela'); s.fiado -= n; return n; }
   // ---- lo que se ve en el HUD ----
   hudLinea1() { const s = this.s, h = Math.round(s.hambre / 10); return '🕐 ' + this.diaSemana + ' ' + this.hhmm + '  🍽 ' + '▮'.repeat(h) + '▯'.repeat(10 - h); }
   hudLinea2() {
     const s = this.s, dias = Math.ceil(s.saldo), P = s.pieza, venceEn = Math.max(0, Math.ceil((P.vence - s.min) / 1440));
     return '📱 ' + (dias > 0 ? dias + ' d' : 'sin saldo') + '  🏠 ' + (P.saldo > 0 ? 'debés' : venceEn <= 1 ? 'vence hoy' : 'vence ' + VR.DIAS[((P.vence / 1440 | 0)) % 7]);
   }
-  deudaTotal() { return this.s.debe + Math.max(0, this.s.pieza.saldo); }
+  deudaTotal() { return this.s.debe + Math.max(0, this.s.pieza.saldo) + this.s.fiado; }
 };

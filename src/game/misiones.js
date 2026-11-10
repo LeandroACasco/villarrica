@@ -31,7 +31,7 @@ VR.Lugares = class {
   label(re) { const l = (this.world.labels || []).find((x) => re.test(x.text)); return l ? { x: l.x, y: l.y } : null; }
   // un punto donde se puede estar parado, lo más cerca posible de (x, y)
   libre(x, y) {
-    const W = this.world, ok = (px, py) => !W.hits(px - 4, py - 4, px + 4, py) && W.get(Math.floor(px / VR.TILE), Math.floor(py / VR.TILE)) !== VR.T.WATER;
+    const W = this.world, PIE = [0, 2, 4, 7, 11, 12], ok = (px, py) => !W.hits(px - 16, py - 8, px + 16, py + 4) && PIE.includes(W.get(Math.floor(px / VR.TILE), Math.floor(py / VR.TILE))); // a pie: vereda, plaza o pasto, nunca en la calle
     if (ok(x, y)) return { x, y };
     for (let r = 4; r < 400; r += 4) for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2, px = Math.round(x + Math.cos(a) * r), py = Math.round(y + Math.sin(a) * r); if (ok(px, py)) return { x: px, y: py }; }
     return { x, y };
@@ -49,6 +49,7 @@ VR.Lugares = class {
       case 'cuartel': return W.firehouse && { x: W.firehouse.x, y: W.firehouse.y + 20 };
       case 'catedral': return L(/^Catedral/, 30);
       case 'terminal': return L(/Terminal/);
+      case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
     }
     return null;
   }
@@ -63,7 +64,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
 
 // ---------------- barrios por historia ----------------
@@ -83,15 +84,15 @@ VR.Barrios = {
 VR.PERSONAJES = {
   yo: { nombre: 'Vos', color: '#ffd84a' },
   sis: { nombre: 'Villarrica', color: '#9fd8ff' },
-  ramona: { nombre: 'Ña Ramona', color: '#f29ac8', lugar: { en: 'pieza', dx: 14, dy: 0 }, dir: 'left',
+  ramona: { nombre: 'Ña Ramona', color: '#f29ac8', lugar: { en: 'pieza', dx: 30, dy: 0 }, dir: 'left',
     look: { gender: 'f', skin: 2, build: 'panza', hair: 'rodete', hairColor: 5, top: 'camisaCorta', topColor: 7, bottom: 'pollera', bottomColor: 13, shoes: 'chinelas', shoesColor: 3, anteojos: true },
-    charla: ['¿Ha upéi, mitã? Sábado pe che cobráta, ani nde resarái.', "Ko ára hakueterei, ¿nderehaʼúi piko tereré?"] },
+    charla: ['¿Ha upéi, mitã? Sábado pe che cobráta, ani nde resarái.', "Ko ára hakueterei, ¿nderehaʼúi piko tereré?"], menu: (M) => VR.menuRamona(M) },
   kike: { nombre: 'Kike', color: '#7fe08a', lugar: { en: 'plaza', dx: -150, dy: -60 }, dir: 'down',
     look: { gender: 'm', skin: 3, build: 'flaco', hair: 'corto', hairColor: 0, beard: 'bigote', top: 'musculosa', topColor: 2, bottom: 'bermuda', bottomColor: 3, shoes: 'chinelas', shoesColor: 3, hat: 'gorraAtras', hatColor: 0, termo: true },
     charla: ['Tengo una idea para hacernos ricos... después te cuento.', "¿Jaha jaikutu peteĩ tereré? Ko termo ro'ysã porã."] },
   chela: { nombre: 'Doña Chela', color: '#ffb36b', lugar: { en: 'plaza', dx: -130, dy: 90 }, dir: 'down',
     look: { gender: 'f', skin: 3, build: 'normal', hair: 'trenza', hairColor: 1, top: 'polo', topColor: 1, bottom: 'pollera', bottomColor: 10, shoes: 'chinelas', shoesColor: 1, hat: 'piri' },
-    charla: ['¡Chipa, chipa calentita! Recién salida del tatakua.', "Ko'ãga ko'ãga ojehupi pyahu."] },
+    charla: ['¡Chipa, chipa calentita! Recién salida del tatakua.', "Ko'ãga ko'ãga ojehupi pyahu."], menu: (M) => VR.menuChela(M) },
   lucas: { nombre: 'Lucas', color: '#8fd0ff', lugar: { en: 'marimer', dx: 0, dy: 8 }, dir: 'down',
     look: { gender: 'm', skin: 1, build: 'normal', hair: 'flequillo', hairColor: 2, top: 'polo', topColor: 9, bottom: 'jean', bottomColor: 1, shoes: 'zapatillas', shoesColor: 1, hat: 'gorra', hatColor: 9 },
     charla: ['Hoy hay mucho movimiento, che.'] },
@@ -134,7 +135,7 @@ VR.Dialogo = {
         const n = parseInt(e.key, 10); if (n >= 1 && n <= opts.length) { e.preventDefault(); opts[n - 1].click(); return; }
         if (/Arrow(Up|Left)|KeyW|KeyA/.test(e.code)) { this.pick(this.sel - 1); e.preventDefault(); return; }
         if (/Arrow(Down|Right)|KeyS|KeyD/.test(e.code)) { this.pick(this.sel + 1); e.preventDefault(); return; }
-        if (/Enter|Space|KeyJ/.test(e.code)) { e.preventDefault(); opts[this.sel].click(); }
+        if (/Enter|Space|KeyJ/.test(e.code)) { e.preventDefault(); if (performance.now() - this.opT > 350) opts[this.sel].click(); } // no elegir sin querer al saltar el texto
         return;
       }
       if (/Enter|Space|KeyJ|Escape/.test(e.code)) { e.preventDefault(); this.next(); }
@@ -165,7 +166,7 @@ VR.Dialogo = {
   },
   done() { // terminó de escribirse: muestra opciones o la flechita
     this.tx.textContent = this.full; const L = this.cola[this.i];
-    if (L.op) { this.op.innerHTML = ''; L.op.forEach(([t, fn], k) => { const b = document.createElement('button'); b.textContent = (k + 1) + '. ' + t; b.onclick = (e) => { e.stopPropagation(); this.choose(fn); }; this.op.append(b); }); this.pick(0); }
+    if (L.op) { this.op.innerHTML = ''; L.op.forEach(([t, fn], k) => { const b = document.createElement('button'); b.textContent = (k + 1) + '. ' + t; b.onclick = (e) => { e.stopPropagation(); this.choose(fn); }; this.op.append(b); }); this.pick(0); this.opT = performance.now(); }
     else this.more.hidden = false;
   },
   next() {
@@ -193,7 +194,7 @@ VR.Dialogo = {
       const gp = navigator.getGamepads ? Array.from(navigator.getGamepads()).find(Boolean) : null;
       if (gp) {
         const p = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed), a = p(0), u = p(12) || (gp.axes[1] || 0) < -0.6, d = p(13) || (gp.axes[1] || 0) > 0.6;
-        if (a && !prevA) { const o = this.op.querySelectorAll('button'); if (o.length && !this.typing()) o[this.sel].click(); else this.next(); }
+        if (a && !prevA) { const o = this.op.querySelectorAll('button'); if (o.length && !this.typing()) { if (performance.now() - this.opT > 350) o[this.sel].click(); } else this.next(); }
         if (u && !prevU) this.pick(this.sel - 1); if (d && !prevD) this.pick(this.sel + 1);
         prevA = a; prevU = u; prevD = d;
       }
@@ -237,13 +238,17 @@ VR.Misiones = class {
   near(player) {
     let best = null, bd = 30;
     for (const [k, p] of this.presentes()) { const d = Math.hypot(p.x - player.x, p.y - player.y); if (d < bd) { bd = d; best = { k, x: p.x, y: p.y, nombre: VR.PERSONAJES[k].nombre }; } }
+    for (const k in VR.PUNTOS) { const p = this.lug.get(VR.PUNTOS[k].lugar); if (!p) continue; const d = Math.hypot(p.x - player.x, p.y - player.y); if (d < bd) { bd = d; best = { k, punto: true, x: p.x, y: p.y, nombre: VR.PUNTOS[k].ico + ' ' + VR.PUNTOS[k].nombre }; } }
     return best;
   }
   // ACCIÓN cerca de un personaje
   talk(n, player) {
-    const k = n.k, P = this.paso, mk = this.marca(k);
+    const k = n.k, P = this.paso;
+    if (n.punto) { this.dialogo(VR.PUNTOS[k].menu(this)); return; }
+    const mk = this.marca(k);
     if (mk === 'paso') { this.dialogo(P.charla || [], () => { if (P.esperar || P.cond) return; this.siguiente(); }); return; }
     if (mk === 'oferta') { const id = this.disponibles().find((i) => VR.MISIONES[i].quien === k); this.ofrecer(id); return; }
+    if (VR.PERSONAJES[k].menu) { this.dialogo(VR.PERSONAJES[k].menu(this)); return; }
     const ch = VR.PERSONAJES[k].charla || ['...']; this.bub = { k, text: ch[(this.ci = (this.ci || 0) + 1) % ch.length], t: 2.6 };
     void player;
   }
@@ -378,11 +383,16 @@ VR.Misiones = class {
       } });
     }
   }
+  collectPuntos(cx, cy, tall) {
+    for (const k in VR.PUNTOS) { const D = VR.PUNTOS[k], p = this.lug.get(D.lugar); if (!p || !D.draw) continue; const x = Math.round(p.x - cx), y = Math.round(p.y - cy);
+      if (x < -40 || y < -50 || x > VR.screen.w + 40 || y > VR.screen.h + 40) continue; tall.push({ sy: p.y - 6, draw: (g) => D.draw(g, x, y) }); }
+  }
   // íconos para el minimapa y el mapa grande: { x, y, c (color), ico }
   marcas() {
     const out = [];
     for (const [k, p] of this.presentes()) { const mk = this.marca(k); if (mk) out.push({ x: p.x, y: p.y, c: mk === 'paso' ? '#ff5fa2' : '#ffd84a', ico: mk === 'paso' ? '▼' : '!', name: VR.PERSONAJES[k].nombre }); }
     const P = this.paso; if (P && P.ir && !P.hablar) { const t = this.lug.get(P.ir); if (t) out.push({ x: t.x, y: t.y, c: '#ff5fa2', ico: '●', name: t.name }); }
+    for (const k in VR.PUNTOS) { const p = this.lug.get(VR.PUNTOS[k].lugar); if (p && !(P && P.ir === VR.PUNTOS[k].lugar)) out.push({ x: p.x, y: p.y, c: '#9fe0a0', ico: VR.PUNTOS[k].mini, name: VR.PUNTOS[k].nombre }); }
     return out;
   }
   cartel(chico, grande, sub) { if (this.banner) this.banner(chico, grande, sub); }
@@ -403,8 +413,7 @@ VR.CHANGA_NOMBRE = { chipa: 'vender chipa', delivery: 'delivery de helados', tax
 // Misiones (datos). Diálogos en jopara de ejemplo: los revisa Leandro con el equipo antes de dejarlos fijos.
 // ======================================================================================================
 VR.MISIONES = {
-  // M1 «Pirapire'ỹ» (cap. 1, tutorial). Versión J2: usa la changa de chipa que ya existe. En J3 llegan el canasto con
-  // stock, el fiado de Doña Chela y la despensa para el saldo (por ahora el saldo se carga desde la Billetera).
+  // M1 «Pirapire'ỹ» (cap. 1, tutorial). J3: canasto con stock y fiado de Doña Chela, despensa para el saldo, pieza.
   m1: {
     titulo: "Pirapire'ỹ", cap: 1, auto: true, desc: 'Sin plata en Santa Lucía: hay que pagar la pieza, comer y conseguir una changa.',
     fallaSi: { hospital: 'Te desmayaste y te llevaron al hospital' },
@@ -425,19 +434,66 @@ VR.MISIONES = {
           ['kike', "Jaha, Doña Chela oikotevẽ peteĩ vendedor. Vos tenés cara de vender chipa, che. ¡Eho!"]] },
       { id: 'chela2', obj: 'Pedile trabajo a Doña Chela', hablar: 'chela',
         charla: [['yo', 'Doña Chela, ¿necesita alguien que le venda chipa?'],
-          ['chela', "Kike he'i ndéve, ¿ajépa? Bueno. Ko canasto... te lo presto hoy, mañana hablamos de plata."],
+          ['chela', "Kike he'i ndéve, ¿ajépa? Bueno. El canasto sale " + VR.fmtGs(40000) + " y la chipa te la dejo a " + VR.fmtGs(3000) + ". Vos la vendés a " + VR.fmtGs(5000) + "."],
+          ['yo', 'No me alcanza, Doña Chela...'],
+          ['chela', "Ya sé, che memby. Te fío el canasto y 15 chipas. Me pagás con la venta, ¿ajépa? Ani rejapo tavy."],
           ['chela', 'Andá por la plaza y frente a la Municipalidad. Parate al lado de la gente y ofrecé. ¡Pero con ganas!']],
-        alTerminar: (M) => { if (M.changas) M.changas.start('chipa', true); } },
-      { id: 'vender', obj: 'Vendé chipa a la gente (ACCIÓN al lado de alguien)', esperar: { ev: 'venta', n: 10 }, punto: true, changa: 'chipa',
-        alEmpezar: (M) => { if (M.changas && !(M.changas.job && M.changas.job.k === 'chipa')) M.changas.start('chipa', true); } },
-      { id: 'saldo', obj: 'Cargá saldo en el celular (Pausa → Billetera)', esperar: { ev: 'saldo' },
-        cond: (M) => M.vida.s.saldo > 0,
-        dlg: [['kike', '¡Epa, vendiste todo! Ahora cargá saldo al celular, así te llegan changas por la app.']] },
-      { id: 'volver', obj: 'Volvé a la pieza y hablá con Ña Ramona', hablar: 'ramona', punto: true,
+        alTerminar: (M) => { const V = M.vida; if (!V.s.canasto) { V.s.canasto = true; V.s.fiado += VR.PRECIOS.canasto; V.log(0, 'Canasto fiado ' + VR.fmtGs(VR.PRECIOS.canasto)); } V.llenaCanasto(15 - V.s.stock, true); M.toast('🧺 Canasto con ' + V.s.stock + ' chipas · le debés ' + VR.fmtGs(V.s.fiado) + ' a Doña Chela'); if (M.changas) M.changas.start('chipa', true); } },
+      { id: 'vender', obj: 'Vendé las 15 chipas (ACCIÓN al lado de la gente)', esperar: { ev: 'venta', n: 15 }, punto: true, changa: 'chipa',
+        alEmpezar: (M) => { const V = M.vida; if (V.s.stock < 15 - M.s.act.n) V.llenaCanasto(15 - M.s.act.n - V.s.stock, true); if (M.changas && !(M.changas.job && M.changas.job.k === 'chipa')) M.changas.start('chipa', true); } },
+      { id: 'pagar', obj: 'Pagale a Doña Chela lo que le debés', hablar: 'chela', cond: (M) => M.vida.s.fiado <= 0,
+        charla: [{ quien: 'chela', txt: "¿Ha? ¿Vendiste todo? Mbaʼeichaitépa.", op: [
+          ['Pagarle lo que le debo', (M) => { const n = M.vida.pagaFiado(); return [['chela', M.vida.s.fiado <= 0 ? "¡Aguyje! Ko'ãga pe canasto nde mba'e. Cuando quieras más chipa, vení." : 'Me diste ' + VR.fmtGs(n) + '. Todavía me debés ' + VR.fmtGs(M.vida.s.fiado) + ', ¿eh?']]; }],
+          ['Después', () => false]] }] },
+      { id: 'saldo', obj: 'Cargá saldo en la despensa', ir: 'despensa', esperar: { ev: 'saldo' }, cond: (M) => M.vida.s.saldo > 0,
+        dlg: [['kike', '¡Epa, vendiste todo! Cargá saldo al celular en la despensa, así te llegan changas por la app.']] },
+      { id: 'volver', obj: 'Volvé a la pieza antes de la noche y hablá con Ña Ramona', hablar: 'ramona', punto: true,
         charla: [{ quien: 'ramona', txt: "¿Ha? ¿Ya volviste? Sábado pe che cobráta, pero si querés adelantar algo...", op: [
-          ['Adelantarle ' + VR.fmtGs(50000), (M) => { const P = M.vida.s.pieza; if (VR.Wallet.get() < 50000) return [['ramona', "Ndaipóri piko? Bueno, sábado pe."]]; M.vida.mueve(-50000, 'Pieza (adelanto a Ña Ramona)'); P.saldo -= 50000; return [['ramona', "¡Aguyje, mitã! Rejapo porã. Ko'ẽrõ peve."]]; }],
-          ['El sábado le pago todo', () => [['ramona', 'Bueno... pero el sábado, ¿eh? Ani nde resarái.']]]] }] },
+          ['Adelantarle lo que tengo', (M) => { const n = Math.min(VR.Wallet.get(), M.vida.s.pieza.saldo > 0 ? M.vida.s.pieza.saldo : VR.PRECIOS.pieza); if (n < 1000) return [['ramona', "Ndaipóri piko? Bueno, sábado pe."]]; M.vida.mueve(-n, 'Pieza (adelanto a Ña Ramona)'); M.vida.s.pieza.saldo -= n; return [['ramona', 'Me diste ' + VR.fmtGs(n) + ". ¡Aguyje, mitã! Rejapo porã."]]; }],
+          ['El sábado le pago todo', () => [['ramona', 'Bueno... pero el sábado, ¿eh? Ani nde resarái.']]]] },
+          ['ramona', 'Andá a dormir que mañana hay que madrugar. La pieza es la puerta de al lado.']] },
     ],
-    premio: { changas: ['chipa'], texto: 'Ya podés vender chipa cuando quieras (📋 Changas). Sigue en la etapa J3: canasto propio y despensa.' },
+    premio: { changas: ['chipa'], texto: 'El canasto es tuyo: reponé chipa con Doña Chela y vendé cuando quieras (📋 Changas). Dormí en la pieza para guardar.' },
   },
+};
+
+// ---------------- J3: lugares para usar (despensa y pieza) y menús de Doña Chela y Ña Ramona ----------------
+VR.DESPENSA = [['Chipa', 'chipa', 15], ['Empanada', 'empanada', 25], ['Mbeju', 'mbeju', 35], ['Plato del día', 'plato', 60]];
+VR.PUNTOS = {
+  despensa: { lugar: 'despensa', nombre: 'Despensa Ñande Róga', ico: '🛒', mini: '$',
+    menu: (M) => [{ quien: 'sis', titulo: '🛒 Despensa Ñande Róga', txt: '¿Qué llevás? Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op: [
+      ...VR.DESPENSA.map(([n, k, h]) => [n + ' · ' + VR.fmtGs(VR.PRECIOS[k]), () => { M.vida.come(VR.PRECIOS[k], h, n); return false; }]),
+      ['Saldo del celular (3 días) · ' + VR.fmtGs(VR.PRECIOS.saldo), () => { M.vida.cargaSaldo(); return false; }],
+      ['Nada, gracias', () => false]] }],
+    draw: (g, x, y) => { // puesto chico: mostrador, toldo a rayas verde y blanco, cajones con frutas y gaseosas
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 15, y - 2, 32, 5);
+      g.fillStyle = '#7a5434'; g.fillRect(x - 14, y - 14, 28, 13); g.fillStyle = '#5a3c22'; g.fillRect(x - 14, y - 3, 28, 2);
+      for (let i = 0; i < 4; i++) { g.fillStyle = ['#d8452e', '#f0c838', '#3f9a3a', '#e88a2a'][i]; g.fillRect(x - 12 + i * 6, y - 13, 5, 4); }
+      g.fillStyle = '#2a5ab0'; for (let i = 0; i < 6; i++) g.fillRect(x - 12 + i * 4, y - 19, 2, 5);
+      for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#f2efe6' : '#2f9a52'; g.fillRect(x - 17 + i * 4.25, y - 29, 4.25, 9); }
+      g.fillStyle = '#1e6a38'; g.fillRect(x - 17, y - 21, 34, 2);
+      VR.gfx.text(g, 'DESPENSA', x, y - 33, '#fff6d8', { center: true, shadow: '#1a1a1e', size: 7 });
+    } },
+  pieza: { lugar: 'pieza', nombre: 'Tu pieza', ico: '🏠', mini: '⌂',
+    menu: (M) => { const V = M.vida, P = V.s.pieza;
+      if (P.fuera) return [['ramona', 'Ndaikatúi reike, mitã. Primero pagame lo que me debés: ' + VR.fmtGs(P.saldo) + '.']];
+      return [{ quien: 'sis', titulo: '🏠 Tu pieza', txt: V.diaSemana + ' ' + V.hhmm + '. ' + (V.puedeDormir() ? 'Ya se puede dormir hasta las 6:00 (se guarda la partida).' : 'Dormir se puede desde las 18:00.'), op: [
+        ['😴 Dormir hasta las 6:00', () => { V.dormir(); return false; }], ['Salir', () => false]] }]; },
+    draw: (g, x, y) => { // felpudo y cartelito con el número de la pieza
+      g.fillStyle = '#8a3a2a'; g.fillRect(x - 6, y - 4, 12, 5); g.fillStyle = '#b05a3a'; g.fillRect(x - 5, y - 3, 10, 3);
+      VR.gfx.text(g, '🏠', x, y - 10, '#fff', { center: true, size: 7 });
+    } },
+};
+VR.menuChela = (M) => { const V = M.vida, P = VR.PRECIOS, falta = P.canastoMax - V.s.stock, op = [];
+  op.push(['Una chipa para comer · ' + VR.fmtGs(P.chipa), () => { V.come(P.chipa, 15, 'Chipa de Doña Chela'); return false; }]);
+  if (!V.s.canasto) op.push(['Comprar el canasto · ' + VR.fmtGs(P.canasto), () => { if (!V.gasta(P.canasto, 'Canasto de Doña Chela')) return false; V.s.canasto = true; return [['chela', '¡Ko canasto nde mba\'e! Llenalo y a vender.']]; }]);
+  else if (falta > 0) op.push(['Llenar el canasto (' + falta + ' × ' + VR.fmtGs(P.chipaMayor) + ')', () => { const n = Math.min(falta, Math.floor(VR.Wallet.get() / P.chipaMayor)); if (n <= 0) return [['chela', 'Sin plata no hay chipa, che memby.']]; V.llenaCanasto(n, false); return [['chela', 'Ahí tenés ' + n + ' chipas. Ahora tenés ' + V.s.stock + ' en el canasto.']]; }]);
+  if (V.s.fiado > 0) op.push(['Pagarle lo que le debo (' + VR.fmtGs(V.s.fiado) + ')', () => { V.pagaFiado(); return [['chela', V.s.fiado > 0 ? 'Todavía me debés ' + VR.fmtGs(V.s.fiado) + '.' : '¡Aguyje! Estamos a mano.']]; }]);
+  op.push(['Nada, Doña Chela', () => false]);
+  return [{ quien: 'chela', txt: '¡Chipa, chipa calentita! ¿Mba\'épa reipota?' + (V.s.canasto ? ' (canasto: ' + V.s.stock + '/' + P.canastoMax + ')' : ''), op }];
+};
+VR.menuRamona = (M) => { const P = M.vida.s.pieza, op = [];
+  op.push([P.saldo > 0 ? 'Pagarle lo que le debo (' + VR.fmtGs(P.saldo) + ')' : 'Adelantarle la semana (' + VR.fmtGs(VR.PRECIOS.pieza) + ')', () => { M.vida.pagaPieza(); return false; }]);
+  op.push(['Nada, Ña Ramona', () => false]);
+  return [{ quien: 'ramona', txt: P.fuera ? 'Tus cosas están en la vereda, mitã. Pagame y entrás.' : P.saldo > 0 ? '¿Y la plata de la pieza, mitã?' : '¿Mba\'éichapa, mitã? ¿Comiste algo?', op }];
 };

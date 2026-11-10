@@ -295,7 +295,7 @@
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) mis.collect(cx, cy, tall, player);
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
@@ -401,9 +401,9 @@
         '<div class="mv"><span>📱 Saldo</span><span>' + (s.saldo > 0 ? Math.ceil(s.saldo) + ' días' : 'sin saldo') + '</span></div>' +
         '<div class="mv"><span>🍽 Hambre</span><span>' + Math.round(s.hambre) + ' / 100</span></div>' +
         (s.debe > 0 ? '<div class="mv"><span class="neg">Deuda (se paga el 50 % de cada cobro)</span><b class="neg">' + gs(s.debe) + '</b></div>' : '') +
-        '<h3>Provisorio · hasta que lleguen la despensa y la pieza de verdad (etapa J3)</h3><div class="row">' +
-        '<button class="btn" data-v="pieza">🏠 Pagar pieza</button><button class="btn" data-v="chipa">🥖 Chipa ' + gs(pr.chipa) + '</button><button class="btn" data-v="plato">🍲 Plato ' + gs(pr.plato) + '</button>' +
-        '<button class="btn" data-v="helado">🍦 Helado ' + gs(pr.helado) + '</button><button class="btn" data-v="saldo">📱 Saldo ' + gs(pr.saldo) + '</button></div>' +
+        '<div class="mv"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' / ' + pr.canastoMax + ' chipas' : 'no tenés') + '</span></div>' +
+        (s.fiado > 0 ? '<div class="mv"><span class="neg">Le debés a Doña Chela</span><b class="neg">' + gs(s.fiado) + '</b></div>' : '') +
+        '<p>Comida y saldo: en la despensa (al sudeste de la plaza) o con Doña Chela. La pieza se le paga a Ña Ramona; en la pieza se duerme y se guarda.</p>' +
         '<h3>Últimos movimientos</h3>' + (s.mov.length ? s.mov.slice(0, 10).map(([d, h, n, w]) => '<div class="mv"><span>' + esc(w) + ' <i>día ' + d + ' · ' + h + '</i></span><b class="' + (n >= 0 ? 'pos' : 'neg') + '">' + (n >= 0 ? '+' : '') + gs(n) + '</b></div>').join('') : '<p>Todavía no hay movimientos.</p>') +
         '<div class="row"><button class="btn" data-v="metas">⭐ Metas</button><button class="btn primary" data-v="x">Cerrar</button></div>';
     }
