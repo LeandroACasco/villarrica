@@ -679,7 +679,7 @@
   // El mundo corre detrás (tránsito, gente, fauna, cisnes, noche) con la cámara en travelling y sin jugador ni HUD.
   const titleEl = $('title'), tBtns = [...titleEl.querySelectorAll('.tBtn')], tMenu = $('tMenu'), tTap = $('tTap'), tFade = $('tFade'), fadeEl = $('fade');
   const title = new VR.Titulo(world, settings.fondo), TITLE_BASE = 330, FAR = { x: -1e5, y: -1e5 };
-  let tReady = false, tSel = 2, tNavT = 0, tLock = 0, tGoing = false;
+  let tSwallow = 0, tReady = false, tSel = 2, tNavT = 0, tLock = 0, tGoing = false;
   VR.drawLogo($('tLogo'));
   tTap.textContent = isTouch ? 'Tocá para empezar' : 'Apretá una tecla para empezar';
   const paintSel = () => tBtns.forEach((b, i) => b.classList.toggle('sel', i === tSel && tReady));
@@ -729,9 +729,9 @@
   $('credClose').onclick = () => credits.close();
   tBtns.forEach((b, i) => {
     b.onpointerenter = () => { if (tReady && !b.classList.contains('dis')) { tSel = i; paintSel(); } };
-    b.onclick = () => { if (!tReady || tGoing) return; if (!b.classList.contains('dis')) { tSel = i; paintSel(); } ACT[b.dataset.a](); };
+    b.onclick = () => { if (!tReady || tGoing || performance.now() < tSwallow) return; if (!b.classList.contains('dis')) { tSel = i; paintSel(); } ACT[b.dataset.a](); };
   });
-  titleEl.addEventListener('pointerdown', () => showTitleMenu());
+  titleEl.addEventListener('pointerdown', () => { if (!tReady) tSwallow = performance.now() + 600; showTitleMenu(); }); // el primer toque solo muestra los botones: el clic que sigue no los activa
   addEventListener('keydown', (e) => { if (mode === 'title' && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(Shift|Control|Alt|Meta)/.test(e.code) && !document.querySelector('dialog[open]')) showTitleMenu(); });
   function titleNav(dt) {
     if (tGoing || document.querySelector('dialog[open]')) return;
