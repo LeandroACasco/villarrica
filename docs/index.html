@@ -120,6 +120,30 @@
   #overlay p { margin: 0; color: var(--muted); }
   #overlay b { font-size: 16px; }
 
+  /* pantalla de título (J0, 10/11/2026): el mundo corre detrás; el resto del HUD se esconde mientras está el título */
+  body.title > *:not(#game):not(#title):not(#toast):not(#fade):not(dialog):not(script) { display: none !important; }
+  #fade { position: fixed; inset: 0; z-index: 30; background: #000; opacity: 0; pointer-events: none; transition: opacity .4s; }
+  #title { position: fixed; inset: 0; z-index: 7; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 4vh, 36px);
+    padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 12px); text-align: center;
+    background: radial-gradient(ellipse at 50% 50%, rgba(6,8,14,0) 38%, rgba(6,8,14,.55) 100%), linear-gradient(180deg, rgba(6,8,14,.5), rgba(6,8,14,0) 30%, rgba(6,8,14,0) 55%, rgba(6,8,14,.6)); }
+  #tFade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+  .tBrand, .tSlot { position: relative; }
+  #tLogo { display: block; width: min(86vw, 560px); image-rendering: pixelated; margin: 0 auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); }
+  .tSub { margin-top: 10px; font: 700 clamp(10px, 2.4vw, 13px) system-ui; letter-spacing: .32em; text-transform: uppercase; color: #fff6d8; text-shadow: 0 2px 0 #1a1a1e, 0 0 6px rgba(0,0,0,.7); }
+  #tTap { font: 800 clamp(15px, 3.4vw, 20px) system-ui; letter-spacing: .1em; text-transform: uppercase; color: #ffd75e; text-shadow: 2px 2px 0 #1a1a1e, 0 0 8px rgba(0,0,0,.6); animation: tblink 1.3s ease-in-out infinite; }
+  @keyframes tblink { 50% { opacity: .35; } }
+  #tMenu { display: flex; flex-direction: column; gap: 8px; width: min(80vw, 300px); }
+  .tBtn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 14px; border-radius: 10px; border: 2px solid rgba(255,255,255,.2);
+    background: rgba(14,16,22,.74); color: #f4efe2; font: 800 15px system-ui; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,.5); backdrop-filter: blur(3px); transition: transform .08s; }
+  .tBtn.sel { background: var(--accent); color: #111; border-color: #ffd75e; box-shadow: 0 3px 0 #6b3d05; transform: translateY(-1px); }
+  .tBtn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.5); }
+  .tBtn.dis { opacity: .6; }
+  .tBtn small { font: 700 10px system-ui; letter-spacing: .1em; padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,.18); }
+  .tBtn.sel small { background: rgba(0,0,0,.18); }
+  .tVer { position: absolute; left: calc(env(safe-area-inset-left) + 10px); bottom: calc(env(safe-area-inset-bottom) + 6px); font: 11px system-ui; color: rgba(255,255,255,.55); text-shadow: 0 1px 2px #000; }
+  @media (orientation: landscape) and (max-height: 540px) { #title { flex-direction: row; gap: 5vw; } #tLogo { width: min(46vw, 440px); } #tMenu, .tSlot { width: min(40vw, 280px); } .tBtn { min-height: 40px; font-size: 14px; } }
+
   dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(460px, 94vw); max-height: 92vh; }
   dialog::backdrop { background: rgba(0,0,0,.6); }
   .dlg { padding: 18px; display: flex; flex-direction: column; gap: 10px; overflow: auto; max-height: 90vh; touch-action: pan-y; }
@@ -258,7 +282,6 @@
 <div id="overlay">
   <h1>VILLARRICA</h1>
   <p id="ovSub">Cargando la ciudad…</p>
-  <b id="ovGo" hidden>Tocá o apretá una tecla para empezar</b>
 </div>
 <div id="toast"></div>
 <div id="wanted" hidden></div>
@@ -270,9 +293,46 @@
   <p id="mapHelp">Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar un destino (y ✨ para aparecer ahí) · arrastrá o pellizcá para moverte</p>
 </div>
 
+<div id="title" hidden>
+  <div id="tFade"></div>
+  <div class="tBrand"><canvas id="tLogo" width="72" height="19"></canvas><div class="tSub">Mundo abierto · Villarrica, Paraguay</div></div>
+  <div class="tSlot">
+    <div id="tTap">Tocá para empezar</div>
+    <div id="tMenu" hidden>
+      <button class="tBtn dis" data-a="historia">📖 Historia <small>pronto</small></button>
+      <button class="tBtn" data-a="multi">🌐 Multijugador</button>
+      <button class="tBtn" data-a="libre">🚶 Paseo libre</button>
+      <button class="tBtn" data-a="config">⚙ Configuración</button>
+      <button class="tBtn" data-a="creditos">★ Créditos</button>
+    </div>
+  </div>
+  <div class="tVer">Versión 79fe6d40 · 2026-11-10</div>
+</div>
+<div id="fade"></div>
+
+<dialog id="pause">
+  <div class="dlg">
+    <h2>Pausa</h2>
+    <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
+    <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
+    <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
+  </div>
+</dialog>
+
+<dialog id="credits">
+  <div class="dlg">
+    <h2>Créditos</h2>
+    <p><b style="color:var(--text)">Villarrica</b> · un juego de Kiut Studio.</p>
+    <p>Dirección, referencias y pruebas: Leandro Casco · Ideas: Deisy · Programación y dibujo: Claude (Anthropic).</p>
+    <p>Mapa de la ciudad: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay.</p>
+    <p>Inspirado en el estilo de los juegos de celular Java de mediados de los 2000. Todo el arte, el sonido y el código del juego son originales.</p>
+    <div class="row" style="margin-top:6px"><button class="btn primary" id="credClose">Cerrar</button></div>
+  </div>
+</dialog>
+
 <dialog id="menu">
   <div class="dlg">
-    <h2>Menú</h2>
+    <h2>Configuración</h2>
     <h3>Controles táctiles</h3>
     <div class="seg" id="segTouch"><button data-v="auto">Automático</button><button data-v="on">Mostrar</button><button data-v="off">Ocultar</button></div>
     <h3>Personaje</h3>
@@ -288,6 +348,8 @@
     <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB o ▲ sube, Q/LB o ▼ baja; parado en 1ª, bajar pone la reversa; en el teléfono el joystick es volante y pedal).</p>
     <h3>Hora del día</h3>
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
+    <h3>Fondo del menú principal</h3>
+    <div class="seg" id="segFondo"><button data-v="parque">Parque Ykua Pytã</button><button data-v="recorrido">Recorrido</button></div>
     <h3>Opciones</h3>
     <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
     <label class="chk"><input type="checkbox" id="optSnd"> Sonido (sirenas)</label>
@@ -318,8 +380,8 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 13d82afa · 2026-11-10</p>
-    <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 79fe6d40 · 2026-11-10</p>
+    <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
 
@@ -7234,7 +7296,8 @@ VR.Cisnes = class {
         continue;
       }
       let L = 0, R = 0, back = 0;
-      if (mine) {
+      if (s.auto && !mine) { const q = this.autoPedals(s, dt); L = q[0]; R = q[1]; s.emptyT = 0; if (s.ap.rev > 0) back = 1; } // pantalla de título: una pareja pasea sola
+      else if (mine) {
         L = input.pl || input.down('pedL') ? 1 : 0; R = input.pr || input.down('pedR') ? 1 : 0;
         if (input.ay < -0.6) L = R = 1; else if (input.ay > 0.6) back = 1;
         // golpecito al apoyar cada pie (se siente el pedaleo)
@@ -7272,6 +7335,25 @@ VR.Cisnes = class {
     }
     if (this.s) this.updRace(dt);
   }
+  // Piloto automático del cisne del menú principal (10/11/2026): pedalea a golpes y, si el agua se acaba adelante,
+  // gira con un solo pedal hasta tener lugar; de vez en cuando se tuerce un poquito. Devuelve [pedal izq., pedal der.].
+  autoPedals(s, dt) {
+    const A = s.ap || (s.ap = { phase: Math.random() * 3, turn: 0, wob: 0, wt: 3 }), fx = Math.sin(s.a), fy = -Math.cos(s.a);
+    A.phase += dt;
+    if (A.rev > 0) { A.rev -= dt; A.sx = s.x; A.sy = s.y; A.sa = s.a; A.st = 0; return [0, 0]; } // marcha atrás para salir del atasco
+    if (!(this.free(s.x + fx * 38, s.y + fy * 38, s.a) && this.free(s.x + fx * 70, s.y + fy * 70, s.a))) { // orilla, muelle o plataforma adelante
+      if (!A.turn) A.turn = A.last || (Math.random() < 0.5 ? 1 : -1);
+      A.last = A.turn;
+      if (A.sx === undefined || Math.hypot(s.x - A.sx, s.y - A.sy) > 3 || Math.abs(s.a - A.sa) > 0.15) { A.sx = s.x; A.sy = s.y; A.sa = s.a; A.st = 0; }
+      else if ((A.st += dt) > 1.2) { A.last = A.turn = -A.turn; A.rev = 1.6; A.st = 0; } // trabado: invierte el giro y retrocede
+      return A.turn > 0 ? [1, 0] : [0, 1];
+    }
+    A.turn = 0; A.wt -= dt;
+    if (A.wt <= 0) { A.wob = Math.random() < 0.5 ? (Math.random() < 0.5 ? 1 : -1) : 0; A.wt = 2 + Math.random() * 4; }
+    const c = A.phase % 3.2;
+    if (A.wob && c < 0.7) return A.wob > 0 ? [1, 0] : [0, 1];
+    return c < 1 ? [1, 1] : [0, 0];
+  }
   // lo que se manda online cuando vas en un cisne
   netState() { const s = this.s; return s ? [this.list.indexOf(s), Math.round(s.x), Math.round(s.y), +s.a.toFixed(3), (s.L ? 1 : 0) | (s.R ? 2 : 0)] : undefined; }
   drawBuoys(ctx, cx, cy, night) {
@@ -7304,7 +7386,7 @@ VR.Cisnes = class {
       for (const p of s.trail) { const k = p.t / 1.8; ctx.strokeStyle = `rgba(220,240,225,${0.5 * (1 - k)})`; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(p.x, p.y, 3 + k * 11, 2 + k * 7, 0, 0, 7); ctx.stroke(); }
       VR.drawCisne(ctx, s.x, s.y, s.a, s.col);
       ctx.restore();
-      const drv = s === this.s ? look : s.netO ? s.netO.look : null;
+      const drv = s === this.s ? look : s.netO ? s.netO.look : s.auto ? s.autoLook : null;
       if (drv) { // dos personas sentadas con su personaje de verdad (como en las motos): conduce a la izquierda y acompaña otra a la derecha
         if (!s.pas) s.pas = VR.av2Random();
         const k = ((Math.round(s.a / (Math.PI * 2) * 64) % 64) + 64) % 64, fx = Math.sin(s.a), fy = -Math.cos(s.a), rx = Math.cos(s.a), ry = Math.sin(s.a);
@@ -7882,6 +7964,123 @@ VR.Cisnes = class {
   };
 })();
 
+// ===== game/titulo.js =====
+// Pantalla de título (10/11/2026, etapa J0 de claude/menu-plan.md): el mundo de verdad corriendo detrás del menú,
+// con la cámara en travelling lento y sin jugador ni HUD.
+//  - Fondo "parque": vuelta lenta y continua alrededor de la laguna Ykua Pytã (cisnes, surtidores, fauna).
+//  - Fondo "recorrido": tomas cortas por lugares reconocibles, con fundido a negro entre una y otra.
+// Las tomas salen de los datos del mapa (la máscara de agua de la laguna, las etiquetas y los decorados), no de
+// números fijos, así sobreviven a una actualización de OpenStreetMap. Acá vive la cámara y el logo; los botones y
+// el cambio de modo están en main.js.
+'use strict';
+
+// Logo en pixel art: "VILLARRICA" con letras de 5×7, frente dorado con degradé, extrusión naranja oscura, contorno
+// negro y dos flores de tajy rosado en las esquinas de arriba. Se dibuja chico y el CSS lo agranda sin suavizar.
+VR.drawLogo = (canvas) => {
+  const G = {
+    V: ['10001', '10001', '10001', '10001', '01010', '01010', '00100'],
+    I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
+    L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
+    A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+    R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
+    C: ['01111', '10000', '10000', '10000', '10000', '10000', '01111'],
+  };
+  const word = 'VILLARRICA', ox = 5, oy = 5, W = ox * 2 + word.length * 6 + 2, H = oy + 7 + 3 + 4, P = [];
+  [...word].forEach((ch, k) => G[ch].forEach((row, y) => [...row].forEach((b, x) => { if (b === '1') P.push([ox + k * 6 + x, oy + y]); })));
+  canvas.width = W; canvas.height = H;
+  const g = canvas.getContext('2d'); g.clearRect(0, 0, W, H);
+  const px = (x, y, c) => { g.fillStyle = c; g.fillRect(x, y, 1, 1); };
+  const sil = new Set();
+  for (const [x, y] of P) for (let d = 0; d <= 3; d++) sil.add((x + d) + ',' + (y + d));
+  for (const k of sil) { const [x, y] = k.split(',').map(Number); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) px(x + dx, y + dy, '#1a1a1e'); } // contorno
+  for (let d = 3; d >= 1; d--) for (const [x, y] of P) px(x + d, y + d, d === 3 ? '#5a3004' : d === 2 ? '#7a410a' : '#a55a10'); // extrusión
+  for (const [x, y] of P) { const r = y - oy; px(x, y, r < 2 ? '#fff0b0' : r < 4 ? '#ffd75e' : '#f2a52b'); } // frente
+  for (const [fx, fy] of [[1, 1], [W - 4, 1]]) { // tajy: cinco pétalos rosados y el centro amarillo
+    for (const [dx, dy] of [[1, 0], [0, 1], [2, 1], [1, 2]]) px(fx + dx, fy + dy, '#f08ab8');
+    px(fx + 1, fy + 1, '#ffe08a');
+  }
+  return canvas;
+};
+
+VR.Titulo = class {
+  constructor(world, mode) {
+    this.world = world; this.mode = mode === 'recorrido' ? 'recorrido' : 'parque'; this.cam = { x: 0, y: 0, px: 0, py: 0 };
+    this.fade = 0; this.phase = 'play'; this.hold = 0; this.t = 0; this.i = 0; this.speed = 16; // u/s del travelling del parque
+    this.onJump = null; this.loop = null; this.tour = []; this.shot = null;
+    this.build();
+    this.cut(true);
+  }
+  // caja de la laguna en unidades del mundo, de la máscara de agua
+  lakeBox() {
+    const W = this.world, T = VR.T, S = VR.TILE, w = W.w, t = W.tiles;
+    let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+    for (let i = 0; i < t.length; i++) if (t[i] === T.LAGUNA) { const x = i % w, y = (i / w) | 0; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 < 0) return null;
+    return { cx: (x0 + x1 + 1) / 2 * S, cy: (y0 + y1 + 1) / 2 * S, rx: (x1 - x0 + 1) / 2 * S, ry: (y1 - y0 + 1) / 2 * S };
+  }
+  build() {
+    const W = this.world, S = VR.TILE, dec = (k) => (W.decals || []).find((d) => d.kind === k), lab = (re) => (W.labels || []).find((l) => re.test(l.text));
+    const L = this.lakeBox(), emb = dec('embarcadero'), glo = dec('glorieta');
+    // ---- parque: vuelta completa a la laguna en sentido horario, arrancando frente al muelle de los cisnes ----
+    if (L) {
+      const a0 = emb ? Math.atan2((emb.y + emb.h / 2) * S - L.cy, (emb.x + emb.w / 2) * S - L.cx) : -Math.PI / 2, N = 12, pts = [];
+      for (let k = 0; k < N; k++) { const a = a0 + k * Math.PI * 2 / N; pts.push([L.cx + Math.cos(a) * L.rx * 0.8, L.cy + Math.sin(a) * L.ry * 0.8]); }
+      this.loop = this.spline(pts);
+    }
+    // ---- recorrido: panorámicas de ~20 s por lugares reconocibles ----
+    const pan = (name, ax, ay, bx, by, dur) => this.tour.push({ name, a: [ax, ay], b: [bx, by], dur });
+    if (emb) { const x = (emb.x + emb.w / 2) * S, y = (emb.y + emb.h) * S; pan('muelle', x - 190, y + 40, x + 150, y + 30, 20); }
+    let l = lab(/Plaza de los H/i); if (l) pan('plaza', l.x - 230, l.y + 110, l.x + 190, l.y + 80, 22);
+    l = lab(/Marimer/i); if (l) pan('marimer', l.x + 30, l.y - 190, l.x + 30, l.y + 160, 20);
+    l = lab(/Municipalidad/i); if (l) pan('muni', l.x - 170, l.y + 60, l.x + 130, l.y + 10, 20);
+    const cu = dec('cuartel'); if (cu) { const x = (cu.x + cu.w / 2) * S, y = (cu.y + cu.h / 2) * S; pan('cuartel', x - 140, y + 50, x + 120, y + 40, 18); }
+    if (glo) { const x = (glo.x + glo.w / 2) * S, y = (glo.y + glo.h / 2) * S; pan('glorieta', x - 40, y - 150, x - 40, y + 150, 20); }
+    l = lab(/Catedral/i); if (l) pan('catedral', l.x - 170, l.y + 40, l.x + 150, l.y + 10, 18);
+  }
+  // Catmull-Rom cerrada, muestreada cada ~5 unidades, con el largo acumulado para ir a velocidad constante
+  spline(pts, step = 5) {
+    const n = pts.length, P = (i) => pts[((i % n) + n) % n], xs = [], ys = [];
+    for (let i = 0; i < n; i++) {
+      const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2), m = Math.max(4, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / step));
+      for (let k = 0; k < m; k++) {
+        const t = k / m, t2 = t * t, t3 = t2 * t, f = (a, b, c, d) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+        xs.push(f(p0[0], p1[0], p2[0], p3[0])); ys.push(f(p0[1], p1[1], p2[1], p3[1]));
+      }
+    }
+    const cum = [0]; for (let i = 1; i <= xs.length; i++) cum.push(cum[i - 1] + Math.hypot(xs[i % xs.length] - xs[i - 1], ys[i % xs.length] - ys[i - 1]));
+    return { xs, ys, cum, len: cum[xs.length] };
+  }
+  loopAt(s) {
+    const P = this.loop, n = P.xs.length; s = ((s % P.len) + P.len) % P.len;
+    let lo = 0, hi = n; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (P.cum[m] <= s) lo = m; else hi = m; }
+    const u = (s - P.cum[lo]) / Math.max(1e-6, P.cum[lo + 1] - P.cum[lo]), j = (lo + 1) % n;
+    return [P.xs[lo] + (P.xs[j] - P.xs[lo]) * u, P.ys[lo] + (P.ys[j] - P.ys[lo]) * u];
+  }
+  setMode(m) { if (m === this.mode) return; this.mode = m; if (this.phase === 'play') this.phase = 'out'; }
+  // corte a la toma que sigue (o a la primera, al arrancar)
+  cut(first) {
+    if (this.mode === 'parque' && this.loop) this.shot = { loop: true };
+    else if (this.tour.length) { this.i = first ? (Math.random() * this.tour.length) | 0 : (this.i + 1) % this.tour.length; this.shot = this.tour[this.i]; }
+    else { const p = this.world.spawn; this.shot = { still: true, x: p.x, y: p.y }; }
+    this.t = 0; this.place(); this.cam.px = this.cam.x; this.cam.py = this.cam.y;
+    if (!first && this.onJump) this.onJump(this.cam);
+  }
+  place() {
+    const s = this.shot, c = this.cam;
+    if (s.still) { c.x = s.x; c.y = s.y; }
+    else if (s.loop) { const p = this.loopAt(this.t * this.speed); c.x = p[0]; c.y = p[1]; }
+    else { const u = Math.min(1, this.t / s.dur), e = u * u * (3 - 2 * u); c.x = s.a[0] + (s.b[0] - s.a[0]) * e; c.y = s.a[1] + (s.b[1] - s.a[1]) * e; }
+  }
+  update(dt) {
+    this.cam.px = this.cam.x; this.cam.py = this.cam.y;
+    if (this.phase === 'black') { this.hold -= dt; if (this.hold <= 0) this.phase = 'in'; return; } // quieta en negro mientras el mundo se acomoda
+    if (this.phase === 'out') { this.fade = Math.min(1, this.fade + dt / 0.6); if (this.fade >= 1) { this.cut(false); this.phase = 'black'; this.hold = 0.5; return; } }
+    else if (this.phase === 'in') { this.fade = Math.max(0, this.fade - dt / 0.8); if (this.fade <= 0) this.phase = 'play'; }
+    this.t += dt; this.place();
+    if (this.shot.dur && this.t > this.shot.dur + 0.5 && this.phase === 'play') this.phase = 'out';
+  }
+};
+
 // ===== main.js =====
 // Arranque: pantalla, mundo, jugador, cámara, HUD, menú y guardado de la posición.
 'use strict';
@@ -7889,16 +8088,18 @@ VR.Cisnes = class {
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil') };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque') };
   VR.drive = settings.manejo;
 
   VR.screen.init($('game'));
   const prueba = /[?&]prueba\b/.test(location.search);
+  const directo = prueba || /[?&](libre|juego)\b/.test(location.search); // ?libre salta el menú principal (pruebas automáticas)
+  let mode = 'game'; // 'title' (menú principal) | 'game'
   let world;
   try { world = prueba ? VR.makeTestMap() : await VR.loadMap('map.bin'); }
   catch (e) { $('ovSub').textContent = '⚠ ' + e.message + ' · revisá la conexión y recargá'; return; }
   $('zone').textContent = prueba ? 'Barrio de prueba' : 'Centro';
-  $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1.5 · Villarrica entera'; $('ovGo').hidden = false;
+  $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1.5 · Villarrica entera';
   const saved = VR.store.get('pos:' + world.id, null);
   const start = saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn;
   const player = new VR.Player(world, start.x, start.y);
@@ -8012,9 +8213,9 @@ VR.Cisnes = class {
     const k = 1 - Math.exp(-dt * 7);
     cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
   }
-  const camView = (a) => {
+  const camView = (a, c = cam) => {
     const sw = VR.screen.w, sh = VR.screen.h, W = world.w * VR.TILE, H = world.h * VR.TILE;
-    let x = VR.lerp(cam.px, cam.x, a) - sw / 2, y = VR.lerp(cam.py, cam.y, a) - sh / 2;
+    let x = VR.lerp(c.px, c.x, a) - sw / 2, y = VR.lerp(c.py, c.y, a) - sh / 2;
     x = W <= sw ? (W - sw) / 2 : VR.clamp(x, 0, W - sw);
     y = H <= sh ? (H - sh) / 2 : VR.clamp(y, 0, H - sh);
     return [Math.round(x), Math.round(y)];
@@ -8025,6 +8226,7 @@ VR.Cisnes = class {
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
   let sayIdx = 0, hint = '', hintCar = null, holdT = 0;
   function update(dt) {
+    if (mode === 'title') { updateTitle(dt); return; }
     online.update(dt, player, car, teatro);
     if (teatro.on) { if (VR.input.pressed('menu')) { openMenu(); return; } if (teatro.update(dt, VR.input) === 'out' && cineDoor) { player.x = player.px = cineDoor.x; player.y = player.py = cineDoor.y + 14; player.dir = 'down'; } return; }
     if (mapOpen) {
@@ -8111,6 +8313,7 @@ VR.Cisnes = class {
   // ---------- dibujo ----------
   const tall = [];
   function render(a, dt) {
+    if (mode === 'title') { renderTitle(a, dt); return; }
     const ctx = VR.screen.ctx, sw = VR.screen.w, sh = VR.screen.h;
     if (teatro.on) { teatro.draw(ctx, sw, sh); return; }
     const [cx, cy] = camView(a);
@@ -8192,11 +8395,22 @@ VR.Cisnes = class {
   VR.input.onPad = (name, on) => { $('padInfo').textContent = on ? '🎮 Conectado: ' + name : 'Control desconectado.'; toast(on ? '🎮 Control conectado' : 'Control desconectado'); applyTouch(); };
 
   // ---------- portada / menú / pantalla completa ----------
-  function hideOverlay() { if (!$('ovGo').hidden) $('overlay').hidden = true; }
-  $('overlay').addEventListener('pointerdown', (e) => { e.preventDefault(); hideOverlay(); });
-  const menu = $('menu');
-  function openMenu() { if (menu.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; menu.showModal(); }
-  menu.addEventListener('close', () => { VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; });
+  function hideOverlay() { $('overlay').hidden = true; }
+  const menu = $('menu'), pause = $('pause'), credits = $('credits');
+  const resume = () => { VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; };
+  let cfgFrom = 'pause', afterPause = null;
+  // Esc / ☰ (10/11/2026, J0): pausa. Desde ahí: mapa, online, configuración (el menú de antes) o volver al menú principal
+  function openMenu() { if (mode !== 'game' || pause.open || menu.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; pause.showModal(); }
+  pause.addEventListener('close', () => { const f = afterPause; afterPause = null; if (f) f(); else resume(); });
+  pause.addEventListener('keydown', (e) => { if (e.code === 'KeyP') pause.close(); });
+  const pauseThen = (f) => { afterPause = f; pause.close(); };
+  function openConfig(from) { cfgFrom = from; VR.input.releaseAll(); VR.input.enabled = false; menu.showModal(); }
+  menu.addEventListener('close', () => { if (cfgFrom === 'pause' && mode === 'game') { VR.loop.paused = true; VR.input.enabled = false; pause.showModal(); } else resume(); }); // la configuración vuelve a donde estabas
+  $('pSeguir').onclick = () => pause.close();
+  $('pMapa').onclick = () => pauseThen(() => { resume(); openMap(); });
+  $('pOnline').onclick = () => pauseThen(() => { resume(); $('onDlg').showModal(); });
+  $('pConfig').onclick = () => pauseThen(() => openConfig('pause'));
+  $('pSalir').onclick = () => pauseThen(() => { resume(); if (cisnes.riding) toast('🦢 Bajate del cisne antes de salir'); else toTitle(); });
   $('btnMenu').onclick = openMenu;
   $('menuClose').onclick = () => menu.close();
   menu.addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !/INPUT/.test(e.target.tagName)) menu.close(); });
@@ -8214,6 +8428,7 @@ VR.Cisnes = class {
   };
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
+  seg('segFondo', 'fondo', () => title.setMode(settings.fondo));
   // ---- online ----
   const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player, enterCar, exitCar, cars }); $('btnJobs').onclick = () => changas.open();
   const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars, fauna, cisnes });
@@ -8472,6 +8687,7 @@ VR.Cisnes = class {
   addEventListener('resize', () => { if (miniReady) sizeMini(); });
   function drawMini(dt) {
     if (!miniReady || mapOpen) return;
+    if (!mini.width) sizeMini(); // mientras el título esconde el HUD el canvas mide 0
     miniT += dt; if (miniT < 1 / 30) return; miniT = 0;
     const D = mini.width, r = D / 2, src = $('mapCanvas');
     const want = car ? 0.9 + 0.8 * (1 - Math.min(1, Math.abs(car.v) / 240)) : 2.2; // px de minimapa (en px físicos/D·112) por baldosa
@@ -8543,9 +8759,111 @@ VR.Cisnes = class {
   addEventListener('resize', () => VR.screen.fit());
   addEventListener('orientationchange', () => setTimeout(() => VR.screen.fit(), 250));
   document.addEventListener('contextmenu', (e) => e.preventDefault());
+  // ---------- pantalla de título (J0, 10/11/2026; plan en claude/menu-plan.md) ----------
+  // El mundo corre detrás (tránsito, gente, fauna, cisnes, noche) con la cámara en travelling y sin jugador ni HUD.
+  const titleEl = $('title'), tBtns = [...titleEl.querySelectorAll('.tBtn')], tMenu = $('tMenu'), tTap = $('tTap'), tFade = $('tFade'), fadeEl = $('fade');
+  const title = new VR.Titulo(world, settings.fondo), TITLE_BASE = 330, FAR = { x: -1e5, y: -1e5 };
+  let tReady = false, tSel = 2, tNavT = 0, tLock = 0, tGoing = false;
+  VR.drawLogo($('tLogo'));
+  tTap.textContent = isTouch ? 'Tocá para empezar' : 'Apretá una tecla para empezar';
+  const paintSel = () => tBtns.forEach((b, i) => b.classList.toggle('sel', i === tSel && tReady));
+  // deja la calle con tránsito y gente adentro de la toma (se llama en negro, al cortar de una toma a otra)
+  function titleWarm(seconds) {
+    if (!traffic || !peds) return;
+    const c = title.cam, sw = VR.screen.w, sh = VR.screen.h, view = { x0: c.x - sw / 2, y0: c.y - sh / 2, x1: c.x + sw / 2, y1: c.y + sh / 2 };
+    for (let i = 0; i < seconds * 20; i++) { traffic.update(0.05, c, view, FAR, null); peds.update(0.05, c, view, null); }
+  }
+  title.onJump = () => titleWarm(6);
+  function enterTitle(first) {
+    mode = 'title'; document.body.classList.add('title'); titleEl.hidden = false; VR.screen.setBase(TITLE_BASE);
+    const sw0 = cisnes.list[0]; if (sw0) { sw0.auto = true; sw0.autoLook = sw0.autoLook || VR.av2Random(); sw0.pas = sw0.pas || VR.av2Random(); } // una pareja pasea en cisne
+    tReady = !first; tMenu.hidden = first; tTap.hidden = !first; tSel = 2; tLock = 0.3; paintSel();
+    tFade._f = -1; title.phase = 'play'; title.fade = 0; title.cut(true); titleWarm(6);
+  }
+  function showTitleMenu() { if (tReady || mode !== 'title') return; tReady = true; tTap.hidden = true; tMenu.hidden = false; tLock = 0.3; paintSel(); VR.audio.resume(); }
+  // pasar al juego con un fundido; "then" corre ya en el juego
+  function startGame(then) {
+    if (tGoing) return; tGoing = true; fadeEl.style.opacity = 1;
+    setTimeout(() => {
+      mode = 'game'; document.body.classList.remove('title'); titleEl.hidden = true;
+      const sw0 = cisnes.list[0]; if (sw0) sw0.auto = false; // el cisne vuelve solo al muelle
+      VR.screen.setBase(car ? DRIVE_BASE : WALK_BASE);
+      const f = car || player; cam.x = cam.px = f.x; cam.y = cam.py = f.y - (car ? 0 : 10); cam.lx = cam.ly = 0; hint = '';
+      resume(); applyTouch(); fadeEl.style.opacity = 0; tGoing = false;
+      if (then) then();
+    }, 450);
+  }
+  // volver al menú principal (desde la pausa): guarda y entra al título con un fundido
+  function toTitle() {
+    if (online.ride) online.leave(player, world);
+    if (online.peer) online.stop();
+    if (teatro.on) { teatro.exit(); if (cineDoor) { player.x = player.px = cineDoor.x; player.y = player.py = cineDoor.y + 14; player.dir = 'down'; } }
+    if (mapOpen) closeMap();
+    savePos(); VR.input.releaseAll(); tGoing = true; fadeEl.style.opacity = 1;
+    setTimeout(() => { enterTitle(false); fadeEl.style.opacity = 0; tGoing = false; }, 450);
+  }
+  const ACT = {
+    historia: () => toast('📖 El modo Historia llega pronto'),
+    multi: () => startGame(() => { VR.input.releaseAll(); $('onDlg').showModal(); }), // juega en modo Libre; ahí crea o se une a una sala
+    libre: () => startGame(),
+    config: () => openConfig('title'),
+    creditos: () => { VR.input.releaseAll(); VR.input.enabled = false; credits.showModal(); },
+  };
+  credits.addEventListener('close', () => resume());
+  $('credClose').onclick = () => credits.close();
+  tBtns.forEach((b, i) => {
+    b.onpointerenter = () => { if (tReady && !b.classList.contains('dis')) { tSel = i; paintSel(); } };
+    b.onclick = () => { if (!tReady || tGoing) return; if (!b.classList.contains('dis')) { tSel = i; paintSel(); } ACT[b.dataset.a](); };
+  });
+  titleEl.addEventListener('pointerdown', () => showTitleMenu());
+  addEventListener('keydown', (e) => { if (mode === 'title' && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(Shift|Control|Alt|Meta)/.test(e.code) && !document.querySelector('dialog[open]')) showTitleMenu(); });
+  function titleNav(dt) {
+    if (tGoing || document.querySelector('dialog[open]')) return;
+    tLock -= dt; tNavT -= dt;
+    if (!tReady) { if (tLock <= 0 && ['action', 'car', 'menu', 'run'].some((b) => VR.input.pressed(b))) showTitleMenu(); return; }
+    if (tLock > 0) return;
+    const ay = VR.input.ay;
+    if (Math.abs(ay) > 0.6 && tNavT <= 0) {
+      const on = tBtns.map((b, i) => (b.classList.contains('dis') ? -1 : i)).filter((i) => i >= 0), k = on.indexOf(tSel);
+      tSel = on[(k + (ay > 0 ? 1 : on.length - 1)) % on.length]; paintSel(); tNavT = 0.22;
+    } else if (Math.abs(ay) < 0.3) tNavT = 0;
+    if (VR.input.pressed('action')) ACT[tBtns[tSel].dataset.a]();
+  }
+  function updateTitle(dt) {
+    title.update(dt);
+    const c = title.cam, sw = VR.screen.w, sh = VR.screen.h, view = { x0: c.x - sw / 2, y0: c.y - sh / 2, x1: c.x + sw / 2, y1: c.y + sh / 2 };
+    VR.playerCar = null; VR.audioCam = c;
+    world.updateDynamic(dt);
+    if (title.phase !== 'black') { if (traffic) traffic.update(dt, c, view, FAR, null); if (peds) peds.update(dt, c, view, null); }
+    cisnes.update(dt, VR.input); fauna.update(dt, c, []);
+    VR.audio.engine(null, dt); if (emer) emer.siren.update(dt, null, 0, false); // sin motor ni sirenas del juego
+    titleNav(dt);
+  }
+  function renderTitle(a, dt) {
+    const ctx = VR.screen.ctx, sw = VR.screen.w, sh = VR.screen.h, [cx, cy] = camView(a, title.cam);
+    ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
+    world.draw(ctx, cx, cy, sw, sh);
+    world.warm(cx, cy, sw, sh);
+    tall.length = 0;
+    world.collectTall(cx, cy, sw, sh, tall);
+    fauna.drawGround(ctx, cx, cy, sw, sh);
+    cisnes.draw(ctx, cx, cy, night, null);
+    if (peds) peds.collect(cx, cy, sw, sh, a, tall);
+    fauna.collect(cx, cy, sw, sh, tall);
+    const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
+    for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
+    tall.sort((p, q) => p.sy - q.sy);
+    for (const t of tall) t.draw(ctx);
+    night.update(Math.min(0.1, dt || 0.016), settings.hora);
+    night.render(ctx, cx, cy, sw, sh, vis);
+    if (tFade._f !== title.fade) { tFade._f = title.fade; tFade.style.opacity = title.fade; }
+  }
+
   applyTouch();
+  hideOverlay();
+  if (!directo) enterTitle(true);
   VR.loop.start(update, render);
-  window.__vr = { get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { get mode() { return mode; }, title, startGame, toTitle, enterTitle, get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();
 
 </script>

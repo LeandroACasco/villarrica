@@ -120,6 +120,30 @@
   #overlay p { margin: 0; color: var(--muted); }
   #overlay b { font-size: 16px; }
 
+  /* pantalla de título (J0, 10/11/2026): el mundo corre detrás; el resto del HUD se esconde mientras está el título */
+  body.title > *:not(#game):not(#title):not(#toast):not(#fade):not(dialog):not(script) { display: none !important; }
+  #fade { position: fixed; inset: 0; z-index: 30; background: #000; opacity: 0; pointer-events: none; transition: opacity .4s; }
+  #title { position: fixed; inset: 0; z-index: 7; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 4vh, 36px);
+    padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 12px); text-align: center;
+    background: radial-gradient(ellipse at 50% 50%, rgba(6,8,14,0) 38%, rgba(6,8,14,.55) 100%), linear-gradient(180deg, rgba(6,8,14,.5), rgba(6,8,14,0) 30%, rgba(6,8,14,0) 55%, rgba(6,8,14,.6)); }
+  #tFade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+  .tBrand, .tSlot { position: relative; }
+  #tLogo { display: block; width: min(86vw, 560px); image-rendering: pixelated; margin: 0 auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); }
+  .tSub { margin-top: 10px; font: 700 clamp(10px, 2.4vw, 13px) system-ui; letter-spacing: .32em; text-transform: uppercase; color: #fff6d8; text-shadow: 0 2px 0 #1a1a1e, 0 0 6px rgba(0,0,0,.7); }
+  #tTap { font: 800 clamp(15px, 3.4vw, 20px) system-ui; letter-spacing: .1em; text-transform: uppercase; color: #ffd75e; text-shadow: 2px 2px 0 #1a1a1e, 0 0 8px rgba(0,0,0,.6); animation: tblink 1.3s ease-in-out infinite; }
+  @keyframes tblink { 50% { opacity: .35; } }
+  #tMenu { display: flex; flex-direction: column; gap: 8px; width: min(80vw, 300px); }
+  .tBtn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 14px; border-radius: 10px; border: 2px solid rgba(255,255,255,.2);
+    background: rgba(14,16,22,.74); color: #f4efe2; font: 800 15px system-ui; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,.5); backdrop-filter: blur(3px); transition: transform .08s; }
+  .tBtn.sel { background: var(--accent); color: #111; border-color: #ffd75e; box-shadow: 0 3px 0 #6b3d05; transform: translateY(-1px); }
+  .tBtn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.5); }
+  .tBtn.dis { opacity: .6; }
+  .tBtn small { font: 700 10px system-ui; letter-spacing: .1em; padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,.18); }
+  .tBtn.sel small { background: rgba(0,0,0,.18); }
+  .tVer { position: absolute; left: calc(env(safe-area-inset-left) + 10px); bottom: calc(env(safe-area-inset-bottom) + 6px); font: 11px system-ui; color: rgba(255,255,255,.55); text-shadow: 0 1px 2px #000; }
+  @media (orientation: landscape) and (max-height: 540px) { #title { flex-direction: row; gap: 5vw; } #tLogo { width: min(46vw, 440px); } #tMenu, .tSlot { width: min(40vw, 280px); } .tBtn { min-height: 40px; font-size: 14px; } }
+
   dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(460px, 94vw); max-height: 92vh; }
   dialog::backdrop { background: rgba(0,0,0,.6); }
   .dlg { padding: 18px; display: flex; flex-direction: column; gap: 10px; overflow: auto; max-height: 90vh; touch-action: pan-y; }
@@ -255,7 +279,6 @@
 <div id="overlay">
   <h1>VILLARRICA</h1>
   <p id="ovSub">Cargando la ciudad…</p>
-  <b id="ovGo" hidden>Tocá o apretá una tecla para empezar</b>
 </div>
 <div id="toast"></div>
 <div id="wanted" hidden></div>
@@ -267,9 +290,46 @@
   <p id="mapHelp">Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar un destino (y ✨ para aparecer ahí) · arrastrá o pellizcá para moverte</p>
 </div>
 
+<div id="title" hidden>
+  <div id="tFade"></div>
+  <div class="tBrand"><canvas id="tLogo" width="72" height="19"></canvas><div class="tSub">Mundo abierto · Villarrica, Paraguay</div></div>
+  <div class="tSlot">
+    <div id="tTap">Tocá para empezar</div>
+    <div id="tMenu" hidden>
+      <button class="tBtn dis" data-a="historia">📖 Historia <small>pronto</small></button>
+      <button class="tBtn" data-a="multi">🌐 Multijugador</button>
+      <button class="tBtn" data-a="libre">🚶 Paseo libre</button>
+      <button class="tBtn" data-a="config">⚙ Configuración</button>
+      <button class="tBtn" data-a="creditos">★ Créditos</button>
+    </div>
+  </div>
+  <div class="tVer">/*VERSION*/</div>
+</div>
+<div id="fade"></div>
+
+<dialog id="pause">
+  <div class="dlg">
+    <h2>Pausa</h2>
+    <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
+    <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
+    <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
+  </div>
+</dialog>
+
+<dialog id="credits">
+  <div class="dlg">
+    <h2>Créditos</h2>
+    <p><b style="color:var(--text)">Villarrica</b> · un juego de Kiut Studio.</p>
+    <p>Dirección, referencias y pruebas: Leandro Casco · Ideas: Deisy · Programación y dibujo: Claude (Anthropic).</p>
+    <p>Mapa de la ciudad: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay.</p>
+    <p>Inspirado en el estilo de los juegos de celular Java de mediados de los 2000. Todo el arte, el sonido y el código del juego son originales.</p>
+    <div class="row" style="margin-top:6px"><button class="btn primary" id="credClose">Cerrar</button></div>
+  </div>
+</dialog>
+
 <dialog id="menu">
   <div class="dlg">
-    <h2>Menú</h2>
+    <h2>Configuración</h2>
     <h3>Controles táctiles</h3>
     <div class="seg" id="segTouch"><button data-v="auto">Automático</button><button data-v="on">Mostrar</button><button data-v="off">Ocultar</button></div>
     <h3>Personaje</h3>
@@ -285,6 +345,8 @@
     <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB o ▲ sube, Q/LB o ▼ baja; parado en 1ª, bajar pone la reversa; en el teléfono el joystick es volante y pedal).</p>
     <h3>Hora del día</h3>
     <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
+    <h3>Fondo del menú principal</h3>
+    <div class="seg" id="segFondo"><button data-v="parque">Parque Ykua Pytã</button><button data-v="recorrido">Recorrido</button></div>
     <h3>Opciones</h3>
     <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
     <label class="chk"><input type="checkbox" id="optSnd"> Sonido (sirenas)</label>
@@ -316,7 +378,7 @@
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
     <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. /*VERSION*/</p>
-    <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
+    <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
 

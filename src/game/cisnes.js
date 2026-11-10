@@ -110,7 +110,8 @@ VR.Cisnes = class {
         continue;
       }
       let L = 0, R = 0, back = 0;
-      if (mine) {
+      if (s.auto && !mine) { const q = this.autoPedals(s, dt); L = q[0]; R = q[1]; s.emptyT = 0; if (s.ap.rev > 0) back = 1; } // pantalla de título: una pareja pasea sola
+      else if (mine) {
         L = input.pl || input.down('pedL') ? 1 : 0; R = input.pr || input.down('pedR') ? 1 : 0;
         if (input.ay < -0.6) L = R = 1; else if (input.ay > 0.6) back = 1;
         // golpecito al apoyar cada pie (se siente el pedaleo)
@@ -148,6 +149,25 @@ VR.Cisnes = class {
     }
     if (this.s) this.updRace(dt);
   }
+  // Piloto automático del cisne del menú principal (10/11/2026): pedalea a golpes y, si el agua se acaba adelante,
+  // gira con un solo pedal hasta tener lugar; de vez en cuando se tuerce un poquito. Devuelve [pedal izq., pedal der.].
+  autoPedals(s, dt) {
+    const A = s.ap || (s.ap = { phase: Math.random() * 3, turn: 0, wob: 0, wt: 3 }), fx = Math.sin(s.a), fy = -Math.cos(s.a);
+    A.phase += dt;
+    if (A.rev > 0) { A.rev -= dt; A.sx = s.x; A.sy = s.y; A.sa = s.a; A.st = 0; return [0, 0]; } // marcha atrás para salir del atasco
+    if (!(this.free(s.x + fx * 38, s.y + fy * 38, s.a) && this.free(s.x + fx * 70, s.y + fy * 70, s.a))) { // orilla, muelle o plataforma adelante
+      if (!A.turn) A.turn = A.last || (Math.random() < 0.5 ? 1 : -1);
+      A.last = A.turn;
+      if (A.sx === undefined || Math.hypot(s.x - A.sx, s.y - A.sy) > 3 || Math.abs(s.a - A.sa) > 0.15) { A.sx = s.x; A.sy = s.y; A.sa = s.a; A.st = 0; }
+      else if ((A.st += dt) > 1.2) { A.last = A.turn = -A.turn; A.rev = 1.6; A.st = 0; } // trabado: invierte el giro y retrocede
+      return A.turn > 0 ? [1, 0] : [0, 1];
+    }
+    A.turn = 0; A.wt -= dt;
+    if (A.wt <= 0) { A.wob = Math.random() < 0.5 ? (Math.random() < 0.5 ? 1 : -1) : 0; A.wt = 2 + Math.random() * 4; }
+    const c = A.phase % 3.2;
+    if (A.wob && c < 0.7) return A.wob > 0 ? [1, 0] : [0, 1];
+    return c < 1 ? [1, 1] : [0, 0];
+  }
   // lo que se manda online cuando vas en un cisne
   netState() { const s = this.s; return s ? [this.list.indexOf(s), Math.round(s.x), Math.round(s.y), +s.a.toFixed(3), (s.L ? 1 : 0) | (s.R ? 2 : 0)] : undefined; }
   drawBuoys(ctx, cx, cy, night) {
@@ -180,7 +200,7 @@ VR.Cisnes = class {
       for (const p of s.trail) { const k = p.t / 1.8; ctx.strokeStyle = `rgba(220,240,225,${0.5 * (1 - k)})`; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(p.x, p.y, 3 + k * 11, 2 + k * 7, 0, 0, 7); ctx.stroke(); }
       VR.drawCisne(ctx, s.x, s.y, s.a, s.col);
       ctx.restore();
-      const drv = s === this.s ? look : s.netO ? s.netO.look : null;
+      const drv = s === this.s ? look : s.netO ? s.netO.look : s.auto ? s.autoLook : null;
       if (drv) { // dos personas sentadas con su personaje de verdad (como en las motos): conduce a la izquierda y acompaña otra a la derecha
         if (!s.pas) s.pas = VR.av2Random();
         const k = ((Math.round(s.a / (Math.PI * 2) * 64) % 64) + 64) % 64, fx = Math.sin(s.a), fy = -Math.cos(s.a), rx = Math.cos(s.a), ry = Math.sin(s.a);

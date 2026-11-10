@@ -4,16 +4,18 @@
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil') };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque') };
   VR.drive = settings.manejo;
 
   VR.screen.init($('game'));
   const prueba = /[?&]prueba\b/.test(location.search);
+  const directo = prueba || /[?&](libre|juego)\b/.test(location.search); // ?libre salta el menú principal (pruebas automáticas)
+  let mode = 'game'; // 'title' (menú principal) | 'game'
   let world;
   try { world = prueba ? VR.makeTestMap() : await VR.loadMap('map.bin'); }
   catch (e) { $('ovSub').textContent = '⚠ ' + e.message + ' · revisá la conexión y recargá'; return; }
   $('zone').textContent = prueba ? 'Barrio de prueba' : 'Centro';
-  $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1.5 · Villarrica entera'; $('ovGo').hidden = false;
+  $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1.5 · Villarrica entera';
   const saved = VR.store.get('pos:' + world.id, null);
   const start = saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn;
   const player = new VR.Player(world, start.x, start.y);
@@ -127,9 +129,9 @@
     const k = 1 - Math.exp(-dt * 7);
     cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
   }
-  const camView = (a) => {
+  const camView = (a, c = cam) => {
     const sw = VR.screen.w, sh = VR.screen.h, W = world.w * VR.TILE, H = world.h * VR.TILE;
-    let x = VR.lerp(cam.px, cam.x, a) - sw / 2, y = VR.lerp(cam.py, cam.y, a) - sh / 2;
+    let x = VR.lerp(c.px, c.x, a) - sw / 2, y = VR.lerp(c.py, c.y, a) - sh / 2;
     x = W <= sw ? (W - sw) / 2 : VR.clamp(x, 0, W - sw);
     y = H <= sh ? (H - sh) / 2 : VR.clamp(y, 0, H - sh);
     return [Math.round(x), Math.round(y)];
@@ -140,6 +142,7 @@
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
   let sayIdx = 0, hint = '', hintCar = null, holdT = 0;
   function update(dt) {
+    if (mode === 'title') { updateTitle(dt); return; }
     online.update(dt, player, car, teatro);
     if (teatro.on) { if (VR.input.pressed('menu')) { openMenu(); return; } if (teatro.update(dt, VR.input) === 'out' && cineDoor) { player.x = player.px = cineDoor.x; player.y = player.py = cineDoor.y + 14; player.dir = 'down'; } return; }
     if (mapOpen) {
@@ -226,6 +229,7 @@
   // ---------- dibujo ----------
   const tall = [];
   function render(a, dt) {
+    if (mode === 'title') { renderTitle(a, dt); return; }
     const ctx = VR.screen.ctx, sw = VR.screen.w, sh = VR.screen.h;
     if (teatro.on) { teatro.draw(ctx, sw, sh); return; }
     const [cx, cy] = camView(a);
@@ -307,11 +311,22 @@
   VR.input.onPad = (name, on) => { $('padInfo').textContent = on ? '🎮 Conectado: ' + name : 'Control desconectado.'; toast(on ? '🎮 Control conectado' : 'Control desconectado'); applyTouch(); };
 
   // ---------- portada / menú / pantalla completa ----------
-  function hideOverlay() { if (!$('ovGo').hidden) $('overlay').hidden = true; }
-  $('overlay').addEventListener('pointerdown', (e) => { e.preventDefault(); hideOverlay(); });
-  const menu = $('menu');
-  function openMenu() { if (menu.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; menu.showModal(); }
-  menu.addEventListener('close', () => { VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; });
+  function hideOverlay() { $('overlay').hidden = true; }
+  const menu = $('menu'), pause = $('pause'), credits = $('credits');
+  const resume = () => { VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; };
+  let cfgFrom = 'pause', afterPause = null;
+  // Esc / ☰ (10/11/2026, J0): pausa. Desde ahí: mapa, online, configuración (el menú de antes) o volver al menú principal
+  function openMenu() { if (mode !== 'game' || pause.open || menu.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; pause.showModal(); }
+  pause.addEventListener('close', () => { const f = afterPause; afterPause = null; if (f) f(); else resume(); });
+  pause.addEventListener('keydown', (e) => { if (e.code === 'KeyP') pause.close(); });
+  const pauseThen = (f) => { afterPause = f; pause.close(); };
+  function openConfig(from) { cfgFrom = from; VR.input.releaseAll(); VR.input.enabled = false; menu.showModal(); }
+  menu.addEventListener('close', () => { if (cfgFrom === 'pause' && mode === 'game') { VR.loop.paused = true; VR.input.enabled = false; pause.showModal(); } else resume(); }); // la configuración vuelve a donde estabas
+  $('pSeguir').onclick = () => pause.close();
+  $('pMapa').onclick = () => pauseThen(() => { resume(); openMap(); });
+  $('pOnline').onclick = () => pauseThen(() => { resume(); $('onDlg').showModal(); });
+  $('pConfig').onclick = () => pauseThen(() => openConfig('pause'));
+  $('pSalir').onclick = () => pauseThen(() => { resume(); if (cisnes.riding) toast('🦢 Bajate del cisne antes de salir'); else toTitle(); });
   $('btnMenu').onclick = openMenu;
   $('menuClose').onclick = () => menu.close();
   menu.addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !/INPUT/.test(e.target.tagName)) menu.close(); });
@@ -329,6 +344,7 @@
   };
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
+  seg('segFondo', 'fondo', () => title.setMode(settings.fondo));
   // ---- online ----
   const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player, enterCar, exitCar, cars }); $('btnJobs').onclick = () => changas.open();
   const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars, fauna, cisnes });
@@ -587,6 +603,7 @@
   addEventListener('resize', () => { if (miniReady) sizeMini(); });
   function drawMini(dt) {
     if (!miniReady || mapOpen) return;
+    if (!mini.width) sizeMini(); // mientras el título esconde el HUD el canvas mide 0
     miniT += dt; if (miniT < 1 / 30) return; miniT = 0;
     const D = mini.width, r = D / 2, src = $('mapCanvas');
     const want = car ? 0.9 + 0.8 * (1 - Math.min(1, Math.abs(car.v) / 240)) : 2.2; // px de minimapa (en px físicos/D·112) por baldosa
@@ -658,7 +675,109 @@
   addEventListener('resize', () => VR.screen.fit());
   addEventListener('orientationchange', () => setTimeout(() => VR.screen.fit(), 250));
   document.addEventListener('contextmenu', (e) => e.preventDefault());
+  // ---------- pantalla de título (J0, 10/11/2026; plan en claude/menu-plan.md) ----------
+  // El mundo corre detrás (tránsito, gente, fauna, cisnes, noche) con la cámara en travelling y sin jugador ni HUD.
+  const titleEl = $('title'), tBtns = [...titleEl.querySelectorAll('.tBtn')], tMenu = $('tMenu'), tTap = $('tTap'), tFade = $('tFade'), fadeEl = $('fade');
+  const title = new VR.Titulo(world, settings.fondo), TITLE_BASE = 330, FAR = { x: -1e5, y: -1e5 };
+  let tReady = false, tSel = 2, tNavT = 0, tLock = 0, tGoing = false;
+  VR.drawLogo($('tLogo'));
+  tTap.textContent = isTouch ? 'Tocá para empezar' : 'Apretá una tecla para empezar';
+  const paintSel = () => tBtns.forEach((b, i) => b.classList.toggle('sel', i === tSel && tReady));
+  // deja la calle con tránsito y gente adentro de la toma (se llama en negro, al cortar de una toma a otra)
+  function titleWarm(seconds) {
+    if (!traffic || !peds) return;
+    const c = title.cam, sw = VR.screen.w, sh = VR.screen.h, view = { x0: c.x - sw / 2, y0: c.y - sh / 2, x1: c.x + sw / 2, y1: c.y + sh / 2 };
+    for (let i = 0; i < seconds * 20; i++) { traffic.update(0.05, c, view, FAR, null); peds.update(0.05, c, view, null); }
+  }
+  title.onJump = () => titleWarm(6);
+  function enterTitle(first) {
+    mode = 'title'; document.body.classList.add('title'); titleEl.hidden = false; VR.screen.setBase(TITLE_BASE);
+    const sw0 = cisnes.list[0]; if (sw0) { sw0.auto = true; sw0.autoLook = sw0.autoLook || VR.av2Random(); sw0.pas = sw0.pas || VR.av2Random(); } // una pareja pasea en cisne
+    tReady = !first; tMenu.hidden = first; tTap.hidden = !first; tSel = 2; tLock = 0.3; paintSel();
+    tFade._f = -1; title.phase = 'play'; title.fade = 0; title.cut(true); titleWarm(6);
+  }
+  function showTitleMenu() { if (tReady || mode !== 'title') return; tReady = true; tTap.hidden = true; tMenu.hidden = false; tLock = 0.3; paintSel(); VR.audio.resume(); }
+  // pasar al juego con un fundido; "then" corre ya en el juego
+  function startGame(then) {
+    if (tGoing) return; tGoing = true; fadeEl.style.opacity = 1;
+    setTimeout(() => {
+      mode = 'game'; document.body.classList.remove('title'); titleEl.hidden = true;
+      const sw0 = cisnes.list[0]; if (sw0) sw0.auto = false; // el cisne vuelve solo al muelle
+      VR.screen.setBase(car ? DRIVE_BASE : WALK_BASE);
+      const f = car || player; cam.x = cam.px = f.x; cam.y = cam.py = f.y - (car ? 0 : 10); cam.lx = cam.ly = 0; hint = '';
+      resume(); applyTouch(); fadeEl.style.opacity = 0; tGoing = false;
+      if (then) then();
+    }, 450);
+  }
+  // volver al menú principal (desde la pausa): guarda y entra al título con un fundido
+  function toTitle() {
+    if (online.ride) online.leave(player, world);
+    if (online.peer) online.stop();
+    if (teatro.on) { teatro.exit(); if (cineDoor) { player.x = player.px = cineDoor.x; player.y = player.py = cineDoor.y + 14; player.dir = 'down'; } }
+    if (mapOpen) closeMap();
+    savePos(); VR.input.releaseAll(); tGoing = true; fadeEl.style.opacity = 1;
+    setTimeout(() => { enterTitle(false); fadeEl.style.opacity = 0; tGoing = false; }, 450);
+  }
+  const ACT = {
+    historia: () => toast('📖 El modo Historia llega pronto'),
+    multi: () => startGame(() => { VR.input.releaseAll(); $('onDlg').showModal(); }), // juega en modo Libre; ahí crea o se une a una sala
+    libre: () => startGame(),
+    config: () => openConfig('title'),
+    creditos: () => { VR.input.releaseAll(); VR.input.enabled = false; credits.showModal(); },
+  };
+  credits.addEventListener('close', () => resume());
+  $('credClose').onclick = () => credits.close();
+  tBtns.forEach((b, i) => {
+    b.onpointerenter = () => { if (tReady && !b.classList.contains('dis')) { tSel = i; paintSel(); } };
+    b.onclick = () => { if (!tReady || tGoing) return; if (!b.classList.contains('dis')) { tSel = i; paintSel(); } ACT[b.dataset.a](); };
+  });
+  titleEl.addEventListener('pointerdown', () => showTitleMenu());
+  addEventListener('keydown', (e) => { if (mode === 'title' && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(Shift|Control|Alt|Meta)/.test(e.code) && !document.querySelector('dialog[open]')) showTitleMenu(); });
+  function titleNav(dt) {
+    if (tGoing || document.querySelector('dialog[open]')) return;
+    tLock -= dt; tNavT -= dt;
+    if (!tReady) { if (tLock <= 0 && ['action', 'car', 'menu', 'run'].some((b) => VR.input.pressed(b))) showTitleMenu(); return; }
+    if (tLock > 0) return;
+    const ay = VR.input.ay;
+    if (Math.abs(ay) > 0.6 && tNavT <= 0) {
+      const on = tBtns.map((b, i) => (b.classList.contains('dis') ? -1 : i)).filter((i) => i >= 0), k = on.indexOf(tSel);
+      tSel = on[(k + (ay > 0 ? 1 : on.length - 1)) % on.length]; paintSel(); tNavT = 0.22;
+    } else if (Math.abs(ay) < 0.3) tNavT = 0;
+    if (VR.input.pressed('action')) ACT[tBtns[tSel].dataset.a]();
+  }
+  function updateTitle(dt) {
+    title.update(dt);
+    const c = title.cam, sw = VR.screen.w, sh = VR.screen.h, view = { x0: c.x - sw / 2, y0: c.y - sh / 2, x1: c.x + sw / 2, y1: c.y + sh / 2 };
+    VR.playerCar = null; VR.audioCam = c;
+    world.updateDynamic(dt);
+    if (title.phase !== 'black') { if (traffic) traffic.update(dt, c, view, FAR, null); if (peds) peds.update(dt, c, view, null); }
+    cisnes.update(dt, VR.input); fauna.update(dt, c, []);
+    VR.audio.engine(null, dt); if (emer) emer.siren.update(dt, null, 0, false); // sin motor ni sirenas del juego
+    titleNav(dt);
+  }
+  function renderTitle(a, dt) {
+    const ctx = VR.screen.ctx, sw = VR.screen.w, sh = VR.screen.h, [cx, cy] = camView(a, title.cam);
+    ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
+    world.draw(ctx, cx, cy, sw, sh);
+    world.warm(cx, cy, sw, sh);
+    tall.length = 0;
+    world.collectTall(cx, cy, sw, sh, tall);
+    fauna.drawGround(ctx, cx, cy, sw, sh);
+    cisnes.draw(ctx, cx, cy, night, null);
+    if (peds) peds.collect(cx, cy, sw, sh, a, tall);
+    fauna.collect(cx, cy, sw, sh, tall);
+    const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
+    for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
+    tall.sort((p, q) => p.sy - q.sy);
+    for (const t of tall) t.draw(ctx);
+    night.update(Math.min(0.1, dt || 0.016), settings.hora);
+    night.render(ctx, cx, cy, sw, sh, vis);
+    if (tFade._f !== title.fade) { tFade._f = title.fade; tFade.style.opacity = title.fade; }
+  }
+
   applyTouch();
+  hideOverlay();
+  if (!directo) enterTitle(true);
   VR.loop.start(update, render);
-  window.__vr = { get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { get mode() { return mode; }, title, startGame, toTitle, enterTitle, get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();
