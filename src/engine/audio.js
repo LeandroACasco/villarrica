@@ -43,6 +43,8 @@ VR.audio = {
   },
   crash(x, y, imp) { const v = this.near(x, y) * Math.min(0.35, imp / 900); if (v <= 0.01) return; this.noise(0.25 + imp / 1500, { vol: v, lp: 900 + imp * 2 }); this.tone(90, 0.12, { type: 'sine', vol: v * 0.8, f2: 45 }); if (imp > 160) this.noise(0.18, { vol: v * 0.35, lp: 6000, hp: 2500, at: 0.03 }); },
   boom(x, y) { const v = this.near(x, y, 900) * 0.5; if (v <= 0.01) return; this.noise(1.6, { vol: v, lp: 700 }); this.tone(70, 0.8, { type: 'sine', vol: v, f2: 28 }); this.noise(0.5, { vol: v * 0.3, lp: 4000, at: 0.05 }); },
+  blip() { this.tone(880 + Math.random() * 120, 0.04, { type: 'square', vol: 0.025 }); }, // cada línea de diálogo (J2)
+  coin() { this.tone(988, 0.07, { type: 'square', vol: 0.05 }); this.tone(1319, 0.16, { type: 'square', vol: 0.05, at: 0.07 }); }, // cobro o paso cumplido
   ouch(x, y) { const v = this.near(x, y, 300) * 0.05; if (v <= 0) return; const f = 300 + Math.random() * 180; this.tone(f, 0.18, { type: 'triangle', vol: v, f2: f * 0.6 }); },
   shot(x, y) { const v = this.near(x, y, 600) * 0.32; if (v <= 0.01) return; this.noise(0.16, { vol: v, lp: 3200, hp: 300 }); this.tone(160, 0.08, { type: 'square', vol: v * 0.5, f2: 60 }); },
   // ---- sonidos continuos: motor, agua y lanzallamas ----

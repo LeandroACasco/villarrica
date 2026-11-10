@@ -33,6 +33,28 @@
     background: rgba(12,12,16,.62); border-left: 3px solid var(--accent); padding: 4px 10px 5px 8px; border-radius: 0 8px 8px 0;
     display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
   body.historia .soloLibre, body.historia #pOnline { display: none !important; }
+  body:not(.historia) .soloHist { display: none !important; }
+  /* misiones (J2): objetivo arriba, caja de diálogo con carita abajo */
+  #misHud { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 58px); background: rgba(20,20,26,.84); color: #fff; font: 600 13px system-ui; padding: 5px 12px; border-radius: 10px; border: 1px solid #ff5fa2; z-index: 5; pointer-events: none; max-width: min(80vw, 560px); text-align: center; }
+  body:has(#misHud:not([hidden])) #jobHud { top: calc(env(safe-area-inset-top) + 90px); }
+  body:has(#misHud:not([hidden])) #toast { top: calc(env(safe-area-inset-top) + 96px); }
+  #dlgBox { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; padding: 0 10px calc(env(safe-area-inset-bottom) + 12px); background: linear-gradient(transparent 55%, rgba(0,0,0,.35)); cursor: pointer; }
+  #dlgBox[hidden] { display: none; }
+  #dlgBox .dlgIn { position: relative; display: flex; gap: 12px; align-items: flex-start; width: min(640px, 100%); box-sizing: border-box; background: rgba(18,18,24,.95); border: 2px solid #ece9e2; border-radius: 12px; padding: 10px 14px 12px 10px; box-shadow: 0 6px 0 rgba(0,0,0,.45); }
+  #dlgBox canvas { width: 96px; height: 96px; flex: none; image-rendering: pixelated; background: #2c3a4a; border: 2px solid #55555f; border-radius: 8px; }
+  #dlgBox canvas[hidden] { display: none; }
+  #dlgBox .dlgTx { flex: 1; min-width: 0; }
+  #dlgBox b { display: block; font: 800 15px system-ui; letter-spacing: .04em; margin-bottom: 3px; text-shadow: 0 2px 0 #000; }
+  #dlgBox p { margin: 0; font: 500 16px/1.4 system-ui; color: #fff; min-height: 2.8em; white-space: pre-wrap; }
+  #dlgBox.sis .dlgIn { border-color: #9fd8ff; }
+  #dlgBox .dlgOp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  #dlgBox .dlgOp:empty { display: none; }
+  #dlgBox .dlgOp button { text-align: left; background: var(--key); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; font: 600 14px system-ui; cursor: pointer; }
+  #dlgBox .dlgOp button.sel { background: var(--accent); color: #111; border-color: #ffd75e; }
+  #dlgBox .dlgMore { position: absolute; right: 12px; bottom: 6px; color: var(--accent); font-style: normal; animation: dlgB .8s infinite alternate; }
+  @keyframes dlgB { to { transform: translateY(3px); } }
+  @media (max-height: 460px) { #dlgBox canvas { width: 72px; height: 72px; } #dlgBox p { font-size: 14px; min-height: 2.6em; } #dlgBox .dlgOp button { padding: 6px 10px; font-size: 13px; } }
+  #banner small.sub { font-size: .3em; letter-spacing: .05em; margin: .5em 0 0; color: #ffd0e4; }
   body:not(.historia) #pHist { display: none !important; }
   #vBody .mv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text); padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
   #vBody .mv i { font-style: normal; color: var(--muted); font-size: 11px; }
@@ -320,7 +342,7 @@
     <h2>Pausa</h2>
     <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
     <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
-    <div class="row" id="pHist"><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
+    <div class="row" id="pHist"><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
     <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
   </div>
 </dialog>
@@ -370,6 +392,7 @@
     <label class="chk"><input type="checkbox" id="optArmas"> Armas (pistola y lanzallamas)</label>
     <div class="seg" id="segArma"><button data-v="pistola">🔫 Pistola</button><button data-v="lanzallamas">🔥 Lanzallamas</button></div>
     <label class="chk"><input type="checkbox" id="optSinEstrellas"> Las armas no suman estrellas</label>
+    <div class="row soloHist"><button class="btn" id="btnSaltar">⏭ Misión: saltar el paso</button><button class="btn" id="btnBarrios">🗺 Abrir todos los barrios</button></div>
     <div class="row soloLibre"><button class="btn" id="btnPlata">💵 +1.000.000 Gs. (para probar la tienda)</button></div>
     <p>Disparar: <kbd>E</kbd> (o <kbd>L</kbd>) · cambiar de arma: <kbd>Q</kbd> · control: <kbd>RB</kbd>/<kbd>Y</kbd> dispara, <kbd>LB</kbd> cambia · táctil: botón DISPARAR y tocar el arma arriba a la izquierda.</p>
     <div class="row soloLibre"><button class="btn" id="btnReset">📍 Volver a la Plaza de los Héroes</button></div>

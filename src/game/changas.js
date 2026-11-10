@@ -7,6 +7,7 @@ VR.Changas = class {
     this.hud = document.createElement('div'); this.hud.id = 'jobHud'; this.hud.hidden = true; document.body.append(this.hud);
     this.d = VR.dlg('changasDlg', '<h2>📋 Changas</h2><div class="seg" style="flex-direction:column"><button data-k="delivery">🍦 Delivery de helados · en moto</button><button data-k="taxi">🚖 Taxista · te damos el taxi</button><button data-k="chipa">🥐 Vender chipa · a pie</button><button data-k="no">Dejar la changa</button></div><p class="hint">Delivery: retirá en la Heladería Marimer y llevá a tiempo. Taxista: te damos un taxi, buscá al cliente y dejalo en el círculo; si chocás, paga la mitad. Chipa: acercate a la gente y ACCIÓN.</p><div class="seg"><button data-k="x">Cerrar</button></div>');
     this.d.querySelectorAll('button').forEach((b) => b.onclick = () => { const k = b.dataset.k; this.d.close(); VR.input.enabled = true; if (k !== 'x') this.start(k); });
+    this.lbl = {}; this.d.querySelectorAll('[data-k]').forEach((b) => { this.lbl[b.dataset.k] = b.textContent; });
     const m = (this.world.labels || []).find((l) => /Marimer/.test(l.text)); this.helad = m ? { x: m.x, y: m.y + 30, name: 'Heladería Marimer' } : null;
   }
   tutorial(k) {
@@ -32,21 +33,27 @@ VR.Changas = class {
     tall.push({ sy: J.dest.y + 6, draw: (g) => { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x, y - 1, 6, 2.5, 0, 0, 7); g.fill(); g.drawImage(L.get('down', 'idle', 0), x - 8, y - 31, 16, 32);
       const b = Math.sin(performance.now() / 150) * 2; g.font = '12px system-ui'; g.textAlign = 'center'; g.fillText('🙋', x + 9, y - 30 + b); } });
   }
-  open() { VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal(); }
-  pay(n, why) { n = Math.round(n / 1000) * 1000; VR.Wallet.add(n, why); this.toast('💵 +' + VR.fmtGs(n) + ' · ' + why); if (VR.audio.coin) VR.audio.coin(); }
+  // en Historia (J2) las changas se abren con las misiones: las cerradas muestran 🔒
+  open() {
+    if (VR.mis) this.d.querySelectorAll('[data-k]').forEach((b) => { const k = b.dataset.k; if (this.lbl[k] && k !== 'no' && k !== 'x') b.textContent = (VR.mis.changaOk(k) ? '' : '🔒 ') + this.lbl[k]; });
+    VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal();
+  }
+  pay(n, why) { n = Math.round(n / 1000) * 1000; VR.Wallet.add(n, why); this.toast('💵 +' + VR.fmtGs(n) + ' · ' + why); if (VR.audio.coin) VR.audio.coin(); if (VR.mis) VR.mis.emit('cobro', { n, why }); }
   spot(min, max, from) { // un punto de calle al azar entre min y max px
     const N = this.world.roads && this.world.roads.nodes; if (!N) return null;
-    for (let t = 0; t < 4000; t++) { if (t === 2000) { min *= 0.5; max *= 2; } const i = ((this.rnd() * N.length / 2) | 0) * 2, x = N[i], y = N[i + 1], d = Math.hypot(x - from.x, y - from.y); if (d > min && d < max) return { x, y, name: this.world.placeName ? this.world.placeName(x, y) || 'la dirección' : 'la dirección' }; }
+    for (let t = 0; t < 4000; t++) { if (t === 2000) { min *= 0.5; max *= 2; } const i = ((this.rnd() * N.length / 2) | 0) * 2, x = N[i], y = N[i + 1], d = Math.hypot(x - from.x, y - from.y); if (d > min && d < max && (t > 3500 || VR.Barrios.enPunto(this.world, x, y))) return { x, y, name: this.world.placeName ? this.world.placeName(x, y) || 'la dirección' : 'la dirección' }; }
     return null;
   }
-  start(k) {
+  start(k, force) { // force: la empieza una misión (sin mirar si está abierta)
     const car = this.getCar(), p = this.player;
     if (k === 'no') { this.end('Dejaste la changa'); return; }
+    if (VR.mis && !force && !VR.mis.changaOk(k)) { this.toast('🔒 Esta changa se abre con las misiones (📌 Pausa → Misiones)'); return; }
+    if (VR.mis && !VR.Barrios.enPunto(this.world, (car || p).x, (car || p).y)) { this.toast('🔒 ' + VR.Barrios.CARTEL + ': acá no hay changas todavía'); return; }
     if (VR.vida && k !== 'chipa' && !VR.vida.saldoOk()) { this.toast('📱 Sin saldo no te llegan changas por la app. Cargá saldo (solo la chipa se hace en persona)'); return; }
     if (k === 'delivery' && !(car && car.type === 'moto')) { this.toast('🏍 Para el delivery necesitás una moto'); return; }
     if (k === 'chipa' && car) { this.toast('🚶 Bajate para vender chipa'); return; }
     this.job = { k, stage: 0, t: 0, n: 0 };
-    this.tutorial(k);
+    if (!force) this.tutorial(k); // si la empieza una misión, ya lo explicó el diálogo
     if (k === 'delivery') { this.go(this.helad || this.spot(200, 600, p), 'Retirá el pedido'); }
     if (k === 'taxi') { // te damos un taxi amarillo al lado y te subís
       const f = car || p; let taxi = car && car.taxi ? car : null;
@@ -66,8 +73,9 @@ VR.Changas = class {
     if (!this.job || this.job.k !== 'chipa' || !this.peds) return false;
     const q = this.peds.greet(player.x, player.y); if (!q) { player.say('¡Chipa, chipa calentita!', 1.5); return true; }
     if (q.chipa) { q.say = { text: 'Ya te compré, che', t: 1.6 }; return true; }
+    if (VR.mis && !VR.Barrios.enPunto(this.world, player.x, player.y)) { q.say = { text: 'Ndaikuaái ndéve, che...', t: 1.6 }; return true; }
     q.chipa = true;
-    if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; this.pay(5000, 'chipa ' + this.job.n + '/10'); if (this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
+    if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; this.pay(5000, 'chipa ' + this.job.n + '/10'); if (VR.mis) VR.mis.emit('venta', { que: 'chipa' }); if (this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
     else q.say = { text: ['Nahániri', 'Otro día', 'Ya comí'][(this.rnd() * 3) | 0], t: 1.6 };
     return true;
   }

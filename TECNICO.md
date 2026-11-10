@@ -280,6 +280,17 @@ Escena aparte (no usa el mapa): `VR.Teatro` con su propio piso, butacas (`seats`
 - **HUD** (`vidaHud` en main.js): hora y hambre, saldo y pieza, deuda en rojo. **Pausa** en Historia: Billetera y Metas (`#vDlg`), sin Online; sin teletransporte (`teleport()` lo bloquea, se oculta "Ir ahí" y las opciones `.soloLibre`: hora del día, +1.000.000, volver a la plaza). La Billetera tiene botones **provisorios** para comer, cargar saldo y pagar la pieza hasta que existan la despensa y la pieza (J3). Menú → Configuración → "Empezar la Historia de cero".
 - Historia nueva arranca en una vereda de Santa Lucía (`spotInBarrio`) con 35.000 Gs. y una presentación (`maybeIntro`).
 
+### 6.19 Misiones, diálogos y barrios por historia (`misiones.js`, J2 de `claude/misiones-plan.md`, 10/11/2026)
+- **`VR.MISIONES`**: las misiones son datos (receta completa en el comentario de arriba de `misiones.js` y en 7.11). **`VR.Misiones`** (`VR.mis`, solo en Historia; en Libre es `null`): una misión activa (`s.act = { id, paso, n, t, v, check, vCheck, dlgOk, fallo }`), `s.hechas`, `s.cap`, `s.barrios`, `s.changas`; se guarda en `VR.store 'mis'` (con prefijo `h:`) en cada paso. Al arrancar, `entrar(paso, true)` retoma la misión guardada (pone el GPS y repite lo que haga falta) o `auto()` arranca la primera.
+- **Pasos:** `ir` (lugar o `{x,y,name}`; círculo rosa en el piso), `hablar` (personaje; ▼ rosa encima), `dlg` (diálogo al empezar, una vez), `esperar` (`{ev, n}`: cuenta eventos de `VR.mis.emit`), `cond(M)`, `limite` (s), `punto` (guardado para reintentar), `changa` (la deja usar aunque esté cerrada), `alEmpezar(M, reanuda)`, `alTerminar(M)`. `fallaSi` (en la misión o en el paso) = eventos que la hacen fallar → caja con "Reintentar desde el último punto" / "Más tarde".
+- **Eventos que manda el juego:** `come`, `saldo`, `pieza` (vida.js), `venta`, `cobro` (changas.js), `subir`, `bajar`, `arresto`, `explota`, `hospital` (main.js).
+- **Personajes** (`VR.PERSONAJES`): nombre, color, look del avatar 2, `lugar` (`'plaza'` o `{ en, dx, dy }`), `charla` (lo que dicen si no tienen nada para vos, en globo). Se dibujan en el mundo (miran hacia vos), con su nombre cerca y ▼ (te toca hablarle) o ! amarillo (te da una misión), también en el minimapa y el mapa grande. ACCIÓN cerca = hablar (`mis.near` / `mis.talk`). Solo aparecen en barrios abiertos, salvo que la misión los necesite.
+- **Lugares** (`VR.Lugares`, `VR.lugares.get(k)`): `pieza` (`vida.s.casa`, vereda de Santa Lucía a ~1 km de la plaza), `plaza`, `muni`, `marimer`, `aopora`, `parque`, `cisnes`, `cuartel` (Lomas Valentinas), `catedral`, `terminal`; siempre en un punto libre (`libre`).
+- **Diálogos** (`VR.Dialogo.show(lineas, fin, ctx)`, caja `#dlgBox`): pausa el loop, carita del avatar 2 (`VR.carita`, cabeza y hombros a k = 4), texto que se escribe solo, opciones (dedo, 1–4, flechas + Enter, cruceta + A). El control se lee con su propio `requestAnimationFrame` porque el loop está en pausa. Una opción que devuelve `false` corta el paso; si devuelve un arreglo de líneas, se dicen a continuación.
+- **Barrios por historia** (`VR.Barrios`): `abierto(nombre)`, `enPunto(world, x, y)`, `abrir(nombre)`. Empiezan abiertos Santa Lucía y Centro (`VR.BARRIOS_INICIO`); "Afueras" cuenta como abierto. En uno cerrado: cartel 🔒 con "Ndereikuaái gueteri avave ko'ápe", el GPS no marca destinos (`setDest(d)` sin `deMision`), no se empiezan changas, la gente no compra chipa y `Changas.spot` no elige direcciones ahí.
+- **Changas en Historia:** se abren con los premios de las misiones (`premio.changas`); las cerradas salen con 🔒 en 📋.
+- **Menú:** Pausa → 📌 Misiones (en curso con objetivo, marcar en el GPS, reintentar, dejar; para empezar; cumplidas; barrios). Configuración → Desarrollador (solo Historia): saltar el paso, abrir todos los barrios.
+
 ### 6.11 Tienda (`shop.js` + diálogo en `shell.html`)
 "Ao Porã": vende lo de `VR.AV2_CAT` con sus precios; guarda en `ropa:mia` y `look:propio`; la plata en `plata`. La puerta está en la decal `tienda`.
 
@@ -337,6 +348,12 @@ En `weapons.js`: entrada en `VR.WEAPONS` (daño, cadencia, alcance, dibujo), sum
 
 ### 7.7 Agregar un VEHÍCULO DE EMERGENCIA
 Modelo en `VR.CAR_MODELS` con `emer: 'tipo'` y `lights: ['r,g,b', 'r,g,b']` (ver `patrulla`, `ambulancia`, `bomba`); en `emerg.js` agregar el tipo de unidad en el despacho (buscar `model === 'bomba' ? 'bomberos'`).
+
+### 7.11 Agregar una MISIÓN (modo Historia)
+1. En `misiones.js`, si hace falta, un personaje nuevo en `VR.PERSONAJES` (look con el catálogo `VR.AV2_CAT`, `lugar`, `charla`) y un lugar nuevo en `VR.Lugares.base` (+ `VR.LUGAR_NOMBRE`).
+2. La misión en `VR.MISIONES` con `quien` (o `auto: true`), `req: { cap, mis }`, `oferta`, `pasos` y `premio` (plata, barrios, cap, changas, texto).
+3. Si un paso espera algo que el juego todavía no avisa, agregar `if (VR.mis) VR.mis.emit('evento', datos)` donde pasa (y anotarlo en 6.19).
+4. Probar con `?historia`: Configuración → Desarrollador → "saltar el paso" ayuda a llegar rápido; Pausa → Misiones muestra el estado.
 
 ### 7.8 Agregar textos en jopara
 Frases de peatones: `VR.PED_TALK` (peds.js). Gritos y policía: `VR.ALERTAS`, `VR.POLI_DICE` (emerg.js). Interfaz: `shell.html`.

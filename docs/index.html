@@ -33,6 +33,28 @@
     background: rgba(12,12,16,.62); border-left: 3px solid var(--accent); padding: 4px 10px 5px 8px; border-radius: 0 8px 8px 0;
     display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
   body.historia .soloLibre, body.historia #pOnline { display: none !important; }
+  body:not(.historia) .soloHist { display: none !important; }
+  /* misiones (J2): objetivo arriba, caja de diálogo con carita abajo */
+  #misHud { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 58px); background: rgba(20,20,26,.84); color: #fff; font: 600 13px system-ui; padding: 5px 12px; border-radius: 10px; border: 1px solid #ff5fa2; z-index: 5; pointer-events: none; max-width: min(80vw, 560px); text-align: center; }
+  body:has(#misHud:not([hidden])) #jobHud { top: calc(env(safe-area-inset-top) + 90px); }
+  body:has(#misHud:not([hidden])) #toast { top: calc(env(safe-area-inset-top) + 96px); }
+  #dlgBox { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; padding: 0 10px calc(env(safe-area-inset-bottom) + 12px); background: linear-gradient(transparent 55%, rgba(0,0,0,.35)); cursor: pointer; }
+  #dlgBox[hidden] { display: none; }
+  #dlgBox .dlgIn { position: relative; display: flex; gap: 12px; align-items: flex-start; width: min(640px, 100%); box-sizing: border-box; background: rgba(18,18,24,.95); border: 2px solid #ece9e2; border-radius: 12px; padding: 10px 14px 12px 10px; box-shadow: 0 6px 0 rgba(0,0,0,.45); }
+  #dlgBox canvas { width: 96px; height: 96px; flex: none; image-rendering: pixelated; background: #2c3a4a; border: 2px solid #55555f; border-radius: 8px; }
+  #dlgBox canvas[hidden] { display: none; }
+  #dlgBox .dlgTx { flex: 1; min-width: 0; }
+  #dlgBox b { display: block; font: 800 15px system-ui; letter-spacing: .04em; margin-bottom: 3px; text-shadow: 0 2px 0 #000; }
+  #dlgBox p { margin: 0; font: 500 16px/1.4 system-ui; color: #fff; min-height: 2.8em; white-space: pre-wrap; }
+  #dlgBox.sis .dlgIn { border-color: #9fd8ff; }
+  #dlgBox .dlgOp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  #dlgBox .dlgOp:empty { display: none; }
+  #dlgBox .dlgOp button { text-align: left; background: var(--key); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; font: 600 14px system-ui; cursor: pointer; }
+  #dlgBox .dlgOp button.sel { background: var(--accent); color: #111; border-color: #ffd75e; }
+  #dlgBox .dlgMore { position: absolute; right: 12px; bottom: 6px; color: var(--accent); font-style: normal; animation: dlgB .8s infinite alternate; }
+  @keyframes dlgB { to { transform: translateY(3px); } }
+  @media (max-height: 460px) { #dlgBox canvas { width: 72px; height: 72px; } #dlgBox p { font-size: 14px; min-height: 2.6em; } #dlgBox .dlgOp button { padding: 6px 10px; font-size: 13px; } }
+  #banner small.sub { font-size: .3em; letter-spacing: .05em; margin: .5em 0 0; color: #ffd0e4; }
   body:not(.historia) #pHist { display: none !important; }
   #vBody .mv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text); padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
   #vBody .mv i { font-style: normal; color: var(--muted); font-size: 11px; }
@@ -314,7 +336,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión f6b91d32 · 2026-11-10</div>
+  <div class="tVer">Versión 4d84ddd5 · 2026-11-10</div>
 </div>
 <div id="fade"></div>
 
@@ -323,7 +345,7 @@
     <h2>Pausa</h2>
     <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
     <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
-    <div class="row" id="pHist"><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
+    <div class="row" id="pHist"><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
     <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
   </div>
 </dialog>
@@ -373,6 +395,7 @@
     <label class="chk"><input type="checkbox" id="optArmas"> Armas (pistola y lanzallamas)</label>
     <div class="seg" id="segArma"><button data-v="pistola">🔫 Pistola</button><button data-v="lanzallamas">🔥 Lanzallamas</button></div>
     <label class="chk"><input type="checkbox" id="optSinEstrellas"> Las armas no suman estrellas</label>
+    <div class="row soloHist"><button class="btn" id="btnSaltar">⏭ Misión: saltar el paso</button><button class="btn" id="btnBarrios">🗺 Abrir todos los barrios</button></div>
     <div class="row soloLibre"><button class="btn" id="btnPlata">💵 +1.000.000 Gs. (para probar la tienda)</button></div>
     <p>Disparar: <kbd>E</kbd> (o <kbd>L</kbd>) · cambiar de arma: <kbd>Q</kbd> · control: <kbd>RB</kbd>/<kbd>Y</kbd> dispara, <kbd>LB</kbd> cambia · táctil: botón DISPARAR y tocar el arma arriba a la izquierda.</p>
     <div class="row soloLibre"><button class="btn" id="btnReset">📍 Volver a la Plaza de los Héroes</button></div>
@@ -395,7 +418,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión f6b91d32 · 2026-11-10</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 4d84ddd5 · 2026-11-10</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -537,7 +560,7 @@ VR.rng = (seed) => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>
 // Guardados separados por modo (J1, 10/11/2026): en Historia el progreso (posición, plata, ropa, vida…) lleva el prefijo
 // 'h:'; los ajustes (sonido, vibración, fps…) son los mismos en los dos modos. VR.store.ns lo fija main.js al arrancar.
 VR.store = {
-  ns: '', PROG: /^(pos:|dest:|plata$|ropa:mia$|look:propio$|pj$|vida$)/,
+  ns: '', PROG: /^(pos:|dest:|plata$|ropa:mia$|look:propio$|pj$|vida$|mis$)/,
   key(k) { return 'villarrica:' + (this.ns && this.PROG.test(k) ? this.ns : '') + k; },
   get(k, d) { try { const v = localStorage.getItem(this.key(k)); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(this.key(k), JSON.stringify(v)); } catch (e) {} },
@@ -869,6 +892,8 @@ VR.audio = {
   },
   crash(x, y, imp) { const v = this.near(x, y) * Math.min(0.35, imp / 900); if (v <= 0.01) return; this.noise(0.25 + imp / 1500, { vol: v, lp: 900 + imp * 2 }); this.tone(90, 0.12, { type: 'sine', vol: v * 0.8, f2: 45 }); if (imp > 160) this.noise(0.18, { vol: v * 0.35, lp: 6000, hp: 2500, at: 0.03 }); },
   boom(x, y) { const v = this.near(x, y, 900) * 0.5; if (v <= 0.01) return; this.noise(1.6, { vol: v, lp: 700 }); this.tone(70, 0.8, { type: 'sine', vol: v, f2: 28 }); this.noise(0.5, { vol: v * 0.3, lp: 4000, at: 0.05 }); },
+  blip() { this.tone(880 + Math.random() * 120, 0.04, { type: 'square', vol: 0.025 }); }, // cada línea de diálogo (J2)
+  coin() { this.tone(988, 0.07, { type: 'square', vol: 0.05 }); this.tone(1319, 0.16, { type: 'square', vol: 0.05, at: 0.07 }); }, // cobro o paso cumplido
   ouch(x, y) { const v = this.near(x, y, 300) * 0.05; if (v <= 0) return; const f = 300 + Math.random() * 180; this.tone(f, 0.18, { type: 'triangle', vol: v, f2: f * 0.6 }); },
   shot(x, y) { const v = this.near(x, y, 600) * 0.32; if (v <= 0.01) return; this.noise(0.16, { vol: v, lp: 3200, hp: 300 }); this.tone(160, 0.08, { type: 'square', vol: v * 0.5, f2: 60 }); },
   // ---- sonidos continuos: motor, agua y lanzallamas ----
@@ -6325,8 +6350,8 @@ VR.Vida = class {
   }
   gasta(n, why) { if (VR.Wallet.get() < n) { this.msg('💸 No te alcanza: ' + VR.fmtGs(n)); return false; } this.mueve(-n, why); return true; }
   // ---- cosas de la vida ----
-  come(precio, hambre, que) { if (!this.gasta(precio, que)) return false; this.s.hambre = Math.min(100, this.s.hambre + hambre); this.sync(); this.msg('🍽 ' + que + ' · −' + VR.fmtGs(precio)); return true; }
-  cargaSaldo() { if (!this.gasta(VR.PRECIOS.saldo, 'Saldo del celular')) return false; this.s.saldo += 3; this.msg('📱 Cargaste saldo · +3 días'); return true; }
+  come(precio, hambre, que) { if (!this.gasta(precio, que)) return false; this.s.hambre = Math.min(100, this.s.hambre + hambre); this.sync(); this.msg('🍽 ' + que + ' · −' + VR.fmtGs(precio)); if (VR.mis) VR.mis.emit('come', { que, precio }); return true; }
+  cargaSaldo() { if (!this.gasta(VR.PRECIOS.saldo, 'Saldo del celular')) return false; this.s.saldo += 3; this.msg('📱 Cargaste saldo · +3 días'); if (VR.mis) VR.mis.emit('saldo'); return true; }
   saldoOk() { return this.s.saldo > 0; }
   // pagarle a Ña Ramona: lo que debés (o lo que alcance); si no debés nada, adelanta la semana que viene
   pagaPieza() {
@@ -6335,6 +6360,7 @@ VR.Vida = class {
     this.mueve(-n, 'Pieza (Ña Ramona)'); P.saldo -= n;
     if (P.saldo <= 0) { if (P.fuera) { P.fuera = false; this.msg('🏠 Ña Ramona te dejó volver a la pieza'); } else this.msg('🏠 Pieza al día. "Aguyje, mitã"'); }
     else this.msg('🏠 Pagaste ' + VR.fmtGs(n) + ' · todavía debés ' + VR.fmtGs(P.saldo));
+    if (VR.mis) VR.mis.emit('pieza', { n });
     return true;
   }
   // ---- lo que se ve en el HUD ----
@@ -6769,6 +6795,7 @@ VR.Changas = class {
     this.hud = document.createElement('div'); this.hud.id = 'jobHud'; this.hud.hidden = true; document.body.append(this.hud);
     this.d = VR.dlg('changasDlg', '<h2>📋 Changas</h2><div class="seg" style="flex-direction:column"><button data-k="delivery">🍦 Delivery de helados · en moto</button><button data-k="taxi">🚖 Taxista · te damos el taxi</button><button data-k="chipa">🥐 Vender chipa · a pie</button><button data-k="no">Dejar la changa</button></div><p class="hint">Delivery: retirá en la Heladería Marimer y llevá a tiempo. Taxista: te damos un taxi, buscá al cliente y dejalo en el círculo; si chocás, paga la mitad. Chipa: acercate a la gente y ACCIÓN.</p><div class="seg"><button data-k="x">Cerrar</button></div>');
     this.d.querySelectorAll('button').forEach((b) => b.onclick = () => { const k = b.dataset.k; this.d.close(); VR.input.enabled = true; if (k !== 'x') this.start(k); });
+    this.lbl = {}; this.d.querySelectorAll('[data-k]').forEach((b) => { this.lbl[b.dataset.k] = b.textContent; });
     const m = (this.world.labels || []).find((l) => /Marimer/.test(l.text)); this.helad = m ? { x: m.x, y: m.y + 30, name: 'Heladería Marimer' } : null;
   }
   tutorial(k) {
@@ -6794,21 +6821,27 @@ VR.Changas = class {
     tall.push({ sy: J.dest.y + 6, draw: (g) => { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x, y - 1, 6, 2.5, 0, 0, 7); g.fill(); g.drawImage(L.get('down', 'idle', 0), x - 8, y - 31, 16, 32);
       const b = Math.sin(performance.now() / 150) * 2; g.font = '12px system-ui'; g.textAlign = 'center'; g.fillText('🙋', x + 9, y - 30 + b); } });
   }
-  open() { VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal(); }
-  pay(n, why) { n = Math.round(n / 1000) * 1000; VR.Wallet.add(n, why); this.toast('💵 +' + VR.fmtGs(n) + ' · ' + why); if (VR.audio.coin) VR.audio.coin(); }
+  // en Historia (J2) las changas se abren con las misiones: las cerradas muestran 🔒
+  open() {
+    if (VR.mis) this.d.querySelectorAll('[data-k]').forEach((b) => { const k = b.dataset.k; if (this.lbl[k] && k !== 'no' && k !== 'x') b.textContent = (VR.mis.changaOk(k) ? '' : '🔒 ') + this.lbl[k]; });
+    VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal();
+  }
+  pay(n, why) { n = Math.round(n / 1000) * 1000; VR.Wallet.add(n, why); this.toast('💵 +' + VR.fmtGs(n) + ' · ' + why); if (VR.audio.coin) VR.audio.coin(); if (VR.mis) VR.mis.emit('cobro', { n, why }); }
   spot(min, max, from) { // un punto de calle al azar entre min y max px
     const N = this.world.roads && this.world.roads.nodes; if (!N) return null;
-    for (let t = 0; t < 4000; t++) { if (t === 2000) { min *= 0.5; max *= 2; } const i = ((this.rnd() * N.length / 2) | 0) * 2, x = N[i], y = N[i + 1], d = Math.hypot(x - from.x, y - from.y); if (d > min && d < max) return { x, y, name: this.world.placeName ? this.world.placeName(x, y) || 'la dirección' : 'la dirección' }; }
+    for (let t = 0; t < 4000; t++) { if (t === 2000) { min *= 0.5; max *= 2; } const i = ((this.rnd() * N.length / 2) | 0) * 2, x = N[i], y = N[i + 1], d = Math.hypot(x - from.x, y - from.y); if (d > min && d < max && (t > 3500 || VR.Barrios.enPunto(this.world, x, y))) return { x, y, name: this.world.placeName ? this.world.placeName(x, y) || 'la dirección' : 'la dirección' }; }
     return null;
   }
-  start(k) {
+  start(k, force) { // force: la empieza una misión (sin mirar si está abierta)
     const car = this.getCar(), p = this.player;
     if (k === 'no') { this.end('Dejaste la changa'); return; }
+    if (VR.mis && !force && !VR.mis.changaOk(k)) { this.toast('🔒 Esta changa se abre con las misiones (📌 Pausa → Misiones)'); return; }
+    if (VR.mis && !VR.Barrios.enPunto(this.world, (car || p).x, (car || p).y)) { this.toast('🔒 ' + VR.Barrios.CARTEL + ': acá no hay changas todavía'); return; }
     if (VR.vida && k !== 'chipa' && !VR.vida.saldoOk()) { this.toast('📱 Sin saldo no te llegan changas por la app. Cargá saldo (solo la chipa se hace en persona)'); return; }
     if (k === 'delivery' && !(car && car.type === 'moto')) { this.toast('🏍 Para el delivery necesitás una moto'); return; }
     if (k === 'chipa' && car) { this.toast('🚶 Bajate para vender chipa'); return; }
     this.job = { k, stage: 0, t: 0, n: 0 };
-    this.tutorial(k);
+    if (!force) this.tutorial(k); // si la empieza una misión, ya lo explicó el diálogo
     if (k === 'delivery') { this.go(this.helad || this.spot(200, 600, p), 'Retirá el pedido'); }
     if (k === 'taxi') { // te damos un taxi amarillo al lado y te subís
       const f = car || p; let taxi = car && car.taxi ? car : null;
@@ -6828,8 +6861,9 @@ VR.Changas = class {
     if (!this.job || this.job.k !== 'chipa' || !this.peds) return false;
     const q = this.peds.greet(player.x, player.y); if (!q) { player.say('¡Chipa, chipa calentita!', 1.5); return true; }
     if (q.chipa) { q.say = { text: 'Ya te compré, che', t: 1.6 }; return true; }
+    if (VR.mis && !VR.Barrios.enPunto(this.world, player.x, player.y)) { q.say = { text: 'Ndaikuaái ndéve, che...', t: 1.6 }; return true; }
     q.chipa = true;
-    if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; this.pay(5000, 'chipa ' + this.job.n + '/10'); if (this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
+    if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; this.pay(5000, 'chipa ' + this.job.n + '/10'); if (VR.mis) VR.mis.emit('venta', { que: 'chipa' }); if (this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
     else q.say = { text: ['Nahániri', 'Otro día', 'Ya comí'][(this.rnd() * 3) | 0], t: 1.6 };
     return true;
   }
@@ -6853,6 +6887,451 @@ VR.Changas = class {
       this.hud.textContent = J.k === 'chipa' ? ico + ' Chipa vendidas: ' + J.n + '/10' : ico + ' ' + J.msg + (D && D.name ? ' · ' + D.name : '') + (J.k === 'delivery' && J.stage === 1 ? ' · ⏱ ' + Math.max(0, Math.ceil(J.lim - J.t)) + ' s' : '');
     }
   }
+};
+
+// ===== game/misiones.js =====
+// Motor de misiones del modo Historia (J2 de claude/misiones-plan.md, 10/11/2026).
+// Las misiones son DATOS (VR.MISIONES, más abajo): pasos con un objetivo, a dónde ir o con quién hablar, diálogos con
+// opciones, eventos que hay que juntar ("vendé 10 chipas") y premios. El motor (VR.Misiones) lleva una misión activa,
+// pone el marcador en el GPS, en el piso y en el minimapa, guarda en cada paso y sabe fallar y reintentar.
+// También: personajes en el mundo (VR.PERSONAJES), la caja de diálogo con carita (VR.Dialogo), los lugares con nombre
+// (VR.Lugares) y los barrios por historia (VR.Barrios). Solo existe en Historia: en Libre, VR.mis = null.
+//
+// ---- Cómo se escribe una misión (receta; ver también TECNICO.md) ----
+//   VR.MISIONES.id = { titulo, cap, desc, quien: 'kike' | auto: true, req: { cap, mis: ['m1'] },
+//     oferta: [líneas]  (lo que dice quien la da; se responde "¡Dale!" o "Después"),
+//     fallaSi: { hospital: 'motivo', arresto: 'motivo' },   // eventos que la hacen fallar (en cualquier paso)
+//     pasos: [ { id, obj: 'texto del objetivo',
+//               ir: 'lugar' | { x, y, name }, r: 40,             // llegar ahí (círculo en el piso + GPS)
+//               hablar: 'personaje', charla: [líneas],           // hablar con alguien (ACCIÓN cerca)
+//               dlg: [líneas],                                   // diálogo al empezar el paso (una sola vez)
+//               esperar: { ev: 'venta', n: 10, txt: 'vendidas' },// juntar eventos (VR.mis.emit)
+//               cond: (M) => bool,                               // o cualquier condición
+//               limite: 90,                                      // segundos reales; si se acaba, falla
+//               punto: true,                                     // punto de guardado para reintentar
+//               changa: 'chipa',                                 // changa que el paso deja usar aunque esté cerrada
+//               alEmpezar: (M, reanuda) => {}, alTerminar: (M) => {} } ],
+//     premio: { plata, barrios: ['Yvaroty'], cap: 2, changas: ['delivery'], texto } }
+//   Líneas de diálogo: ['quien', 'texto'] (quien = clave de VR.PERSONAJES, 'yo' o 'sis' para el sistema), o
+//   { quien, txt, op: [['Opción', (M) => …], …] }. Una opción que devuelve false deja el paso como estaba.
+//   Eventos que ya manda el juego: come, saldo, pieza, venta (chipa), cobro, subir, bajar, hospital, arresto, explota.
+'use strict';
+
+// ---------------- lugares con nombre ----------------
+VR.Lugares = class {
+  constructor(world) { this.world = world; this.c = {}; }
+  label(re) { const l = (this.world.labels || []).find((x) => re.test(x.text)); return l ? { x: l.x, y: l.y } : null; }
+  // un punto donde se puede estar parado, lo más cerca posible de (x, y)
+  libre(x, y) {
+    const W = this.world, ok = (px, py) => !W.hits(px - 4, py - 4, px + 4, py) && W.get(Math.floor(px / VR.TILE), Math.floor(py / VR.TILE)) !== VR.T.WATER;
+    if (ok(x, y)) return { x, y };
+    for (let r = 4; r < 400; r += 4) for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2, px = Math.round(x + Math.cos(a) * r), py = Math.round(y + Math.sin(a) * r); if (ok(px, py)) return { x: px, y: py }; }
+    return { x, y };
+  }
+  base(k) {
+    const W = this.world, L = (re, dy = 0) => { const p = this.label(re); return p && { x: p.x, y: p.y + dy }; };
+    switch (k) {
+      case 'pieza': return VR.vida && VR.vida.s.casa;
+      case 'plaza': return L(/Plaza de los H/);
+      case 'muni': return L(/^Municipalidad/, 40);
+      case 'marimer': return L(/Marimer/, 30);
+      case 'aopora': return L(/Ao Por/, 26);
+      case 'parque': return L(/Parque Manuel/);
+      case 'cisnes': return L(/Paseo en cisne/);
+      case 'cuartel': return W.firehouse && { x: W.firehouse.x, y: W.firehouse.y + 20 };
+      case 'catedral': return L(/^Catedral/, 30);
+      case 'terminal': return L(/Terminal/);
+    }
+    return null;
+  }
+  // { x, y, name } de un lugar ('plaza'), con corrimiento opcional ({ en: 'plaza', dx, dy }) y ya en un punto libre
+  get(k) {
+    if (!k) return null;
+    if (typeof k === 'object' && k.x != null) return k;
+    const key = typeof k === 'string' ? k : k.en + ':' + (k.dx | 0) + ':' + (k.dy | 0);
+    if (this.c[key]) return this.c[key];
+    const nm = typeof k === 'string' ? k : k.en, b = this.base(nm); if (!b) return null;
+    const p = this.libre(b.x + (k.dx || 0), b.y + (k.dy || 0));
+    return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
+  }
+};
+VR.LUGAR_NOMBRE = { pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+  parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
+
+// ---------------- barrios por historia ----------------
+// Sin paredes: se puede ir a cualquier lado, pero en un barrio cerrado no hay changas ni misiones, el GPS no marca
+// destinos y al entrar sale un cartel. Fuera de los 8 barrios ("Afueras") cuenta como abierto.
+VR.BARRIOS_INICIO = ['Santa Lucía', 'Centro'];
+VR.Barrios = {
+  abiertos() { return VR.mis ? VR.mis.s.barrios : null; }, // null = todos (modo Libre)
+  abierto(nombre) { const A = this.abiertos(); return !A || !nombre || nombre === 'Afueras' || A.includes(nombre); },
+  enPunto(world, x, y) { return this.abierto(world.barrioName(x, y)); },
+  abrir(nombre) { const A = this.abiertos(); if (A && !A.includes(nombre)) { A.push(nombre); if (VR.mis) VR.mis.save(); return true; } return false; },
+  CARTEL: "Ndereikuaái gueteri avave ko'ápe",
+};
+
+// ---------------- personajes (todos inventados) ----------------
+// lugar: dónde están si ninguna misión los mueve. charla: lo que dicen si les hablás sin nada pendiente.
+VR.PERSONAJES = {
+  yo: { nombre: 'Vos', color: '#ffd84a' },
+  sis: { nombre: 'Villarrica', color: '#9fd8ff' },
+  ramona: { nombre: 'Ña Ramona', color: '#f29ac8', lugar: { en: 'pieza', dx: 14, dy: 0 }, dir: 'left',
+    look: { gender: 'f', skin: 2, build: 'panza', hair: 'rodete', hairColor: 5, top: 'camisaCorta', topColor: 7, bottom: 'pollera', bottomColor: 13, shoes: 'chinelas', shoesColor: 3, anteojos: true },
+    charla: ['¿Ha upéi, mitã? Sábado pe che cobráta, ani nde resarái.', "Ko ára hakueterei, ¿nderehaʼúi piko tereré?"] },
+  kike: { nombre: 'Kike', color: '#7fe08a', lugar: { en: 'plaza', dx: -150, dy: -60 }, dir: 'down',
+    look: { gender: 'm', skin: 3, build: 'flaco', hair: 'corto', hairColor: 0, beard: 'bigote', top: 'musculosa', topColor: 2, bottom: 'bermuda', bottomColor: 3, shoes: 'chinelas', shoesColor: 3, hat: 'gorraAtras', hatColor: 0, termo: true },
+    charla: ['Tengo una idea para hacernos ricos... después te cuento.', "¿Jaha jaikutu peteĩ tereré? Ko termo ro'ysã porã."] },
+  chela: { nombre: 'Doña Chela', color: '#ffb36b', lugar: { en: 'plaza', dx: -130, dy: 90 }, dir: 'down',
+    look: { gender: 'f', skin: 3, build: 'normal', hair: 'trenza', hairColor: 1, top: 'polo', topColor: 1, bottom: 'pollera', bottomColor: 10, shoes: 'chinelas', shoesColor: 1, hat: 'piri' },
+    charla: ['¡Chipa, chipa calentita! Recién salida del tatakua.', "Ko'ãga ko'ãga ojehupi pyahu."] },
+  lucas: { nombre: 'Lucas', color: '#8fd0ff', lugar: { en: 'marimer', dx: 0, dy: 8 }, dir: 'down',
+    look: { gender: 'm', skin: 1, build: 'normal', hair: 'flequillo', hairColor: 2, top: 'polo', topColor: 9, bottom: 'jean', bottomColor: 1, shoes: 'zapatillas', shoesColor: 1, hat: 'gorra', hatColor: 9 },
+    charla: ['Hoy hay mucho movimiento, che.'] },
+  benitez: { nombre: 'Suboficial Benítez', color: '#ffd84a', lugar: { en: 'cuartel', dx: 0, dy: 0 }, dir: 'down',
+    look: { gender: 'm', skin: 2, build: 'fornido', hair: 'rapado', hairColor: 0, beard: 'bigote', top: 'campera', topColor: 5, topColor2: 3, bottom: 'cargo', bottomColor: 3, shoes: 'botines', hat: 'casco', hatColor: 5 },
+    charla: ['Ore ndorekói sueldo, ñande ha\'e voluntario.'] },
+  cirilo: { nombre: 'Don Cirilo', color: '#d8b0ff', lugar: null, dir: 'down',
+    look: { gender: 'm', skin: 1, build: 'panza', hair: 'peinadoAtras', hairColor: 5, top: 'camisa', topColor: 1, bottom: 'vestir', bottomColor: 3, shoes: 'zapatos', lentes: true, reloj: true, cadenita: true },
+    charla: ['Si necesitás algo, ya sabés dónde estoy.'] },
+};
+
+// ---------------- carita para los diálogos ----------------
+VR.carita = (() => {
+  const cache = new Map();
+  return (look, key) => {
+    if (key && cache.has(key)) return cache.get(key);
+    const full = VR.av2Render(Object.assign({}, VR.AV2_DEFAULT, look), 'down', 'idle', 0, 4); // 64×128
+    const c = VR.canvas(48, 48), g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+    g.drawImage(full, 14, 1, 36, 36, 0, 0, 48, 48); // cabeza y hombros
+    if (key) cache.set(key, c);
+    return c;
+  };
+})();
+
+// ---------------- caja de diálogo ----------------
+// Pausa el juego. Avanza tocando la caja, con ACCIÓN/Espacio/Enter o el botón A del control; las opciones con
+// el dedo, con 1–4 o con flechas + Enter (en el control, cruceta + A).
+VR.Dialogo = {
+  el: null, cola: null, i: 0, onEnd: null, sel: 0, abierto: false,
+  init() {
+    if (this.el) return;
+    const d = document.createElement('div'); d.id = 'dlgBox'; d.hidden = true;
+    d.innerHTML = '<div class="dlgIn"><canvas width="48" height="48"></canvas><div class="dlgTx"><b></b><p></p><div class="dlgOp"></div></div><i class="dlgMore">▼</i></div>';
+    document.body.append(d); this.el = d; this.cv = d.querySelector('canvas'); this.nm = d.querySelector('b'); this.tx = d.querySelector('p'); this.op = d.querySelector('.dlgOp'); this.more = d.querySelector('.dlgMore');
+    d.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; e.preventDefault(); this.next(); });
+    addEventListener('keydown', (e) => {
+      if (!this.abierto) return;
+      const opts = this.op.querySelectorAll('button');
+      if (opts.length) {
+        const n = parseInt(e.key, 10); if (n >= 1 && n <= opts.length) { e.preventDefault(); opts[n - 1].click(); return; }
+        if (/Arrow(Up|Left)|KeyW|KeyA/.test(e.code)) { this.pick(this.sel - 1); e.preventDefault(); return; }
+        if (/Arrow(Down|Right)|KeyS|KeyD/.test(e.code)) { this.pick(this.sel + 1); e.preventDefault(); return; }
+        if (/Enter|Space|KeyJ/.test(e.code)) { e.preventDefault(); opts[this.sel].click(); }
+        return;
+      }
+      if (/Enter|Space|KeyJ|Escape/.test(e.code)) { e.preventDefault(); this.next(); }
+    }, true);
+  },
+  pick(i) { const o = this.op.querySelectorAll('button'); if (!o.length) return; this.sel = (i + o.length) % o.length; o.forEach((b, k) => b.classList.toggle('sel', k === this.sel)); },
+  // lineas: [['quien', 'texto'] | { quien, txt, op }]; ctx: lo que reciben las opciones (el motor de misiones)
+  show(lineas, onEnd, ctx) {
+    this.init(); this.cola = lineas.map((l) => Array.isArray(l) ? { quien: l[0], txt: l[1] } : l); this.i = 0; this.onEnd = onEnd; this.ctx = ctx;
+    if (!this.cola.length) { if (onEnd) onEnd(); return; }
+    this.abierto = true; this.el.hidden = false; this.wasPaused = VR.loop.paused; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true;
+    document.body.classList.add('dialogo'); this.line(); this.padLoop();
+  },
+  line() {
+    const L = this.cola[this.i], P = VR.PERSONAJES[L.quien] || { nombre: L.quien, color: '#fff' };
+    const look = L.quien === 'yo' ? (VR.myLook ? VR.myLook() : VR.AV2_DEFAULT) : P.look;
+    const g = this.cv.getContext('2d'); g.clearRect(0, 0, 48, 48); this.cv.hidden = !look;
+    if (look) g.drawImage(VR.carita(look, L.quien === 'yo' ? null : L.quien), 0, 0);
+    this.nm.textContent = L.quien === 'sis' ? (L.titulo || '') : P.nombre; this.nm.style.color = P.color; this.nm.hidden = L.quien === 'sis' && !L.titulo;
+    this.full = String(L.txt); this.n = 0; this.t0 = performance.now(); this.tx.textContent = ''; this.op.innerHTML = ''; this.more.hidden = true; this.sel = 0;
+    this.el.classList.toggle('sis', L.quien === 'sis');
+    if (VR.audio && VR.audio.blip) VR.audio.blip();
+  },
+  typing() { return this.n < this.full.length; },
+  tickText() {
+    if (!this.abierto) return;
+    if (this.typing()) { this.n = Math.min(this.full.length, Math.floor((performance.now() - this.t0) / 1000 * 55) + 1); this.tx.textContent = this.full.slice(0, this.n); if (!this.typing()) this.done(); }
+  },
+  done() { // terminó de escribirse: muestra opciones o la flechita
+    this.tx.textContent = this.full; const L = this.cola[this.i];
+    if (L.op) { this.op.innerHTML = ''; L.op.forEach(([t, fn], k) => { const b = document.createElement('button'); b.textContent = (k + 1) + '. ' + t; b.onclick = (e) => { e.stopPropagation(); this.choose(fn); }; this.op.append(b); }); this.pick(0); }
+    else this.more.hidden = false;
+  },
+  next() {
+    if (!this.abierto) return;
+    if (this.typing()) { this.n = this.full.length; this.done(); return; }
+    if (this.cola[this.i].op) return; // hay que elegir
+    this.i++; if (this.i < this.cola.length) this.line(); else this.close();
+  },
+  choose(fn) {
+    const r = fn ? fn(this.ctx) : undefined;
+    if (Array.isArray(r)) { this.cola.splice(this.i + 1, 0, ...r.map((l) => Array.isArray(l) ? { quien: l[0], txt: l[1] } : l)); } // la opción puede agregar más líneas
+    this.res = r; this.i++; if (this.i < this.cola.length) this.line(); else this.close();
+  },
+  close() {
+    this.abierto = false; this.el.hidden = true; document.body.classList.remove('dialogo');
+    VR.loop.paused = this.wasPaused; VR.input.releaseAll(); VR.input.enabled = true;
+    const f = this.onEnd, r = this.res; this.onEnd = null; this.res = undefined; if (f) f(r);
+  },
+  // el loop del juego está en pausa: el texto y el control de consola se atienden acá
+  padLoop() {
+    let prevA = true, prevU = true, prevD = true;
+    const step = () => {
+      if (!this.abierto) return;
+      this.tickText();
+      const gp = navigator.getGamepads ? Array.from(navigator.getGamepads()).find(Boolean) : null;
+      if (gp) {
+        const p = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed), a = p(0), u = p(12) || (gp.axes[1] || 0) < -0.6, d = p(13) || (gp.axes[1] || 0) > 0.6;
+        if (a && !prevA) { const o = this.op.querySelectorAll('button'); if (o.length && !this.typing()) o[this.sel].click(); else this.next(); }
+        if (u && !prevU) this.pick(this.sel - 1); if (d && !prevD) this.pick(this.sel + 1);
+        prevA = a; prevU = u; prevD = d;
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  },
+};
+
+// ---------------- el motor ----------------
+VR.Misiones = class {
+  constructor(o) { // o: { world, player, toast, setDest, getCar, vida, changas, banner }
+    Object.assign(this, o);
+    this.lug = new VR.Lugares(this.world); VR.lugares = this.lug;
+    const d = { cap: 1, barrios: VR.BARRIOS_INICIO.slice(), act: null, hechas: [], changas: [] };
+    const s = VR.store.get('mis', null); this.s = Object.assign(d, s || {});
+    this.npcs = {}; this.hT = 0; this.hud = document.createElement('div'); this.hud.id = 'misHud'; this.hud.hidden = true; document.body.append(this.hud);
+    this.ox = 0;
+  }
+  save() { if (!VR.wiped) VR.store.set('mis', this.s); }
+  get act() { return this.s.act; }
+  get mision() { return this.s.act && VR.MISIONES[this.s.act.id]; }
+  get paso() { const m = this.mision; return m && m.pasos[this.s.act.paso]; }
+  get vars() { return this.s.act ? this.s.act.v : {}; }
+  hecha(id) { return this.s.hechas.includes(id); }
+  changaOk(k) { const P = this.paso; return this.s.changas.includes(k) || !!(P && P.changa === k); } // abierta, o la usa el paso actual
+  // ---- personajes ----
+  npcLook(k) { const P = VR.PERSONAJES[k]; if (!this.npcs[k]) this.npcs[k] = VR.av2Lazy(P.look); return this.npcs[k]; }
+  dondeEsta(k) { const a = this.s.act, mv = a && a.v.pos && a.v.pos[k]; const P = VR.PERSONAJES[k]; const l = mv || (P && P.lugar); return l ? this.lug.get(l) : null; }
+  presentes() { // personajes que están en el mundo: en un barrio abierto, o que la misión necesita (el cuartel queda en Lomas Valentinas)
+    const out = [];
+    for (const k in VR.PERSONAJES) { if (k === 'yo' || k === 'sis') continue; const p = this.dondeEsta(k); if (p && (VR.Barrios.enPunto(this.world, p.x, p.y) || this.marca(k))) out.push([k, p]); }
+    return out;
+  }
+  // qué tiene para vos cada personaje: 'paso' (te toca hablarle), 'oferta' (te da una misión) o nada
+  marca(k) {
+    const P = this.paso; if (P && P.hablar === k) return 'paso';
+    if (!this.s.act) for (const id of this.disponibles()) if (VR.MISIONES[id].quien === k) return 'oferta';
+    return null;
+  }
+  near(player) {
+    let best = null, bd = 30;
+    for (const [k, p] of this.presentes()) { const d = Math.hypot(p.x - player.x, p.y - player.y); if (d < bd) { bd = d; best = { k, x: p.x, y: p.y, nombre: VR.PERSONAJES[k].nombre }; } }
+    return best;
+  }
+  // ACCIÓN cerca de un personaje
+  talk(n, player) {
+    const k = n.k, P = this.paso, mk = this.marca(k);
+    if (mk === 'paso') { this.dialogo(P.charla || [], () => { if (P.esperar || P.cond) return; this.siguiente(); }); return; }
+    if (mk === 'oferta') { const id = this.disponibles().find((i) => VR.MISIONES[i].quien === k); this.ofrecer(id); return; }
+    const ch = VR.PERSONAJES[k].charla || ['...']; this.bub = { k, text: ch[(this.ci = (this.ci || 0) + 1) % ch.length], t: 2.6 };
+    void player;
+  }
+  dialogo(lineas, fin) { VR.Dialogo.show(lineas, (r) => { if (r !== false && fin) fin(r); }, this); }
+  // ---- misiones disponibles ----
+  disponibles() {
+    const out = [];
+    for (const id in VR.MISIONES) {
+      const M = VR.MISIONES[id], r = M.req || {};
+      if (this.hecha(id) || (this.s.act && this.s.act.id === id)) continue;
+      if ((r.cap || 1) > this.s.cap) continue;
+      if (r.mis && !r.mis.every((x) => this.hecha(x))) continue;
+      out.push(id);
+    }
+    return out;
+  }
+  ofrecer(id) {
+    const M = VR.MISIONES[id], quien = M.quien || 'sis';
+    const ofe = (M.oferta || [[quien, M.desc]]).map((l) => Array.isArray(l) ? { quien: l[0], txt: l[1] } : { ...l });
+    ofe[ofe.length - 1] = { ...ofe[ofe.length - 1], op: [['¡Dale! (empezar «' + M.titulo + '»)', () => true], ['Después', () => false]] };
+    this.dialogo(ofe, () => this.empezar(id));
+  }
+  // ---- ciclo de una misión ----
+  empezar(id) {
+    const M = VR.MISIONES[id]; if (!M) return;
+    this.s.act = { id, paso: 0, n: 0, t: 0, v: {}, check: 0, dlgOk: false };
+    this.cartel('MISIÓN', M.titulo, 'cap. ' + (M.cap || 1));
+    this.entrar(0, false);
+  }
+  entrar(i, reanuda) {
+    const a = this.s.act, M = this.mision; if (!a || !M) return;
+    const P = M.pasos[i]; a.paso = i;
+    if (!reanuda) { a.n = 0; a.t = 0; a.dlgOk = false; if (P.punto) { a.check = i; a.vCheck = JSON.parse(JSON.stringify(a.v)); } }
+    this.save();
+    this.marcar();
+    if (P.alEmpezar) P.alEmpezar(this, reanuda);
+    const soloDlg = P.dlg && !P.ir && !P.hablar && !P.esperar && !P.cond;
+    if (P.dlg && !a.dlgOk) { this._dlgPend = () => this.dialogo(P.dlg, () => { if (!this.s.act || this.s.act.paso !== i) return; a.dlgOk = true; this.save(); if (soloDlg) this.siguiente(); }); }
+    else if (soloDlg) this.siguiente();
+  }
+  marcar() { // GPS al objetivo del paso
+    const P = this.paso; if (!P) return;
+    const t = this.objetivo(); if (t) this.setDest({ x: t.x, y: t.y, name: t.name, mis: 1 }, true);
+  }
+  objetivo() { const P = this.paso; if (!P) return null; if (P.ir) return this.lug.get(P.ir); if (P.hablar) { const p = this.dondeEsta(P.hablar); return p && { ...p, name: VR.PERSONAJES[P.hablar].nombre }; } return null; }
+  siguiente() {
+    const a = this.s.act, M = this.mision; if (!a || !M) return;
+    const P = M.pasos[a.paso]; if (P.alTerminar) P.alTerminar(this);
+    if (!this.s.act) return; // alTerminar pudo terminar o fallar la misión
+    if (a.paso + 1 < M.pasos.length) { if (VR.audio && VR.audio.coin) VR.audio.coin(); this.entrar(a.paso + 1, false); }
+    else this.cumplida();
+  }
+  cumplida() {
+    const a = this.s.act, M = this.mision, pr = M.premio || {}; this.s.act = null;
+    this.s.hechas.push(a.id);
+    const out = [];
+    if (pr.plata) { VR.Wallet.add(pr.plata, 'Misión «' + M.titulo + '»'); out.push('💵 +' + VR.fmtGs(pr.plata)); }
+    for (const b of pr.barrios || []) if (VR.Barrios.abrir(b)) out.push('🗺 Barrio abierto: ' + b);
+    for (const c of pr.changas || []) if (!this.s.changas.includes(c)) { this.s.changas.push(c); out.push('📋 Changa nueva: ' + (VR.CHANGA_NOMBRE[c] || c)); }
+    if (pr.cap && pr.cap > this.s.cap) { this.s.cap = pr.cap; out.push('📖 Capítulo ' + pr.cap + ': ' + (VR.CAPITULOS[pr.cap] || '')); }
+    if (pr.texto) out.push(pr.texto);
+    this.save(); this.setDest(null, true); this.hud.hidden = true;
+    this.cartel('MISIÓN CUMPLIDA', M.titulo);
+    if (VR.audio && VR.audio.coin) { VR.audio.coin(); setTimeout(() => VR.audio.coin(), 160); }
+    setTimeout(() => this.dialogo([{ quien: 'sis', titulo: '✔ ' + M.titulo, txt: out.join(' · ') || '¡Bien hecho!' }], () => this.auto()), 900);
+  }
+  fallar(motivo) {
+    const a = this.s.act, M = this.mision; if (!a) return;
+    this.cartel('MISIÓN FALLIDA', M.titulo); this.setDest(null, true);
+    a.fallo = motivo; this.save();
+    setTimeout(() => this.dialogo([{ quien: 'sis', titulo: '✖ ' + M.titulo, txt: motivo + '. ¿Probás de nuevo?', op: [['Reintentar desde el último punto', () => { this.reintentar(); }], ['Más tarde', () => { this.abandonar(true); }]] }]), 700);
+  }
+  reintentar() { const a = this.s.act; if (!a) return; a.fallo = null; a.v = a.vCheck ? JSON.parse(JSON.stringify(a.vCheck)) : a.v; this.entrar(a.check || 0, false); this.toast('🔁 Reintentando «' + this.mision.titulo + '»'); }
+  abandonar(callado) { const a = this.s.act; if (!a) return; const M = this.mision; this.s.act = null; this.save(); this.setDest(null, true); this.hud.hidden = true; if (!callado) this.toast('Dejaste «' + M.titulo + '» para después'); }
+  // misiones que arrancan solas (la primera de la Historia)
+  auto() { if (this.s.act || (VR.Dialogo.abierto)) return; const id = this.disponibles().find((i) => VR.MISIONES[i].auto); if (id) this.empezar(id); }
+  // ---- eventos del juego ----
+  emit(ev, data) {
+    const a = this.s.act, M = this.mision; if (!a || a.fallo) return;
+    if (M.fallaSi && M.fallaSi[ev]) { this.fallar(M.fallaSi[ev]); return; }
+    const P = this.paso; if (P.fallaSi && P.fallaSi[ev]) { this.fallar(P.fallaSi[ev]); return; }
+    if (P.esperar && P.esperar.ev === ev && (!P.esperar.si || P.esperar.si(data, this))) {
+      if (P.dlg && !a.dlgOk) return;
+      a.n++; this.save(); this.hT = 0;
+      if (a.n >= (P.esperar.n || 1)) this.siguiente();
+    }
+  }
+  // ---- cada paso de lógica ----
+  update(dt, player, car) {
+    if (VR.Dialogo.abierto) return;
+    if (this._dlgPend) { const f = this._dlgPend; this._dlgPend = null; f(); return; }
+    if (this.bub) { this.bub.t -= dt; if (this.bub.t <= 0) this.bub = null; }
+    const a = this.s.act, P = this.paso; if (!a || !P || a.fallo) { this.hud.hidden = true; return; }
+    a.t += dt;
+    if (P.dlg && !a.dlgOk) return;
+    const f = car || player;
+    if (P.limite && a.t > P.limite) { this.fallar('Se acabó el tiempo'); return; }
+    if (P.ir && !P.hablar && !P.esperar && !P.cond) { const t = this.lug.get(P.ir); if (t && Math.hypot(f.x - t.x, f.y - t.y) < (P.r || 40)) { this.siguiente(); return; } }
+    if (P.cond && P.cond(this, f)) { this.siguiente(); return; }
+    // cartel del objetivo
+    if ((this.hT -= dt) <= 0) {
+      this.hT = 0.25; const M = this.mision;
+      let tx = '📌 ' + M.titulo + ' · ' + (typeof P.obj === 'function' ? P.obj(this) : P.obj);
+      if (P.esperar && P.esperar.n > 1) tx += ' (' + a.n + '/' + P.esperar.n + ')';
+      if (P.limite) tx += ' · ⏱ ' + Math.max(0, Math.ceil(P.limite - a.t)) + ' s';
+      if (this.hud.textContent !== tx) this.hud.textContent = tx; this.hud.hidden = false;
+    }
+  }
+  // ---- dibujo ----
+  drawGround(g, cx, cy) {
+    const P = this.paso; if (!P || !P.ir || P.hablar || (this.s.act && this.s.act.fallo)) return;
+    const t = this.lug.get(P.ir); if (!t) return;
+    const x = t.x - cx, y = t.y - cy, s = performance.now() / 1000, r = Math.min(P.r || 40, 40) * 0.7 + Math.sin(s * 4) * 2;
+    if (x < -60 || y < -60 || x > VR.screen.w + 60 || y > VR.screen.h + 60) return;
+    g.save(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,95,162,.95)'; g.fillStyle = 'rgba(255,95,162,.2)';
+    g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.stroke(); g.setLineDash([4, 4]); g.beginPath(); g.arc(x, y, r - 6, 0, 7); g.stroke(); g.restore();
+  }
+  collect(cx, cy, tall, player) {
+    const sw = VR.screen.w, sh = VR.screen.h, now = performance.now();
+    for (const [k, p] of this.presentes()) {
+      const x = Math.round(p.x - cx), y = Math.round(p.y - cy); if (x < -24 || y < -48 || x > sw + 24 || y > sh + 24) continue;
+      const P = VR.PERSONAJES[k], L = this.npcLook(k), mk = this.marca(k);
+      const dx = player.x - p.x, dy = player.y - p.y, dir = Math.hypot(dx, dy) < 70 ? (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')) : (P.dir || 'down');
+      tall.push({ sy: p.y, draw: (g) => {
+        g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, y - 1, 5.5, 2.3, 0, 0, 7); g.fill();
+        g.drawImage(L.get(dir, 'idle', 0), x - 8, y - 31, 16, 32);
+        if (mk) { const b = Math.sin(now / 180) * 2.5, yy = y - 44 + b; g.save(); g.fillStyle = mk === 'paso' ? '#ff5fa2' : '#ffd84a'; g.strokeStyle = '#1a1a1e'; g.lineWidth = 2;
+          g.beginPath(); g.moveTo(x - 6, yy - 8); g.lineTo(x + 6, yy - 8); g.lineTo(x, yy); g.closePath(); g.stroke(); g.fill();
+          if (mk === 'oferta') { g.fillStyle = '#1a1a1e'; g.fillRect(x - 1, yy - 7, 2, 3); } g.restore(); }
+        if (this.bub && this.bub.k === k) VR.Player.prototype.drawBubble.call({ bubble: this.bub, px: p.x, x: p.x, py: p.y + 6, y: p.y + 6 }, g, cx, cy, 1);
+        if (Math.hypot(dx, dy) < 90) VR.gfx.text(g, P.nombre, x, y + 3, P.color, { center: true, shadow: '#1a1a1e', size: 7 });
+      } });
+    }
+  }
+  // íconos para el minimapa y el mapa grande: { x, y, c (color), ico }
+  marcas() {
+    const out = [];
+    for (const [k, p] of this.presentes()) { const mk = this.marca(k); if (mk) out.push({ x: p.x, y: p.y, c: mk === 'paso' ? '#ff5fa2' : '#ffd84a', ico: mk === 'paso' ? '▼' : '!', name: VR.PERSONAJES[k].nombre }); }
+    const P = this.paso; if (P && P.ir && !P.hablar) { const t = this.lug.get(P.ir); if (t) out.push({ x: t.x, y: t.y, c: '#ff5fa2', ico: '●', name: t.name }); }
+    return out;
+  }
+  cartel(chico, grande, sub) { if (this.banner) this.banner(chico, grande, sub); }
+  // ---- para el menú (Pausa → Misiones) y el modo desarrollador ----
+  resumen() {
+    const a = this.s.act, M = this.mision, P = this.paso;
+    return { act: a && { id: a.id, titulo: M.titulo, cap: M.cap, obj: P ? (typeof P.obj === 'function' ? P.obj(this) : P.obj) : '', paso: a.paso + 1, de: M.pasos.length, fallo: a.fallo },
+      disp: this.disponibles().map((id) => { const X = VR.MISIONES[id]; const q = X.quien && this.dondeEsta(X.quien); return { id, titulo: X.titulo, cap: X.cap, quien: X.quien && VR.PERSONAJES[X.quien].nombre, auto: X.auto, donde: q && q.name, desc: X.desc }; }),
+      hechas: this.s.hechas.map((id) => ({ id, titulo: (VR.MISIONES[id] || {}).titulo || id })), cap: this.s.cap, barrios: this.s.barrios };
+  }
+  marcarOferta(id) { const X = VR.MISIONES[id], q = X && X.quien && this.dondeEsta(X.quien); if (q) this.setDest({ x: q.x, y: q.y, name: VR.PERSONAJES[X.quien].nombre }, true); }
+  saltar() { if (this.s.act && !VR.Dialogo.abierto) { this._dlgPend = null; this.siguiente(); } }
+};
+VR.CAPITULOS = { 1: "Pirapire'ỹ", 2: "Ñamopu'ã", 3: 'Tape pyahu', 4: "Mba'apo" };
+VR.CHANGA_NOMBRE = { chipa: 'vender chipa', delivery: 'delivery de helados', taxi: 'taxista' };
+
+// ======================================================================================================
+// Misiones (datos). Diálogos en jopara de ejemplo: los revisa Leandro con el equipo antes de dejarlos fijos.
+// ======================================================================================================
+VR.MISIONES = {
+  // M1 «Pirapire'ỹ» (cap. 1, tutorial). Versión J2: usa la changa de chipa que ya existe. En J3 llegan el canasto con
+  // stock, el fiado de Doña Chela y la despensa para el saldo (por ahora el saldo se carga desde la Billetera).
+  m1: {
+    titulo: "Pirapire'ỹ", cap: 1, auto: true, desc: 'Sin plata en Santa Lucía: hay que pagar la pieza, comer y conseguir una changa.',
+    fallaSi: { hospital: 'Te desmayaste y te llevaron al hospital' },
+    pasos: [
+      { id: 'ramona', obj: 'Hablá con Ña Ramona', hablar: 'ramona', punto: true,
+        charla: [['ramona', "¡Mitã! Ko pieza nahániri gratis. Sábado pe che cobráta, ¿oíchepa? Ani reñemokañy."],
+          ['yo', 'Sí, Ña Ramona... el sábado le pago.'],
+          ['ramona', "Ha mba'éicha piko repagáta, nde pirapire'ỹ. Eho Centro-pe, oĩ hína tembiapo upépe. Ha ani rejapo tavy."]] },
+      { id: 'centro', obj: 'Andá a pie a la Plaza de los Héroes', ir: 'plaza', r: 120, punto: true },
+      { id: 'chipa', obj: 'Tenés hambre: comprale una chipa a Doña Chela', hablar: 'chela',
+        charla: [{ quien: 'chela', txt: "¡Chipa, chipa calentita! ¿Mboýpa reipota, che memby?", op: [
+          ['Una chipa (' + VR.fmtGs(5000) + ')', (M) => M.vida.come(VR.PRECIOS.chipa, 15, 'Chipa de Doña Chela') ? [['chela', 'Tomá, piro\'y porã. Ani rejapo pochy, ¿ajépa?']] : false],
+          ['Ahora no', () => false]] }],
+        esperar: { ev: 'come' } },
+      { id: 'kike', obj: 'Kike está en la plaza con el tereré: andá a saludarlo', hablar: 'kike', punto: true,
+        charla: [['kike', "¿Mba'éichapa, che ra'a? Nde rova piro'y… Ndarekói piko pirapire?"],
+          ['yo', 'Nada, Kike. Me quedé sin changa y Ña Ramona me cobra el sábado.'],
+          ['kike', "Jaha, Doña Chela oikotevẽ peteĩ vendedor. Vos tenés cara de vender chipa, che. ¡Eho!"]] },
+      { id: 'chela2', obj: 'Pedile trabajo a Doña Chela', hablar: 'chela',
+        charla: [['yo', 'Doña Chela, ¿necesita alguien que le venda chipa?'],
+          ['chela', "Kike he'i ndéve, ¿ajépa? Bueno. Ko canasto... te lo presto hoy, mañana hablamos de plata."],
+          ['chela', 'Andá por la plaza y frente a la Municipalidad. Parate al lado de la gente y ofrecé. ¡Pero con ganas!']],
+        alTerminar: (M) => { if (M.changas) M.changas.start('chipa', true); } },
+      { id: 'vender', obj: 'Vendé chipa a la gente (ACCIÓN al lado de alguien)', esperar: { ev: 'venta', n: 10 }, punto: true, changa: 'chipa',
+        alEmpezar: (M) => { if (M.changas && !(M.changas.job && M.changas.job.k === 'chipa')) M.changas.start('chipa', true); } },
+      { id: 'saldo', obj: 'Cargá saldo en el celular (Pausa → Billetera)', esperar: { ev: 'saldo' },
+        cond: (M) => M.vida.s.saldo > 0,
+        dlg: [['kike', '¡Epa, vendiste todo! Ahora cargá saldo al celular, así te llegan changas por la app.']] },
+      { id: 'volver', obj: 'Volvé a la pieza y hablá con Ña Ramona', hablar: 'ramona', punto: true,
+        charla: [{ quien: 'ramona', txt: "¿Ha? ¿Ya volviste? Sábado pe che cobráta, pero si querés adelantar algo...", op: [
+          ['Adelantarle ' + VR.fmtGs(50000), (M) => { const P = M.vida.s.pieza; if (VR.Wallet.get() < 50000) return [['ramona', "Ndaipóri piko? Bueno, sábado pe."]]; M.vida.mueve(-50000, 'Pieza (adelanto a Ña Ramona)'); P.saldo -= 50000; return [['ramona', "¡Aguyje, mitã! Rejapo porã. Ko'ẽrõ peve."]]; }],
+          ['El sábado le pago todo', () => [['ramona', 'Bueno... pero el sábado, ¿eh? Ani nde resarái.']]]] }] },
+    ],
+    premio: { changas: ['chipa'], texto: 'Ya podés vender chipa cuando quieras (📋 Changas). Sigue en la etapa J3: canasto propio y despensa.' },
+  },
 };
 
 // ===== game/panel.js =====
@@ -8251,7 +8730,18 @@ VR.Titulo = class {
     }
     return null;
   }
-  const histStart = vida && !saved ? spotInBarrio(/Santa Luc/i) : null;
+  // tu pieza (J2: ahí está Ña Ramona): una vereda de Santa Lucía a ~1 km de la Plaza de los Héroes, así la primera caminata al Centro es corta
+  function casaSpot() {
+    const bi = world.barrios.findIndex((n) => /Santa Luc/i.test(n)) + 1, pl = world.labels.find((l) => /Plaza de los H/.test(l.text)); if (!bi || !pl) return spotInBarrio(/Santa Luc/i);
+    const w = world.w, S = VR.TILE, want = 1000 * 8; let best = null, bd = Infinity;
+    for (let i = 0; i < world.barrio.length; i++) {
+      if (world.barrio[i] !== bi) continue; const tx = i % w, ty = (i / w) | 0; if (world.get(tx, ty) !== VR.T.SIDEWALK) continue;
+      const x = tx * S + 8, y = ty * S + 10, d = Math.abs(Math.hypot(x - pl.x, y - pl.y) - want); if (d < bd && !world.hits(x - 4, y - 4, x + 4, y)) { bd = d; best = { x, y }; }
+    }
+    return best || spotInBarrio(/Santa Luc/i);
+  }
+  if (vida && !vida.s.casa) { const c = casaSpot(); if (c) { vida.s.casa = c; vida.save(); } }
+  const histStart = vida && !saved ? vida.s.casa : null;
   const start = histStart || (saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn);
   const player = new VR.Player(world, start.x, start.y);
   if (saved && saved.dir) player.dir = saved.dir;
@@ -8268,8 +8758,8 @@ VR.Titulo = class {
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
   const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
-    onBusted: () => sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'),
-    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al hospital.'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); } });
+    onBusted: () => { sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'); if (VR.mis) VR.mis.emit('arresto'); },
+    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al hospital.'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
   const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
@@ -8277,7 +8767,7 @@ VR.Titulo = class {
   VR.audio.setOn(VR.store.get('snd', true));
   if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
     vida.onMsg = (m) => toast(m);
-    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios)); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); };
+    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios)); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
   }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg) {
@@ -8315,8 +8805,10 @@ VR.Titulo = class {
     if (c.type === 'moto') c.rider = me();
     car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
+    if (VR.mis) VR.mis.emit('subir', c);
   }
   function exitCar() {
+    if (VR.mis) VR.mis.emit('bajar', car);
     const c = car, a = c.a, rx = Math.cos(a), ry = Math.sin(a), fx = Math.sin(a), fy = -Math.cos(a);
     const tries = [];
     const w0 = c.WID / 2 + 6, l0 = c.LEN / 2 + 8;
@@ -8438,15 +8930,18 @@ VR.Titulo = class {
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       const nsw = !nc ? cisnes.near(player) : null;
       if (nsw) { hint = (VR.input.source === 'touch' ? '🦢 Paseo' : VR.input.source === 'pad' ? 'X: paseo en cisne' : 'F: paseo en cisne') + ' · ' + VR.fmtGs(VR.CISNE_PRECIO); hintCar = { x: nsw.x, y: nsw.y - 8 }; }
+      const nn = mis && !nc && !nsw ? mis.near(player) : null; // personajes de la Historia (J2)
+      if (nn) { hint = (VR.input.source === 'touch' ? '💬 ' : VR.input.source === 'pad' ? '💬 A: ' : '💬 Espacio: ') + nn.nombre; hintCar = { x: nn.x, y: nn.y - 14 }; }
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) enterCar(nc); else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
+    if (mis) mis.update(dt, player, car);
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
     updateCamera(dt);
@@ -8485,13 +8980,14 @@ VR.Titulo = class {
     world.draw(ctx, cx, cy, sw, sh);
     world.warm(cx, cy, sw, sh);
     changas.drawGround(ctx, cx, cy);
+    if (mis) mis.drawGround(ctx, cx, cy);
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall);
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) mis.collect(cx, cy, tall, player);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
@@ -8524,10 +9020,10 @@ VR.Titulo = class {
       const b = world.barrioName(player.x, player.y - 2) || (world.barrios.length ? 'Afueras' : 'Villarrica');
       if (b !== barrio) {
         if (barrio) {
-          const bn = $('banner'); bn.innerHTML = '<small>' + (b === 'Afueras' ? 'saliendo de' : 'barrio') + '</small>' + (b === 'Afueras' ? 'Villarrica' : b);
+          const bn = $('banner'), cerr = !VR.Barrios.abierto(b); bn.innerHTML = '<small>' + (b === 'Afueras' ? 'saliendo de' : 'barrio') + '</small>' + (cerr ? '🔒 ' : '') + (b === 'Afueras' ? 'Villarrica' : b) + (cerr ? '<small class="sub">' + VR.Barrios.CARTEL + '<br>(todavía no conocés a nadie acá)</small>' : '');
           bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2600);
         }
-        barrio = b; $('hudTitle').textContent = b.toUpperCase();
+        barrio = b; $('hudTitle').textContent = (VR.Barrios.abierto(b) ? '' : '🔒 ') + b.toUpperCase();
       }
     }
     if (emer) { const w = $('wanted'), L = emer.level, key = L + ':' + (emer.lost > 0.5 ? 1 : 0);
@@ -8585,6 +9081,7 @@ VR.Titulo = class {
   }
   function paintVida() {
     if (!vida) return; const s = vida.s, P = s.pieza, pr = VR.PRECIOS;
+    if (vTab === 'mis' && mis) { paintMis(); return; }
     if (vTab === 'metas') {
       vBody.innerHTML = '<h2>⭐ Metas</h2><p>Tu lista de sueños. Tenés ' + gs(VR.Wallet.get()) + '.</p>' + VR.METAS.map(([n, c]) => {
         const f = c - VR.Wallet.get(); return '<div class="mv"><span>' + esc(n) + '</span><span>' + gs(c) + ' <i>' + (f <= 0 ? '¡te alcanza!' : 'faltan ' + gs(f)) + '</i></span></div>';
@@ -8611,9 +9108,30 @@ VR.Titulo = class {
       vidaHud(0, true); paintVida();
     });
   }
+  // Pausa → Misiones (J2): la activa con su objetivo, las que hay para empezar, las cumplidas y los barrios abiertos
+  function paintMis() {
+    const R = mis.resumen(), A = R.act;
+    let h = '<h2>📌 Misiones</h2><p>Capítulo ' + R.cap + ' · <b style="color:var(--text)">' + esc(VR.CAPITULOS[R.cap] || '') + '</b></p>';
+    if (A) h += '<h3>En curso</h3><div class="mv"><span><b style="color:var(--accent)">' + esc(A.titulo) + '</b> <i>paso ' + A.paso + ' de ' + A.de + '</i></span></div><p style="color:var(--text)">' + (A.fallo ? '✖ ' + esc(A.fallo) : '➡ ' + esc(A.obj)) + '</p>' +
+      '<div class="row"><button class="btn" data-m="gps">🧭 Marcar en el GPS</button><button class="btn" data-m="re">🔁 Reintentar desde el último punto</button><button class="btn" data-m="no">Dejar para después</button></div>';
+    else h += '<p>No tenés ninguna misión en curso.</p>';
+    if (R.disp.length) h += '<h3>Para empezar</h3>' + R.disp.map((d) => '<div class="mv"><span><b style="color:var(--text)">' + esc(d.titulo) + '</b> <i>cap. ' + d.cap + '</i><br><small>' + esc(d.desc || '') + '</small></span><span>' + (d.quien ? '<button class="btn" data-o="' + d.id + '">❗ ' + esc(d.quien) + '</button>' : '<button class="btn primary" data-s="' + d.id + '">▶ Empezar</button>') + '</span></div>').join('');
+    if (R.hechas.length) h += '<h3>Cumplidas</h3>' + R.hechas.map((d) => '<div class="mv"><span>✔ ' + esc(d.titulo) + '</span></div>').join('');
+    h += '<h3>Barrios</h3><p>' + world.barrios.map((b) => (VR.Barrios.abierto(b) ? '🟢 ' : '🔒 ') + esc(b)).join(' · ') + '</p><p>En un barrio 🔒 todavía no conocés a nadie: no hay changas ni misiones y el GPS no marca destinos.</p>';
+    h += '<div class="row"><button class="btn" data-v="bill">💵 Billetera</button><button class="btn primary" data-v="x">Cerrar</button></div>';
+    vBody.innerHTML = h;
+    const cerrar = (f) => { vDlg._intro = true; vDlg.close(); f(); };
+    vBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { const v = b.dataset.m; if (v === 'gps') cerrar(() => mis.marcar()); else if (v === 're') cerrar(() => mis.reintentar()); else { mis.abandonar(); paintMis(); } });
+    vBody.querySelectorAll('[data-o]').forEach((b) => b.onclick = () => cerrar(() => { mis.marcarOferta(b.dataset.o); }));
+    vBody.querySelectorAll('[data-s]').forEach((b) => b.onclick = () => cerrar(() => mis.empezar(b.dataset.s)));
+    vBody.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { if (b.dataset.v === 'x') vDlg.close(); else { vTab = b.dataset.v; paintVida(); } });
+  }
   vDlg.addEventListener('close', () => { if (mode === 'game' && !vDlg._intro) { VR.loop.paused = true; VR.input.enabled = false; pause.showModal(); } else { vDlg._intro = false; resume(); } });
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
+  $('pMis').onclick = () => pauseThen(() => openVida('mis'));
+  $('btnSaltar').onclick = () => { if (!mis || !mis.s.act) { toast('No hay misión en curso'); return; } menu.close(); mis.saltar(); toast('⏭ Paso saltado'); };
+  $('btnBarrios').onclick = () => { if (!mis) return; world.barrios.forEach((b) => VR.Barrios.abrir(b)); toast('🗺 Todos los barrios abiertos'); };
   // presentación de una Historia nueva
   function maybeIntro() {
     if (!vida || !vida.nueva) return; vida.nueva = false; vida.save();
@@ -8649,6 +9167,10 @@ VR.Titulo = class {
   seg('segFondo', 'fondo', () => title.setMode(settings.fondo));
   // ---- online ----
   const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player, enterCar, exitCar, cars }); $('btnJobs').onclick = () => changas.open();
+  // ---- misiones de la Historia (J2) ----
+  VR.myLook = () => player.lookData;
+  const showBanner = (chico, grande, sub) => { const bn = $('banner'); bn.innerHTML = '<small>' + chico + '</small>' + grande + (sub ? '<small class="sub">' + sub + '</small>' : ''); bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2800); };
+  const mis = VR.mis = vida ? new VR.Misiones({ world, player, toast, setDest, getCar: () => car, vida, changas, banner: showBanner }) : null;
   const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars, fauna, cisnes });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
@@ -8712,7 +9234,7 @@ VR.Titulo = class {
     x.putImageData(img, 0, 0);
     const L = $('mapLabels'); L.innerHTML = '';
     for (const l of (world.barrioLabels || []).map((b) => ({ ...b, cls: 'barrio' })).concat(world.labels)) {
-      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls; if (l.small) s.className = 'small';
+      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls; if (l.small) s.className = 'small'; if (l.cls === 'barrio') s.dataset.barrio = l.text;
       s.style.left = (l.x / 16) + 'px'; s.style.top = (l.y / 16) + 'px'; L.appendChild(s);
     }
     mapBuilt = true;
@@ -8746,12 +9268,13 @@ VR.Titulo = class {
     if (!mv.k) { mv.k = fitK(); mapApply(); } else mapCenterOn(f.x, f.y);
     drawMapRoute();
   }
-  const drawMapFriends = () => { // amigos en el mapa grande: punto celeste con el nombre (tocalo para ir)
-    $('mapFriends').innerHTML = [...online.others.values()].map((o) => { const x = o.x / 16 * mv.k + mv.ox, y = o.y / 16 * mv.k + mv.oy, n = String(o.n || '').replace(/[<>&"]/g, '');
+  const drawMapFriends = () => { // amigos en el mapa grande: punto celeste con el nombre (tocalo para ir); y las marcas de la misión
+    $('mapFriends').innerHTML = (mis ? mis.marcas() : []).map((m) => { const x = m.x / 16 * mv.k + mv.ox, y = m.y / 16 * mv.k + mv.oy;
+      return `<div style="position:absolute;left:${x - 10}px;top:${y - 10}px;width:20px;height:20px;border-radius:50%;background:${m.c};border:2px solid #1a1a1e;box-sizing:border-box;font:900 12px/16px system-ui;text-align:center;color:#1a1a1e">${m.ico === '●' ? '' : m.ico}</div><div style="position:absolute;left:${x}px;top:${y - 30}px;transform:translateX(-50%);font:700 12px system-ui;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap">${String(m.name || '').replace(/[<>&"]/g, '')}</div>`; }).join('') + [...online.others.values()].map((o) => { const x = o.x / 16 * mv.k + mv.ox, y = o.y / 16 * mv.k + mv.oy, n = String(o.n || '').replace(/[<>&"]/g, '');
       return `<div style="position:absolute;left:${x - 8}px;top:${y - 8}px;width:16px;height:16px;border-radius:50%;background:#3fd3ff;border:2px solid #0b2a36;box-sizing:border-box"></div><div style="position:absolute;left:${x}px;top:${y - 26}px;transform:translateX(-50%);font:700 13px system-ui;color:#fff;text-shadow:0 0 3px #0b2a36,0 0 3px #0b2a36;white-space:nowrap">${n}</div>`; }).join('');
   };
   setInterval(() => { if (mapOpen) drawMapFriends(); }, 500);
-  function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
+  function openMap() { if (!mapBuilt) buildMap(); if (vida) $('mapLabels').querySelectorAll('[data-barrio]').forEach((s) => { s.textContent = (VR.Barrios.abierto(s.dataset.barrio) ? '' : '🔒 ') + s.dataset.barrio; }); drawMapFriends(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }
   $('btnMap').onclick = () => (mapOpen ? closeMap() : openMap());
   $('mzClose').onclick = closeMap;
@@ -8832,9 +9355,10 @@ VR.Titulo = class {
   // ---------- GPS ----------
   const gps = gpsNet;
   let dest = null, route = null, routeLen = 0, gpsT = 0, gpsRe = 0;
-  function setDest(d) {
+  function setDest(d, deMision) {
+    if (d && !deMision && vida && !VR.Barrios.enPunto(world, d.x, d.y)) { toast('🔒 ' + world.barrioName(d.x, d.y) + ': ' + VR.Barrios.CARTEL + ' (el GPS no marca destinos acá)'); return; }
     dest = d; route = null; gpsRe = 0;
-    if (d) { recalc(); toast('🏁 Destino: ' + d.name); } else toast('Destino quitado');
+    if (d) { recalc(); if (!deMision) toast('🏁 Destino: ' + d.name); } else if (!deMision) toast('Destino quitado'); // las misiones ya lo dicen arriba
     VR.store.set('dest:' + world.id, d);
     updateGpsHud(); drawMapRoute();
   }
@@ -8938,7 +9462,13 @@ VR.Titulo = class {
       const R0 = 6 * D / 112; mctx.fillStyle = '#0b2a36'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = '#3fd3ff'; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
       mctx.fillStyle = '#0b2a36'; mctx.font = `bold ${Math.round(8 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText((o.n || '?')[0].toUpperCase(), px, py + 0.5);
     }
-    if (dest) {
+    if (mis) for (const m of mis.marcas()) { // misión: ▼ a quien hablar, ! quien te da una misión, ● a dónde ir
+      let px = (m.x / VR.TILE - sx) * k, py = (m.y / VR.TILE - sy) * k; const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 9 * D / 112;
+      if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
+      const R0 = 6.5 * D / 112; mctx.fillStyle = '#1a1a1e'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = m.c; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
+      mctx.fillStyle = '#1a1a1e'; mctx.font = `900 ${Math.round(9 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText(m.ico === '●' ? '' : m.ico, px, py + 0.5);
+    }
+    if (dest && !(dest.mis && mis && mis.s.act)) {
       let px = (dest.x / VR.TILE - sx) * k, py = (dest.y / VR.TILE - sy) * k;
       const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 10 * D / 112;
       if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
@@ -9092,6 +9622,7 @@ VR.Titulo = class {
   applyTouch();
   hideOverlay();
   if (!directo) enterTitle(true); else VR.store.set('modo', VR.modo);
+  if (mis) { if (mis.s.act) mis.entrar(mis.s.act.paso, true); else mis.auto(); } // retomar la misión guardada (o arrancar la primera)
   VR.loop.start(update, render);
   if (directo) { maybeIntro(); try { if (sessionStorage.getItem('villarrica:onl')) { sessionStorage.removeItem('villarrica:onl'); VR.input.releaseAll(); $('onDlg').showModal(); } } catch (e) {} }
   window.__vr = { get mode() { return mode; }, title, startGame, toTitle, enterTitle, get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };

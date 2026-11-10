@@ -38,7 +38,18 @@
     }
     return null;
   }
-  const histStart = vida && !saved ? spotInBarrio(/Santa Luc/i) : null;
+  // tu pieza (J2: ahí está Ña Ramona): una vereda de Santa Lucía a ~1 km de la Plaza de los Héroes, así la primera caminata al Centro es corta
+  function casaSpot() {
+    const bi = world.barrios.findIndex((n) => /Santa Luc/i.test(n)) + 1, pl = world.labels.find((l) => /Plaza de los H/.test(l.text)); if (!bi || !pl) return spotInBarrio(/Santa Luc/i);
+    const w = world.w, S = VR.TILE, want = 1000 * 8; let best = null, bd = Infinity;
+    for (let i = 0; i < world.barrio.length; i++) {
+      if (world.barrio[i] !== bi) continue; const tx = i % w, ty = (i / w) | 0; if (world.get(tx, ty) !== VR.T.SIDEWALK) continue;
+      const x = tx * S + 8, y = ty * S + 10, d = Math.abs(Math.hypot(x - pl.x, y - pl.y) - want); if (d < bd && !world.hits(x - 4, y - 4, x + 4, y)) { bd = d; best = { x, y }; }
+    }
+    return best || spotInBarrio(/Santa Luc/i);
+  }
+  if (vida && !vida.s.casa) { const c = casaSpot(); if (c) { vida.s.casa = c; vida.save(); } }
+  const histStart = vida && !saved ? vida.s.casa : null;
   const start = histStart || (saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn);
   const player = new VR.Player(world, start.x, start.y);
   if (saved && saved.dir) player.dir = saved.dir;
@@ -55,8 +66,8 @@
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
   const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
-    onBusted: () => sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'),
-    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al hospital.'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); } });
+    onBusted: () => { sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'); if (VR.mis) VR.mis.emit('arresto'); },
+    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al hospital.'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
   const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
@@ -64,7 +75,7 @@
   VR.audio.setOn(VR.store.get('snd', true));
   if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
     vida.onMsg = (m) => toast(m);
-    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios)); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); };
+    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios)); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
   }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg) {
@@ -102,8 +113,10 @@
     if (c.type === 'moto') c.rider = me();
     car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
+    if (VR.mis) VR.mis.emit('subir', c);
   }
   function exitCar() {
+    if (VR.mis) VR.mis.emit('bajar', car);
     const c = car, a = c.a, rx = Math.cos(a), ry = Math.sin(a), fx = Math.sin(a), fy = -Math.cos(a);
     const tries = [];
     const w0 = c.WID / 2 + 6, l0 = c.LEN / 2 + 8;
@@ -225,15 +238,18 @@
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       const nsw = !nc ? cisnes.near(player) : null;
       if (nsw) { hint = (VR.input.source === 'touch' ? '🦢 Paseo' : VR.input.source === 'pad' ? 'X: paseo en cisne' : 'F: paseo en cisne') + ' · ' + VR.fmtGs(VR.CISNE_PRECIO); hintCar = { x: nsw.x, y: nsw.y - 8 }; }
+      const nn = mis && !nc && !nsw ? mis.near(player) : null; // personajes de la Historia (J2)
+      if (nn) { hint = (VR.input.source === 'touch' ? '💬 ' : VR.input.source === 'pad' ? '💬 A: ' : '💬 Espacio: ') + nn.nombre; hintCar = { x: nn.x, y: nn.y - 14 }; }
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) enterCar(nc); else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
+    if (mis) mis.update(dt, player, car);
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
     updateCamera(dt);
@@ -272,13 +288,14 @@
     world.draw(ctx, cx, cy, sw, sh);
     world.warm(cx, cy, sw, sh);
     changas.drawGround(ctx, cx, cy);
+    if (mis) mis.drawGround(ctx, cx, cy);
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall);
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) mis.collect(cx, cy, tall, player);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
@@ -311,10 +328,10 @@
       const b = world.barrioName(player.x, player.y - 2) || (world.barrios.length ? 'Afueras' : 'Villarrica');
       if (b !== barrio) {
         if (barrio) {
-          const bn = $('banner'); bn.innerHTML = '<small>' + (b === 'Afueras' ? 'saliendo de' : 'barrio') + '</small>' + (b === 'Afueras' ? 'Villarrica' : b);
+          const bn = $('banner'), cerr = !VR.Barrios.abierto(b); bn.innerHTML = '<small>' + (b === 'Afueras' ? 'saliendo de' : 'barrio') + '</small>' + (cerr ? '🔒 ' : '') + (b === 'Afueras' ? 'Villarrica' : b) + (cerr ? '<small class="sub">' + VR.Barrios.CARTEL + '<br>(todavía no conocés a nadie acá)</small>' : '');
           bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2600);
         }
-        barrio = b; $('hudTitle').textContent = b.toUpperCase();
+        barrio = b; $('hudTitle').textContent = (VR.Barrios.abierto(b) ? '' : '🔒 ') + b.toUpperCase();
       }
     }
     if (emer) { const w = $('wanted'), L = emer.level, key = L + ':' + (emer.lost > 0.5 ? 1 : 0);
@@ -372,6 +389,7 @@
   }
   function paintVida() {
     if (!vida) return; const s = vida.s, P = s.pieza, pr = VR.PRECIOS;
+    if (vTab === 'mis' && mis) { paintMis(); return; }
     if (vTab === 'metas') {
       vBody.innerHTML = '<h2>⭐ Metas</h2><p>Tu lista de sueños. Tenés ' + gs(VR.Wallet.get()) + '.</p>' + VR.METAS.map(([n, c]) => {
         const f = c - VR.Wallet.get(); return '<div class="mv"><span>' + esc(n) + '</span><span>' + gs(c) + ' <i>' + (f <= 0 ? '¡te alcanza!' : 'faltan ' + gs(f)) + '</i></span></div>';
@@ -398,9 +416,30 @@
       vidaHud(0, true); paintVida();
     });
   }
+  // Pausa → Misiones (J2): la activa con su objetivo, las que hay para empezar, las cumplidas y los barrios abiertos
+  function paintMis() {
+    const R = mis.resumen(), A = R.act;
+    let h = '<h2>📌 Misiones</h2><p>Capítulo ' + R.cap + ' · <b style="color:var(--text)">' + esc(VR.CAPITULOS[R.cap] || '') + '</b></p>';
+    if (A) h += '<h3>En curso</h3><div class="mv"><span><b style="color:var(--accent)">' + esc(A.titulo) + '</b> <i>paso ' + A.paso + ' de ' + A.de + '</i></span></div><p style="color:var(--text)">' + (A.fallo ? '✖ ' + esc(A.fallo) : '➡ ' + esc(A.obj)) + '</p>' +
+      '<div class="row"><button class="btn" data-m="gps">🧭 Marcar en el GPS</button><button class="btn" data-m="re">🔁 Reintentar desde el último punto</button><button class="btn" data-m="no">Dejar para después</button></div>';
+    else h += '<p>No tenés ninguna misión en curso.</p>';
+    if (R.disp.length) h += '<h3>Para empezar</h3>' + R.disp.map((d) => '<div class="mv"><span><b style="color:var(--text)">' + esc(d.titulo) + '</b> <i>cap. ' + d.cap + '</i><br><small>' + esc(d.desc || '') + '</small></span><span>' + (d.quien ? '<button class="btn" data-o="' + d.id + '">❗ ' + esc(d.quien) + '</button>' : '<button class="btn primary" data-s="' + d.id + '">▶ Empezar</button>') + '</span></div>').join('');
+    if (R.hechas.length) h += '<h3>Cumplidas</h3>' + R.hechas.map((d) => '<div class="mv"><span>✔ ' + esc(d.titulo) + '</span></div>').join('');
+    h += '<h3>Barrios</h3><p>' + world.barrios.map((b) => (VR.Barrios.abierto(b) ? '🟢 ' : '🔒 ') + esc(b)).join(' · ') + '</p><p>En un barrio 🔒 todavía no conocés a nadie: no hay changas ni misiones y el GPS no marca destinos.</p>';
+    h += '<div class="row"><button class="btn" data-v="bill">💵 Billetera</button><button class="btn primary" data-v="x">Cerrar</button></div>';
+    vBody.innerHTML = h;
+    const cerrar = (f) => { vDlg._intro = true; vDlg.close(); f(); };
+    vBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { const v = b.dataset.m; if (v === 'gps') cerrar(() => mis.marcar()); else if (v === 're') cerrar(() => mis.reintentar()); else { mis.abandonar(); paintMis(); } });
+    vBody.querySelectorAll('[data-o]').forEach((b) => b.onclick = () => cerrar(() => { mis.marcarOferta(b.dataset.o); }));
+    vBody.querySelectorAll('[data-s]').forEach((b) => b.onclick = () => cerrar(() => mis.empezar(b.dataset.s)));
+    vBody.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { if (b.dataset.v === 'x') vDlg.close(); else { vTab = b.dataset.v; paintVida(); } });
+  }
   vDlg.addEventListener('close', () => { if (mode === 'game' && !vDlg._intro) { VR.loop.paused = true; VR.input.enabled = false; pause.showModal(); } else { vDlg._intro = false; resume(); } });
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
+  $('pMis').onclick = () => pauseThen(() => openVida('mis'));
+  $('btnSaltar').onclick = () => { if (!mis || !mis.s.act) { toast('No hay misión en curso'); return; } menu.close(); mis.saltar(); toast('⏭ Paso saltado'); };
+  $('btnBarrios').onclick = () => { if (!mis) return; world.barrios.forEach((b) => VR.Barrios.abrir(b)); toast('🗺 Todos los barrios abiertos'); };
   // presentación de una Historia nueva
   function maybeIntro() {
     if (!vida || !vida.nueva) return; vida.nueva = false; vida.save();
@@ -436,6 +475,10 @@
   seg('segFondo', 'fondo', () => title.setMode(settings.fondo));
   // ---- online ----
   const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player, enterCar, exitCar, cars }); $('btnJobs').onclick = () => changas.open();
+  // ---- misiones de la Historia (J2) ----
+  VR.myLook = () => player.lookData;
+  const showBanner = (chico, grande, sub) => { const bn = $('banner'); bn.innerHTML = '<small>' + chico + '</small>' + grande + (sub ? '<small class="sub">' + sub + '</small>' : ''); bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2800); };
+  const mis = VR.mis = vida ? new VR.Misiones({ world, player, toast, setDest, getCar: () => car, vida, changas, banner: showBanner }) : null;
   const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars, fauna, cisnes });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
@@ -499,7 +542,7 @@
     x.putImageData(img, 0, 0);
     const L = $('mapLabels'); L.innerHTML = '';
     for (const l of (world.barrioLabels || []).map((b) => ({ ...b, cls: 'barrio' })).concat(world.labels)) {
-      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls; if (l.small) s.className = 'small';
+      const s = document.createElement('span'); s.textContent = l.text; if (l.cls) s.className = l.cls; if (l.small) s.className = 'small'; if (l.cls === 'barrio') s.dataset.barrio = l.text;
       s.style.left = (l.x / 16) + 'px'; s.style.top = (l.y / 16) + 'px'; L.appendChild(s);
     }
     mapBuilt = true;
@@ -533,12 +576,13 @@
     if (!mv.k) { mv.k = fitK(); mapApply(); } else mapCenterOn(f.x, f.y);
     drawMapRoute();
   }
-  const drawMapFriends = () => { // amigos en el mapa grande: punto celeste con el nombre (tocalo para ir)
-    $('mapFriends').innerHTML = [...online.others.values()].map((o) => { const x = o.x / 16 * mv.k + mv.ox, y = o.y / 16 * mv.k + mv.oy, n = String(o.n || '').replace(/[<>&"]/g, '');
+  const drawMapFriends = () => { // amigos en el mapa grande: punto celeste con el nombre (tocalo para ir); y las marcas de la misión
+    $('mapFriends').innerHTML = (mis ? mis.marcas() : []).map((m) => { const x = m.x / 16 * mv.k + mv.ox, y = m.y / 16 * mv.k + mv.oy;
+      return `<div style="position:absolute;left:${x - 10}px;top:${y - 10}px;width:20px;height:20px;border-radius:50%;background:${m.c};border:2px solid #1a1a1e;box-sizing:border-box;font:900 12px/16px system-ui;text-align:center;color:#1a1a1e">${m.ico === '●' ? '' : m.ico}</div><div style="position:absolute;left:${x}px;top:${y - 30}px;transform:translateX(-50%);font:700 12px system-ui;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap">${String(m.name || '').replace(/[<>&"]/g, '')}</div>`; }).join('') + [...online.others.values()].map((o) => { const x = o.x / 16 * mv.k + mv.ox, y = o.y / 16 * mv.k + mv.oy, n = String(o.n || '').replace(/[<>&"]/g, '');
       return `<div style="position:absolute;left:${x - 8}px;top:${y - 8}px;width:16px;height:16px;border-radius:50%;background:#3fd3ff;border:2px solid #0b2a36;box-sizing:border-box"></div><div style="position:absolute;left:${x}px;top:${y - 26}px;transform:translateX(-50%);font:700 13px system-ui;color:#fff;text-shadow:0 0 3px #0b2a36,0 0 3px #0b2a36;white-space:nowrap">${n}</div>`; }).join('');
   };
   setInterval(() => { if (mapOpen) drawMapFriends(); }, 500);
-  function openMap() { if (!mapBuilt) buildMap(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
+  function openMap() { if (!mapBuilt) buildMap(); if (vida) $('mapLabels').querySelectorAll('[data-barrio]').forEach((s) => { s.textContent = (VR.Barrios.abierto(s.dataset.barrio) ? '' : '🔒 ') + s.dataset.barrio; }); drawMapFriends(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }
   $('btnMap').onclick = () => (mapOpen ? closeMap() : openMap());
   $('mzClose').onclick = closeMap;
@@ -619,9 +663,10 @@
   // ---------- GPS ----------
   const gps = gpsNet;
   let dest = null, route = null, routeLen = 0, gpsT = 0, gpsRe = 0;
-  function setDest(d) {
+  function setDest(d, deMision) {
+    if (d && !deMision && vida && !VR.Barrios.enPunto(world, d.x, d.y)) { toast('🔒 ' + world.barrioName(d.x, d.y) + ': ' + VR.Barrios.CARTEL + ' (el GPS no marca destinos acá)'); return; }
     dest = d; route = null; gpsRe = 0;
-    if (d) { recalc(); toast('🏁 Destino: ' + d.name); } else toast('Destino quitado');
+    if (d) { recalc(); if (!deMision) toast('🏁 Destino: ' + d.name); } else if (!deMision) toast('Destino quitado'); // las misiones ya lo dicen arriba
     VR.store.set('dest:' + world.id, d);
     updateGpsHud(); drawMapRoute();
   }
@@ -725,7 +770,13 @@
       const R0 = 6 * D / 112; mctx.fillStyle = '#0b2a36'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = '#3fd3ff'; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
       mctx.fillStyle = '#0b2a36'; mctx.font = `bold ${Math.round(8 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText((o.n || '?')[0].toUpperCase(), px, py + 0.5);
     }
-    if (dest) {
+    if (mis) for (const m of mis.marcas()) { // misión: ▼ a quien hablar, ! quien te da una misión, ● a dónde ir
+      let px = (m.x / VR.TILE - sx) * k, py = (m.y / VR.TILE - sy) * k; const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 9 * D / 112;
+      if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
+      const R0 = 6.5 * D / 112; mctx.fillStyle = '#1a1a1e'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = m.c; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
+      mctx.fillStyle = '#1a1a1e'; mctx.font = `900 ${Math.round(9 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText(m.ico === '●' ? '' : m.ico, px, py + 0.5);
+    }
+    if (dest && !(dest.mis && mis && mis.s.act)) {
       let px = (dest.x / VR.TILE - sx) * k, py = (dest.y / VR.TILE - sy) * k;
       const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 10 * D / 112;
       if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
@@ -879,6 +930,7 @@
   applyTouch();
   hideOverlay();
   if (!directo) enterTitle(true); else VR.store.set('modo', VR.modo);
+  if (mis) { if (mis.s.act) mis.entrar(mis.s.act.paso, true); else mis.auto(); } // retomar la misión guardada (o arrancar la primera)
   VR.loop.start(update, render);
   if (directo) { maybeIntro(); try { if (sessionStorage.getItem('villarrica:onl')) { sessionStorage.removeItem('villarrica:onl'); VR.input.releaseAll(); $('onDlg').showModal(); } } catch (e) {} }
   window.__vr = { get mode() { return mode; }, title, startGame, toTitle, enterTitle, get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };

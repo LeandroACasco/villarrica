@@ -75,8 +75,8 @@ VR.Vida = class {
   }
   gasta(n, why) { if (VR.Wallet.get() < n) { this.msg('💸 No te alcanza: ' + VR.fmtGs(n)); return false; } this.mueve(-n, why); return true; }
   // ---- cosas de la vida ----
-  come(precio, hambre, que) { if (!this.gasta(precio, que)) return false; this.s.hambre = Math.min(100, this.s.hambre + hambre); this.sync(); this.msg('🍽 ' + que + ' · −' + VR.fmtGs(precio)); return true; }
-  cargaSaldo() { if (!this.gasta(VR.PRECIOS.saldo, 'Saldo del celular')) return false; this.s.saldo += 3; this.msg('📱 Cargaste saldo · +3 días'); return true; }
+  come(precio, hambre, que) { if (!this.gasta(precio, que)) return false; this.s.hambre = Math.min(100, this.s.hambre + hambre); this.sync(); this.msg('🍽 ' + que + ' · −' + VR.fmtGs(precio)); if (VR.mis) VR.mis.emit('come', { que, precio }); return true; }
+  cargaSaldo() { if (!this.gasta(VR.PRECIOS.saldo, 'Saldo del celular')) return false; this.s.saldo += 3; this.msg('📱 Cargaste saldo · +3 días'); if (VR.mis) VR.mis.emit('saldo'); return true; }
   saldoOk() { return this.s.saldo > 0; }
   // pagarle a Ña Ramona: lo que debés (o lo que alcance); si no debés nada, adelanta la semana que viene
   pagaPieza() {
@@ -85,6 +85,7 @@ VR.Vida = class {
     this.mueve(-n, 'Pieza (Ña Ramona)'); P.saldo -= n;
     if (P.saldo <= 0) { if (P.fuera) { P.fuera = false; this.msg('🏠 Ña Ramona te dejó volver a la pieza'); } else this.msg('🏠 Pieza al día. "Aguyje, mitã"'); }
     else this.msg('🏠 Pagaste ' + VR.fmtGs(n) + ' · todavía debés ' + VR.fmtGs(P.saldo));
+    if (VR.mis) VR.mis.emit('pieza', { n });
     return true;
   }
   // ---- lo que se ve en el HUD ----
