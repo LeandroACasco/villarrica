@@ -221,7 +221,7 @@
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
-    cisnes.draw(ctx, cx, cy, night);
+    cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);

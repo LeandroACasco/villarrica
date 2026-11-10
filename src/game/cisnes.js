@@ -16,7 +16,7 @@ VR.Cisnes = class {
     for (const s of this.list) { if (s === this.s) continue; const d = Math.hypot(s.x - p.x, s.y - (p.y - 4)); if (d < bd) { bd = d; best = s; } }
     return best;
   }
-  board(s) { this.s = s; s.emptyT = 0; s.v *= 0.5; s.pL = s.pR = 0; }
+  board(s) { this.s = s; s.pas = VR.av2Random(); s.emptyT = 0; s.v *= 0.5; s.pL = s.pR = 0; }
   // baja al jugador en el lugar firme más cercano (orilla o muelle)
   exit(player) {
     const s = this.s, W = this.world;
@@ -78,29 +78,22 @@ VR.Cisnes = class {
     }
   }
   // se dibujan sobre el agua, antes de la gente (no hay nada por encima de ellos salvo copas, que van aparte)
-  draw(ctx, cx, cy, night) {
+  draw(ctx, cx, cy, night, look) {
     for (const s of this.list) {
       if (s.x < cx - 60 || s.y < cy - 60 || s.x > cx + VR.screen.w + 60 || s.y > cy + VR.screen.h + 60) continue;
       ctx.save(); ctx.translate(-cx, -cy);
       for (const p of s.trail) { const k = p.t / 1.8; ctx.strokeStyle = `rgba(220,240,225,${0.5 * (1 - k)})`; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(p.x, p.y, 3 + k * 11, 2 + k * 7, 0, 0, 7); ctx.stroke(); }
       VR.drawCisne(ctx, s.x, s.y, s.a, s.col);
       ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a);
-      if (s === this.s) { // dos personas sentadas, cada una con su pedal: vos a la izquierda y tu compañera a la derecha
-        const person = (sx, ph, on, shirt, shirtL, hair, skin) => {
-          const py = 6.4 + Math.sin(ph) * 1.8 * (on ? 1 : 0.35);
-          ctx.fillStyle = '#1c1c24'; ctx.fillRect(sx - 1.8, py - 4, 1.6, 4.2); ctx.fillRect(sx + 0.2, py - 3.4 - Math.sin(ph) * 0.8, 1.6, 4.2);   // piernas
-          ctx.fillStyle = '#f0f0ec'; ctx.fillRect(sx - 1.9, py, 1.8, 1.2); ctx.fillRect(sx + 0.1, py + 0.4, 1.8, 1.2);                              // zapatillas
-          ctx.fillStyle = '#14141c'; ctx.beginPath(); ctx.ellipse(sx, 0.2, 3.6, 2.8, 0, 0, 7); ctx.fill();                                           // contorno del torso
-          ctx.fillStyle = shirt; ctx.beginPath(); ctx.ellipse(sx, 0.2, 3.1, 2.3, 0, 0, 7); ctx.fill();
-          ctx.fillStyle = shirtL; ctx.beginPath(); ctx.ellipse(sx - 0.6, -0.1, 2, 1.4, 0, 0, 7); ctx.fill();
-          ctx.strokeStyle = shirt; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(sx - 2.6, 0); ctx.lineTo(sx - 1.4, -3.6); ctx.moveTo(sx + 2.6, 0); ctx.lineTo(sx + 1.4, -3.6); ctx.stroke(); // brazos al frente
-          ctx.fillStyle = skin; ctx.fillRect(sx - 2, -4.6, 1.2, 1.2); ctx.fillRect(sx + 0.8, -4.6, 1.2, 1.2);                                       // manos
-          ctx.fillStyle = '#14141c'; ctx.beginPath(); ctx.arc(sx, 0.4, 2.7, 0, 7); ctx.fill();                                                      // cabeza
-          ctx.fillStyle = hair; ctx.beginPath(); ctx.arc(sx, 0.4, 2.2, 0, 7); ctx.fill();
-          ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(sx, -0.5, 1.5, 0.9, 0, 0, 7); ctx.fill();                                               // frente (se ve de que lado mira)
-        };
-        person(-3, s.ph, s.L, '#25304f', '#3a4a78', '#241810', '#d8a47c');
-        person(3, s.ph2 || 0, s.R, '#c4506e', '#e07a94', '#5a3a22', '#e6b894');
+      if (s === this.s && look) { // dos personas sentadas con su personaje de verdad (como en las motos): conduce el jugador a la izquierda y acompaña otra a la derecha
+        ctx.restore(); ctx.restore();
+        const k = ((Math.round(s.a / (Math.PI * 2) * 64) % 64) + 64) % 64, fx = Math.sin(s.a), fy = -Math.cos(s.a), rx = Math.cos(s.a), ry = Math.sin(s.a);
+        for (const [sd, L, on] of [[-1, look, s.L], [1, s.pas, s.R]]) {
+          const R = VR.riderTopFrames(L, { gy: -3.2, gx: 2.4, hip: 2.6 }), rh = R.S >> 1, off = 3.1 * sd, ox = s.x + rx * off + fx * 1.5 - cx, oy = s.y + ry * off + fy * 1.5 - cy;
+          ctx.drawImage(R.get(k), Math.round(ox - rh), Math.round(oy - rh) - 1 - (on ? ((Math.sin(sd < 0 ? s.ph : s.ph2 || 0) > 0) ? 1 : 0) : 0), R.S, R.S);
+        }
+        if (night) night.add(s.x, s.y - 4, 30, '255,226,160', 0.75);
+        continue;
       }
       ctx.restore(); ctx.restore();
       if (night) night.add(s.x, s.y - 4, 30, '255,226,160', 0.75); // lucecita del cisne
