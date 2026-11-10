@@ -49,6 +49,8 @@ VR.Lugares = class {
       case 'cuartel': return W.firehouse && { x: W.firehouse.x, y: W.firehouse.y + 20 };
       case 'catedral': return L(/^Catedral/, 30);
       case 'terminal': return L(/Terminal/);
+      case 'cajero': { const d = (W.decals || []).find((x) => x.kind === 'cartel' && x.style === 'banco'); return d && { x: (d.x + d.w / 2) * VR.TILE, y: (d.y + 1) * VR.TILE + 12 }; } // frente al banco de la esquina noroeste
+      case 'cajero2': { const c = VR.vida && VR.vida.s.casa; return c && { x: c.x - 150, y: c.y }; } // cajero de Santa Lucía, cerca de tu pieza
       case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
     }
     return null;
@@ -64,7 +66,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
 
 // ---------------- barrios por historia ----------------
@@ -459,7 +461,16 @@ VR.MISIONES = {
 
 // ---------------- J3: lugares para usar (despensa y pieza) y menús de Doña Chela y Ña Ramona ----------------
 VR.DESPENSA = [['Chipa', 'chipa', 15], ['Empanada', 'empanada', 25], ['Mbeju', 'mbeju', 35], ['Plato del día', 'plato', 60]];
+VR.cajeroMenu = (M) => { const V = M.vida, e = VR.Wallet.get(), b = V.s.banco, op = [];
+  if (e > 0) op.push(['Depositar todo el efectivo (' + VR.fmtGs(e) + ')', () => { V.deposita(e); return false; }]);
+  for (const n of [50000, 100000]) if (b >= n) op.push(['Sacar ' + VR.fmtGs(n), () => { V.retira(n); return false; }]);
+  if (b > 0) op.push(['Sacar todo (' + VR.fmtGs(b) + ')', () => { V.retira(b); return false; }]);
+  op.push(['Salir', () => false]);
+  return [{ quien: 'sis', titulo: '🏧 Cajero', txt: 'Efectivo: ' + VR.fmtGs(e) + ' · Billetera electrónica: ' + VR.fmtGs(b), op }]; };
+VR.drawCajero = (g, x, y) => { g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 6, y - 1, 13, 3); g.fillStyle = '#3a4a5a'; g.fillRect(x - 6, y - 20, 12, 20); g.fillStyle = '#6d8fb0'; g.fillRect(x - 5, y - 19, 10, 6); g.fillStyle = '#9fe0ff'; g.fillRect(x - 4, y - 18, 8, 4); g.fillStyle = '#20262e'; g.fillRect(x - 4, y - 11, 8, 3); g.fillStyle = '#c8d0d8'; g.fillRect(x - 3, y - 7, 6, 2); VR.gfx.text(g, '🏧', x, y - 24, '#fff', { center: true, size: 7 }); };
 VR.PUNTOS = {
+  cajero: { lugar: 'cajero', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
+  cajero2: { lugar: 'cajero2', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
   despensa: { lugar: 'despensa', nombre: 'Despensa Ñande Róga', ico: '🛒', mini: '$',
     menu: (M) => [{ quien: 'sis', titulo: '🛒 Despensa Ñande Róga', txt: '¿Qué llevás? Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op: [
       ...VR.DESPENSA.map(([n, k, h]) => [n + ' · ' + VR.fmtGs(VR.PRECIOS[k]), () => { M.vida.come(VR.PRECIOS[k], h, n); return false; }]),

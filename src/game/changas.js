@@ -38,7 +38,7 @@ VR.Changas = class {
     if (VR.mis) this.d.querySelectorAll('[data-k]').forEach((b) => { const k = b.dataset.k; if (this.lbl[k] && k !== 'no' && k !== 'x') b.textContent = (VR.mis.changaOk(k) ? '' : '🔒 ') + this.lbl[k]; });
     VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal();
   }
-  pay(n, why) { n = Math.round(n / 1000) * 1000; VR.Wallet.add(n, why); this.toast('💵 +' + VR.fmtGs(n) + ' · ' + why); if (VR.audio.coin) VR.audio.coin(); if (VR.mis) VR.mis.emit('cobro', { n, why }); }
+  pay(n, why, efectivo) { n = Math.round(n / 1000) * 1000; if (VR.vida && !efectivo) VR.vida.banco(n, why); else VR.Wallet.add(n, why); /* en Historia, las changas de la app pagan a la billetera electrónica */ this.toast('💵 +' + VR.fmtGs(n) + ' · ' + why); if (VR.audio.coin) VR.audio.coin(); if (VR.mis) VR.mis.emit('cobro', { n, why }); }
   spot(min, max, from) { // un punto de calle al azar entre min y max px
     const N = this.world.roads && this.world.roads.nodes; if (!N) return null;
     for (let t = 0; t < 4000; t++) { if (t === 2000) { min *= 0.5; max *= 2; } const i = ((this.rnd() * N.length / 2) | 0) * 2, x = N[i], y = N[i + 1], d = Math.hypot(x - from.x, y - from.y); if (d > min && d < max && (t > 3500 || VR.Barrios.enPunto(this.world, x, y))) return { x, y, name: this.world.placeName ? this.world.placeName(x, y) || 'la dirección' : 'la dirección' }; }
@@ -80,7 +80,7 @@ VR.Changas = class {
     if (q.chipa) { q.say = { text: 'Ya te compré, che', t: 1.6 }; return true; }
     if (VR.mis && !VR.Barrios.enPunto(this.world, player.x, player.y)) { q.say = { text: 'Ndaikuaái ndéve, che...', t: 1.6 }; return true; }
     q.chipa = true; const V = VR.vida;
-    if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; if (V) V.s.stock--; this.pay(5000, V ? 'chipa (quedan ' + V.s.stock + ')' : 'chipa ' + this.job.n + '/10'); if (VR.mis) VR.mis.emit('venta', { que: 'chipa' }); if (V && V.s.stock <= 0) { this.end('🧺 ¡Se terminó la chipa! Reponé con Doña Chela'); return true; } if (!V && this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
+    if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; if (V) V.s.stock--; this.pay(5000, V ? 'chipa (quedan ' + V.s.stock + ')' : 'chipa ' + this.job.n + '/10', true); if (VR.mis) VR.mis.emit('venta', { que: 'chipa' }); if (V && V.s.stock <= 0) { this.end('🧺 ¡Se terminó la chipa! Reponé con Doña Chela'); return true; } if (!V && this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
     else q.say = { text: ['Nahániri', 'Otro día', 'Ya comí'][(this.rnd() * 3) | 0], t: 1.6 };
     return true;
   }

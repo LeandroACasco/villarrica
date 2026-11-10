@@ -28,7 +28,7 @@ VR.DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 VR.Vida = class {
   constructor() {
-    const d = { min: 7 * 60, hambre: 80, saldo: 0, debe: 0, canasto: false, stock: 0, fiado: 0, pieza: { saldo: 0, vence: 5 * 1440 + 12 * 60, fuera: false }, mov: [], metas: [], aviso: 0 };
+    const d = { min: 7 * 60, hambre: 80, saldo: 0, debe: 0, banco: 0, canasto: false, stock: 0, fiado: 0, pieza: { saldo: 0, vence: 5 * 1440 + 12 * 60, fuera: false }, mov: [], metas: [], aviso: 0 };
     const s = VR.store.get('vida', null);
     this.s = Object.assign(d, s || {}); this.s.pieza = Object.assign(d.pieza, (s && s.pieza) || {});
     this.nueva = !s; this.onMsg = null; this.onDesmayo = null; this._hud = ''; this._acc = 0; this._save = 0;
@@ -72,8 +72,15 @@ VR.Vida = class {
   // gasto que se paga con lo que hay y, si no alcanza, queda como deuda (hospital, multas)
   cobrarODeber(n, why) {
     const W = VR.Wallet, pago = Math.min(W.get(), n); W.set(W.get() - pago); this.log(-pago, why);
+    const b = Math.min(this.s.banco, n - pago); if (b > 0) { this.s.banco -= b; this.log(-b, '🏦 ' + why); } n -= b;
     if (n > pago) { this.s.debe += n - pago; this.log(0, 'Quedó debiendo ' + VR.fmtGs(n - pago)); }
   }
+  // ---- billetera electrónica (celular): Jaha, saldo por la app, changas de app, Ao Porã ----
+  banco(n, why) { const s = this.s; if (n > 0 && s.debe > 0) { const p = Math.min(s.debe, Math.round(n / 2)); s.debe -= p; n -= p; this.log(-p, '🏦 Pago de deuda (50 %)'); } s.banco += n; this.log(n, '🏦 ' + why); this.sync(); }
+  pagaBanco(n, why) { if (this.s.banco < n) { this.msg('🏦 No te alcanza en la billetera electrónica: ' + VR.fmtGs(n)); return false; } this.banco(-n, why); return true; }
+  // cajero: pasar efectivo a la cuenta o sacar
+  deposita(n) { n = Math.min(n, VR.Wallet.get()); if (n <= 0) return 0; VR.Wallet.set(VR.Wallet.get() - n); this.log(-n, 'Depósito en el cajero'); this.s.banco += n; this.log(n, '🏦 Depósito'); this.sync(); this.msg('🏧 Depositaste ' + VR.fmtGs(n)); return n; }
+  retira(n) { n = Math.min(n, this.s.banco); if (n <= 0) return 0; this.s.banco -= n; this.log(-n, '🏦 Retiro'); VR.Wallet.set(VR.Wallet.get() + n); this.log(n, 'Retiro del cajero'); this.sync(); this.msg('🏧 Sacaste ' + VR.fmtGs(n)); return n; }
   gasta(n, why) { if (VR.Wallet.get() < n) { this.msg('💸 No te alcanza: ' + VR.fmtGs(n)); return false; } this.mueve(-n, why); return true; }
   // ---- cosas de la vida ----
   come(precio, hambre, que) { if (!this.gasta(precio, que)) return false; this.s.hambre = Math.min(100, this.s.hambre + hambre); this.sync(); this.msg('🍽 ' + que + ' · −' + VR.fmtGs(precio)); if (VR.mis) VR.mis.emit('come', { que, precio }); return true; }

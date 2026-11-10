@@ -34,6 +34,26 @@
     display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
   body.historia .soloLibre, body.historia #pOnline { display: none !important; }
   body:not(.historia) .soloHist { display: none !important; }
+  body.historia #btnChat { display: none; }
+  /* celular (Historia): apps */
+  #celDlg { width: min(330px, 92vw); height: min(560px, 90vh); padding: 0; border: 3px solid #0d0d10; border-radius: 30px; background: linear-gradient(160deg, #23324a, #121822); color: #fff; box-shadow: 0 0 0 6px #2a2a30, 0 14px 40px rgba(0,0,0,.6); overflow: hidden; display: none; flex-direction: column; }
+  #celDlg[open] { display: flex; }
+  #celDlg::backdrop { background: rgba(0,0,0,.45); }
+  .celTop { display: flex; justify-content: space-between; padding: 10px 18px 4px; font: 700 12px system-ui; color: #cfe0f5; }
+  #celBody { flex: 1; overflow: auto; padding: 8px 14px; }
+  .celHome { margin: 6px auto 10px; width: 90px; height: 5px; border-radius: 3px; border: 0; background: #cfd6e0; cursor: pointer; }
+  .apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; padding-top: 10px; }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; color: #fff; font: 600 11px system-ui; cursor: pointer; }
+  .app i { font-style: normal; font-size: 26px; width: 54px; height: 54px; border-radius: 14px; display: grid; place-items: center; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+  .app.off { opacity: .45; }
+  #celBody h3 { margin: 6px 0 8px; font: 800 18px system-ui; }
+  #celBody p { font: 500 13px/1.4 system-ui; color: #d6deea; margin: 6px 0; }
+  #celBody .cbtn { display: block; width: 100%; margin: 8px 0; padding: 12px; border-radius: 12px; border: 0; font: 700 14px system-ui; cursor: pointer; background: #ffd84a; color: #111; }
+  #celBody .cbtn.sec { background: #3a4658; color: #fff; }
+  #celBody .cbtn:disabled { opacity: .45; cursor: default; }
+  #celBody .row2 { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ffffff1a; font: 600 13px system-ui; }
+  #celFade { position: fixed; inset: 0; background: #000; z-index: 60; opacity: 0; pointer-events: none; transition: opacity .5s; display: grid; place-items: center; color: #fff; font: 700 18px system-ui; }
+  #celFade.on { opacity: 1; pointer-events: auto; }
   /* misiones (J2): objetivo arriba, caja de diálogo con carita abajo */
   #misHud { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 58px); background: rgba(20,20,26,.84); color: #fff; font: 600 13px system-ui; padding: 5px 12px; border-radius: 10px; border: 1px solid #ff5fa2; z-index: 5; pointer-events: none; max-width: min(80vw, 560px); text-align: center; }
   body:has(#misHud:not([hidden])) #jobHud { top: calc(env(safe-area-inset-top) + 90px); }
@@ -302,6 +322,7 @@
 <div id="topbar">
   <button class="icon-btn" id="btnJobs" title="Changas">📋</button>
   <button class="icon-btn" id="btnOnline" title="Online">🌐</button>
+  <button class="icon-btn" id="btnCel" title="Celular (C)" hidden>📱</button>
   <button class="icon-btn" id="btnChat" title="Hablar / chat (C)">💬</button>
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
   <button class="icon-btn" id="btnFull" title="Pantalla completa">⛶</button>
@@ -344,11 +365,13 @@
     <h2>Pausa</h2>
     <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
     <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
-    <div class="row" id="pHist"><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
+    <div class="row" id="pHist"><button class="btn" id="pCel">📱 Celular</button><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
     <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
   </div>
 </dialog>
 
+<div id="celFade"></div>
+<dialog id="celDlg"><div class="celTop"><span id="celHora"></span><span id="celSaldo"></span></div><div id="celBody"></div><button class="celHome" id="celHome" aria-label="Inicio"></button></dialog>
 <dialog id="vDlg">
   <div class="dlg" id="vBody"></div>
 </dialog>

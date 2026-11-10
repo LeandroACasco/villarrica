@@ -185,8 +185,9 @@
     }
     buy() {
       const T = this.trial, lines = bill(this.base, T, this.owned), tot = lines.reduce((a, l) => a + l[1], 0);
-      if (tot > VR.Wallet.get()) return;
-      VR.Wallet.add(-tot, 'Ao Porã'); 
+      if (this.ropero && tot > 0) { alert('Desde el celular solo te cambiás con lo que ya tenés. Para comprar, andá a Ao Porã.'); return; }
+      if (VR.vida) { if (tot > 0 && !VR.vida.pagaBanco(tot, 'Ao Porã')) return; } // en Historia, Ao Porã cobra con la billetera electrónica
+      else { if (tot > VR.Wallet.get()) return; VR.Wallet.add(-tot, 'Ao Porã'); }
       Closet.addLook(this.owned, T); Closet.save(this.owned);
       VR.store.set('look:propio', T);
       this.base = Object.assign({}, T);
