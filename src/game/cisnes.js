@@ -85,14 +85,22 @@ VR.Cisnes = class {
       for (const p of s.trail) { const k = p.t / 1.8; ctx.strokeStyle = `rgba(220,240,225,${0.5 * (1 - k)})`; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(p.x, p.y, 3 + k * 11, 2 + k * 7, 0, 0, 7); ctx.stroke(); }
       VR.drawCisne(ctx, s.x, s.y, s.a, s.col);
       ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a);
-      if (s === this.s) { // vos, de arriba: hombros, cabeza y las piernas pedaleando
-        for (const [sx, ph, on] of [[-2.4, s.ph, s.L], [2.4, s.ph2 || 0, s.R]]) {
-          const py = 5.6 + Math.sin(ph) * 1.6 * (on ? 1 : 0.4);
-          ctx.fillStyle = '#23283a'; ctx.fillRect(sx - 1.1, py - 3.2, 2.2, 3.4); ctx.fillStyle = '#f0f0ec'; ctx.fillRect(sx - 1.2, py, 2.4, 1.2);
-        }
-        ctx.fillStyle = '#1c2236'; ctx.beginPath(); ctx.ellipse(0, 0.6, 4.6, 2.4, 0, 0, 7); ctx.fill();
-        ctx.fillStyle = '#2c3552'; ctx.beginPath(); ctx.ellipse(-0.4, 0.2, 3.6, 1.8, 0, 0, 7); ctx.fill();
-        ctx.fillStyle = '#2a1a12'; ctx.beginPath(); ctx.arc(0, 0.2, 2.4, 0, 7); ctx.fill(); ctx.fillStyle = '#4a3020'; ctx.beginPath(); ctx.arc(-0.3, -0.1, 1.6, 0, 7); ctx.fill();
+      if (s === this.s) { // dos personas sentadas, cada una con su pedal: vos a la izquierda y tu compañera a la derecha
+        const person = (sx, ph, on, shirt, shirtL, hair, skin) => {
+          const py = 6.4 + Math.sin(ph) * 1.8 * (on ? 1 : 0.35);
+          ctx.fillStyle = '#1c1c24'; ctx.fillRect(sx - 1.8, py - 4, 1.6, 4.2); ctx.fillRect(sx + 0.2, py - 3.4 - Math.sin(ph) * 0.8, 1.6, 4.2);   // piernas
+          ctx.fillStyle = '#f0f0ec'; ctx.fillRect(sx - 1.9, py, 1.8, 1.2); ctx.fillRect(sx + 0.1, py + 0.4, 1.8, 1.2);                              // zapatillas
+          ctx.fillStyle = '#14141c'; ctx.beginPath(); ctx.ellipse(sx, 0.2, 3.6, 2.8, 0, 0, 7); ctx.fill();                                           // contorno del torso
+          ctx.fillStyle = shirt; ctx.beginPath(); ctx.ellipse(sx, 0.2, 3.1, 2.3, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = shirtL; ctx.beginPath(); ctx.ellipse(sx - 0.6, -0.1, 2, 1.4, 0, 0, 7); ctx.fill();
+          ctx.strokeStyle = shirt; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(sx - 2.6, 0); ctx.lineTo(sx - 1.4, -3.6); ctx.moveTo(sx + 2.6, 0); ctx.lineTo(sx + 1.4, -3.6); ctx.stroke(); // brazos al frente
+          ctx.fillStyle = skin; ctx.fillRect(sx - 2, -4.6, 1.2, 1.2); ctx.fillRect(sx + 0.8, -4.6, 1.2, 1.2);                                       // manos
+          ctx.fillStyle = '#14141c'; ctx.beginPath(); ctx.arc(sx, 0.4, 2.7, 0, 7); ctx.fill();                                                      // cabeza
+          ctx.fillStyle = hair; ctx.beginPath(); ctx.arc(sx, 0.4, 2.2, 0, 7); ctx.fill();
+          ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(sx, -0.5, 1.5, 0.9, 0, 0, 7); ctx.fill();                                               // frente (se ve de que lado mira)
+        };
+        person(-3, s.ph, s.L, '#25304f', '#3a4a78', '#241810', '#d8a47c');
+        person(3, s.ph2 || 0, s.R, '#c4506e', '#e07a94', '#5a3a22', '#e6b894');
       }
       ctx.restore(); ctx.restore();
       if (night) night.add(s.x, s.y - 4, 30, '255,226,160', 0.75); // lucecita del cisne

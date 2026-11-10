@@ -266,7 +266,7 @@
     if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
       if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
-    { const bt = cisnes.riding; for (const b of ['pedL', 'pedR']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden === !bt) el.hidden = !bt; }
+    { const bt = cisnes.riding; for (const b of ['pedL', 'pedR']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden === bt) el.hidden = !bt; }
       for (const b of ['action', 'run']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden !== bt) el.hidden = bt; } }
     $('gearBtns').hidden = !(car && VR.drive === 'manual' && VR.input.source === 'touch') || !!VR.autoBox;
     dpanel.update(car, VR.input.source === 'touch');
