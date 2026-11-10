@@ -26,6 +26,7 @@
   const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
+  const cisnes = VR.cisnes = new VR.Cisnes(world, night);
   const gpsNet = prueba ? null : new VR.GPS(world);
   const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
     onBusted: () => sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'),
@@ -146,7 +147,13 @@
     }
     if (VR.input.pressed('menu')) { openMenu(); return; }
     if (VR.input.pressed('map')) { openMap(); return; }
-    if (car) {
+    cisnes.update(dt, VR.input);
+    if (cisnes.riding) { // en un cisne de pedal: el jugador va sobre el cisne
+      const s = cisnes.s;
+      player.px = player.x; player.py = player.y; player.x = s.x; player.y = s.y + 4; player.moving = false;
+      hint = VR.input.source === 'touch' ? '🦢 Bajar: botón AUTO' : VR.input.source === 'pad' ? '🦢 X: bajar' : '🦢 F: bajar'; hintCar = null;
+      if (VR.input.pressed('car')) { if (cisnes.exit(player)) { driveLabels(false); toast('Bajaste del cisne'); } else toast('Acercate a la orilla o al muelle para bajar'); }
+    } else if (car) {
       car.update(dt, VR.input);
       player.px = player.x; player.py = player.y; player.x = car.x; player.y = car.y;
       const ng = nearGarage(); hint = ng ? (VR.input.source === 'touch' ? '🔧 Taller: ACCIÓN' : VR.input.source === 'pad' ? '🔧 A: taller' : '🔧 Espacio: taller') : ''; hintCar = ng;
@@ -176,7 +183,11 @@
       hintCar = nc;
       const nci = nearCine(); if (nci && !nc && !ns) { hint = VR.input.source === 'touch' ? '🎬 Cine: ACCIÓN' : '🎬 Espacio: cine'; hintCar = { x: nci.x, y: nci.y - 8 }; if (VR.input.pressed('action')) { teatro.enter(); return; } }
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
-      if (VR.input.pressed('car')) { if (nc) enterCar(nc); else toast('Acercate a un auto o una moto para subir'); }
+      const nsw = !nc ? cisnes.near(player) : null;
+      if (nsw) { hint = VR.input.source === 'touch' ? '🦢 Subir' : VR.input.source === 'pad' ? 'X: subir al cisne' : 'F: subir al cisne'; hintCar = { x: nsw.x, y: nsw.y - 8 }; }
+      if (VR.input.pressed('car')) {
+        if (nsw) { cisnes.board(nsw); toast(VR.input.source === 'touch' ? '🦢 Pedaleá con los dos botones (o joystick arriba). Uno solo gira' : '🦢 Pedaleá: A y D (o W los dos). Un solo pie gira'); }
+        else if (nc) enterCar(nc); else toast('Acercate a un auto, una moto o un cisne para subir'); }
       else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
@@ -210,7 +221,8 @@
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
-    if (!car && !online.ride) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
+    cisnes.draw(ctx, cx, cy, night);
+    if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
@@ -254,6 +266,8 @@
     if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
       if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
+    { const bt = cisnes.riding; for (const b of ['pedL', 'pedR']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden === !bt) el.hidden = !bt; }
+      for (const b of ['action', 'run']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden !== bt) el.hidden = bt; } }
     $('gearBtns').hidden = !(car && VR.drive === 'manual' && VR.input.source === 'touch') || !!VR.autoBox;
     dpanel.update(car, VR.input.source === 'touch');
     if (car && VR.drive === 'manual') spd.hidden = true; // el minipanel ya muestra la velocidad

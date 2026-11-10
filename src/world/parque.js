@@ -164,7 +164,6 @@
     // agua: sombra del muelle, ondas, cisnes y el bote
     shade(g, X + 3, (d.yn) * S + 2, Wd, 2 * S + 3, 0.32);
     const t = Math.sin(now() / 700) * 0.05;
-    for (const [sx, sy, col, a] of d.cisnes) VR.drawCisne(g, sx * S, sy * S, a + t * 0, col);
     if (d.bote) { // bote de remo amarrado al muelle
       const [bx, by, ba] = d.bote; g.save(); g.translate(bx * S, by * S); g.rotate(ba);
       disc(g, 'rgba(10,20,10,.3)', 1.5, 1.8, 5.2, 11.6); disc(g, '#2a2420', 0, 0, 5.2, 11.4); disc(g, '#ece6d6', 0, 0, 4.6, 10.8); disc(g, '#8a6a42', 0, 0.6, 3.1, 8.6); disc(g, '#6a4e2e', 0, 0.6, 2.4, 7.4);

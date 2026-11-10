@@ -2,7 +2,7 @@
 // El juego solo lee VR.input.ax / ay (de -1 a 1), down(b) y pressed(b).
 'use strict';
 VR.input = (() => {
-  const BTN = ['action', 'run', 'car', 'menu', 'map', 'fire', 'weapon'];
+  const BTN = ['action', 'run', 'car', 'menu', 'map', 'fire', 'weapon', 'pedL', 'pedR'];
   const kb = { u: 0, d: 0, l: 0, r: 0 };
   const kbBtn = {}, touchBtn = {}, padBtn = {}, latch = {};
   let prev = {}, cur = {}, pressedNow = {}, consumed = false;
@@ -109,6 +109,7 @@ VR.input = (() => {
     if (x && y) { x *= Math.SQRT1_2; y *= Math.SQRT1_2; }
     if (!x && !y) { x = touchAxis.x; y = touchAxis.y; }
     if (!x && !y) { x = padAxis.x; y = padAxis.y; }
+    api.pl = api.enabled && !!(kb.l || touchAxis.x < -0.45 || padAxis.x < -0.45); api.pr = api.enabled && !!(kb.r || touchAxis.x > 0.45 || padAxis.x > 0.45); // pedales de los cisnes (cada lado por separado)
     if (!api.enabled) x = y = 0;
     api.ax = x; api.ay = y;
     prev = cur; cur = {};
