@@ -291,6 +291,9 @@ Escena aparte (no usa el mapa): `VR.Teatro` con su propio piso, butacas (`seats`
 - **Changas en Historia:** se abren con los premios de las misiones (`premio.changas`); las cerradas salen con 🔒 en 📋.
 - **J3 · lugares para usar** (`VR.PUNTOS`): `despensa` (puesto en la vereda sur, al sudeste de la plaza: comida de `VR.DESPENSA` y saldo) y `pieza` (dormir desde las 18:00 hasta las 6:00 con `vida.dormir()`, guarda). Personajes con `menu(M)` (Doña Chela: chipa, canasto, llenar el canasto, pagar el fiado; Ña Ramona: pagar la pieza) cuando no tienen nada de misión. `VR.Lugares.libre` solo elige vereda, plaza o pasto (nunca la calle).
 - **Canasto** (`vida.s.canasto`, `stock`, `fiado`): la chipa se compra a 3.000 y se vende a 5.000, hasta 20 por canasto; en Historia la changa de chipa vende del stock (sin tope de 10) y termina cuando se vacía. `llenaCanasto(n, fiar)`, `pagaFiado()`; el fiado suma a la deuda del HUD.
+- **Canasto equipado** (`vida.s.equipo = 'canasto'`): G o el botón 🧺 lo pone en la mano (se dibuja en `Player.draw`); el botón ACCIÓN pasa a 🥐 VENDER y vende al lado de la gente sin empezar la changa. `changas.start('chipa')` en Historia solo lo equipa.
+- **Robar en Historia** (`noRobar` en `main.js`): al tránsito, solo con un arma (hoy las de desarrollador); los estacionados, con herramientas (`vida.s.herr`, llegan en J6). Siempre se puede con los tuyos (`c.mio`), uno que ya te llevaste (`c.robado`) o el último que manejaste. Libre igual que antes.
+- **Globos que no se enciman:** `Player.prototype.drawBubble` sube el globo si choca con otro del mismo cuadro (`VR._bubs`, se vacía en `render`).
 - **Menú:** Pausa → 📌 Misiones (en curso con objetivo, marcar en el GPS, reintentar, dejar; para empezar; cumplidas; barrios). Configuración → Desarrollador (solo Historia): saltar el paso, abrir todos los barrios.
 
 ### 6.11 Tienda (`shop.js` + diálogo en `shell.html`)

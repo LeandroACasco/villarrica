@@ -139,12 +139,18 @@ VR.Player = class {
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
     ctx.drawImage(img, x - 8, y - 31, 16, 32);
+    if (this.equipo === 'canasto') { // canasto de chipa en la mano (J3)
+      const r = this.dir === 'left' ? -1 : 1, bx = x + r * 5 - 3, by = y - 15; ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx - 1, by - 1, 8, 6); ctx.fillStyle = '#b07a3a'; ctx.fillRect(bx, by, 6, 4); ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx + 1, by - 1, 2, 2); ctx.fillRect(bx + 3, by - 2, 2, 2); ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx + 2, by - 4, 1, 3); ctx.fillRect(bx + 3, by - 5, 1, 1); ctx.fillRect(bx + 4, by - 4, 1, 3);
+    }
   }
   drawBubble(ctx, camX, camY, a) {
     if (!this.bubble) return;
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 36;
     const img = VR.gfx.textImg(this.bubble.text, '#1a1a1e', 9);
-    const w = img.lw + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2), by = y - h;
+    const w = img.lw + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2); let by = y - h;
+    const B = VR._bubs || (VR._bubs = []); // si choca con otro globo de este cuadro, sube
+    for (let k = 0; k < 6 && B.some((r) => bx < r[0] + r[2] + 2 && bx + w + 2 > r[0] && by < r[1] + r[3] + 3 && by + h + 3 > r[1]); k++) by -= h + 4;
+    B.push([bx, by, w, h]);
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(bx - 1, by, w + 2, h); ctx.fillRect(bx, by - 1, w, h + 2);
     ctx.fillStyle = '#fbf8ef'; ctx.fillRect(bx, by, w, h);
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(x - 2, by + h + 1, 5, 1); ctx.fillRect(x - 1, by + h + 2, 3, 1); ctx.fillRect(x, by + h + 3, 1, 1);

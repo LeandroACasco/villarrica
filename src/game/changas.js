@@ -52,6 +52,7 @@ VR.Changas = class {
     if (VR.vida && k !== 'chipa' && !VR.vida.saldoOk()) { this.toast('📱 Sin saldo no te llegan changas por la app. Cargá saldo (solo la chipa se hace en persona)'); return; }
     if (k === 'delivery' && !(car && car.type === 'moto')) { this.toast('🏍 Para el delivery necesitás una moto'); return; }
     if (k === 'chipa' && car) { this.toast('🚶 Bajate para vender chipa'); return; }
+    if (k === 'chipa' && VR.vida && VR.vida.s.canasto) { VR.vida.s.equipo = 'canasto'; this.toast('🧺 Canasto en la mano: ACCIÓN al lado de la gente para vender'); return; } // en Historia la chipa se vende con el canasto equipado
     if (k === 'chipa' && VR.vida && !(VR.vida.s.canasto && VR.vida.s.stock > 0)) { this.toast(VR.vida.s.canasto ? '🧺 El canasto está vacío: reponé chipa con Doña Chela (plaza)' : '🧺 Necesitás el canasto de Doña Chela (plaza)'); return; }
     this.job = { k, stage: 0, t: 0, n: 0 };
     if (!force) this.tutorial(k); // si la empieza una misión, ya lo explicó el diálogo
@@ -71,7 +72,10 @@ VR.Changas = class {
   end(msg) { if (this.job) { this.job = null; this.setDest(null); } this.hud.hidden = true; if (msg) this.toast(msg); }
   // a pie: vender chipa a la persona más cercana
   action(player) {
-    if (!this.job || this.job.k !== 'chipa' || !this.peds) return false;
+    const eq = VR.vida && VR.vida.s.equipo === 'canasto';
+    if (!this.peds || !(eq || (this.job && this.job.k === 'chipa'))) return false;
+    if (eq && VR.vida.s.stock <= 0) { this.toast('🧺 El canasto está vacío: reponé chipa con Doña Chela (plaza)'); return true; }
+    if (!this.job || this.job.k !== 'chipa') this.job = { k: 'chipa', stage: 0, t: 0, n: 0, eq: true };
     const q = this.peds.greet(player.x, player.y); if (!q) { player.say('¡Chipa, chipa calentita!', 1.5); return true; }
     if (q.chipa) { q.say = { text: 'Ya te compré, che', t: 1.6 }; return true; }
     if (VR.mis && !VR.Barrios.enPunto(this.world, player.x, player.y)) { q.say = { text: 'Ndaikuaái ndéve, che...', t: 1.6 }; return true; }

@@ -106,12 +106,30 @@
     }
     return best;
   };
+  // Historia: robar no es tan fácil (Leandro, 10/11/2026). Al tránsito hay que bajarlo con un arma y los estacionados
+  // se abren con herramientas (llegan con la economía larga, J6). Tus vehículos (comprados, alquilados, prestados) o uno
+  // que ya te llevaste, sí. En Libre todo sigue como antes.
+  function noRobar(c) {
+    if (!vida || c.mio || c.robado || c === lastCar) return null;
+    if (c.ai) return weapons && weapons.enabled ? null : '🔫 Para bajar al conductor necesitás un arma';
+    return vida.s.herr ? null : '🔧 Para abrir un vehículo estacionado necesitás herramientas';
+  }
+  // canasto de chipa en la mano (G, o el botón 🧺): con el canasto, ACCIÓN vende al lado de la gente
+  const btnEq = $('btnEq'), btnA = document.querySelector('[data-b="action"]'); let eqTxt = '';
+  function toggleEq() { if (!vida || !vida.s.canasto) return; vida.s.equipo = vida.s.equipo === 'canasto' ? null : 'canasto'; vida.save(); if (!vida.s.equipo && changas.job && changas.job.k === 'chipa') { changas.job = null; changas.hud.hidden = true; } toast(vida.s.equipo ? '🧺 Canasto en la mano · ' + vida.s.stock + ' chipas · ACCIÓN al lado de la gente para vender' : '🧺 Guardaste el canasto'); }
+  btnEq.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleEq(); });
+  addEventListener('keydown', (e) => { if (e.code === 'KeyG' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleEq(); });
+  function syncEq() {
+    const eq = vida && vida.s.equipo, t = eq === 'canasto' && !car ? '🥐|VENDER' : '✋|ACCIÓN';
+    player.equipo = car ? null : eq; btnEq.hidden = !(vida && vida.s.canasto) || !!car; btnEq.classList.toggle('down', eq === 'canasto');
+    if (t !== eqTxt) { eqTxt = t; const [i, n] = t.split('|'); btnA.innerHTML = '<span class="ico">' + i + '</span>' + n; }
+  }
   function enterCar(c) {
     if (c._nid !== undefined && online) online.take(c); // un auto del anfitrión: pasa a ser tuyo
     if (emer) emer.stolen(c);
     if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : '🚗 ¡Te llevaste el auto!'); }
     if (c.type === 'moto') c.rider = me();
-    car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
+    c.robado = true; car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
     if (VR.mis) VR.mis.emit('subir', c);
   }
@@ -232,7 +250,7 @@
         hint = (VR.input.source === 'touch' ? '👥 ' : 'F: ') + 'subir con ' + rd.n; hintCar = { x: rd.x, y: rd.y - 8 };
         if (VR.input.pressed('car')) { online.ride = rd.id; toast('👥 Vas con ' + rd.n); }
       } else {
-      hint = nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
+      hint = nc && noRobar(nc) ? '🔒 ' + (nc.ai ? 'necesitás un arma' : 'necesitás herramientas') : nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
       hintCar = nc;
       const nci = nearCine(); if (nci && !nc && !ns) { hint = VR.input.source === 'touch' ? '🎬 Cine: ACCIÓN' : '🎬 Espacio: cine'; hintCar = { x: nci.x, y: nci.y - 8 }; if (VR.input.pressed('action')) { teatro.enter(); return; } }
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
@@ -243,13 +261,14 @@
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
-        else if (nc) enterCar(nc); else toast('Acercate a un auto, una moto o un cisne para subir'); }
+        else if (nc) { const no = noRobar(nc); if (no) toast(no); else enterCar(nc); } else toast('Acercate a un auto, una moto o un cisne para subir'); }
       else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
     if (mis) mis.update(dt, player, car);
+    syncEq();
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
     updateCamera(dt);
@@ -280,6 +299,7 @@
   // ---------- dibujo ----------
   const tall = [];
   function render(a, dt) {
+    VR._bubs = []; // globos de este cuadro (para que no se enciman)
     if (mode === 'title') { renderTitle(a, dt); return; }
     const ctx = VR.screen.ctx, sw = VR.screen.w, sh = VR.screen.h;
     if (teatro.on) { teatro.draw(ctx, sw, sh); return; }
