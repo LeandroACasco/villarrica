@@ -132,11 +132,14 @@ VR.tileset = {
           if (w > 1.55 && Math.floor(y * 2) % 3 === 0) { r += 40; g += 44; b += 30; }
           break;
         }
-        case VR.T.SENDERO: { // tierra clara apisonada, con granos y piedritas blancas
-          const m = vnoise(x, y, 4, 191 + v), m2 = vnoise(x, y, 8, 197 + v), k = (h - 0.5) * 12 + (m - 0.5) * 16;
-          r = 206 + k; g = 186 + k * 0.95; b = 152 + k * 0.8;
-          if (m2 > 0.7) { r -= 12; g -= 12; b -= 10; } // más pisada
-          if (h2 > 0.975) { r += 30; g += 30; b += 28; } else if (h2 < 0.02) { r -= 36; g -= 34; b -= 30; }
+        case VR.T.SENDERO: { // laja rojiza del recorrido de la laguna (Street View, 10/11/2026): losas de ~50 cm, juntas oscuras, tono rojo ladrillo apagado
+          const st = stones(x, y, 4, 3.2, 230 + v * 3), k = (st.id - 0.5) * 22 + (h - 0.5) * 8, tint = H((st.id * 89) | 0, v, 223);
+          r = 152 + k + (tint < 0.3 ? 10 : 0); g = 96 + k * 0.8 - (tint < 0.3 ? 4 : 0); b = 82 + k * 0.7 + (tint > 0.8 ? 8 : 0);
+          const sh = st.dx + st.dy;
+          if (st.edge < 0.3) { r = 104; g = 66; b = 56; }
+          else if (st.edge < 0.6 && sh > 0) { r -= 12; g -= 10; b -= 9; }
+          else if (st.edge < 0.8 && sh < 0) { r += 10; g += 8; b += 7; }
+          if (h2 > 0.99) { r -= 22; g -= 18; b -= 16; } else if (h2 < 0.01) { r += 20; g += 16; b += 14; } // manchas y hojas secas
           break;
         }
         case VR.T.LADRILLO: { // ladrillos de 25 × 12 cm en hiladas corridas, con junta clara

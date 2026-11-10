@@ -998,7 +998,7 @@ VR.decorTop = {
   },
   banco(d) { // banco de plaza (05/11/2026): tablas de madera marrón, hierro negro; la gente sentada la pone VR.Peds
     const S = VR.TILE, X = d.x * S, Y = d.y * S;
-    const sl = ['#5a3418', '#7a4a24', '#a06a3a'], iron = '#18181c'; // madera marrón (foto 360 de la plaza)
+    const sl = d.azul ? ['#12408a', '#2f7fd2', '#74b4f0'] : ['#5a3418', '#7a4a24', '#a06a3a'], iron = d.azul ? '#14233f' : '#18181c'; // madera marrón (foto 360 de la plaza); en el parque Ortiz Guerrero, azules
     if (d.fa !== undefined) { // banco girado (camino diagonal y esquinas): se dibuja como el de frente, rotado
       return [{ sy: d.py + 3, draw(g) {
         g.save(); g.translate(d.px, d.py); g.rotate(d.fa - Math.PI / 2);

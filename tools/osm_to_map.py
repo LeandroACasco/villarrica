@@ -924,7 +924,7 @@ def main(src, out, preview=None):
                 if is_lag(int(xe + dx_), int(yn + dy_)): sw_.append([round(xe + dx_, 2), round(yn + dy_, 2), col_, a_])
             bote = [round(xe + 2.9, 2), round(yn + 0.7, 2), -0.3] if is_lag(xe + 2, yn + 1) else None
             decals.append({'kind': 'embarcadero', 'x': xe - 7, 'y': yn - 3, 'w': 15, 'h': 10, 'xe': xe, 'yn': yn, 'cisnes': sw_, 'bote': bote})
-            decals.append({'kind': 'banco', 'x': xe + 3, 'y': yn - 2, 'w': 1, 'h': 1, 'f': 'd', 'px': (xe + 3) * 16 + 8, 'py': (yn - 2) * 16 + 8, 'fa': round(math.pi / 2, 3)})
+            decals.append({'kind': 'banco', 'azul': 1, 'x': xe + 3, 'y': yn - 2, 'w': 1, 'h': 1, 'f': 'd', 'px': (xe + 3) * 16 + 8, 'py': (yn - 2) * 16 + 8, 'fa': round(math.pi / 2, 3)})
             labels.append({'text': 'Paseo en cisne', 'x': xe * 16 + 8, 'y': (yn - 4) * 16 + 4, 'small': 1})
 
             # -- plataforma flotante en el centro de la laguna y dos surtidores --
@@ -962,6 +962,23 @@ def main(src, out, preview=None):
             decals.append({'kind': 'panambi', 'x': int(cxo) - 4, 'y': int(cyo) - 6, 'w': 9, 'h': 10, 'cx': round(cxo * 16 + 8, 1), 'cy': round(cyo * 16 + 8, 1), 'bx': bx_, 'by': by_})
             labels.append({'text': 'Panambi Vera', 'x': int(cxo * 16 + 8), 'y': int((cyo - 3.6) * 16)})
 
+            # -- recorrido de la costa norte (Street View, 10/11/2026; punto de Leandro ~76 % hacia el este y pegado a la costa
+            #    norte): hacia el noreste, la cancha sintética con alambrado; al oeste de la cancha, la naciente (hondonada con
+            #    escalera y paredes de piedra); en la orilla, jardineras blancas con arbolitos --
+            fxa = int(lx0 + 0.74 * (lx1 - lx0 + 1)); fxb = fxa + 11
+            ytop = min(col_t[x][0] for x in range(fxa, fxb + 1) if x in col_t)
+            fyb = ytop - 6; fya = fyb - 6
+            reserve(fxa - 1, fya - 1, fxb + 1, fyb + 1)
+            paint(fxa, fya, fxb, fyb, GRASS)
+            decals.append({'kind': 'cancha_sint', 'x': fxa, 'y': fya, 'w': 12, 'h': 7})
+            nx0 = fxa - 9; ny0 = fya - 5
+            reserve(nx0 - 1, ny0 - 1, nx0 + 7, ny0 + 6)
+            paint(nx0, ny0, nx0 + 6, ny0 + 4, PLAZADIRT)
+            decals.append({'kind': 'naciente', 'x': nx0, 'y': ny0, 'w': 7, 'h': 5})
+            vx_ = int(lx0 + 0.76 * (lx1 - lx0 + 1))
+            jard = [[x, col_t[x][0] - 2] for x in (vx_ - 5, vx_ - 1, vx_ + 3) if x in col_t]
+            if jard: decals.append({'kind': 'jardineras', 'x': min(a for a, _ in jard) - 1, 'y': min(b for _, b in jard) - 1, 'w': 12, 'h': 4, 'pts': jard})
+
             # -- orilla sur: troncos caídos y matas, sobre Curupayty --
             lg = []
             for k in range(5):
@@ -992,7 +1009,7 @@ def main(src, out, preview=None):
                 if wt is None: continue
                 fa = math.atan2(wt[1] - y, wt[0] - x)
                 bench_at.append((x, y))
-                decals.append({'kind': 'banco', 'x': x, 'y': y, 'w': 1, 'h': 1, 'f': 'd', 'px': round((x + 0.5) * 16, 1), 'py': round((y + 0.5) * 16, 1), 'fa': round(fa, 3)})
+                decals.append({'kind': 'banco', 'azul': 1, 'x': x, 'y': y, 'w': 1, 'h': 1, 'f': 'd', 'px': round((x + 0.5) * 16, 1), 'py': round((y + 0.5) * 16, 1), 'fa': round(fa, 3)})
 
             # -- árboles tupidos con tronco pintado con cal (como la Plaza de los Héroes); cerca del agua queda pasto
             #    abierto (carpinchos); palmeras al oeste y al sudeste; algún tajy --
@@ -1031,6 +1048,8 @@ def main(src, out, preview=None):
                 if r_ >= 15: dens[max(0, y - 1):y + 2, max(0, x - 1):x + 2] = True
             dens = dilate(dens, 1) & (tiles == GRASS) & (area == pk) & ~near7 & ~reserved & (noise < 0.42)
             tiles[dens] = PLAZADIRT
+            # tierra colorada con pasto ralo alrededor de toda la laguna (Street View: el piso del parque es tierra roja, no pasto parejo)
+            tiles[(tiles == GRASS) & (area == pk) & ~reserved & (noise < 0.6)] = DIRT
             print('parque Ortiz Guerrero: laguna x %d-%d, y %d-%d; embarcadero en x=%d, glorieta en y=%d, pasarela en y=%d; %d árboles nuevos, %d bancos, %d faroles' %
                   (lx0, lx1, ly0, ly1, xe, yc, yp, len(trees) - n0, len(bench_at), len(lamps)))
 

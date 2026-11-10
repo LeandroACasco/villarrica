@@ -79,6 +79,7 @@ VR.Night = class {
       // parque Manuel Ortiz Guerrero (10/11/2026): faroles blancos en el anillo, surtidores celestes, glorieta cálida,
       // la fuente de los enamorados con luz rosada suave (por la leyenda) y el embarcadero
       else if (d.kind === 'farol_parque') this.put(X + 8, Y + 2 * S - 8, 60, LED, 0.85);
+      else if (d.kind === 'cancha_sint') { for (const [fx, fy] of [[0, 0], [d.w, 0], [0, d.h], [d.w, d.h]]) this.put((d.x + fx) * S, (d.y + fy) * S, 44, LED, 0.55); }
       else if (d.kind === 'surtidor') this.put(d.px, d.py - 8, 36, '150,220,255', 0.9);
       else if (d.kind === 'fuente_amor') this.put((d.px + 1.5) * S, (d.py + 1.5) * S, 56, '255,170,205', 0.7);
       else if (d.kind === 'capillita') this.put(d.bx * S + 8, (d.by + 1) * S - 4, 34, CALIDO, 0.7);

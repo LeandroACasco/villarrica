@@ -345,6 +345,72 @@
       disc(g, '#2a2a30', x, y - 33, 4.6, 4.8); disc(g, '#fbf6e2', x, y - 33, 4, 4.2); disc(g, '#ffffff', x - 1.2, y - 34.4, 1.6, 1.6); R(g, '#2a2a30', x - 2.4, y - 38.4, 4.8, 1.6);
     } }];
   };
+
+  // ---------------------------------------------------------------- Cancha sintética (noreste de la laguna, Street View 10/11/2026)
+  // Césped sintético verde oscuro con franjas de corte, líneas blancas, dos arcos y alambrado alto con postes; la entrada
+  // es un hueco en el lado sur (del lado del sendero). 12 × 7 baldosas (~24 × 14 m).
+  VR.decor.cancha_sint = (g, d) => {
+    const X = d.x * S, Y = d.y * S, W = d.w * S, Hh = d.h * S;
+    R(g, '#2b6b34', X, Y, W, Hh);
+    for (let i = 0; i < d.w * 2; i++) R(g, i % 2 ? '#2f7439' : '#296630', X + i * 16, Y, 16, Hh);
+    for (let k = 0; k < 90; k++) R(g, H(k, d.x, 77) < 0.5 ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.07)', X + H(k, 3, d.y) * W, Y + H(k, 5, d.y) * Hh, 2, 1);
+    const L = '#eef0e6', m = 5;
+    R(g, L, X + m, Y + m, W - 2 * m, 1); R(g, L, X + m, Y + Hh - m - 1, W - 2 * m, 1); R(g, L, X + m, Y + m, 1, Hh - 2 * m); R(g, L, X + W - m - 1, Y + m, 1, Hh - 2 * m);
+    R(g, L, X + (W >> 1), Y + m, 1, Hh - 2 * m);
+    g.strokeStyle = L; g.lineWidth = 1; g.beginPath(); g.arc(X + W / 2 + 0.5, Y + Hh / 2, 11, 0, Math.PI * 2); g.stroke();
+    for (const e of [0, 1]) { // áreas y arcos
+      const ax = e ? X + W - m - 15 : X + m, gx = e ? X + W - m - 1 : X + m;
+      R(g, L, ax, Y + (Hh >> 1) - 14, 15, 1); R(g, L, ax, Y + (Hh >> 1) + 14, 15, 1); R(g, L, e ? ax : ax + 14, Y + (Hh >> 1) - 14, 1, 29);
+      R(g, 'rgba(0,0,0,.3)', gx - (e ? 0 : 1), Y + (Hh >> 1) - 7, 4, 15); R(g, '#e8e8e2', gx - (e ? 2 : 0), Y + (Hh >> 1) - 8, 3, 1); R(g, '#e8e8e2', gx - (e ? 2 : 0), Y + (Hh >> 1) + 7, 3, 1); R(g, '#e8e8e2', gx - (e ? 2 : -1), Y + (Hh >> 1) - 8, 1, 16);
+    }
+  };
+  VR.decorTop.cancha_sint = (d) => {
+    const X = d.x * S, Y = d.y * S, W = d.w * S, Hh = d.h * S, gate = [X + W / 2 - 14, X + W / 2 + 14], out = [], post = 2;
+    const fence = (g, x0, y0, x1, y1, tall) => { // alambrado: postes grises y malla clara
+      g.fillStyle = 'rgba(210,214,206,.35)'; g.fillRect(Math.min(x0, x1), Math.min(y0, y1) - tall, Math.max(1, Math.abs(x1 - x0)), Math.max(1, Math.abs(y1 - y0)) + (x0 === x1 ? 0 : 0));
+      g.strokeStyle = 'rgba(40,44,40,.55)'; g.lineWidth = 0.5; g.beginPath(); g.moveTo(x0, y0 - tall); g.lineTo(x1, y1 - tall); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    };
+    // lados norte, este y oeste: se ordenan por su altura en pantalla; el sur, con la entrada
+    out.push({ sy: Y, draw(g) { fence(g, X, Y, X + W, Y, 12); for (let x = X; x <= X + W; x += 24) { R(g, '#6a6e68', x - 0.8, Y - 12, 1.6, 12); } } });
+    out.push({ sy: Y + Hh * 0.5, draw(g) { for (const x of [X, X + W - 1]) { fence(g, x, Y, x, Y + Hh, 12); for (let y = Y; y <= Y + Hh; y += 24) R(g, '#6a6e68', x - 0.8 + (x === X ? 0 : 1), y - 12, 1.6, 12); } } });
+    out.push({ sy: Y + Hh + 1, draw(g) {
+      for (const [a, b] of [[X, gate[0]], [gate[1], X + W]]) { g.fillStyle = 'rgba(210,214,206,.35)'; g.fillRect(a, Y + Hh - 12, b - a, 12); g.strokeStyle = 'rgba(40,44,40,.55)'; g.lineWidth = 0.5; g.strokeRect(a, Y + Hh - 12, b - a, 12); }
+      for (const x of [X, gate[0], gate[1], X + W - 1]) R(g, '#6a6e68', x - 0.8, Y + Hh - 13, 1.6, 13);
+    } });
+    return out;
+  };
+
+  // ---------------------------------------------------------------- Naciente (el ykua que da el nombre a la laguna)
+  // Hondonada de tierra oscura y húmeda entre paredes de piedra, con una escalera de cemento que baja desde el sur.
+  VR.decor.naciente = (g, d) => {
+    const X = d.x * S, Y = d.y * S, W = d.w * S, Hh = d.h * S, cx = X + W / 2, cy = Y + Hh / 2;
+    g.save(); g.beginPath(); g.ellipse(cx, cy, W / 2 - 2, Hh / 2 - 2, 0, 0, Math.PI * 2); g.clip();
+    R(g, '#4a3326', X, Y, W, Hh);
+    for (let k = 0; k < 70; k++) R(g, H(k, d.x, 31) < 0.5 ? '#3a281d' : '#5a3f2e', X + H(k, 2, d.y) * W, Y + H(k, 6, d.y) * Hh, 3 + H(k, 9, d.x) * 5, 2);
+    disc(g, 'rgba(72,92,60,.45)', cx + 6, cy - 4, 14, 8);                          // humedad y musgo
+    g.restore();
+    // paredes de piedra al norte, este y oeste
+    for (let i = 0; i < 26; i++) {
+      const a = Math.PI * (1.05 + 0.9 * i / 25), x = cx + Math.cos(a) * (W / 2 - 3), y = cy + Math.sin(a) * (Hh / 2 - 3), w = 7 + H(i, d.x, 41) * 4, h = 5 + H(i, d.y, 43) * 3, t = H(i, 7, 47);
+      R(g, 'rgba(0,0,0,.35)', x - w / 2 + 1, y - h / 2 + 2, w, h);
+      R(g, t < 0.33 ? '#8c8a82' : t < 0.66 ? '#a39f94' : '#756f64', x - w / 2, y - h / 2, w, h); R(g, 'rgba(255,255,255,.18)', x - w / 2, y - h / 2, w, 1);
+    }
+    // escalera de cemento hacia el sur, con muro blanco al costado
+    const sx = cx - 9, sy = Y + Hh - 22;
+    for (let i = 0; i < 5; i++) { R(g, i % 2 ? '#d9d6cc' : '#e8e5db', sx, sy + i * 4.4, 18, 4.4); R(g, 'rgba(0,0,0,.25)', sx, sy + i * 4.4 + 3.6, 18, 0.8); }
+    R(g, '#ecebe4', sx - 3, sy - 2, 3, 24); R(g, 'rgba(0,0,0,.25)', sx + 18, sy - 1, 1, 22); R(g, '#ecebe4', sx + 18, sy - 2, 2.4, 24);
+    disc(g, '#3f7a34', X + W - 12, Y + 14, 6, 5); disc(g, '#4c8c3c', X + W - 13, Y + 13, 4, 3); // mata verde
+  };
+
+  // ---------------------------------------------------------------- Jardineras blancas de la costa norte
+  VR.decor.jardineras = (g, d) => {
+    for (const [tx, ty] of d.pts) {
+      const x = tx * S - 4, y = ty * S + 2;
+      R(g, 'rgba(0,0,0,.3)', x + 2, y + 5, 24, 10);
+      R(g, '#9a988f', x, y, 24, 11); R(g, '#f1efe8', x + 0.8, y + 0.8, 22.4, 9); R(g, '#d8d6cc', x + 1.6, y + 7, 20.8, 2.4); R(g, '#3d6d30', x + 2.5, y + 2, 19, 4);
+      for (let k = 0; k < 7; k++) R(g, H(k, tx, 88) < 0.5 ? '#4f8a3c' : '#2f5a28', x + 3 + k * 2.8, y + 1.4 + H(k, ty, 91) * 2, 2, 3);
+    }
+  };
 })();
 
 // Orilla y sendero curvos (10/11/2026, pedido de Leandro). En baldosas de 2 m la laguna y su sendero quedan
@@ -383,7 +449,7 @@ VR.lagoonOf = (W) => {
   };
   const fW = blur(mW), fU = blur(mU);
   const PW = gw * S, PH = gh * S, mk = () => { const c = VR.canvas(PW, PH); return [c, c.getContext('2d').createImageData(PW, PH)]; };
-  const [cWat, iWat] = mk(), [cPath, iPath] = mk(), [cLine, iLine] = mk();
+  const [cWat, iWat] = mk(), [cPath, iPath] = mk(), [cLine, iLine] = mk(), [cStrip, iStrip] = mk();
   const bil = (f, u, v) => { // u, v en baldosas (centro de baldosa = entero)
     const x = Math.max(0, Math.min(gw - 1.001, u)), y = Math.max(0, Math.min(gh - 1.001, v)), xi = x | 0, yi = y | 0, fx = x - xi, fy = y - yi, k = yi * gw + xi;
     return (f[k] * (1 - fx) + f[k + 1] * fx) * (1 - fy) + (f[k + gw] * (1 - fx) + f[k + gw + 1] * fx) * fy;
@@ -394,8 +460,10 @@ VR.lagoonOf = (W) => {
     const w_ = bil(fW, u, v), u_ = bil(fU, u, v);
     if (w_ > 0.5) { put(iWat, i, 0, 0, 0, 255); if (w_ < 0.535) put(iLine, i, 157, 178, 122, 200); continue; } // agua (y brillo verde en la orilla)
     if (w_ > 0.43) { put(iLine, i, 74, 64, 48, 255); continue; }                                            // barro oscuro de la orilla
+    if (u_ > 0.5 && w_ > 0.17) { put(iStrip, i, 0, 0, 0, 255); continue; }                                  // franja de tierra colorada entre el agua y el sendero (Street View, 1-2 m)
     if (u_ > 0.5) {
       put(iPath, i, 0, 0, 0, 255);
+      if (w_ > 0.135 && w_ <= 0.17) { put(iLine, i, 232, 228, 218, 255); continue; }                         // cordón blanco del lado del agua
       const t = W.get(rx + Math.floor(px / S), ry + Math.floor(py / S));
       if (u_ < 0.53 && t !== T.LADRILLO && !(t === T.SENDERO && dist[Math.floor(py / S) * gw + Math.floor(px / S)] > 3)) put(iLine, i, 236, 233, 224, 255); // piedra blanca del borde
     } else if (u_ > 0.505 - 0.03) {
@@ -403,8 +471,8 @@ VR.lagoonOf = (W) => {
       if (t !== T.SENDERO && t !== T.LADRILLO) put(iLine, i, 0, 0, 0, 50); // sombrita del borde sobre el pasto
     }
   }
-  cWat.getContext('2d').putImageData(iWat, 0, 0); cPath.getContext('2d').putImageData(iPath, 0, 0); cLine.getContext('2d').putImageData(iLine, 0, 0);
-  return (W._lag = { rx, ry, gw, gh, dist, ring, cWat, cPath, cLine,
+  cWat.getContext('2d').putImageData(iWat, 0, 0); cPath.getContext('2d').putImageData(iPath, 0, 0); cStrip.getContext('2d').putImageData(iStrip, 0, 0); cLine.getContext('2d').putImageData(iLine, 0, 0);
+  return (W._lag = { rx, ry, gw, gh, dist, ring, cWat, cPath, cLine, cStrip,
     // ¿la baldosa la dibuja la orilla curva? (así no se pintan encima los bordes escalonados de antes)
     owns: (tx, ty) => { const x = tx - rx, y = ty - ry; return x >= 0 && y >= 0 && x < gw && y < gh && (ring[y * gw + x] === 1 || ring[y * gw + x] === 2); } });
 };
@@ -431,7 +499,7 @@ VR.drawLagoon = (g, W, tx0, ty0, tx1, ty1) => {
     g.drawImage(tmp, 0, 0, cw * R, chh * R, ox, oy, cw, chh);
   };
   const sm = g.imageSmoothingEnabled; g.imageSmoothingEnabled = false;
-  layer(T.SENDERO, L.cPath); layer(T.LAGUNA, L.cWat);
+  layer(T.SENDERO, L.cPath); layer(T.DIRT, L.cStrip); layer(T.LAGUNA, L.cWat);
   g.drawImage(L.cLine, ox - L.rx * S, oy - L.ry * S, cw, chh, ox, oy, cw, chh);
   // 3) el ladrillo y los monumentos pegados al agua quedan como estaban
   for (let ty = ty0; ty < ty1; ty++) for (let tx = tx0; tx < tx1; tx++) {

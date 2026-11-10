@@ -143,7 +143,7 @@
           const t = W.get(x, y); if (t < 0 || !CAPY_LAND[t]) continue;
           let near = 99; for (let dy = -7; dy <= 7 && near > 1; dy++) for (let dx = -7; dx <= 7; dx++) if (isW(x + dx, y + dy)) near = Math.min(near, Math.max(Math.abs(dx), Math.abs(dy)));
           if (near === 1) shore.push([x * S + 8, y * S + 8]);
-          if (near <= 7 && t === T.GRASS) graze.push([x * S + 8, y * S + 8]);
+          if (near <= 7 && (t === T.GRASS || t === T.DIRT)) graze.push([x * S + 8, y * S + 8]);
         }
         this.open = open; this.shore = shore.filter(([x, y]) => this.capyOk(x, y)); this.graze = graze.filter(([x, y]) => this.capyOk(x, y));
         // dos manadas de carpinchos (5 y 3, con crías) y una bandada de 7 patos
