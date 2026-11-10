@@ -318,7 +318,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 1501a662 · 2026-11-10</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 5e0c62d7 · 2026-11-10</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -2616,6 +2616,43 @@ VR.loadMap = async (url) => {
       R(g, 'rgba(0,0,0,.3)', gx - (e ? 0 : 1), Y + (Hh >> 1) - 7, 4, 15); R(g, '#e8e8e2', gx - (e ? 2 : 0), Y + (Hh >> 1) - 8, 3, 1); R(g, '#e8e8e2', gx - (e ? 2 : 0), Y + (Hh >> 1) + 7, 3, 1); R(g, '#e8e8e2', gx - (e ? 2 : -1), Y + (Hh >> 1) - 8, 1, 16);
     }
   };
+  // ---------------------------------------------------------------- Quiosco y baños (8 × 5 baldosas, de cara al sur)
+  // Izquierda, el quiosco: ventana ancha con mostrador y toldo a rayas rojas y blancas, heladera y cartel sin texto.
+  // Derecha, los baños: dos puertas con placas azul y rosa (con un muñequito). Techo de chapa gris con aleros.
+  VR.decor.servicios = (g, d) => {
+    const X = d.x * S, Yb = (d.y + 4) * S;
+    R(g, 'rgba(0,0,0,.2)', X + 5, Yb, 8 * S, 5); R(g, 'rgba(0,0,0,.2)', X + 8 * S, (d.y + 1) * S + 8, 5, 3 * S - 4);
+  };
+  VR.decorTop.servicios = (d) => {
+    const X = d.x * S, Yb = (d.y + 4) * S, W = 8 * S, hf = 22;
+    return [{ sy: Yb + 1, draw(g) {
+      const t = now() / 1000;
+      // techo (chapa gris con nervaduras, alero al frente)
+      R(g, '#3c3e44', X - 1.5, Yb - 52, W + 3, 32); R(g, '#9aa0a8', X - 0.5, Yb - 51, W + 1, 30); R(g, '#b4bac2', X - 0.5, Yb - 51, W + 1, 3);
+      for (let x = X + 3; x < X + W - 2; x += 5) { R(g, 'rgba(60,66,74,.5)', x, Yb - 49, 0.8, 27); R(g, 'rgba(255,255,255,.25)', x + 1, Yb - 49, 0.5, 27); }
+      R(g, '#6a7078', X - 0.5, Yb - 21, W + 1, 2); R(g, '#7a8088', X + 52, Yb - 46, 9, 7); R(g, '#c8d0d8', X + 53, Yb - 45, 7, 5);       // claraboya
+      // pared de frente (crema)
+      R(g, '#2c2a26', X - 0.5, Yb - hf - 0.5, W + 1, hf + 1); R(g, '#efe6cf', X, Yb - hf, W, hf); R(g, '#d6caa8', X, Yb - 4, W, 4); R(g, '#bcb08c', X, Yb - 1, W, 1);
+      // ---- quiosco (izquierda): ventana con mostrador, toldo a rayas, heladera, cartel
+      R(g, '#2a2420', X + 8, Yb - 17, 46, 11); R(g, '#7ab0c8', X + 9, Yb - 16, 44, 9); R(g, 'rgba(255,255,255,.35)', X + 10, Yb - 16, 10, 9);
+      for (let i = 0; i < 6; i++) R(g, ['#d8403a', '#e8d9b0', '#4a8ad0', '#f0b030', '#58a858', '#d8403a'][i], X + 14 + i * 5.5, Yb - 15, 2.4, 6.5);       // golosinas y botellas
+      R(g, '#8a5a34', X + 6, Yb - 7, 50, 3); R(g, '#b07a48', X + 6, Yb - 7, 50, 1);                                                                          // mostrador de madera
+      for (let i = 0; i < 9; i++) { R(g, i % 2 ? '#fafafa' : '#d8403a', X + 5 + i * 6, Yb - 25, 6, 9); R(g, 'rgba(0,0,0,.2)', X + 5 + i * 6, Yb - 17, 6, 1.2); }   // toldo a rayas
+      R(g, '#2a2420', X + 4.5, Yb - 25.5, 55, 1); R(g, '#d8403a', X + 3, Yb - 26, 1.2, 1.2);
+      R(g, '#dfe8ee', X + 58, Yb - 19, 8, 17); R(g, '#8aa0b0', X + 58, Yb - 19, 8, 1.4); R(g, '#3a4a58', X + 59, Yb - 16, 6, 0.8); R(g, '#c8d8e4', X + 59, Yb - 15, 1.6, 12);  // heladera
+      R(g, '#2a2420', X + 12, Yb - 40, 38, 12); R(g, '#f0b030', X + 13, Yb - 39, 36, 10); for (let i = 0; i < 4; i++) R(g, '#7a4a18', X + 17 + i * 8, Yb - 36, 5, 1.6); // cartel sin texto
+      // ---- baños (derecha): dos puertas con placa
+      for (const [k, col, dk] of [[0, '#3a74c8', '#244a8a'], [1, '#d8609a', '#9a3868']]) {
+        const dx = X + 76 + k * 24;
+        R(g, '#2a2420', dx - 0.5, Yb - 18.5, 17, 19); R(g, '#8a6a46', dx, Yb - 18, 16, 18); R(g, '#a07c54', dx, Yb - 18, 16, 1.4); R(g, 'rgba(0,0,0,.18)', dx + 11, Yb - 17, 5, 17); R(g, '#5a4430', dx + 12, Yb - 8, 2, 1.6);
+        R(g, '#2a2420', dx + 3, Yb - 33, 10, 12); R(g, col, dx + 3.5, Yb - 32.5, 9, 11); R(g, dk, dx + 3.5, Yb - 22.5, 9, 1);
+        disc(g, '#ffffff', dx + 8, Yb - 29.5, 1.5, 1.5); poly(g, '#ffffff', k ? [[dx + 6.5, Yb - 27.6], [dx + 9.5, Yb - 27.6], [dx + 11, Yb - 24], [dx + 5, Yb - 24]] : [[dx + 6.4, Yb - 27.6], [dx + 9.6, Yb - 27.6], [dx + 9.6, Yb - 24], [dx + 6.4, Yb - 24]]);
+      }
+      R(g, '#bcb08c', X + 69, Yb - hf, 2, hf);
+      R(g, '#f0f0e8', X + W - 2, Yb - hf, 2, hf);
+    } }];
+  };
+
   // Camino secundario de tierra con bordes blancos (cordoncitos de cal), de la costa a la naciente o a la cancha.
   VR.decor.camino_tierra = (g, d) => {
     const x0 = d.x * S, x1 = (d.x + d.w) * S, y0 = d.y * S, y1 = (d.y + d.h) * S;
@@ -5285,6 +5322,7 @@ VR.Night = class {
       // parque Manuel Ortiz Guerrero (10/11/2026): faroles blancos en el anillo, surtidores celestes, glorieta cálida,
       // la fuente de los enamorados con luz rosada suave (por la leyenda) y el embarcadero
       else if (d.kind === 'farol_parque') this.put(X + 8, Y + 2 * S - 8, 60, LED, 0.85);
+      else if (d.kind === 'servicios') { this.put((d.x + 3) * S, (d.y + 3.8) * S, 52, CALIDO, 0.8); this.put((d.x + 7) * S, (d.y + 3.6) * S, 40, LED, 0.55); }
       else if (d.kind === 'cancha_sint') { for (const [fx, fy] of [[0, 0], [d.w, 0], [0, d.h], [d.w, d.h]]) this.put((d.x + fx) * S, (d.y + fy) * S, 44, LED, 0.55); }
       else if (d.kind === 'surtidor') this.put(d.px, d.py - 8, 36, '150,220,255', 0.9);
       else if (d.kind === 'fuente_amor') this.put((d.px + 1.5) * S, (d.py + 1.5) * S, 56, '255,170,205', 0.7);
