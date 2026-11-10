@@ -8,10 +8,15 @@
   VR.fmtGs = gs;
 
   // ---------- plata ----------
+  // En Historia (J1): se empieza con 35.000 Gs.; de cada cobro se descuenta el 50 % hasta saldar la deuda, y los
+  // movimientos quedan anotados (VR.Vida.mov) para la Billetera. "why" es el motivo que se ve ahí.
   VR.Wallet = {
-    get() { return VR.store.get('plata', 1500000); },
+    get() { return VR.store.get('plata', VR.modo === 'historia' ? 35000 : 1500000); },
     set(n) { VR.store.set('plata', Math.max(0, Math.round(n))); if (this.onChange) this.onChange(); },
-    add(n) { this.set(this.get() + n); },
+    add(n, why) {
+      if (VR.modo === 'historia' && VR.vida) { VR.vida.mueve(n, why); return; }
+      this.set(this.get() + n);
+    },
   };
 
   // ---------- look por clave: el del equipo, el genérico o el propio ----------
@@ -181,7 +186,7 @@
     buy() {
       const T = this.trial, lines = bill(this.base, T, this.owned), tot = lines.reduce((a, l) => a + l[1], 0);
       if (tot > VR.Wallet.get()) return;
-      VR.Wallet.add(-tot);
+      VR.Wallet.add(-tot, 'Ao Porã'); 
       Closet.addLook(this.owned, T); Closet.save(this.owned);
       VR.store.set('look:propio', T);
       this.base = Object.assign({}, T);

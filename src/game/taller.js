@@ -13,7 +13,7 @@ VR.Garage = class {
     this.d.querySelector('#grFix').onclick = () => { // reparar: 1.500 Gs. por punto de vida
       const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.toast('✨ Está joya, no hace falta'); return; }
       const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.toast('💸 Reparar cuesta ' + VR.fmtGs(n)); return; }
-      VR.Wallet.add(-n); c.hp = 100; if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.toast('🔧 Quedó como nuevo · ' + VR.fmtGs(n)); this.paint(); };
+      VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.toast('🔧 Quedó como nuevo · ' + VR.fmtGs(n)); this.paint(); };
   }
   open(car, toast) {
     this.car = car; this.toast = toast; const m = car.model, M = VR.TUNE_MODELS[m];
@@ -37,7 +37,7 @@ VR.Garage = class {
   }
   buy() {
     const n = this.cost(); if (n > VR.Wallet.get()) { this.toast('💸 No te alcanza la plata'); return; }
-    VR.Wallet.add(-n); const c = this.car; c.tune = { ...this.t };
+    VR.Wallet.add(-n, 'Taller: tuneo'); const c = this.car; c.tune = { ...this.t };
     c.frames = VR.vframes(c.type, c.color, c.model, c.tune); c.spec = VR.tuneSpec(VR.vspec(c.type, c.model), c.tune);
     this.toast(n ? '🔧 ¡Quedó joya! ' + VR.fmtGs(n) : 'Sin cambios'); this.close();
   }

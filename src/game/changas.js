@@ -33,7 +33,7 @@ VR.Changas = class {
       const b = Math.sin(performance.now() / 150) * 2; g.font = '12px system-ui'; g.textAlign = 'center'; g.fillText('🙋', x + 9, y - 30 + b); } });
   }
   open() { VR.input.releaseAll(); VR.input.enabled = false; this.d.showModal(); }
-  pay(n, why) { n = Math.round(n / 1000) * 1000; VR.Wallet.add(n); this.toast('💵 +' + VR.fmtGs(n) + ' · ' + why); if (VR.audio.coin) VR.audio.coin(); }
+  pay(n, why) { n = Math.round(n / 1000) * 1000; VR.Wallet.add(n, why); this.toast('💵 +' + VR.fmtGs(n) + ' · ' + why); if (VR.audio.coin) VR.audio.coin(); }
   spot(min, max, from) { // un punto de calle al azar entre min y max px
     const N = this.world.roads && this.world.roads.nodes; if (!N) return null;
     for (let t = 0; t < 4000; t++) { if (t === 2000) { min *= 0.5; max *= 2; } const i = ((this.rnd() * N.length / 2) | 0) * 2, x = N[i], y = N[i + 1], d = Math.hypot(x - from.x, y - from.y); if (d > min && d < max) return { x, y, name: this.world.placeName ? this.world.placeName(x, y) || 'la dirección' : 'la dirección' }; }
@@ -42,6 +42,7 @@ VR.Changas = class {
   start(k) {
     const car = this.getCar(), p = this.player;
     if (k === 'no') { this.end('Dejaste la changa'); return; }
+    if (VR.vida && k !== 'chipa' && !VR.vida.saldoOk()) { this.toast('📱 Sin saldo no te llegan changas por la app. Cargá saldo (solo la chipa se hace en persona)'); return; }
     if (k === 'delivery' && !(car && car.type === 'moto')) { this.toast('🏍 Para el delivery necesitás una moto'); return; }
     if (k === 'chipa' && car) { this.toast('🚶 Bajate para vender chipa'); return; }
     this.job = { k, stage: 0, t: 0, n: 0 };

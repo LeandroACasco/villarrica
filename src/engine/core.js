@@ -12,10 +12,19 @@ VR.hash = (x, y, s = 0) => {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 };
 VR.rng = (seed) => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
+// Guardados separados por modo (J1, 10/11/2026): en Historia el progreso (posición, plata, ropa, vida…) lleva el prefijo
+// 'h:'; los ajustes (sonido, vibración, fps…) son los mismos en los dos modos. VR.store.ns lo fija main.js al arrancar.
 VR.store = {
-  get(k, d) { try { const v = localStorage.getItem('villarrica:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem('villarrica:' + k, JSON.stringify(v)); } catch (e) {} },
+  ns: '', PROG: /^(pos:|dest:|plata$|ropa:mia$|look:propio$|pj$|vida$)/,
+  key(k) { return 'villarrica:' + (this.ns && this.PROG.test(k) ? this.ns : '') + k; },
+  get(k, d) { try { const v = localStorage.getItem(this.key(k)); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(this.key(k), JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(this.key(k)); } catch (e) {} },
+  // ¿hay una partida de Historia guardada? (se mira sin cambiar de modo)
+  hasHistoria() { try { return localStorage.getItem('villarrica:h:vida') !== null; } catch (e) { return false; } },
+  wipeHistoria() { try { Object.keys(localStorage).filter((k) => k.startsWith('villarrica:h:')).forEach((k) => localStorage.removeItem(k)); } catch (e) {} },
 };
+VR.modo = 'libre'; // 'libre' (el juego de siempre) | 'historia' (hora del juego, hambre, pieza…)
 VR.canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return c; };
 
 // Pantalla: el lado corto mide ~270 píxeles del juego (unidades del mundo: 8 por metro).

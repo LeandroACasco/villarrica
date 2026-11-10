@@ -4,12 +4,19 @@
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); };
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+  // ---- modo de juego (J1): Libre (el de siempre) o Historia (guardado aparte con prefijo h:) ----
+  // Cambiar de modo recarga la página con sessionStorage 'go': así arranca todo limpio con el guardado que corresponde.
+  let goMode = null; try { goMode = sessionStorage.getItem('villarrica:go'); sessionStorage.removeItem('villarrica:go'); } catch (e) {}
+  VR.modo = goMode || (/[?&]historia\b/.test(location.search) ? 'historia' : /[?&](libre|juego|prueba)\b/.test(location.search) ? 'libre' : VR.store.get('modo', 'libre')); // el cambio desde el título manda sobre la URL
+  VR.store.ns = VR.modo === 'historia' ? 'h:' : '';
+  document.body.classList.toggle('historia', VR.modo === 'historia');
+  const vida = VR.vida = VR.modo === 'historia' ? new VR.Vida() : null;
   const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque') };
   VR.drive = settings.manejo;
 
   VR.screen.init($('game'));
   const prueba = /[?&]prueba\b/.test(location.search);
-  const directo = prueba || /[?&](libre|juego)\b/.test(location.search); // ?libre salta el menú principal (pruebas automáticas)
+  const directo = prueba || !!goMode || /[?&](libre|juego|historia)\b/.test(location.search); // ?libre salta el menú principal (pruebas automáticas)
   let mode = 'game'; // 'title' (menú principal) | 'game'
   let world;
   try { world = prueba ? VR.makeTestMap() : await VR.loadMap('map.bin'); }
@@ -17,7 +24,22 @@
   $('zone').textContent = prueba ? 'Barrio de prueba' : 'Centro';
   $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1.5 · Villarrica entera';
   const saved = VR.store.get('pos:' + world.id, null);
-  const start = saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn;
+  // Historia empieza en Santa Lucía: la vereda más cercana al centro del barrio
+  function spotInBarrio(re) {
+    const bi = world.barrios.findIndex((n) => re.test(n)); if (bi < 0 || !world.barrio) return null;
+    const w = world.w, S = VR.TILE, N = world.barrio.length; let sx = 0, sy = 0, n = 0;
+    for (let i = 0; i < N; i++) if (world.barrio[i] === bi + 1) { sx += i % w; sy += (i / w) | 0; n++; }
+    if (!n) return null;
+    const cx = Math.round(sx / n), cy = Math.round(sy / n);
+    for (let r = 0; r < 120; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const tx = cx + dx, ty = cy + dy; if (world.barrio[ty * w + tx] !== bi + 1 || world.get(tx, ty) !== VR.T.SIDEWALK) continue;
+      const x = tx * S + 8, y = ty * S + 10; if (!world.hits(x - 4, y - 4, x + 4, y)) return { x, y };
+    }
+    return null;
+  }
+  const histStart = vida && !saved ? spotInBarrio(/Santa Luc/i) : null;
+  const start = histStart || (saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn);
   const player = new VR.Player(world, start.x, start.y);
   if (saved && saved.dir) player.dir = saved.dir;
   // ---------- autos estacionados (el primero, al lado del punto de partida) ----------
@@ -34,12 +56,16 @@
   const gpsNet = prueba ? null : new VR.GPS(world);
   const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
     onBusted: () => sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'),
-    onWasted: () => sentTo('💥 Explotó con vos adentro... te llevaron al hospital.') });
+    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al hospital.'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); } });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
   const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
   VR.weapons = weapons;
   VR.audio.setOn(VR.store.get('snd', true));
+  if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
+    vida.onMsg = (m) => toast(m);
+    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios)); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); };
+  }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg) {
     if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); }
@@ -109,6 +135,14 @@
   function openShop() { VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; shop.open(player.lookData); }
   VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()); };
   VR.Wallet.onChange();
+  // HUD de Historia: hora y hambre, saldo y pieza, deuda en rojo
+  const vV = $('vVida'), vV2 = $('vVida2'), vD = $('vDeuda'); let vT = 0;
+  function vidaHud(dt, force) {
+    if (!vida) return; vT -= dt; if (vT > 0 && !force) return; vT = 0.5;
+    vV.hidden = vV2.hidden = false; vV.textContent = vida.hudLinea1(); vV2.textContent = vida.hudLinea2(); vV.classList.toggle('low', vida.s.hambre < 25);
+    const d = vida.deudaTotal(); vD.hidden = d <= 0; if (d > 0) vD.textContent = '⚠ Debés ' + VR.fmtGs(d);
+  }
+  if (vida) { vidaHud(0, true); const oc = VR.Wallet.onChange; VR.Wallet.onChange = () => { oc(); vidaHud(0, true); }; }
 
   // ---------- cámara: sigue al jugador mirando un poco hacia donde camina ----------
   const cam = { x: player.x, y: player.y, px: player.x, py: player.y, lx: 0, ly: 0 };
@@ -152,6 +186,7 @@
     }
     if (VR.input.pressed('menu')) { openMenu(); return; }
     if (VR.input.pressed('map')) { openMap(); return; }
+    if (vida) { vida.tick(dt); vidaHud(dt); }
     cisnes.netSync(online.peer ? online.others : null); cisnes.update(dt, VR.input);
     if (cisnes.riding) { // en un cisne de pedal: el jugador va sobre el cisne
       const s = cisnes.s;
@@ -253,7 +288,7 @@
     for (const t of tall) t.draw(ctx);
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (emer) emer.drawFx(ctx, cx, cy);
-    night.update(Math.min(0.1, dt || 0.016), settings.hora);
+    night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);
     night.render(ctx, cx, cy, sw, sh, vis);
     if (emer) emer.drawFlash(ctx, sw, sh);
     for (const l of world.labels) {
@@ -328,6 +363,60 @@
   $('pConfig').onclick = () => pauseThen(() => openConfig('pause'));
   $('pSalir').onclick = () => pauseThen(() => { resume(); if (cisnes.riding) toast('🦢 Bajate del cisne antes de salir'); else toTitle(); });
   $('btnMenu').onclick = openMenu;
+  // ---------- Historia: Billetera, Metas y presentación (J1) ----------
+  const vDlg = $('vDlg'), vBody = $('vBody'), gs = VR.fmtGs, esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  let vTab = 'bill';
+  function openVida(tab) {
+    vTab = tab; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true;
+    if (!vDlg.open) vDlg.showModal(); paintVida();
+  }
+  function paintVida() {
+    if (!vida) return; const s = vida.s, P = s.pieza, pr = VR.PRECIOS;
+    if (vTab === 'metas') {
+      vBody.innerHTML = '<h2>⭐ Metas</h2><p>Tu lista de sueños. Tenés ' + gs(VR.Wallet.get()) + '.</p>' + VR.METAS.map(([n, c]) => {
+        const f = c - VR.Wallet.get(); return '<div class="mv"><span>' + esc(n) + '</span><span>' + gs(c) + ' <i>' + (f <= 0 ? '¡te alcanza!' : 'faltan ' + gs(f)) + '</i></span></div>';
+      }).join('') + '<p>Se van cumpliendo con las misiones y la economía que llegan en las próximas etapas.</p><div class="row"><button class="btn" data-v="bill">💵 Billetera</button><button class="btn primary" data-v="x">Cerrar</button></div>';
+    } else {
+      const venc = P.saldo > 0 ? 'Debés ' + gs(P.saldo) : 'Vence el ' + VR.DIAS[((P.vence / 1440) | 0) % 7] + ' (' + gs(pr.pieza) + ')';
+      vBody.innerHTML = '<h2>💵 Billetera</h2><div class="mv"><span>Tenés</span><b>' + gs(VR.Wallet.get()) + '</b></div>' +
+        '<div class="mv"><span>🏠 Pieza (Ña Ramona)</span><span>' + venc + '</span></div>' +
+        '<div class="mv"><span>📱 Saldo</span><span>' + (s.saldo > 0 ? Math.ceil(s.saldo) + ' días' : 'sin saldo') + '</span></div>' +
+        '<div class="mv"><span>🍽 Hambre</span><span>' + Math.round(s.hambre) + ' / 100</span></div>' +
+        (s.debe > 0 ? '<div class="mv"><span class="neg">Deuda (se paga el 50 % de cada cobro)</span><b class="neg">' + gs(s.debe) + '</b></div>' : '') +
+        '<h3>Provisorio · hasta que lleguen la despensa y la pieza de verdad (etapa J3)</h3><div class="row">' +
+        '<button class="btn" data-v="pieza">🏠 Pagar pieza</button><button class="btn" data-v="chipa">🥖 Chipa ' + gs(pr.chipa) + '</button><button class="btn" data-v="plato">🍲 Plato ' + gs(pr.plato) + '</button>' +
+        '<button class="btn" data-v="helado">🍦 Helado ' + gs(pr.helado) + '</button><button class="btn" data-v="saldo">📱 Saldo ' + gs(pr.saldo) + '</button></div>' +
+        '<h3>Últimos movimientos</h3>' + (s.mov.length ? s.mov.slice(0, 10).map(([d, h, n, w]) => '<div class="mv"><span>' + esc(w) + ' <i>día ' + d + ' · ' + h + '</i></span><b class="' + (n >= 0 ? 'pos' : 'neg') + '">' + (n >= 0 ? '+' : '') + gs(n) + '</b></div>').join('') : '<p>Todavía no hay movimientos.</p>') +
+        '<div class="row"><button class="btn" data-v="metas">⭐ Metas</button><button class="btn primary" data-v="x">Cerrar</button></div>';
+    }
+    vBody.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => {
+      const v = b.dataset.v;
+      if (v === 'x') { vDlg.close(); return; }
+      if (v === 'metas' || v === 'bill') { vTab = v; paintVida(); return; }
+      if (v === 'pieza') vida.pagaPieza(); else if (v === 'chipa') vida.come(pr.chipa, 15, 'Chipa'); else if (v === 'plato') vida.come(pr.plato, 50, 'Plato del día');
+      else if (v === 'helado') vida.come(pr.helado, 12, 'Helado'); else if (v === 'saldo') vida.cargaSaldo();
+      vidaHud(0, true); paintVida();
+    });
+  }
+  vDlg.addEventListener('close', () => { if (mode === 'game' && !vDlg._intro) { VR.loop.paused = true; VR.input.enabled = false; pause.showModal(); } else { vDlg._intro = false; resume(); } });
+  $('pBill').onclick = () => pauseThen(() => openVida('bill'));
+  $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
+  // presentación de una Historia nueva
+  function maybeIntro() {
+    if (!vida || !vida.nueva) return; vida.nueva = false; vida.save();
+    vDlg._intro = true; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true;
+    vBody.innerHTML = '<h2>📖 Jajupíta</h2><p style="color:var(--text)">Te quedaste sin changa. Alquilás una pieza en <b>Santa Lucía</b> y en el bolsillo tenés <b>35.000 Gs.</b></p>' +
+      '<p>La pieza cuesta ' + gs(VR.PRECIOS.pieza) + ' por semana y Ña Ramona cobra los sábados. Hoy es lunes.</p>' +
+      '<p>Tenés que comer (el hambre baja todo el día), cargar saldo y juntar plata. Un día del juego dura 30 minutos. Mirá arriba a la izquierda: hora, hambre, saldo y pieza. Más cosas llegan en las próximas etapas.</p>' +
+      '<div class="row"><button class="btn primary" id="vGo">Jajupíta ▶</button></div>';
+    $('vGo').onclick = () => vDlg.close(); vDlg.showModal();
+  }
+  // empezar la Historia de cero (en Configuración)
+  { let sure = 0; const bh = $('btnBorraH'); bh.onclick = () => {
+    if (performance.now() > sure) { sure = performance.now() + 4000; bh.textContent = '⚠ ¿Seguro? Se borra todo lo de Historia · tocá otra vez'; setTimeout(() => { if (performance.now() > sure - 100) bh.textContent = '🗑 Empezar la Historia de cero'; }, 4100); return; }
+    VR.wiped = true; VR.store.wipeHistoria(); bh.textContent = '🗑 Empezar la Historia de cero'; sure = 0;
+    if (vida) { toast('🗑 Historia borrada: arrancá de nuevo'); try { sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) {} setTimeout(() => location.reload(), 600); } else { toast('🗑 Historia borrada'); tagHist(); }
+  }; }
   $('menuClose').onclick = () => menu.close();
   menu.addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !/INPUT/.test(e.target.tagName)) menu.close(); });
   $('btnFull').onclick = () => {
@@ -460,6 +549,7 @@
   $('mzGo').onclick = () => { if (dest) teleport(dest.x, dest.y, dest.name); };
   // ---------- teletransporte (05/11/2026): aparecés donde marcaste en el mapa, a pie o con el vehículo ----------
   function teleport(px, py, name) {
+    if (vida) { toast('🚫 En Historia no hay teletransporte: se viaja en mototaxi (llega más adelante)'); return; }
     const S = VR.TILE, T = VR.T, tx0 = Math.floor(px / S), ty0 = Math.floor(py / S);
     const isRoad = (t) => t === T.ROAD || t === T.STONE || t === T.DIRTROAD;
     const walk = (t) => t === T.SIDEWALK || t === T.PAVING || t === T.CHECKER || t === T.GRASS || t === T.DIRT || t === T.PLAZADIRT;
@@ -512,7 +602,7 @@
     if (e.code === 'Equal' || e.code === 'NumpadAdd') mapZoom(1.4);
     else if (e.code === 'Minus' || e.code === 'NumpadSubtract') mapZoom(1 / 1.4);
     else if (e.code === 'Delete' || e.code === 'Backspace') setDest(null);
-    else if (e.code === 'KeyT' && dest) teleport(dest.x, dest.y, dest.name);
+    else if (e.code === 'KeyT' && dest && !vida) teleport(dest.x, dest.y, dest.name);
   });
   addEventListener('resize', () => { if (mapOpen) mapApply(); });
   // tocar: si es cerca de un nombre (plaza, lugar), el destino es ese lugar; si no, el punto tocado
@@ -543,7 +633,7 @@
   }
   function updateGpsHud() {
     const el = $('gps');
-    $('mzClear').hidden = !dest; $('mzGo').hidden = !dest; $('mapDest').hidden = !dest;
+    $('mzClear').hidden = !dest; $('mzGo').hidden = !dest || !!vida; $('mapDest').hidden = !dest;
     if (dest) { $('mapDest').style.left = dest.x / 16 + 'px'; $('mapDest').style.top = dest.y / 16 + 'px'; }
     if (!dest) { el.hidden = true; return; }
     el.hidden = false;
@@ -663,7 +753,9 @@
   // ---------- guardar la posición ----------
   let lastCar = car;
   const savePos = () => {
+    if (VR.wiped) return;
     if (car) lastCar = car;
+    if (vida) vida.save();
     const c = lastCar, i = c ? cars.indexOf(c) : -1;
     VR.store.set('pos:' + world.id, { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir,
       car: c ? { i, type: c.type, model: c.model, color: c.color, tune: c.tune || null, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
@@ -693,13 +785,14 @@
   function enterTitle(first) {
     mode = 'title'; document.body.classList.add('title'); titleEl.hidden = false; VR.screen.setBase(TITLE_BASE);
     const sw0 = cisnes.list[0]; if (sw0) { sw0.auto = true; sw0.autoLook = sw0.autoLook || VR.av2Random(); sw0.pas = sw0.pas || VR.av2Random(); } // una pareja pasea en cisne
+    tagHist();
     tReady = !first; tMenu.hidden = first; tTap.hidden = !first; tSel = 2; tLock = 0.3; paintSel();
     tFade._f = -1; title.phase = 'play'; title.fade = 0; title.cut(true); titleWarm(6);
   }
   function showTitleMenu() { if (tReady || mode !== 'title') return; tReady = true; tTap.hidden = true; tMenu.hidden = false; tLock = 0.3; paintSel(); VR.audio.resume(); }
   // pasar al juego con un fundido; "then" corre ya en el juego
   function startGame(then) {
-    if (tGoing) return; tGoing = true; fadeEl.style.opacity = 1;
+    if (tGoing) return; tGoing = true; fadeEl.style.opacity = 1; VR.store.set('modo', VR.modo);
     setTimeout(() => {
       mode = 'game'; document.body.classList.remove('title'); titleEl.hidden = true;
       const sw0 = cisnes.list[0]; if (sw0) sw0.auto = false; // el cisne vuelve solo al muelle
@@ -707,6 +800,7 @@
       const f = car || player; cam.x = cam.px = f.x; cam.y = cam.py = f.y - (car ? 0 : 10); cam.lx = cam.ly = 0; hint = '';
       resume(); applyTouch(); fadeEl.style.opacity = 0; tGoing = false;
       if (then) then();
+      maybeIntro();
     }, 450);
   }
   // volver al menú principal (desde la pausa): guarda y entra al título con un fundido
@@ -718,10 +812,17 @@
     savePos(); VR.input.releaseAll(); tGoing = true; fadeEl.style.opacity = 1;
     setTimeout(() => { enterTitle(false); fadeEl.style.opacity = 0; tGoing = false; }, 450);
   }
+  // cambiar de modo = recargar con el guardado del otro (así arranca todo limpio); desde el título
+  function switchModo(m, online) {
+    if (tGoing) return; tGoing = true; fadeEl.style.opacity = 1; savePos();
+    try { sessionStorage.setItem('villarrica:go', m); if (online) sessionStorage.setItem('villarrica:onl', '1'); } catch (e) { location.href = location.pathname + '?' + m; return; }
+    setTimeout(() => location.reload(), 450);
+  }
+  const tagHist = () => { const g = $('tHistTag'); if (g) g.textContent = VR.store.hasHistoria() ? 'continuar' : 'nueva'; };
   const ACT = {
-    historia: () => toast('📖 El modo Historia llega pronto'),
-    multi: () => startGame(() => { VR.input.releaseAll(); $('onDlg').showModal(); }), // juega en modo Libre; ahí crea o se une a una sala
-    libre: () => startGame(),
+    historia: () => VR.modo === 'historia' ? startGame() : switchModo('historia'),
+    multi: () => VR.modo === 'libre' ? startGame(() => { VR.input.releaseAll(); $('onDlg').showModal(); }) : switchModo('libre', true), // Online siempre juega en Libre
+    libre: () => VR.modo === 'libre' ? startGame() : switchModo('libre'),
     config: () => openConfig('title'),
     creditos: () => { VR.input.releaseAll(); VR.input.enabled = false; credits.showModal(); },
   };
@@ -777,7 +878,8 @@
 
   applyTouch();
   hideOverlay();
-  if (!directo) enterTitle(true);
+  if (!directo) enterTitle(true); else VR.store.set('modo', VR.modo);
   VR.loop.start(update, render);
+  if (directo) { maybeIntro(); try { if (sessionStorage.getItem('villarrica:onl')) { sessionStorage.removeItem('villarrica:onl'); VR.input.releaseAll(); $('onDlg').showModal(); } } catch (e) {} }
   window.__vr = { get mode() { return mode; }, title, startGame, toTitle, enterTitle, get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();

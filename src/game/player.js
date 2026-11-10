@@ -106,7 +106,7 @@ VR.Player = class {
   update(dt, input) {
     this.px = this.x; this.py = this.y;
     const ax = input.ax, ay = input.ay, mag = Math.min(1, Math.hypot(ax, ay));
-    const run = input.down('run');
+    const run = input.down('run') && !VR.noRun; // con hambre (Historia) no se corre
     const target = mag * (run ? 104 : 58);
     this.speed = target; // en la etapa 2 agregamos inercia para los vehículos
     this.moving = mag > 0.05;

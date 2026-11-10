@@ -95,11 +95,11 @@ VR.Night = class {
   }
   // luces que se agregan en cada cuadro (guirnaldas, faros); en px del mapa
   add(x, y, r, col, k = 1) { if (this.level > 0) this.dyn.push([x, y, r, col, k]); }
-  // 0 = día, 1 = noche cerrada; mode: 'dia' | 'noche' | 'real'
+  // 0 = día, 1 = noche cerrada; mode: 'dia' | 'noche' | 'real' | 'juego' (hora de Historia, VR.gameHour)
   target(mode) {
     if (mode === 'noche') return 1;
     if (mode === 'dia') return 0;
-    const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
+    const d = new Date(), h = mode === 'juego' ? (VR.gameHour || 12) : d.getHours() + d.getMinutes() / 60; // 'juego' = hora de Historia
     if (h >= 20 || h < 5) return 1;
     if (h >= 18.5) return (h - 18.5) / 1.5;
     if (h < 6.5) return 1 - (h - 5) / 1.5;

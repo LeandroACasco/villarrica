@@ -32,8 +32,16 @@
   #hud { position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: calc(env(safe-area-inset-left) + 8px); z-index: 4;
     background: rgba(12,12,16,.62); border-left: 3px solid var(--accent); padding: 4px 10px 5px 8px; border-radius: 0 8px 8px 0;
     display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
+  body.historia .soloLibre, body.historia #pOnline { display: none !important; }
+  body:not(.historia) #pHist { display: none !important; }
+  #vBody .mv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text); padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+  #vBody .mv i { font-style: normal; color: var(--muted); font-size: 11px; }
+  #vBody .pos { color: #9fe3a0; } #vBody .neg { color: #ff9a8a; }
   #hud b { color: var(--accent); font-size: 15px; letter-spacing: .12em; font-weight: 800; text-shadow: 0 2px 0 #000; }
   #hud span { color: #d8d4ca; font-size: 12px; }
+  #vVida, #vVida2 { font-variant-numeric: tabular-nums; }
+  #vVida.low { color: #ff9a8a; }
+  #vDeuda { color: #ff7a6a !important; font-weight: 700; }
   #mini { position: fixed; right: calc(env(safe-area-inset-right) + 10px); top: calc(env(safe-area-inset-top) + 56px); z-index: 4;
     width: var(--mini, 112px); height: var(--mini, 112px); border-radius: 50%; border: 3px solid #1a1a1e;
     box-shadow: 0 0 0 2px rgba(255,214,94,.85), 0 3px 8px rgba(0,0,0,.5); background: #2b3a22; cursor: pointer; touch-action: none; }
@@ -258,7 +266,7 @@
 </div>
 
 <div id="banner"></div>
-<div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span><span id="gps" hidden></span><span id="plata"></span></div>
+<div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span><span id="gps" hidden></span><span id="plata"></span><span id="vVida" hidden></span><span id="vVida2" hidden></span><span id="vDeuda" hidden></span></div>
 <div id="dbg" hidden></div>
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
@@ -296,7 +304,7 @@
   <div class="tSlot">
     <div id="tTap">Tocá para empezar</div>
     <div id="tMenu" hidden>
-      <button class="tBtn dis" data-a="historia">📖 Historia <small>pronto</small></button>
+      <button class="tBtn" data-a="historia">📖 Historia <small id="tHistTag">nueva</small></button>
       <button class="tBtn" data-a="multi">🌐 Multijugador</button>
       <button class="tBtn" data-a="libre">🚶 Paseo libre</button>
       <button class="tBtn" data-a="config">⚙ Configuración</button>
@@ -312,8 +320,13 @@
     <h2>Pausa</h2>
     <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
     <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
+    <div class="row" id="pHist"><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
     <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
   </div>
+</dialog>
+
+<dialog id="vDlg">
+  <div class="dlg" id="vBody"></div>
 </dialog>
 
 <dialog id="credits">
@@ -343,10 +356,12 @@
     <h3>Manejo</h3>
     <div class="seg" id="segManejo"><button data-v="facil">Fácil</button><button data-v="clasico">Clásico</button><button data-v="manual">Manual</button></div>
     <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB o ▲ sube, Q/LB o ▼ baja; parado en 1ª, bajar pone la reversa; en el teléfono el joystick es volante y pedal).</p>
-    <h3>Hora del día</h3>
-    <div class="seg" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
+    <h3 class="soloLibre">Hora del día</h3>
+    <div class="seg soloLibre" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
     <h3>Fondo del menú principal</h3>
     <div class="seg" id="segFondo"><button data-v="parque">Parque Ykua Pytã</button><button data-v="recorrido">Recorrido</button></div>
+    <h3>Modo Historia</h3>
+    <div class="row"><button class="btn" id="btnBorraH">🗑 Empezar la Historia de cero</button></div>
     <h3>Opciones</h3>
     <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
     <label class="chk"><input type="checkbox" id="optSnd"> Sonido (sirenas)</label>
@@ -355,9 +370,9 @@
     <label class="chk"><input type="checkbox" id="optArmas"> Armas (pistola y lanzallamas)</label>
     <div class="seg" id="segArma"><button data-v="pistola">🔫 Pistola</button><button data-v="lanzallamas">🔥 Lanzallamas</button></div>
     <label class="chk"><input type="checkbox" id="optSinEstrellas"> Las armas no suman estrellas</label>
-    <div class="row"><button class="btn" id="btnPlata">💵 +1.000.000 Gs. (para probar la tienda)</button></div>
+    <div class="row soloLibre"><button class="btn" id="btnPlata">💵 +1.000.000 Gs. (para probar la tienda)</button></div>
     <p>Disparar: <kbd>E</kbd> (o <kbd>L</kbd>) · cambiar de arma: <kbd>Q</kbd> · control: <kbd>RB</kbd>/<kbd>Y</kbd> dispara, <kbd>LB</kbd> cambia · táctil: botón DISPARAR y tocar el arma arriba a la izquierda.</p>
-    <div class="row"><button class="btn" id="btnReset">📍 Volver a la Plaza de los Héroes</button></div>
+    <div class="row soloLibre"><button class="btn" id="btnReset">📍 Volver a la Plaza de los Héroes</button></div>
     <h3>Teclado (PC)</h3>
     <table>
       <tr><td><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd></td><td>Caminar</td></tr>
