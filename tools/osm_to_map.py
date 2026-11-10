@@ -988,8 +988,7 @@ def main(src, out, preview=None):
             jard = [[x, col_t[x][0] - 2] for x in (vx_ - 5, vx_ - 1, vx_ + 3) if x in col_t]
             if jard: decals.append({'kind': 'jardineras', 'x': min(a for a, _ in jard) - 1, 'y': min(b for _, b in jard) - 1, 'w': 12, 'h': 4, 'pts': jard})
 
-            # -- quiosco y baños (8 × 5 baldosas, con la cuadra de ladrillo delante) y dos juegos infantiles, al este de la
-            #    glorieta; el sitio se busca solo en pasto/tierra libre del parque (ubicación provisoria, falta confirmar) --
+            # -- juegos infantiles al este de la glorieta (Leandro: "más o menos por ahí"; no hay quiosco ni baños) --
             def find_spot(w, h, cx, cy, rad=22):
                 for r in range(0, rad):
                     for dy in range(-r, r + 1):
@@ -1000,24 +999,12 @@ def main(src, out, preview=None):
                             if sub.shape == (h, w) and np.isin(sub, (GRASS, DIRT, PLAZADIRT, TREE)).all() and (area[y:y + h, x:x + w] == pk).all() and not reserved[max(0, y - 1):y + h + 1, max(0, x - 1):x + w + 1].any():
                                 return x, y
                 return None
-            sp = find_spot(8, 5, x0t + 4, yc + 9)
-            if sp:
-                sx0, sy0 = sp
-                reserve(sx0 - 1, sy0 - 1, sx0 + 8, sy0 + 5)
-                paint(sx0, sy0 + 1, sx0 + 7, sy0 + 3, MONUMENT)
-                paint(sx0, sy0 + 4, sx0 + 7, sy0 + 4, LADRILLO)
-                decals.append({'kind': 'servicios', 'x': sx0, 'y': sy0, 'w': 8, 'h': 5})
-                labels.append({'text': 'Quiosco y baños', 'x': sx0 * 16 + 64, 'y': sy0 * 16 + 5 * 16 + 14, 'small': 1})
-                for jx_, jy_ in ((sx0 - 6, sy0 + 2), (sx0 + 11, sy0 + 2)):
-                    sj = find_spot(4, 3, jx_, jy_, 8)
-                    if sj:
-                        reserve(sj[0] - 1, sj[1] - 1, sj[0] + 4, sj[1] + 3)
-                        paint(sj[0], sj[1], sj[0] + 3, sj[1] + 2, PLAZADIRT)
-                        decals.append({'kind': 'juegos', 'x': sj[0], 'y': sj[1], 'w': 4, 'h': 3})
-                        labels.append({'text': 'Juegos', 'x': sj[0] * 16 + 32, 'y': sj[1] * 16 + 3 * 16 + 12, 'small': 1})
-                        break
-            else:
-                print('parque: no hubo lugar para el quiosco y los baños')
+            sj = find_spot(4, 3, x0t + 4, yc + 11)
+            if sj:
+                reserve(sj[0] - 1, sj[1] - 1, sj[0] + 4, sj[1] + 3)
+                paint(sj[0], sj[1], sj[0] + 3, sj[1] + 2, PLAZADIRT)
+                decals.append({'kind': 'juegos', 'x': sj[0], 'y': sj[1], 'w': 4, 'h': 3})
+                labels.append({'text': 'Juegos', 'x': sj[0] * 16 + 32, 'y': sj[1] * 16 + 3 * 16 + 12, 'small': 1})
 
             # -- orilla sur: troncos caídos y matas, sobre Curupayty --
             lg = []

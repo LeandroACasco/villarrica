@@ -318,7 +318,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 5e0c62d7 · 2026-11-10</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 13d82afa · 2026-11-10</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Volver al juego</button></div>
   </div>
 </dialog>
@@ -2616,43 +2616,6 @@ VR.loadMap = async (url) => {
       R(g, 'rgba(0,0,0,.3)', gx - (e ? 0 : 1), Y + (Hh >> 1) - 7, 4, 15); R(g, '#e8e8e2', gx - (e ? 2 : 0), Y + (Hh >> 1) - 8, 3, 1); R(g, '#e8e8e2', gx - (e ? 2 : 0), Y + (Hh >> 1) + 7, 3, 1); R(g, '#e8e8e2', gx - (e ? 2 : -1), Y + (Hh >> 1) - 8, 1, 16);
     }
   };
-  // ---------------------------------------------------------------- Quiosco y baños (8 × 5 baldosas, de cara al sur)
-  // Izquierda, el quiosco: ventana ancha con mostrador y toldo a rayas rojas y blancas, heladera y cartel sin texto.
-  // Derecha, los baños: dos puertas con placas azul y rosa (con un muñequito). Techo de chapa gris con aleros.
-  VR.decor.servicios = (g, d) => {
-    const X = d.x * S, Yb = (d.y + 4) * S;
-    R(g, 'rgba(0,0,0,.2)', X + 5, Yb, 8 * S, 5); R(g, 'rgba(0,0,0,.2)', X + 8 * S, (d.y + 1) * S + 8, 5, 3 * S - 4);
-  };
-  VR.decorTop.servicios = (d) => {
-    const X = d.x * S, Yb = (d.y + 4) * S, W = 8 * S, hf = 22;
-    return [{ sy: Yb + 1, draw(g) {
-      const t = now() / 1000;
-      // techo (chapa gris con nervaduras, alero al frente)
-      R(g, '#3c3e44', X - 1.5, Yb - 52, W + 3, 32); R(g, '#9aa0a8', X - 0.5, Yb - 51, W + 1, 30); R(g, '#b4bac2', X - 0.5, Yb - 51, W + 1, 3);
-      for (let x = X + 3; x < X + W - 2; x += 5) { R(g, 'rgba(60,66,74,.5)', x, Yb - 49, 0.8, 27); R(g, 'rgba(255,255,255,.25)', x + 1, Yb - 49, 0.5, 27); }
-      R(g, '#6a7078', X - 0.5, Yb - 21, W + 1, 2); R(g, '#7a8088', X + 52, Yb - 46, 9, 7); R(g, '#c8d0d8', X + 53, Yb - 45, 7, 5);       // claraboya
-      // pared de frente (crema)
-      R(g, '#2c2a26', X - 0.5, Yb - hf - 0.5, W + 1, hf + 1); R(g, '#efe6cf', X, Yb - hf, W, hf); R(g, '#d6caa8', X, Yb - 4, W, 4); R(g, '#bcb08c', X, Yb - 1, W, 1);
-      // ---- quiosco (izquierda): ventana con mostrador, toldo a rayas, heladera, cartel
-      R(g, '#2a2420', X + 8, Yb - 17, 46, 11); R(g, '#7ab0c8', X + 9, Yb - 16, 44, 9); R(g, 'rgba(255,255,255,.35)', X + 10, Yb - 16, 10, 9);
-      for (let i = 0; i < 6; i++) R(g, ['#d8403a', '#e8d9b0', '#4a8ad0', '#f0b030', '#58a858', '#d8403a'][i], X + 14 + i * 5.5, Yb - 15, 2.4, 6.5);       // golosinas y botellas
-      R(g, '#8a5a34', X + 6, Yb - 7, 50, 3); R(g, '#b07a48', X + 6, Yb - 7, 50, 1);                                                                          // mostrador de madera
-      for (let i = 0; i < 9; i++) { R(g, i % 2 ? '#fafafa' : '#d8403a', X + 5 + i * 6, Yb - 25, 6, 9); R(g, 'rgba(0,0,0,.2)', X + 5 + i * 6, Yb - 17, 6, 1.2); }   // toldo a rayas
-      R(g, '#2a2420', X + 4.5, Yb - 25.5, 55, 1); R(g, '#d8403a', X + 3, Yb - 26, 1.2, 1.2);
-      R(g, '#dfe8ee', X + 58, Yb - 19, 8, 17); R(g, '#8aa0b0', X + 58, Yb - 19, 8, 1.4); R(g, '#3a4a58', X + 59, Yb - 16, 6, 0.8); R(g, '#c8d8e4', X + 59, Yb - 15, 1.6, 12);  // heladera
-      R(g, '#2a2420', X + 12, Yb - 40, 38, 12); R(g, '#f0b030', X + 13, Yb - 39, 36, 10); for (let i = 0; i < 4; i++) R(g, '#7a4a18', X + 17 + i * 8, Yb - 36, 5, 1.6); // cartel sin texto
-      // ---- baños (derecha): dos puertas con placa
-      for (const [k, col, dk] of [[0, '#3a74c8', '#244a8a'], [1, '#d8609a', '#9a3868']]) {
-        const dx = X + 76 + k * 24;
-        R(g, '#2a2420', dx - 0.5, Yb - 18.5, 17, 19); R(g, '#8a6a46', dx, Yb - 18, 16, 18); R(g, '#a07c54', dx, Yb - 18, 16, 1.4); R(g, 'rgba(0,0,0,.18)', dx + 11, Yb - 17, 5, 17); R(g, '#5a4430', dx + 12, Yb - 8, 2, 1.6);
-        R(g, '#2a2420', dx + 3, Yb - 33, 10, 12); R(g, col, dx + 3.5, Yb - 32.5, 9, 11); R(g, dk, dx + 3.5, Yb - 22.5, 9, 1);
-        disc(g, '#ffffff', dx + 8, Yb - 29.5, 1.5, 1.5); poly(g, '#ffffff', k ? [[dx + 6.5, Yb - 27.6], [dx + 9.5, Yb - 27.6], [dx + 11, Yb - 24], [dx + 5, Yb - 24]] : [[dx + 6.4, Yb - 27.6], [dx + 9.6, Yb - 27.6], [dx + 9.6, Yb - 24], [dx + 6.4, Yb - 24]]);
-      }
-      R(g, '#bcb08c', X + 69, Yb - hf, 2, hf);
-      R(g, '#f0f0e8', X + W - 2, Yb - hf, 2, hf);
-    } }];
-  };
-
   // Camino secundario de tierra con bordes blancos (cordoncitos de cal), de la costa a la naciente o a la cancha.
   VR.decor.camino_tierra = (g, d) => {
     const x0 = d.x * S, x1 = (d.x + d.w) * S, y0 = d.y * S, y1 = (d.y + d.h) * S;
@@ -5322,7 +5285,6 @@ VR.Night = class {
       // parque Manuel Ortiz Guerrero (10/11/2026): faroles blancos en el anillo, surtidores celestes, glorieta cálida,
       // la fuente de los enamorados con luz rosada suave (por la leyenda) y el embarcadero
       else if (d.kind === 'farol_parque') this.put(X + 8, Y + 2 * S - 8, 60, LED, 0.85);
-      else if (d.kind === 'servicios') { this.put((d.x + 3) * S, (d.y + 3.8) * S, 52, CALIDO, 0.8); this.put((d.x + 7) * S, (d.y + 3.6) * S, 40, LED, 0.55); }
       else if (d.kind === 'cancha_sint') { for (const [fx, fy] of [[0, 0], [d.w, 0], [0, d.h], [d.w, d.h]]) this.put((d.x + fx) * S, (d.y + fy) * S, 44, LED, 0.55); }
       else if (d.kind === 'surtidor') this.put(d.px, d.py - 8, 36, '150,220,255', 0.9);
       else if (d.kind === 'fuente_amor') this.put((d.px + 1.5) * S, (d.py + 1.5) * S, 56, '255,170,205', 0.7);
@@ -6248,6 +6210,7 @@ VR.Online = class {
       Object.assign(o, m, { px: o.x, py: o.y, at: performance.now() });
       if (m.L) { o.look = VR.av2Lazy(m.L); o.L = m.L; }
       if (!m.tz) { o.tz = 0; o.t = null; }
+      if (!m.sw) o.sw = null;
     });
     c.on('close', () => { this.conns = this.conns.filter((o) => o !== c); this.set(this.conns.length ? 'Conectado' : this.host ? 'Sala ' + this.room + ' · esperando' : 'Se cortó la conexión'); });
   }
@@ -6317,7 +6280,7 @@ VR.Online = class {
       c.push([v._nid, Math.round(v.x), Math.round(v.y), Math.round(v.a * 100), v.type === 'moto' ? 1 : 0, v.model, v.color || 0, this.flags(v), ri, sp[0], sp[1]]);
     }
     if (this.peds) for (const q of this.peds.list) { q._nid = q._nid || (this.pid = (this.pid || 0) + 1e6); p.push([q._nid, Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]); }
-    const m = { w: 1, c, p, cine: VR.cineNow || undefined, now: Date.now() }; for (const k of this.conns) if (k.open) k.send(m);
+    const m = { w: 1, c, p, f: this.fauna ? this.fauna.snap(this.hx || 0, this.hy || 0) : undefined, cine: VR.cineNow || undefined, now: Date.now() }; for (const k of this.conns) if (k.open) k.send(m);
   }
   // ---- invitado: cerca del anfitrión, ver lo suyo ----
   follow(dt, me) {
@@ -6327,14 +6290,16 @@ VR.Online = class {
       this.mirror = true;
       if (this.traffic) for (const v of this.traffic.list.slice()) this.traffic.remove(v);
       if (this.peds) { this.ownPeds = this.peds.list; this.peds.list = this.pp = []; }
+      if (this.fauna) this.fauna.netBegin();
     } else if (!near && this.mirror) { // volver a lo propio
       this.mirror = false;
       for (const v of this.proxies.values()) this.world.removeBox(v); this.proxies.clear();
       if (this.peds) this.peds.list = [];
+      if (this.fauna) this.fauna.netEnd();
     }
     if (!this.mirror) return;
     const W = this.W, fresh = W !== this.lastW, k = Math.min(1, dt * 9);
-    if (fresh) { this.lastW = W; this.seen = new Set(); }
+    if (fresh) { this.lastW = W; this.seen = new Set(); if (this.fauna && W.f) this.fauna.netSet(W.f); }
     const seen = this.seen;
     if (fresh) for (const [id, x, y, a100, moto, model, color, f, ri, svx, svy] of W.c) {
       if (this.taken.has(id)) continue;
@@ -6369,11 +6334,13 @@ VR.Online = class {
   update(dt, player, car, teatro) {
     this.teatro = teatro;
     this.myL = player.lookData; this.myBubble = player.bubble ? { text: player.bubble.text, end: performance.now() + player.bubble.t * 1000 } : null;
+    this.hx = car ? car.x : player.x; this.hy = car ? car.y : player.y;
     this.follow(dt, car || player);
     if (this.host && this.peer && (this.salaT = (this.salaT || 0) + dt) > 30) { this.salaT = 0; VR.Salas.put(this.room, this.nick, this.conns.length + 1); }
     if (!this.peer || !this.conns.length) return;
     this.t += dt; if (this.t < 0.1) return; this.t = 0;
     const m = { id: this.peer.id, n: this.nick, r: this.ride || undefined, tz: this.teatro && this.teatro.on ? 1 : undefined, t: this.teatro && this.teatro.on ? this.teatro.state() : undefined, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
+    if (this.cisnes && this.cisnes.s) m.sw = this.cisnes.netState();
     if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car), car.tune || 0];
     const lk = JSON.stringify(player.lookData); if (this.sendLook || lk !== this.lastLook || Math.random() < 0.02) { m.L = player.lookData; this.sendLook = false; this.lastLook = lk; }
     for (const c of this.conns) if (c.open) c.send(m);
@@ -6388,6 +6355,7 @@ VR.Online = class {
     let pi = 0;
     for (const o of this.others.values()) {
       if (!o.look || o.tz) continue; // los que están en el teatro se dibujan adentro
+      if (o.sw) { o.sx = o.x; o.sy = o.y; continue; } // en un cisne: lo dibuja cisnes.js
       if (o.r) { // va de pasajero: se dibuja con el conductor
         const d = o.r === me ? null : this.others.get(o.r);
         if (d && d.c && d.sx !== undefined) this.drawPass(tall, o, d.sx - cx, d.sy - cy, d.c[3], d.c[0], cx, cy, pi++);
@@ -7158,28 +7126,38 @@ VR.showVehicleCard = (v) => {
 // Pedal izquierdo solo: el cisne gira a la derecha; derecho solo: a la izquierda; los dos juntos: derecho.
 // Teclado: A/← pedal izquierdo, D/→ pedal derecho, W/↑ los dos, S/↓ marcha atrás. Táctil: dos botones de pedal
 // (o el joystick: arriba = los dos, costados = uno). Solo navegan por el agua de la laguna (baldosas LAGUNA).
+// Paseo: subir cuesta 5.000 Gs. (main.js). Minijuego "Vuelta a la laguna": 6 boyas alrededor de la laguna; al pasar la
+// boya 1 arranca el reloj, hay que pasarlas en orden y volver a la 1; el récord queda guardado en el teléfono.
+// Online: quien va en un cisne manda [n.º de cisne, x, y, ángulo, pedales] y los demás ven ese cisne (con su personaje)
+// en vez del suyo; un cisne ocupado por otro jugador no se puede tomar.
 'use strict';
+VR.CISNE_PRECIO = 5000;
 VR.Cisnes = class {
   constructor(world, night) {
-    this.world = world; this.night = night; this.list = []; this.s = null; this.t = 0;
+    this.world = world; this.night = night; this.list = []; this.s = null; this.t = 0; this.buoys = null; this.race = null; this.onMsg = null;
     const S = VR.TILE;
     for (const d of world.decals || []) if (d.kind === 'embarcadero')
       for (const [tx, ty, col, a] of d.cisnes || []) this.list.push({ x: tx * S, y: ty * S, a, col, hx: tx * S, hy: ty * S, ha: a, v: 0, w: 0, pL: 0, pR: 0, L: 0, R: 0, ph: 0, emptyT: 0, trail: [], tt: 0 });
+    try { this.record = +localStorage.getItem('cisne:record') || 0; } catch (e) { this.record = 0; }
   }
   get riding() { return !!this.s; }
   near(p) {
     let best = null, bd = 34;
-    for (const s of this.list) { if (s === this.s) continue; const d = Math.hypot(s.x - p.x, s.y - (p.y - 4)); if (d < bd) { bd = d; best = s; } }
+    for (const s of this.list) { if (s === this.s || s.netO) continue; const d = Math.hypot(s.x - p.x, s.y - (p.y - 4)); if (d < bd) { bd = d; best = s; } }
     return best;
   }
-  board(s) { this.s = s; s.pas = VR.av2Random(); s.emptyT = 0; s.v *= 0.5; s.pL = s.pR = 0; }
+  board(s) {
+    this.s = s; s.pas = s.pas || VR.av2Random(); s.emptyT = 0; s.v *= 0.5; s.pL = s.pR = 0;
+    if (!this.buoys) this.buoys = this.makeBuoys();
+    this.race = { i: 0, t: 0, on: false, away: true };
+  }
   // baja al jugador en el lugar firme más cercano (orilla o muelle)
   exit(player) {
     const s = this.s, W = this.world;
     for (let r = 14; r <= 80; r += 5) for (let k = 0; k < 20; k++) {
       const an = k * Math.PI / 10 + (s.a || 0), x = s.x + Math.cos(an) * r, y = s.y + Math.sin(an) * r + 4;
       if (!W.hits(x - player.HW, y - player.HH, x + player.HW, y)) {
-        player.x = player.px = x; player.y = player.py = y; this.s = null; s.v = 0; s.w = 0; return true;
+        player.x = player.px = x; player.y = player.py = y; this.s = null; this.race = null; s.v = 0; s.w = 0; return true;
       }
     }
     return false;
@@ -7191,10 +7169,70 @@ VR.Cisnes = class {
       if (!this.water(x + fx * l + rx * w, y + fy * l + ry * w)) return false;
     return true;
   }
+  // 6 boyas en agua abierta alrededor del centro de la laguna; la 1 queda del lado del muelle, y se recorren en sentido antihorario
+  makeBuoys() {
+    const S = VR.TILE, h = this.list[0]; if (!h) return [];
+    const tx0 = Math.floor(h.hx / S), ty0 = Math.floor(h.hy / S);
+    let sx = 0, sy = 0, n = 0;
+    for (let ty = ty0 - 70; ty <= ty0 + 70; ty++) for (let tx = tx0 - 70; tx <= tx0 + 70; tx++) if (this.world.get(tx, ty) === VR.T.LAGUNA) { sx += tx; sy += ty; n++; }
+    if (!n) return [];
+    const cx = (sx / n + 0.5) * S, cy = (sy / n + 0.5) * S, a0 = Math.atan2(h.hy - cy, h.hx - cx), out = [];
+    const open = (x, y) => this.water(x, y) && [[22, 0], [-22, 0], [0, 22], [0, -22], [16, 16], [-16, 16], [16, -16], [-16, -16]].every(([dx, dy]) => this.water(x + dx, y + dy));
+    for (let k = 0; k < 6; k++) { // por cada dirección: el agua abierta más lejana, y la boya a ~70 % de esa distancia (saltando la plataforma)
+      const a = a0 - k * Math.PI / 3, rs = [];
+      for (let r = 0; r < 900; r += 6) if (open(cx + Math.cos(a) * r, cy + Math.sin(a) * r)) rs.push(r);
+      if (!rs.length) continue;
+      const want = rs[rs.length - 1] * 0.7, r = rs.reduce((p, q) => (Math.abs(q - want) < Math.abs(p - want) ? q : p));
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+      if (out.every((o) => Math.hypot(o.x - x, o.y - y) > 70)) out.push({ x, y });
+    }
+    return out;
+  }
+  // otros jugadores en cisnes (online): cada cisne ocupado por otro sigue lo que manda ese jugador
+  netSync(others) {
+    for (const s of this.list) s.netO = null;
+    if (!others) return;
+    const now = performance.now();
+    for (const o of others.values()) {
+      if (!o.sw || now - o.at > 1500) continue;
+      const s = this.list[o.sw[0]]; if (!s || s === this.s) continue;
+      s.netO = o;
+    }
+  }
+  tone(f, d = 0.12, at = 0, vol = 0.06) { const A = VR.audio; if (A && A.on) A.tone(f, d, { type: 'triangle', vol, at }); }
+  updRace(dt) {
+    const R = this.race, B = this.buoys, s = this.s; if (!R || !B || B.length < 2) return;
+    if (R.on) R.t += dt;
+    const tgt = R.on ? B[R.i % B.length] : B[0], d = Math.hypot(s.x - tgt.x, s.y - tgt.y);
+    if (!R.on) { // largada: pasar por la boya 1 (después de alejarse de ella)
+      if (d > 40) R.away = true;
+      if (d < 18 && R.away) { R.on = true; R.t = 0; R.i = 1; this.tone(660); this.tone(990, 0.16, 0.1); if (this.onMsg) this.onMsg('🦢 ¡Largaste! Pasá por la boya 2'); }
+      return;
+    }
+    if (d < 18) {
+      if (R.i === B.length) { // volvió a la 1: vuelta completa
+        const t = R.t, best = !this.record || t < this.record;
+        if (best) { this.record = t; try { localStorage.setItem('cisne:record', t.toFixed(2)); } catch (e) {} }
+        this.tone(660); this.tone(880, 0.14, 0.12); this.tone(1320, 0.3, 0.26, 0.07);
+        if (this.onMsg) this.onMsg('🏁 Vuelta en ' + this.fmt(t) + (best ? ' · ¡récord!' : ' · récord ' + this.fmt(this.record)));
+        this.race = { i: 0, t: 0, on: false, away: false };
+      } else { R.i++; this.tone(880); if (this.onMsg) this.onMsg('Boya ' + R.i + ' de ' + B.length + (R.i === B.length ? ' · ahora volvé a la 1' : '')); }
+    }
+  }
+  fmt(t) { const m = Math.floor(t / 60), s = t - m * 60; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1); }
   update(dt, input) {
     this.t += dt;
     for (const s of this.list) {
       const mine = s === this.s;
+      if (s.netO) { // lo maneja otro jugador: seguir lo que manda (con suavizado)
+        const [, x, y, a, f] = s.netO.sw, k = Math.min(1, dt * 8), px = s.x, py = s.y;
+        if (Math.hypot(x - s.x, y - s.y) > 80) { s.x = x; s.y = y; s.a = a; } else { s.x += (x - s.x) * k; s.y += (y - s.y) * k; s.a += Math.atan2(Math.sin(a - s.a), Math.cos(a - s.a)) * k; }
+        s.v = Math.hypot(s.x - px, s.y - py) / Math.max(dt, 1e-3); s.L = f & 1; s.R = (f >> 1) & 1; s.emptyT = 0;
+        s.ph += dt * (s.L ? 7 : 0.8); s.ph2 = (s.ph2 || 0) + dt * (s.R ? 7 : 0.8);
+        s.tt += dt; if (s.v > 4 && s.tt > 0.16) { s.tt = 0; s.trail.push({ x: s.x - Math.sin(s.a) * 12, y: s.y + Math.cos(s.a) * 12, t: 0 }); }
+        for (let i = s.trail.length - 1; i >= 0; i--) { s.trail[i].t += dt; if (s.trail[i].t > 1.8) s.trail.splice(i, 1); }
+        continue;
+      }
       let L = 0, R = 0, back = 0;
       if (mine) {
         L = input.pl || input.down('pedL') ? 1 : 0; R = input.pr || input.down('pedR') ? 1 : 0;
@@ -7232,26 +7270,52 @@ VR.Cisnes = class {
       s.tt += dt; if (Math.abs(s.v) > 4 && s.tt > 0.16) { s.tt = 0; s.trail.push({ x: s.x - Math.sin(s.a) * 12, y: s.y + Math.cos(s.a) * 12, t: 0 }); }
       for (let i = s.trail.length - 1; i >= 0; i--) { s.trail[i].t += dt; if (s.trail[i].t > 1.8) s.trail.splice(i, 1); }
     }
+    if (this.s) this.updRace(dt);
+  }
+  // lo que se manda online cuando vas en un cisne
+  netState() { const s = this.s; return s ? [this.list.indexOf(s), Math.round(s.x), Math.round(s.y), +s.a.toFixed(3), (s.L ? 1 : 0) | (s.R ? 2 : 0)] : undefined; }
+  drawBuoys(ctx, cx, cy, night) {
+    const B = this.buoys, R = this.race; if (!B || !R) return;
+    const nxt = R.on ? R.i % B.length : 0, t = this.t;
+    B.forEach((b, i) => {
+      const x = b.x - cx, y = b.y - cy, on = i === nxt, bob = Math.sin(t * 2.4 + i) * 0.6, r = on ? 5.2 : 3.6;
+      ctx.strokeStyle = 'rgba(220,240,225,.35)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.ellipse(x, y + 1, r + 3 + Math.sin(t * 2 + i) * 0.8, (r + 3) * 0.5, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = 'rgba(10,20,10,.3)'; ctx.beginPath(); ctx.ellipse(x + 1.5, y + 1.5, r, r * 0.6, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#2a1a10'; ctx.beginPath(); ctx.ellipse(x, y + bob, r + 0.7, (r + 0.7) * 0.7, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = on ? '#ff7a1a' : '#e0703a'; ctx.beginPath(); ctx.ellipse(x, y + bob, r, r * 0.7, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x - r, y + bob - 0.7, r * 2, 1.4);
+      ctx.font = 'bold ' + (on ? 8 : 6) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 2.2; ctx.strokeStyle = 'rgba(0,0,0,.75)';
+      const ty = y + bob - r - 3 - (on ? Math.abs(Math.sin(t * 4)) * 2 : 0); ctx.strokeText(String(i + 1), x, ty); ctx.fillStyle = on ? '#ffe28a' : '#ffffff'; ctx.fillText(String(i + 1), x, ty);
+      if (night && on) night.add(b.x, b.y, 22, '255,170,80', 0.7);
+    });
+    // flechita alrededor del cisne hacia la próxima boya, y el reloj arriba
+    const s = this.s, b = B[nxt], a = Math.atan2(b.y - s.y, b.x - s.x), d = Math.hypot(b.y - s.y, b.x - s.x);
+    if (d > 40) { const ax = s.x - cx + Math.cos(a) * 26, ay = s.y - cy + Math.sin(a) * 26; ctx.fillStyle = '#ffd84a'; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(ax + Math.cos(a) * 5, ay + Math.sin(a) * 5); ctx.lineTo(ax + Math.cos(a + 2.4) * 4, ay + Math.sin(a + 2.4) * 4); ctx.lineTo(ax + Math.cos(a - 2.4) * 4, ay + Math.sin(a - 2.4) * 4); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    const txt = R.on ? '⏱ ' + this.fmt(R.t) + ' · boya ' + (R.i + 1) + '/' + B.length : 'Pasá por la boya 1' + (this.record ? ' · récord ' + this.fmt(this.record) : '');
+    const lbl = R.on && R.i === B.length ? '⏱ ' + this.fmt(R.t) + ' · volvé a la 1' : txt;
+    ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(lbl, s.x - cx, s.y - cy + 27); ctx.fillStyle = '#ffe28a'; ctx.fillText(lbl, s.x - cx, s.y - cy + 27); // debajo del cisne (arriba van los globos)
   }
   // se dibujan sobre el agua, antes de la gente (no hay nada por encima de ellos salvo copas, que van aparte)
   draw(ctx, cx, cy, night, look) {
+    if (this.s) this.drawBuoys(ctx, cx, cy, night);
     for (const s of this.list) {
       if (s.x < cx - 60 || s.y < cy - 60 || s.x > cx + VR.screen.w + 60 || s.y > cy + VR.screen.h + 60) continue;
       ctx.save(); ctx.translate(-cx, -cy);
       for (const p of s.trail) { const k = p.t / 1.8; ctx.strokeStyle = `rgba(220,240,225,${0.5 * (1 - k)})`; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(p.x, p.y, 3 + k * 11, 2 + k * 7, 0, 0, 7); ctx.stroke(); }
       VR.drawCisne(ctx, s.x, s.y, s.a, s.col);
-      ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a);
-      if (s === this.s && look) { // dos personas sentadas con su personaje de verdad (como en las motos): conduce el jugador a la izquierda y acompaña otra a la derecha
-        ctx.restore(); ctx.restore();
+      ctx.restore();
+      const drv = s === this.s ? look : s.netO ? s.netO.look : null;
+      if (drv) { // dos personas sentadas con su personaje de verdad (como en las motos): conduce a la izquierda y acompaña otra a la derecha
+        if (!s.pas) s.pas = VR.av2Random();
         const k = ((Math.round(s.a / (Math.PI * 2) * 64) % 64) + 64) % 64, fx = Math.sin(s.a), fy = -Math.cos(s.a), rx = Math.cos(s.a), ry = Math.sin(s.a);
-        for (const [sd, L, on] of [[-1, look, s.L], [1, s.pas, s.R]]) {
+        for (const [sd, L, on] of [[-1, drv, s.L], [1, s.pas, s.R]]) {
           const R = VR.riderTopFrames(L, { gy: -3.2, gx: 2.4, hip: 2.6 }), rh = R.S >> 1, off = 3.1 * sd, ox = s.x + rx * off + fx * 1.5 - cx, oy = s.y + ry * off + fy * 1.5 - cy;
           ctx.drawImage(R.get(k), Math.round(ox - rh), Math.round(oy - rh) - 1 - (on ? ((Math.sin(sd < 0 ? s.ph : s.ph2 || 0) > 0) ? 1 : 0) : 0), R.S, R.S);
         }
-        if (night) night.add(s.x, s.y - 4, 30, '255,226,160', 0.75);
-        continue;
+        if (s.netO) { // nombre del otro jugador
+          const x = s.x - cx, y = s.y - cy - 22; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(s.netO.n, x, y); ctx.fillStyle = '#ffd84a'; ctx.fillText(s.netO.n, x, y);
+        }
       }
-      ctx.restore(); ctx.restore();
       if (night) night.add(s.x, s.y - 4, 30, '255,226,160', 0.75); // lucecita del cisne
     }
   }
@@ -7476,9 +7540,10 @@ VR.Cisnes = class {
       this.t += dt;
       const L = this.lake, near = L && cam.x > L.x0 - 900 && cam.x < L.x1 + 900 && cam.y > L.y0 - 700 && cam.y < L.y1 + 700;
       for (const r of this.rip) r.t += dt; this.rip = this.rip.filter((r) => r.t < r.life);
-      if (near) { for (const h of this.herds) this.updHerd(h, dt, threats); this.updDucks(dt, threats); this.updFish(dt, threats); this.updHerons(dt, threats); }
+      if (near) { if (!this.netOn) { for (const h of this.herds) this.updHerd(h, dt, threats); this.updDucks(dt, threats); this.updHerons(dt, threats); } this.updFish(dt, threats); }
       if (VR.audio && VR.audio.lago) { const dx = Math.max(L ? L.x0 - cam.x : 1e4, 0, L ? cam.x - L.x1 : 0), dy = Math.max(L ? L.y0 - cam.y : 1e4, 0, L ? cam.y - L.y1 : 0); VR.audio.lago(L ? Math.max(0, 1 - Math.hypot(dx, dy) / 260) : 0); } // sonido de la laguna: se oye cerca de la orilla
-      for (const f of this.flocks) if (Math.abs(f.hx - cam.x) < 1100 && Math.abs(f.hy - cam.y) < 900) this.updFlock(f, dt, threats, cam);
+      if (this.netOn) this.netStep(dt);
+      else for (const f of this.flocks) if (Math.abs(f.hx - cam.x) < 1100 && Math.abs(f.hy - cam.y) < 900) this.updFlock(f, dt, threats, cam);
       this.scares.length = 0;
     }
 
@@ -7600,6 +7665,42 @@ VR.Cisnes = class {
           if (far > 1.5) this.stepDuck(d, p[0], p[1], far > 25 ? 16 : 10, dt);
         }
       }
+    }
+    // ---------- online: el anfitrión manda sus animales; cerca del anfitrión, los invitados ven esos (como el tránsito) ----------
+    snap(px, py) {
+      if (!this.ready) return undefined;
+      const D4 = ['l', 'r', 'u', 'd'], M3 = ['swim', 'walk', 'fly'], r = Math.round;
+      const p = []; this.flocks.forEach((f, i) => { if (Math.abs(f.hx - px) < 1300 && Math.abs(f.hy - py) < 1100) p.push([i, f.birds.map((b) => [r(b.x), r(b.y), b.ci, b.dir === 'r' ? 1 : 0, r(b.alt), (b.flying && b.delay <= 0 ? 1 : 0) | (b.peck > 0 ? 2 : 0) | (b.walk > 0 ? 4 : 0)])]); });
+      return {
+        h: this.herds.map((h) => h.list.map((c) => [r(c.x), r(c.y), D4.indexOf(c.dir), (c.swim ? 1 : 0) | (c.graze ? 2 : 0), c.s < 1 ? 1 : 0])),
+        d: this.ducks.map((d) => [r(d.x), r(d.y), d.dir === 'r' ? 1 : 0, M3.indexOf(d.mode), r(d.alt), d.ci]),
+        g: this.herons.map((h) => [r(h.x), r(h.y), h.dir === 'r' ? 1 : 0, h.mode === 'fly' ? 1 : 0, r(h.alt)]),
+        p,
+      };
+    }
+    netBegin() { if (this.netOn) return; if (!this.ready) this.init(); this.own = { herds: this.herds, ducks: this.ducks, herons: this.herons, flocks: this.flocks }; this.herds = []; this.ducks = []; this.herons = []; this.flocks = []; this.netF = new Map(); this.netS = null; this.netOn = true; }
+    netEnd() { if (!this.netOn) return; Object.assign(this, this.own); this.own = null; this.netOn = false; }
+    netSet(S) { if (this.netOn && S) this.netS = S; }
+    netStep(dt) {
+      const S = this.netS; if (!S) return;
+      const k = Math.min(1, dt * 8), D4 = ['l', 'r', 'u', 'd'], M3 = ['swim', 'walk', 'fly'];
+      const mv = (o, x, y) => { const d = Math.hypot(x - o.x, y - o.y); if (d > 60) { o.x = x; o.y = y; } else { o.x += (x - o.x) * k; o.y += (y - o.y) * k; } return d; };
+      this.herds.length = S.h.length;
+      S.h.forEach((L, i) => {
+        const h = this.herds[i] || (this.herds[i] = { list: [] }); h.list.length = L.length;
+        L.forEach(([x, y, di, fl, baby], j) => { const c = h.list[j] || (h.list[j] = { x, y, anim: Math.random() * 2 }); const d = mv(c, x, y); c.dir = D4[di] || 'd'; c.swim = !!(fl & 1); c.graze = !!(fl & 2); c.s = baby ? 0.9 : 1.3; c.anim += dt * (d > 0.4 ? 6 : 1); });
+      });
+      this.ducks.length = S.d.length;
+      S.d.forEach(([x, y, dr, mi, alt, ci], i) => { const o = this.ducks[i] || (this.ducks[i] = { x, y, alt: 0, anim: Math.random() * 2 }); mv(o, x, y); o.dir = dr ? 'r' : 'l'; o.mode = M3[mi] || 'swim'; o.alt += (alt - o.alt) * k; o.ci = ci; o.anim += dt * (o.mode === 'fly' ? 9 : 2); });
+      this.herons.length = S.g.length;
+      S.g.forEach(([x, y, dr, fly, alt], i) => { const o = this.herons[i] || (this.herons[i] = { x, y, alt: 0, anim: 0 }); mv(o, x, y); o.dir = dr ? 'r' : 'l'; o.mode = fly ? 'fly' : 'stand'; o.alt += (alt - o.alt) * k; o.anim += dt * (fly ? 9 : 1.2); });
+      const keep = new Map();
+      for (const [fi, B] of S.p) {
+        const f = this.netF.get(fi) || { hx: 0, hy: 0, birds: [] }; keep.set(fi, f); f.birds.length = B.length;
+        B.forEach(([x, y, ci, dr, alt, fl], j) => { const b = f.birds[j] || (f.birds[j] = { x, y, alt: 0, anim: Math.random() * 2, delay: 0 }); mv(b, x, y); b.ci = ci; b.dir = dr ? 'r' : 'l'; b.alt += (alt - b.alt) * k; b.flying = !!(fl & 1); b.peck = fl & 2 ? 1 : 0; b.walk = fl & 4 ? 1 : 0; b.anim += dt * (b.flying ? 9 : 3); });
+        if (B.length) { f.hx = B[0][0]; f.hy = B[0][1]; }
+      }
+      this.netF = keep; this.flocks = [...keep.values()];
     }
     // ---------- garzas: paradas en la orilla; si te acercás, vuelan a otro lado ----------
     updHerons(dt, threats) {
@@ -7810,7 +7911,7 @@ VR.Cisnes = class {
   const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
-  const cisnes = VR.cisnes = new VR.Cisnes(world, night);
+  const cisnes = VR.cisnes = new VR.Cisnes(world, night); cisnes.onMsg = (m) => toast(m);
   const fauna = VR.fauna = new VR.Fauna(world); // carpinchos, patos, peces y palomas (fauna.js)
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
@@ -7933,7 +8034,7 @@ VR.Cisnes = class {
     }
     if (VR.input.pressed('menu')) { openMenu(); return; }
     if (VR.input.pressed('map')) { openMap(); return; }
-    cisnes.update(dt, VR.input);
+    cisnes.netSync(online.peer ? online.others : null); cisnes.update(dt, VR.input);
     if (cisnes.riding) { // en un cisne de pedal: el jugador va sobre el cisne
       const s = cisnes.s;
       player.px = player.x; player.py = player.y; player.x = s.x; player.y = s.y + 4; player.moving = false;
@@ -7970,9 +8071,10 @@ VR.Cisnes = class {
       const nci = nearCine(); if (nci && !nc && !ns) { hint = VR.input.source === 'touch' ? '🎬 Cine: ACCIÓN' : '🎬 Espacio: cine'; hintCar = { x: nci.x, y: nci.y - 8 }; if (VR.input.pressed('action')) { teatro.enter(); return; } }
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       const nsw = !nc ? cisnes.near(player) : null;
-      if (nsw) { hint = VR.input.source === 'touch' ? '🦢 Subir' : VR.input.source === 'pad' ? 'X: subir al cisne' : 'F: subir al cisne'; hintCar = { x: nsw.x, y: nsw.y - 8 }; }
+      if (nsw) { hint = (VR.input.source === 'touch' ? '🦢 Paseo' : VR.input.source === 'pad' ? 'X: paseo en cisne' : 'F: paseo en cisne') + ' · ' + VR.fmtGs(VR.CISNE_PRECIO); hintCar = { x: nsw.x, y: nsw.y - 8 }; }
       if (VR.input.pressed('car')) {
-        if (nsw) { cisnes.board(nsw); toast(VR.input.source === 'touch' ? '🦢 Pedaleá con los dos botones (o joystick arriba). Uno solo gira' : '🦢 Pedaleá: A y D (o W los dos). Un solo pie gira'); }
+        if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
+        else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) enterCar(nc); else toast('Acercate a un auto, una moto o un cisne para subir'); }
       else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
@@ -7996,6 +8098,7 @@ VR.Cisnes = class {
       else if (car) th.push({ x: car.x, y: car.y, sp: Math.hypot(car.vx || 0, car.vy || 0) });
       else th.push({ x: player.x, y: player.y, sp: player.moving ? (player.run ? 40 : 15) : 0 });
       for (const s of cisnes.list) if (s !== cisnes.s && Math.abs(s.v || 0) > 3) th.push({ x: s.x, y: s.y, sp: 0, water: true });
+      if (online.peer && !online.mirror) for (const o of online.others.values()) if (!o.tz && !o.r && o.look) th.push(o.sw ? { x: o.x, y: o.y, sp: 0, water: true } : { x: o.x, y: o.y, sp: o.c ? 60 : o.mv > 1 ? 40 : o.mv ? 15 : 0 }); // los otros jugadores también asustan
       const near = (o) => Math.abs(o.x - cam.x) < 420 && Math.abs(o.y - cam.y) < 320;
       if (traffic) for (const v of traffic.list) if (near(v)) th.push({ x: v.x, y: v.y, sp: Math.hypot(v.vx || 0, v.vy || 0) });
       if (peds) for (const q of peds.list) if (near(q)) th.push({ x: q.x, y: q.y, sp: 0, r: 12 });
@@ -8113,7 +8216,7 @@ VR.Cisnes = class {
   seg('segHora', 'hora', () => {});
   // ---- online ----
   const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player, enterCar, exitCar, cars }); $('btnJobs').onclick = () => changas.open();
-  const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars });
+  const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars, fauna, cisnes });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
   const goOnline = (host) => {
@@ -8442,7 +8545,7 @@ VR.Cisnes = class {
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();
 
 </script>

@@ -26,7 +26,7 @@
   const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
-  const cisnes = VR.cisnes = new VR.Cisnes(world, night);
+  const cisnes = VR.cisnes = new VR.Cisnes(world, night); cisnes.onMsg = (m) => toast(m);
   const fauna = VR.fauna = new VR.Fauna(world); // carpinchos, patos, peces y palomas (fauna.js)
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
@@ -149,7 +149,7 @@
     }
     if (VR.input.pressed('menu')) { openMenu(); return; }
     if (VR.input.pressed('map')) { openMap(); return; }
-    cisnes.update(dt, VR.input);
+    cisnes.netSync(online.peer ? online.others : null); cisnes.update(dt, VR.input);
     if (cisnes.riding) { // en un cisne de pedal: el jugador va sobre el cisne
       const s = cisnes.s;
       player.px = player.x; player.py = player.y; player.x = s.x; player.y = s.y + 4; player.moving = false;
@@ -186,9 +186,10 @@
       const nci = nearCine(); if (nci && !nc && !ns) { hint = VR.input.source === 'touch' ? '🎬 Cine: ACCIÓN' : '🎬 Espacio: cine'; hintCar = { x: nci.x, y: nci.y - 8 }; if (VR.input.pressed('action')) { teatro.enter(); return; } }
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
       const nsw = !nc ? cisnes.near(player) : null;
-      if (nsw) { hint = VR.input.source === 'touch' ? '🦢 Subir' : VR.input.source === 'pad' ? 'X: subir al cisne' : 'F: subir al cisne'; hintCar = { x: nsw.x, y: nsw.y - 8 }; }
+      if (nsw) { hint = (VR.input.source === 'touch' ? '🦢 Paseo' : VR.input.source === 'pad' ? 'X: paseo en cisne' : 'F: paseo en cisne') + ' · ' + VR.fmtGs(VR.CISNE_PRECIO); hintCar = { x: nsw.x, y: nsw.y - 8 }; }
       if (VR.input.pressed('car')) {
-        if (nsw) { cisnes.board(nsw); toast(VR.input.source === 'touch' ? '🦢 Pedaleá con los dos botones (o joystick arriba). Uno solo gira' : '🦢 Pedaleá: A y D (o W los dos). Un solo pie gira'); }
+        if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
+        else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) enterCar(nc); else toast('Acercate a un auto, una moto o un cisne para subir'); }
       else if (VR.input.pressed('action')) { if (ns) { openShop(); return; } if (changas.action(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
@@ -212,6 +213,7 @@
       else if (car) th.push({ x: car.x, y: car.y, sp: Math.hypot(car.vx || 0, car.vy || 0) });
       else th.push({ x: player.x, y: player.y, sp: player.moving ? (player.run ? 40 : 15) : 0 });
       for (const s of cisnes.list) if (s !== cisnes.s && Math.abs(s.v || 0) > 3) th.push({ x: s.x, y: s.y, sp: 0, water: true });
+      if (online.peer && !online.mirror) for (const o of online.others.values()) if (!o.tz && !o.r && o.look) th.push(o.sw ? { x: o.x, y: o.y, sp: 0, water: true } : { x: o.x, y: o.y, sp: o.c ? 60 : o.mv > 1 ? 40 : o.mv ? 15 : 0 }); // los otros jugadores también asustan
       const near = (o) => Math.abs(o.x - cam.x) < 420 && Math.abs(o.y - cam.y) < 320;
       if (traffic) for (const v of traffic.list) if (near(v)) th.push({ x: v.x, y: v.y, sp: Math.hypot(v.vx || 0, v.vy || 0) });
       if (peds) for (const q of peds.list) if (near(q)) th.push({ x: q.x, y: q.y, sp: 0, r: 12 });
@@ -329,7 +331,7 @@
   seg('segHora', 'hora', () => {});
   // ---- online ----
   const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player, enterCar, exitCar, cars }); $('btnJobs').onclick = () => changas.open();
-  const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars });
+  const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars, fauna, cisnes });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
   const goOnline = (host) => {
@@ -658,5 +660,5 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   applyTouch();
   VR.loop.start(update, render);
-  window.__vr = { get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();

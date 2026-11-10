@@ -216,9 +216,10 @@
       this.t += dt;
       const L = this.lake, near = L && cam.x > L.x0 - 900 && cam.x < L.x1 + 900 && cam.y > L.y0 - 700 && cam.y < L.y1 + 700;
       for (const r of this.rip) r.t += dt; this.rip = this.rip.filter((r) => r.t < r.life);
-      if (near) { for (const h of this.herds) this.updHerd(h, dt, threats); this.updDucks(dt, threats); this.updFish(dt, threats); this.updHerons(dt, threats); }
+      if (near) { if (!this.netOn) { for (const h of this.herds) this.updHerd(h, dt, threats); this.updDucks(dt, threats); this.updHerons(dt, threats); } this.updFish(dt, threats); }
       if (VR.audio && VR.audio.lago) { const dx = Math.max(L ? L.x0 - cam.x : 1e4, 0, L ? cam.x - L.x1 : 0), dy = Math.max(L ? L.y0 - cam.y : 1e4, 0, L ? cam.y - L.y1 : 0); VR.audio.lago(L ? Math.max(0, 1 - Math.hypot(dx, dy) / 260) : 0); } // sonido de la laguna: se oye cerca de la orilla
-      for (const f of this.flocks) if (Math.abs(f.hx - cam.x) < 1100 && Math.abs(f.hy - cam.y) < 900) this.updFlock(f, dt, threats, cam);
+      if (this.netOn) this.netStep(dt);
+      else for (const f of this.flocks) if (Math.abs(f.hx - cam.x) < 1100 && Math.abs(f.hy - cam.y) < 900) this.updFlock(f, dt, threats, cam);
       this.scares.length = 0;
     }
 
@@ -340,6 +341,42 @@
           if (far > 1.5) this.stepDuck(d, p[0], p[1], far > 25 ? 16 : 10, dt);
         }
       }
+    }
+    // ---------- online: el anfitrión manda sus animales; cerca del anfitrión, los invitados ven esos (como el tránsito) ----------
+    snap(px, py) {
+      if (!this.ready) return undefined;
+      const D4 = ['l', 'r', 'u', 'd'], M3 = ['swim', 'walk', 'fly'], r = Math.round;
+      const p = []; this.flocks.forEach((f, i) => { if (Math.abs(f.hx - px) < 1300 && Math.abs(f.hy - py) < 1100) p.push([i, f.birds.map((b) => [r(b.x), r(b.y), b.ci, b.dir === 'r' ? 1 : 0, r(b.alt), (b.flying && b.delay <= 0 ? 1 : 0) | (b.peck > 0 ? 2 : 0) | (b.walk > 0 ? 4 : 0)])]); });
+      return {
+        h: this.herds.map((h) => h.list.map((c) => [r(c.x), r(c.y), D4.indexOf(c.dir), (c.swim ? 1 : 0) | (c.graze ? 2 : 0), c.s < 1 ? 1 : 0])),
+        d: this.ducks.map((d) => [r(d.x), r(d.y), d.dir === 'r' ? 1 : 0, M3.indexOf(d.mode), r(d.alt), d.ci]),
+        g: this.herons.map((h) => [r(h.x), r(h.y), h.dir === 'r' ? 1 : 0, h.mode === 'fly' ? 1 : 0, r(h.alt)]),
+        p,
+      };
+    }
+    netBegin() { if (this.netOn) return; if (!this.ready) this.init(); this.own = { herds: this.herds, ducks: this.ducks, herons: this.herons, flocks: this.flocks }; this.herds = []; this.ducks = []; this.herons = []; this.flocks = []; this.netF = new Map(); this.netS = null; this.netOn = true; }
+    netEnd() { if (!this.netOn) return; Object.assign(this, this.own); this.own = null; this.netOn = false; }
+    netSet(S) { if (this.netOn && S) this.netS = S; }
+    netStep(dt) {
+      const S = this.netS; if (!S) return;
+      const k = Math.min(1, dt * 8), D4 = ['l', 'r', 'u', 'd'], M3 = ['swim', 'walk', 'fly'];
+      const mv = (o, x, y) => { const d = Math.hypot(x - o.x, y - o.y); if (d > 60) { o.x = x; o.y = y; } else { o.x += (x - o.x) * k; o.y += (y - o.y) * k; } return d; };
+      this.herds.length = S.h.length;
+      S.h.forEach((L, i) => {
+        const h = this.herds[i] || (this.herds[i] = { list: [] }); h.list.length = L.length;
+        L.forEach(([x, y, di, fl, baby], j) => { const c = h.list[j] || (h.list[j] = { x, y, anim: Math.random() * 2 }); const d = mv(c, x, y); c.dir = D4[di] || 'd'; c.swim = !!(fl & 1); c.graze = !!(fl & 2); c.s = baby ? 0.9 : 1.3; c.anim += dt * (d > 0.4 ? 6 : 1); });
+      });
+      this.ducks.length = S.d.length;
+      S.d.forEach(([x, y, dr, mi, alt, ci], i) => { const o = this.ducks[i] || (this.ducks[i] = { x, y, alt: 0, anim: Math.random() * 2 }); mv(o, x, y); o.dir = dr ? 'r' : 'l'; o.mode = M3[mi] || 'swim'; o.alt += (alt - o.alt) * k; o.ci = ci; o.anim += dt * (o.mode === 'fly' ? 9 : 2); });
+      this.herons.length = S.g.length;
+      S.g.forEach(([x, y, dr, fly, alt], i) => { const o = this.herons[i] || (this.herons[i] = { x, y, alt: 0, anim: 0 }); mv(o, x, y); o.dir = dr ? 'r' : 'l'; o.mode = fly ? 'fly' : 'stand'; o.alt += (alt - o.alt) * k; o.anim += dt * (fly ? 9 : 1.2); });
+      const keep = new Map();
+      for (const [fi, B] of S.p) {
+        const f = this.netF.get(fi) || { hx: 0, hy: 0, birds: [] }; keep.set(fi, f); f.birds.length = B.length;
+        B.forEach(([x, y, ci, dr, alt, fl], j) => { const b = f.birds[j] || (f.birds[j] = { x, y, alt: 0, anim: Math.random() * 2, delay: 0 }); mv(b, x, y); b.ci = ci; b.dir = dr ? 'r' : 'l'; b.alt += (alt - b.alt) * k; b.flying = !!(fl & 1); b.peck = fl & 2 ? 1 : 0; b.walk = fl & 4 ? 1 : 0; b.anim += dt * (b.flying ? 9 : 3); });
+        if (B.length) { f.hx = B[0][0]; f.hy = B[0][1]; }
+      }
+      this.netF = keep; this.flocks = [...keep.values()];
     }
     // ---------- garzas: paradas en la orilla; si te acercás, vuelan a otro lado ----------
     updHerons(dt, threats) {

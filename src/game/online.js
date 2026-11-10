@@ -51,6 +51,7 @@ VR.Online = class {
       Object.assign(o, m, { px: o.x, py: o.y, at: performance.now() });
       if (m.L) { o.look = VR.av2Lazy(m.L); o.L = m.L; }
       if (!m.tz) { o.tz = 0; o.t = null; }
+      if (!m.sw) o.sw = null;
     });
     c.on('close', () => { this.conns = this.conns.filter((o) => o !== c); this.set(this.conns.length ? 'Conectado' : this.host ? 'Sala ' + this.room + ' · esperando' : 'Se cortó la conexión'); });
   }
@@ -120,7 +121,7 @@ VR.Online = class {
       c.push([v._nid, Math.round(v.x), Math.round(v.y), Math.round(v.a * 100), v.type === 'moto' ? 1 : 0, v.model, v.color || 0, this.flags(v), ri, sp[0], sp[1]]);
     }
     if (this.peds) for (const q of this.peds.list) { q._nid = q._nid || (this.pid = (this.pid || 0) + 1e6); p.push([q._nid, Math.round(q.x), Math.round(q.y), D.indexOf(q.dir), Math.max(0, M.indexOf(q.mode)), q.pal]); }
-    const m = { w: 1, c, p, cine: VR.cineNow || undefined, now: Date.now() }; for (const k of this.conns) if (k.open) k.send(m);
+    const m = { w: 1, c, p, f: this.fauna ? this.fauna.snap(this.hx || 0, this.hy || 0) : undefined, cine: VR.cineNow || undefined, now: Date.now() }; for (const k of this.conns) if (k.open) k.send(m);
   }
   // ---- invitado: cerca del anfitrión, ver lo suyo ----
   follow(dt, me) {
@@ -130,14 +131,16 @@ VR.Online = class {
       this.mirror = true;
       if (this.traffic) for (const v of this.traffic.list.slice()) this.traffic.remove(v);
       if (this.peds) { this.ownPeds = this.peds.list; this.peds.list = this.pp = []; }
+      if (this.fauna) this.fauna.netBegin();
     } else if (!near && this.mirror) { // volver a lo propio
       this.mirror = false;
       for (const v of this.proxies.values()) this.world.removeBox(v); this.proxies.clear();
       if (this.peds) this.peds.list = [];
+      if (this.fauna) this.fauna.netEnd();
     }
     if (!this.mirror) return;
     const W = this.W, fresh = W !== this.lastW, k = Math.min(1, dt * 9);
-    if (fresh) { this.lastW = W; this.seen = new Set(); }
+    if (fresh) { this.lastW = W; this.seen = new Set(); if (this.fauna && W.f) this.fauna.netSet(W.f); }
     const seen = this.seen;
     if (fresh) for (const [id, x, y, a100, moto, model, color, f, ri, svx, svy] of W.c) {
       if (this.taken.has(id)) continue;
@@ -172,11 +175,13 @@ VR.Online = class {
   update(dt, player, car, teatro) {
     this.teatro = teatro;
     this.myL = player.lookData; this.myBubble = player.bubble ? { text: player.bubble.text, end: performance.now() + player.bubble.t * 1000 } : null;
+    this.hx = car ? car.x : player.x; this.hy = car ? car.y : player.y;
     this.follow(dt, car || player);
     if (this.host && this.peer && (this.salaT = (this.salaT || 0) + dt) > 30) { this.salaT = 0; VR.Salas.put(this.room, this.nick, this.conns.length + 1); }
     if (!this.peer || !this.conns.length) return;
     this.t += dt; if (this.t < 0.1) return; this.t = 0;
     const m = { id: this.peer.id, n: this.nick, r: this.ride || undefined, tz: this.teatro && this.teatro.on ? 1 : undefined, t: this.teatro && this.teatro.on ? this.teatro.state() : undefined, x: Math.round(car ? car.x : player.x), y: Math.round(car ? car.y : player.y), d: player.dir, mv: player.moving ? (player.run ? 2 : 1) : 0 };
+    if (this.cisnes && this.cisnes.s) m.sw = this.cisnes.netState();
     if (car) m.c = [car.type, car.model, car.color || 0, +car.a.toFixed(3), this.flags(car), car.tune || 0];
     const lk = JSON.stringify(player.lookData); if (this.sendLook || lk !== this.lastLook || Math.random() < 0.02) { m.L = player.lookData; this.sendLook = false; this.lastLook = lk; }
     for (const c of this.conns) if (c.open) c.send(m);
@@ -191,6 +196,7 @@ VR.Online = class {
     let pi = 0;
     for (const o of this.others.values()) {
       if (!o.look || o.tz) continue; // los que están en el teatro se dibujan adentro
+      if (o.sw) { o.sx = o.x; o.sy = o.y; continue; } // en un cisne: lo dibuja cisnes.js
       if (o.r) { // va de pasajero: se dibuja con el conductor
         const d = o.r === me ? null : this.others.get(o.r);
         if (d && d.c && d.sx !== undefined) this.drawPass(tall, o, d.sx - cx, d.sy - cy, d.c[3], d.c[0], cx, cy, pi++);
