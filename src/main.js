@@ -27,6 +27,8 @@
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
   const cisnes = VR.cisnes = new VR.Cisnes(world, night);
+  const fauna = VR.fauna = new VR.Fauna(world); // carpinchos, patos, peces y palomas (fauna.js)
+  if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
   const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
     onBusted: () => sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'),
@@ -204,6 +206,17 @@
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
     if (peds && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
+    { // fauna: lo que la asusta (vos, tu vehículo o tu cisne, el tránsito, la gente y los cisnes que andan)
+      const th = [];
+      if (cisnes.riding) th.push({ x: cisnes.s.x, y: cisnes.s.y, sp: 0, water: true });
+      else if (car) th.push({ x: car.x, y: car.y, sp: Math.hypot(car.vx || 0, car.vy || 0) });
+      else th.push({ x: player.x, y: player.y, sp: player.moving ? (player.run ? 40 : 15) : 0 });
+      for (const s of cisnes.list) if (s !== cisnes.s && Math.abs(s.v || 0) > 3) th.push({ x: s.x, y: s.y, sp: 0, water: true });
+      const near = (o) => Math.abs(o.x - cam.x) < 420 && Math.abs(o.y - cam.y) < 320;
+      if (traffic) for (const v of traffic.list) if (near(v)) th.push({ x: v.x, y: v.y, sp: Math.hypot(v.vx || 0, v.vy || 0) });
+      if (peds) for (const q of peds.list) if (near(q)) th.push({ x: q.x, y: q.y, sp: 0, r: 12 });
+      fauna.update(dt, cam, th);
+    }
     if (weapons) weapons.update(dt, player, car, VR.input);
     if (emer) { const sw = VR.screen.w, sh = VR.screen.h; emer.update(dt, player, car, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, VR.input); }
   }
@@ -221,10 +234,12 @@
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
     world.collectTall(cx, cy, sw, sh, tall);
+    fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
+    fauna.collect(cx, cy, sw, sh, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
     for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
