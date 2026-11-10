@@ -161,6 +161,9 @@ VR.World = class {
       VR.tileset.draw(g, t, (VR.hash(tx, ty, 99) * 4) | 0, tx * S, ty * S);
     }
     VR.curWorld = this;
+    // 1b) orilla y sendero curvos de la laguna Ykua Pytã (parque.js)
+    if (VR.drawLagoon) VR.drawLagoon(g, this, tx0, ty0, tx1, ty1);
+    const lagOwn = VR.lagoonOf && VR.lagoonOf(this);
     // 2) decorados de piso (canchas, monumentos)
     for (const d of idx.d) VR.decor[d.kind] && VR.decor[d.kind](g, d);
     // 3) cordones, orillas, líneas y cebras (autotiling según vecinos)
@@ -211,13 +214,13 @@ VR.World = class {
         if (edge(0, 1)) g.fillRect(x, y + S - 2, S, 2);
         if (edge(-1, 0)) g.fillRect(x, y, 2, S);
         if (edge(1, 0)) g.fillRect(x + S - 2, y, 2, S);
-      } else if (t === T.LAGUNA) { // orilla de la laguna Ykua Pytã: barro oscuro y un brillo verde claro; el borde del sendero lo pinta aparte
+      } else if (t === T.LAGUNA && !(lagOwn && lagOwn.owns(tx, ty))) { // orilla de la laguna Ykua Pytã: barro oscuro y un brillo verde claro; el borde del sendero lo pinta aparte
         const bank = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n !== T.LAGUNA && n !== -1 && n !== T.PAVING && n !== T.MONUMENT && n !== T.LADRILLO; };
         if (bank(0, -1)) { g.fillStyle = '#4a4030'; g.fillRect(x, y, S, 2); g.fillStyle = '#9db27a'; g.fillRect(x, y + 2, S, 0.75); }
         if (bank(0, 1)) { g.fillStyle = '#3e5a34'; g.fillRect(x, y + S - 3, S, 1); g.fillStyle = '#4a4030'; g.fillRect(x, y + S - 2, S, 2); }
         if (bank(-1, 0)) { g.fillStyle = '#4a4030'; g.fillRect(x, y, 2, S); g.fillStyle = '#9db27a'; g.fillRect(x + 2, y, 0.75, S); }
         if (bank(1, 0)) { g.fillStyle = '#4a4030'; g.fillRect(x + S - 2, y, 2, S); }
-      } else if (t === T.SENDERO) { // borde de piedra blanca del camino de la laguna donde se junta con el pasto o la tierra
+      } else if (t === T.SENDERO && !(lagOwn && lagOwn.owns(tx, ty))) { // borde de piedra blanca del camino de la laguna donde se junta con el pasto o la tierra
         const G = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n === T.GRASS || n === T.PLAZADIRT || n === T.TREE || n === T.DIRT; };
         const wc = '#ece9e0', sc = 'rgba(0,0,0,.2)';
         if (G(0, -1)) { g.fillStyle = wc; g.fillRect(x, y, S, 1); g.fillStyle = sc; g.fillRect(x, y + 1, S, 0.5); }
