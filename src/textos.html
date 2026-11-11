@@ -1,0 +1,60 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Villarrica · Revisión de textos</title><link rel="icon" href="icons/favicon.png">
+<style>
+:root{--bg:#14171d;--card:#1d222b;--tx:#eef1f5;--mu:#9aa5b4;--or:#f5a623;--ok:#4cc16f;--no:#ef5b5b;--ch:#4aa3ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:#0e1116;border-bottom:2px solid var(--or);padding:10px 14px}
+h1{font-size:18px;margin:0 0 6px;color:var(--or)}.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=search],select{background:var(--card);color:var(--tx);border:1px solid #3a4352;border-radius:8px;padding:8px 10px;font:inherit;min-width:0}
+input[type=search]{flex:1 1 180px}button{background:var(--or);color:#1a1205;border:0;border-radius:8px;padding:8px 12px;font:700 14px inherit;cursor:pointer}button.s{background:#2b3340;color:var(--tx)}
+.prog{height:8px;background:#2b3340;border-radius:5px;overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:var(--ok);width:0}
+.cnt{font-size:13px;color:var(--mu);margin-top:4px}
+main{max-width:860px;margin:0 auto;padding:12px 14px 80px}
+.help{background:#222a36;border-left:4px solid var(--ch);padding:10px 12px;border-radius:6px;margin:10px 0;font-size:14px}
+h2{font-size:15px;color:var(--or);margin:22px 0 8px;border-bottom:1px solid #2b3340;padding-bottom:3px}
+.it{background:var(--card);border-radius:10px;padding:10px 12px;margin:8px 0;border-left:5px solid #3a4352}
+.it.dejar{border-color:var(--ok)}.it.quitar{border-color:var(--no);opacity:.75}.it.cambiar{border-color:var(--ch)}
+.t{font-size:16px;white-space:pre-wrap;word-break:break-word}.it.quitar .t{text-decoration:line-through}
+.c summary{cursor:pointer;opacity:.7}.c{font-size:11.5px;color:var(--mu);margin:2px 0 6px;font-family:ui-monospace,monospace;word-break:break-all}
+.ops{display:flex;gap:6px;flex-wrap:wrap}.ops label{flex:1 1 90px;text-align:center;border:1px solid #3a4352;border-radius:8px;padding:7px 4px;cursor:pointer;font-size:14px;user-select:none}
+.ops input{display:none}.ops label.on.d{background:var(--ok);color:#06210f;border-color:var(--ok)}.ops label.on.q{background:var(--no);color:#2a0606;border-color:var(--no)}.ops label.on.c{background:var(--ch);color:#04182e;border-color:var(--ch)}
+textarea{width:100%;margin-top:8px;background:#11151b;color:var(--tx);border:1px solid var(--ch);border-radius:8px;padding:8px;font:inherit;min-height:60px}
+.nota{width:100%;margin-top:6px;background:#11151b;color:var(--tx);border:1px solid #3a4352;border-radius:8px;padding:6px 8px;font:inherit;font-size:14px}
+.hid{display:none}
+</style></head><body>
+<header><h1>📝 Villarrica · Revisión de textos</h1>
+<div class="bar"><input type="search" id="q" placeholder="Buscar un texto…"><select id="ar"></select><select id="fl"><option value="">Todos</option><option value="sin">Sin revisar</option><option value="dejar">Se quedan</option><option value="quitar">Se van</option><option value="cambiar">Para cambiar</option></select></div>
+<div class="prog"><i id="pb"></i></div><div class="cnt" id="cn"></div>
+<div class="bar" style="margin-top:8px"><button id="bx">📤 Enviar mis cambios</button><button class="s" id="bd">⬇ Descargar archivo</button><button class="s" id="bi">⬆ Cargar archivo</button><input type="file" id="fi" accept=".json" class="hid"></div></header>
+<main><div class="help"><b>Cómo se usa:</b> en cada texto elegí <b style="color:var(--ok)">✔ Se queda</b>, <b style="color:var(--no)">✖ Se va</b> o <b style="color:var(--ch)">✎ Cambiar</b> (y escribís el texto nuevo, por ejemplo en español). Lo que dejás sin tocar se queda igual. Se guarda solo en este teléfono/compu mientras trabajás. Al terminar (o cuando quieras) tocá <b>📤 Enviar mis cambios</b> y mandáselo a Leandro por WhatsApp. Los emojis del principio (🛒, 🏦…) podés mantenerlos. Los textos con <code>%</code> o <code>{}</code> llevan datos del juego: no los borres.</div>
+<div id="lista"></div></main>
+<script>
+const DATA=/*DATA*/[];
+const KEY='villarrica-textos-v1';let S={};try{S=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+const $=id=>document.getElementById(id);const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const AREAS=[...new Set(DATA.map(d=>d.area))];$('ar').innerHTML='<option value="">Todas las áreas ('+DATA.length+')</option>'+AREAS.map(a=>'<option>'+a+'</option>').join('');
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function render(){const q=$('q').value.toLowerCase(),ar=$('ar').value,fl=$('fl').value;let h='',last='';
+for(const d of DATA){const s=S[d.id]||{},a=s.a||'';
+if(ar&&d.area!==ar)continue;if(fl==='sin'?a:fl&&a!==fl)continue;if(q&&!(d.texto.toLowerCase().includes(q)||(s.n||'').toLowerCase().includes(q)))continue;
+if(d.area!==last){h+='<h2>'+esc(d.area)+'</h2>';last=d.area}
+h+=`<div class="it ${a}" data-id="${d.id}"><div class="t">${esc(d.texto)}</div><details class="c"><summary>dónde está en el código</summary>${esc(d.ctx)}</details>
+<div class="ops"><label class="d ${a==='dejar'?'on':''}" data-a="dejar">✔ Se queda</label><label class="q ${a==='quitar'?'on':''}" data-a="quitar">✖ Se va</label><label class="c ${a==='cambiar'?'on':''}" data-a="cambiar">✎ Cambiar</label></div>
+${a==='cambiar'?`<textarea data-n placeholder="Escribí el texto nuevo…">${esc(s.n||'')}</textarea>`:''}
+${a?`<input class="nota" data-o placeholder="Comentario (opcional)" value="${esc(s.o||'')}">`:''}</div>`}
+$('lista').innerHTML=h||'<p style="color:var(--mu)">No hay textos con ese filtro.</p>';stats()}
+function stats(){const v=Object.values(S).filter(x=>x.a),c=k=>v.filter(x=>x.a===k).length;$('pb').style.width=(100*v.length/DATA.length)+'%';
+$('cn').textContent=v.length+' de '+DATA.length+' revisados · ✔ '+c('dejar')+' se quedan · ✖ '+c('quitar')+' se van · ✎ '+c('cambiar')+' para cambiar'}
+$('lista').addEventListener('click',e=>{const l=e.target.closest('label[data-a]');if(!l)return;const id=l.closest('.it').dataset.id,s=S[id]=S[id]||{};s.a=s.a===l.dataset.a?'':l.dataset.a;save();const y=scrollY;render();scrollTo(0,y);
+if(s.a==='cambiar'){const t=document.querySelector('[data-id="'+id+'"] textarea');t&&t.focus({preventScroll:true})}});
+$('lista').addEventListener('input',e=>{const it=e.target.closest('.it');if(!it)return;const s=S[it.dataset.id]=S[it.dataset.id]||{};if(e.target.matches('[data-n]'))s.n=e.target.value;if(e.target.matches('[data-o]'))s.o=e.target.value;save()});
+['q','ar','fl'].forEach(i=>$(i).addEventListener('input',render));
+function paquete(){const out=[];for(const d of DATA){const s=S[d.id];if(!s||!s.a)continue;if(s.a==='cambiar'&&!(s.n||'').trim())continue;out.push({id:d.id,archivo:d.archivo,ocurrencia:d.ocurrencia,original:d.texto,accion:s.a,nuevo:s.a==='cambiar'?s.n:'',nota:s.o||''})}
+return JSON.stringify({juego:'villarrica',fecha:new Date().toISOString(),revisados:out.length,items:out},null,1)}
+$('bd').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([paquete()],{type:'application/json'}));a.download='textos-revisados.json';a.click()};
+$('bx').onclick=async()=>{const t=paquete(),f=new File([t],'textos-revisados.json',{type:'application/json'});
+try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Textos revisados de Villarrica'});return}}catch(e){if(e.name==='AbortError')return}
+try{await navigator.clipboard.writeText(t);alert('Copiado. Pegalo en un mensaje de WhatsApp para Leandro (o usá "Descargar archivo").')}catch(e){$('bd').click()}};
+$('bi').onclick=()=>$('fi').click();$('fi').onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());for(const x of j.items||[])S[x.id]={a:x.accion,n:x.nuevo,o:x.nota};save();render()}catch(err){alert('No pude leer ese archivo')}};
+render();
+</script></body></html>

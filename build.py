@@ -31,6 +31,11 @@ def build():
 <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>'''
     html = html.replace('</head>', head + '\n</head>', 1)
     (docs / 'index.html').write_text(html)
+    # herramienta de revisión de textos (para el equipo): docs/textos.html
+    sys.path.insert(0, str(root / 'tools'))
+    import textos_extraer
+    datos = textos_extraer.extraer()
+    (docs / 'textos.html').write_text((root / 'src/textos.html').read_text().replace('/*DATA*/[]', json.dumps(datos, ensure_ascii=False).replace('</', '<\\/')))
     manifest = {
         'name': 'Villarrica', 'short_name': 'Villarrica', 'lang': 'es',
         'description': 'Mundo abierto en Villarrica, Paraguay, al estilo de los juegos de celular de 2006.',

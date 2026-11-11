@@ -502,3 +502,8 @@ En Libre no existen `mis` ni `VR.PUNTOS`, así que `main.js` crea `VR.despensa` 
 
 ## Marcadores de entrada
 `entradas()` (main.js) lista los lugares enterables (tienda Ao Porã, teatro, taller y todos los `VR.PUNTOS`: despensa, pieza, cajeros, financiera, celulares). Se dibujan: en la calle con `drawEntrada` (flecha + ícono que late, se oculta a <44 u porque ahí aparece el hint), en el minimapa (pegados al borde si están lejos) y en el mapa grande (ícono + nombre). Para sumar un lugar nuevo, agregalo ahí.
+
+## Revisión de textos (equipo)
+- `python3 tools/textos_extraer.py` saca ~520 textos visibles del código (diálogos, avisos, carteles) a `tools/textos.json`. `build.py` lo hace solo y arma `docs/textos.html`, la página donde el equipo marca cada texto: ✔ se queda / ✖ se va / ✎ cambiar (con el texto nuevo). Guarda en el navegador y exporta `textos-revisados.json`.
+- `python3 tools/textos_aplicar.py textos-revisados.json [--probar]` aplica los cambios al código (por archivo + texto + nº de aparición, no por línea), chequea la sintaxis y vuelve a armar `docs/`. "Se va" solo se quita solo si es un elemento de una lista de frases; si no, lo lista para resolverlo a mano.
+- Se saltan avatar, catálogos y archivos de motor; los pedazos de frases armadas con `+` no aparecen.
