@@ -446,3 +446,4 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - Disparadores: car.js (`impact > 110` en una moto del tránsito), peds.js (`carHit` de un vehículo que no es el tuyo) y `runOverCheck` de main.js.
 - Moto caída (`c.fallen = {t, side}`): se dibuja girada ~65°; al subirte con F la levantás (`enterCar`). Tu propia moto queda caída cuando te tira (`VR.onEject`).
 - Abolladuras: `VR.addDent` / `VR.drawDents` (hasta 10 por vehículo, en el punto del contacto). Con hp bajo siguen el humo y el fuego de emerg.js.
+- (12/11/2026) Abolladuras: se meten hacia adentro de la chapa (no en el borde), se juntan si caen cerca y se dibujan como pocos píxeles hundidos, un raspón claro y a veces óxido. Conducción: el giro rinde ~25 % más y también a poca velocidad; en modo fácil (joystick) el auto levanta el pie y frena solo antes de una curva cerrada (`safe` en `Car.update`) y el volante responde más (`steer = d * 3`).

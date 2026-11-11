@@ -10,20 +10,29 @@
   const RETOS = ['¡Fijate por dónde andás, loco!', '¡Mba\'e piko, casi me matás!', '¡Qué hacés, bestia!', '¡Aprendé a manejar, che!', '¡Mirá lo que hiciste con mi moto!'];
   const BOCINA = ['¡Pero fijate, che!', '¡Se cruzó de golpe!', '¡Ay, no, no, no!', '¡Mirá por dónde caminás!'];
 
-  // abolladura en el vehículo: posición local (derecha / adelante) respecto de su centro
+  // abolladura en el vehículo: posición local (derecha / adelante) respecto de su centro. Se mete hacia adentro de la chapa
+  // (no queda pegada al borde, que se vería como una defensa) y los golpes cercanos se juntan en una sola abolladura más fea.
   VR.addDent = (c, wx, wy, imp) => {
     if (!c.spec || c.spec.noFire) return; const D = c.dents || (c.dents = []);
     const a = c.a, dx = wx - c.x, dy = wy - c.y, lr = dx * Math.cos(a) + dy * Math.sin(a), lf = dx * Math.sin(a) - dy * Math.cos(a);
-    const hl = c.LEN / 2, hw = c.WID / 2;
-    D.push({ x: Math.max(-hw, Math.min(hw, lr)), y: -Math.max(-hl, Math.min(hl, lf)), s: Math.min(4.5, 1.6 + imp / 90), k: (Math.random() * 3) | 0 });
-    if (D.length > 10) D.shift();
+    const hl = c.LEN / 2, hw = c.WID / 2, ix = Math.max(1.2, hw - 2.2), iy = Math.max(1.5, hl - 4.5);
+    const x = Math.max(-ix, Math.min(ix, lr)) + (Math.random() - 0.5) * 2.4, y = -Math.max(-iy, Math.min(iy, lf)) + (Math.random() - 0.5) * 3;
+    const near = D.find((d) => Math.hypot(d.x - x, d.y - y) < 4);
+    if (near) { near.s = Math.min(3.4, near.s + 0.5); return; }
+    D.push({ x, y, s: Math.min(2.6, 1.2 + imp / 160), k: (Math.random() * 4) | 0, r: Math.random() });
+    if (D.length > 7) D.shift();
   };
   VR.drawDents = (ctx, c, x, y, a) => {
     ctx.save(); ctx.translate(x, y); ctx.rotate(a);
     for (const d of c.dents) {
-      ctx.fillStyle = 'rgba(28,24,22,.5)'; ctx.fillRect(Math.round(d.x - d.s / 2), Math.round(d.y - d.s / 2), Math.round(d.s), Math.max(1, Math.round(d.s * 0.7)));
-      ctx.fillStyle = 'rgba(230,224,210,.55)'; ctx.fillRect(Math.round(d.x - d.s / 2), Math.round(d.y - d.s / 2) - 1, Math.max(1, Math.round(d.s * 0.6)), 1);   // raspón claro (pintura levantada)
-      if (d.k === 1) { ctx.fillStyle = 'rgba(120,70,40,.55)'; ctx.fillRect(Math.round(d.x + d.s / 2), Math.round(d.y), 1, 2); }   // óxido
+      const n = 3 + Math.round(d.s * 1.6), ox = Math.round(d.x), oy = Math.round(d.y);
+      for (let i = 0; i < n; i++) {   // chapa hundida: pocos píxeles sueltos, oscuros y translúcidos
+        const px = ox + Math.round(Math.sin(d.r * 40 + i * 2.1) * d.s * 0.9), py = oy + Math.round(Math.cos(d.r * 31 + i * 1.7) * d.s * 0.9);
+        ctx.fillStyle = i % 3 === 0 ? 'rgba(20,18,16,.5)' : 'rgba(40,36,34,.34)'; ctx.fillRect(px, py, 1, 1);
+      }
+      ctx.fillStyle = 'rgba(238,232,220,.5)'; const L = Math.max(2, Math.round(d.s * 1.4));   // raspón claro en diagonal (pintura levantada)
+      for (let i = 0; i < L; i++) ctx.fillRect(ox - 1 + i, oy - 2 + ((i + d.k) >> 1), 1, 1);
+      if (d.k === 1 && d.s > 1.8) { ctx.fillStyle = 'rgba(130,78,44,.5)'; ctx.fillRect(ox + 1, oy + 1, 1, 1); }   // un toque de óxido
     }
     ctx.restore();
   };

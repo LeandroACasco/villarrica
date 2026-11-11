@@ -424,8 +424,16 @@ VR.Car = class {
       if (m > 0.1) {
         const want = Math.atan2(input.ax, -input.ay);
         let d = want - this.a; d = Math.atan2(Math.sin(d), Math.cos(d));
-        if (Math.abs(d) > 2.2 && this.v < 40) { throttle = -m; steer = VR.clamp(-d * 2, -1, 1); }
-        else { throttle = m * (Math.abs(d) > 1.6 ? 0.35 : 1); steer = VR.clamp(d * 2.2, -1, 1); }
+        const ad = Math.abs(d);
+        if (ad > 2.2 && this.v < 40) { throttle = -m; steer = VR.clamp(-d * 2, -1, 1); }
+        else {
+          // curvas más fáciles (12/11/2026): si hay que doblar mucho y vas rápido, el auto levanta el pie y frena solo
+          // hasta una velocidad con la que la curva sale; el volante responde más fuerte cuanto más cerrada es.
+          const safe = 250 * (1.1 - Math.min(1, ad) * 0.75);            // velocidad "segura" según el ángulo que falta
+          throttle = m * (ad > 1.6 ? 0.35 : ad > 0.5 ? 0.7 : 1);
+          if (ad > 0.45 && this.v > safe) throttle = -Math.min(0.5, (this.v - safe) / 160) * m - 0.05;
+          steer = VR.clamp(d * 3, -1, 1);
+        }
       }
     } else { throttle = -input.ay; steer = input.ax; }
     if (mode === 'manual' && VR.td && VR.td.on) { throttle = VR.td.gas - VR.td.brake; steer = VR.td.steer; } // volante y pedales táctiles
@@ -441,8 +449,8 @@ VR.Car = class {
     if (this.gear < 0) throttle = throttle > 0 ? -throttle : throttle < 0 && this.v <= 0 ? 0 : throttle; // reversa: arriba va para atrás
     else if (this.gear > 0 && throttle < 0 && this.v <= 2) throttle = 0;                          // en marcha, abajo solo frena
     // volante suave: el giro llega de a poco y a alta velocidad gira menos
-    this.st = (this.st || 0) + (steer - (this.st || 0)) * Math.min(1, dt * 8);
-    this.physics(dt, throttle, this.st * (1 - Math.min(0.3, Math.abs(this.v) / 800)), brake);
+    this.st = (this.st || 0) + (steer - (this.st || 0)) * Math.min(1, dt * 11);
+    this.physics(dt, throttle, this.st * (1 - Math.min(0.2, Math.abs(this.v) / 1000)), brake);
   }
   get mass() { return this.spec.mass; }
   // Física: velocidad como vector (vx, vy) además del rumbo, así el vehículo puede derrapar;
@@ -473,7 +481,7 @@ VR.Car = class {
     if (parked) grip = 6;
     vr *= Math.exp(-grip * dt);
     // giro: la velocidad angular busca la del volante (y se recupera de los golpes)
-    const s = Math.abs(vf), wt = parked ? 0 : steer * sp.turn * Math.min(1, s / 55) * (1 - Math.min(0.45, s / 600)) * (vf < -2 ? -1 : 1);
+    const s = Math.abs(vf), wt = parked ? 0 : steer * sp.turn * 1.25 * Math.min(1, (s + 14) / 50) * (1 - Math.min(0.3, s / 900)) * (vf < -2 ? -1 : 1);   // más giro (12/11/2026): ahora también a poca velocidad
     this.w += (wt - this.w) * Math.min(1, (parked ? 2.5 : 7) * dt);
     this.vx = fx * vf + rx * vr; this.vy = fy * vf + ry * vr;
     // marcas de frenada / derrape
