@@ -373,7 +373,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión f447b8c1 · 2026-11-11</div>
+  <div class="tVer">Versión 866d21d7 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -465,7 +465,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión f447b8c1 · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 866d21d7 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -594,6 +594,7 @@ const Inflate = (() => {
 'use strict';
 const VR = {};
 VR.TILE = 16;
+VR.PS = 0.75; // escala de las personas (11/11/2026, pedido de Leandro: más realista; antes 1 = 16×32 unidades). Fraccionaria: los cuadros se dibujan a ese tamaño (VR.RES * VR.PS)
 VR.RES = 1; // resolución del dibujo (píxeles del lienzo por unidad del mundo); la fija VR.screen.fit
 VR.clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 VR.lerp = (a, b, t) => a + (b - a) * t;
@@ -1470,7 +1471,8 @@ VR.World = class {
           for (let k = 0; k < 6; k++) { const h = VR.hash(tx * 7 + k, ty * 5 + (i | 0), 331); if (h < 0.5) { const o = h * 2 * S, w = 0.5 + VR.hash(tx, ty + k, 337) * 1.5; V ? g.fillRect(x + i + (k % 3) * 0.9, y + o, 0.5, w) : g.fillRect(x + o, y + i + (k % 3) * 0.9, w, 0.5); } }
         }
       }
-      else if (l >= 5 && l <= 8) VR.drawBay(g, l, x, y, tx, ty, S);   // rayitas de estacionamiento de motos (11/11/2026)
+      else if (l >= 5 && l <= 16) VR.drawBay(g, l, x, y, tx, ty, S);   // rayitas de moto y cajones de auto (11/11/2026)
+      else if (l >= 17 && l <= 20) VR.drawStop(g, l, x, y, S);       // raya de pare (11/11/2026)
     }
     // 3b) calles en diagonal (05/11/2026): las baldosas quedan escalonadas, así que encima se dibujan lisas
     if (idx.r.length) VR.drawDiagonals(g, this, idx.r, tx0, ty0, tx1, ty1);
@@ -1708,20 +1710,46 @@ VR.findDiagonals = (R) => {
   }
   return out;
 };
-// Rayitas de estacionamiento de motos (11/11/2026, fotos de Leandro del Centro): rayas blancas sueltas, perpendiculares
-// al cordón, sin línea de borde ni de fondo. `l` (5-8, ver osm_to_map.py) dice dónde está el cordón: 5 sur, 6 norte,
-// 7 este, 8 oeste. `VR.BAY.pitch` (unidades; 8 = 1 m) es la distancia entre rayitas: `VR.parkCars` (car.js) acomoda
-// las motos en el medio de cada hueco. Los autos no llevan rayas.
-VR.BAY = { pitch: 10 };
+// Pintura de estacionamiento del Centro (11/11/2026, fotos de Leandro de Cnel. Gimenez). `l` (5-16, ver osm_to_map.py):
+//  - 5-8: motos en batería, rayitas sueltas perpendiculares al cordón, cada `VR.BAY.pitch` unidades (8 = 1 m);
+//  - 9-12 (fila pegada al cordón) y 13-16 (fila de al lado): cajón de auto marcado solo en las esquinas, como un
+//    encuadre: una "T" en cada esquina (brazo hacia adentro del cajón y brazo a lo largo), cada `VR.BAY.carPitch`.
+// En cada grupo el valor dice dónde está el cordón: 0 sur, 1 norte, 2 este, 3 oeste. `VR.parkCars` (car.js) acomoda
+// las motos entre rayitas y los autos en el centro de cada cajón.
+VR.BAY = { pitch: 10, carPitch: 40, carDepth: 20 };
 VR.drawBay = (g, l, x, y, tx, ty, S) => {
-  const side = l - 5, horiz = side < 2, P = VR.BAY.pitch, u0 = (horiz ? tx : ty) * S;
-  const len = 14;                                                    // largo de la rayita desde el cordón (~1,75 m)
-  const d0 = side === 0 ? S - len : side === 1 ? 0 : side === 2 ? S - len : 0;
-  for (let p = Math.ceil(u0 / P) * P; p < u0 + S; p += P) {
-    const o = p - u0 - 0.5, a = VR.hash(Math.round(p), horiz ? ty : tx, 353) > 0.8 ? 0.55 : 0.9;   // alguna medio gastada
-    g.fillStyle = 'rgba(228,226,216,' + a + ')';
-    horiz ? g.fillRect(x + o, y + d0, 1.1, len) : g.fillRect(x + d0, y + o, len, 1.1);
+  if (l <= 8) {
+    const side = l - 5, horiz = side < 2, P = VR.BAY.pitch, u0 = (horiz ? tx : ty) * S;
+    const len = 14;                                                  // largo de la rayita desde el cordón (~1,75 m)
+    const d0 = side === 0 ? S - len : side === 1 ? 0 : side === 2 ? S - len : 0;
+    for (let p = Math.ceil(u0 / P) * P; p < u0 + S; p += P) {
+      const o = p - u0 - 0.5, a = VR.hash(Math.round(p), horiz ? ty : tx, 353) > 0.8 ? 0.55 : 0.9;   // alguna medio gastada
+      g.fillStyle = 'rgba(228,226,216,' + a + ')';
+      horiz ? g.fillRect(x + o, y + d0, 1.1, len) : g.fillRect(x + d0, y + o, len, 1.1);
+    }
+    return;
   }
+  const row = l >= 13 ? 1 : 0, side = (l - 9) & 3, horiz = side < 2, P = VR.BAY.carPitch, D = VR.BAY.carDepth, A = 5, W = 1.1;
+  const u0 = (horiz ? tx : ty) * S, vb = row * S;                    // u: a lo largo del cordón; v: profundidad desde el cordón
+  g.save(); g.beginPath(); g.rect(x, y, S, S); g.clip();
+  const R = (ua, ub, va, vz) => {
+    const t0 = Math.max(va - vb, 0), t1 = Math.min(vz - vb, S); if (t1 <= t0) return;
+    if (horiz) g.fillRect(x + ua - u0, y + (side === 0 ? S - t1 : t0), ub - ua, t1 - t0);
+    else g.fillRect(x + (side === 2 ? S - t1 : t0), y + ua - u0, t1 - t0, ub - ua);
+  };
+  for (let p = Math.ceil((u0 - A) / P) * P; p < u0 + S + A; p += P) {
+    const a = VR.hash(Math.round(p), horiz ? ty : tx, 359) > 0.85 ? 0.55 : 0.9;
+    g.fillStyle = 'rgba(228,226,216,' + a + ')';
+    R(p - W / 2, p + W / 2, 0, A); R(p - A, p + A, 0.3, 0.3 + W);                    // esquinas del lado del cordón
+    R(p - W / 2, p + W / 2, D - A, D); R(p - A, p + A, D - W, D);                      // esquinas del lado de la calle
+  }
+  g.restore();
+};
+// Raya de pare (17-20): una línea blanca de cordón a cordón, perpendicular a la calle, del lado de afuera de la cebra.
+VR.drawStop = (g, l, x, y, S) => {
+  g.fillStyle = 'rgba(232,230,220,.92)';
+  if (l === 17) g.fillRect(x, y + 8.5, S, 2); else if (l === 18) g.fillRect(x, y + 5.5, S, 2);
+  else if (l === 19) g.fillRect(x + 8.5, y, 2, S); else g.fillRect(x + 5.5, y, 2, S);
 };
 VR.drawDiagonals = (g, world, list, tx0, ty0, tx1, ty1) => {
   const S = VR.TILE, T = VR.T;
@@ -3595,7 +3623,7 @@ VR.makeTestMap = () => {
     return out;
   };
   // versión perezosa para el juego: cada cuadro se dibuja recién la primera vez que se usa (sin tirones)
-  VR.av2Lazy = (look, k = VR.RES || 1, n = { idle: 1, walk: 8, run: 8, sit: 1 }) => {
+  VR.av2Lazy = (look, k = (VR.RES || 1) * (VR.PS || 1), n = { idle: 1, walk: 8, run: 8, sit: 1 }) => {
     const L = Object.assign({}, VR.AV2_DEFAULT, look), c = new Map();
     return { n, look: L, get(d, a, i) {
       const key = d + a + i; let f = c.get(key);
@@ -3749,20 +3777,20 @@ VR.Player = class {
       else if (!dx) { for (const n of [-1, 1]) if (!box(this.x + n * 5, this.y + dy)) { this.x += n * Math.min(Math.abs(dy), 1); break; } }
     }
   }
-  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = VR.av2Lazy(this.lookData, VR.RES); }
+  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = VR.av2Lazy(this.lookData); }
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6 * VR.PS, 2.5 * VR.PS, 0, 0, Math.PI * 2); ctx.fill();
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
-    ctx.drawImage(img, x - 8, y - 31, 16, 32);
+    const PS = VR.PS; ctx.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);
     if (this.equipo === 'canasto') { // canasto de chipa en la mano (J3)
-      const r = this.dir === 'left' ? -1 : 1, bx = x + r * 5 - 3, by = y - 15; ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx - 1, by - 1, 8, 6); ctx.fillStyle = '#b07a3a'; ctx.fillRect(bx, by, 6, 4); ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx + 1, by - 1, 2, 2); ctx.fillRect(bx + 3, by - 2, 2, 2); ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx + 2, by - 4, 1, 3); ctx.fillRect(bx + 3, by - 5, 1, 1); ctx.fillRect(bx + 4, by - 4, 1, 3);
+      const r = this.dir === 'left' ? -1 : 1, bx = x + r * 4 - 3, by = y - Math.round(15 * VR.PS); ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx - 1, by - 1, 8, 6); ctx.fillStyle = '#b07a3a'; ctx.fillRect(bx, by, 6, 4); ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx + 1, by - 1, 2, 2); ctx.fillRect(bx + 3, by - 2, 2, 2); ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx + 2, by - 4, 1, 3); ctx.fillRect(bx + 3, by - 5, 1, 1); ctx.fillRect(bx + 4, by - 4, 1, 3);
     }
   }
   drawBubble(ctx, camX, camY, a) {
     if (!this.bubble) return;
-    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 36;
+    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - Math.round(31 * VR.PS + 5);
     const img = VR.gfx.textImg(this.bubble.text, '#1a1a1e', 9);
     const w = img.lw + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2); let by = y - h;
     const B = VR._bubs || (VR._bubs = []); // si choca con otro globo de este cuadro, sube
@@ -4397,6 +4425,13 @@ VR.parkCars = (world, n, near) => {
   const curb = (x, y) => { const t = world.get(x, y); return t === T.SIDEWALK || t === T.CHECKER || t === T.PAVING; };
   const add = (x, y, a, color, type = 'car', model) => { const m = model || (type === 'moto' ? VR.pickMoto(rnd, true) : VR.pickCar(rnd, true)); const c = new VR.Car(world, x, y, a, m === 'pati' ? color % VR.PATI_COLORS.length : color, type, m); world.addBox(c); cars.push(c); return c; };
   let first = null;
+  // cajones de auto de las cuadras de la plaza (los autos van puestos a mano): marca la fila pegada al cordón y la de al lado
+  const CP0 = VR.BAY.carPitch;
+  const markCar = (x, y, side) => {
+    const dy = side === 0 ? 1 : side === 1 ? -1 : 0, dx = side === 2 ? 1 : side === 3 ? -1 : 0, W = world.w;
+    if (!world.line[y * W + x]) world.line[y * W + x] = 9 + side;
+    if (!world.line[(y - dy) * W + x - dx]) world.line[(y - dy) * W + x - dx] = 13 + side;
+  };
   // ¿entran motos en batería (de punta contra el cordón) y además los autos y un carril libre? Si la calle es
   // angosta, las motos van en fila, paralelas al cordón (ocupan 9 px en vez de 24).
   const battery = (tiles) => tiles * S >= 21 + 26 + 28;
@@ -4418,7 +4453,8 @@ VR.parkCars = (world, n, near) => {
       const fx = (x0 + 1) * S;
       // autos en fila, mirando hacia el este (el sentido de la calle); el primero, rojo, frente a donde arrancás
       const slots = [];
-      for (let px = x0 * S + 26; px <= x1 * S - 26; px += 54) slots.push(px);
+      for (let px = Math.ceil((x0 * S + 20) / CP0) * CP0 + CP0 / 2; px <= x1 * S - 20; px += CP0) slots.push(px);
+      for (let x = x0; x <= x1; x++) { markCar(x, ty, 1); }                       // esquinas de los cajones (cordón de la plaza, al norte)
       slots.sort((a, b) => Math.abs(a - near.x) - Math.abs(b - near.x));
       first = add(slots[0], yl, Math.PI / 2, 0, 'car', 'mita');
       for (let i = 1; i < slots.length; i++) if (rnd() < 0.6) add(slots[i], yl, Math.PI / 2, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
@@ -4446,7 +4482,8 @@ VR.parkCars = (world, n, near) => {
         let xb = xa; while (road(xb + 1, my)) xb++;
         if (xb - xa >= 3) {
           const ya = by0 + 3, yz = by1 - 3, xl = xa * S + 11;
-          for (let py = ya * S + 26; py <= yz * S - 26; py += 54) if (rnd() < 0.6) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = Math.ceil((ya * S + 20) / CP0) * CP0 + CP0 / 2; py <= yz * S - 20; py += CP0) if (rnd() < 0.6) add(xl, py, 0, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let y = ya; y <= yz; y++) markCar(xa, y, 3);   // cordón de la plaza, al oeste
           // del lado de la Municipalidad el cordón es amarillo: no se estaciona (Street View, enero 2025)
           (world.parkingDemo = world.parkingDemo || []).push({ x0: xa * S, x1: (xb + 1) * S, y0: ya * S, y1: yz * S });
         }
@@ -4456,7 +4493,8 @@ VR.parkCars = (world, n, near) => {
         let wa = wb; while (road(wa - 1, my)) wa--;
         if (wb - wa >= 3) {
           const ya = by0 + 3, yz = by1 - 3, xl = (wb + 1) * S - 11, xr = wa * S + 6;
-          for (let py = ya * S + 26; py <= yz * S - 26; py += 54) if (rnd() < 0.6) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let py = Math.ceil((ya * S + 20) / CP0) * CP0 + CP0 / 2; py <= yz * S - 20; py += CP0) if (rnd() < 0.6) add(xl, py, Math.PI, 1 + ((rnd() * (VR.CAR_COLORS.length - 1)) | 0));
+          for (let y = ya; y <= yz; y++) markCar(wb, y, 2);   // cordón de la plaza, al este
           if (battery(wb - wa + 1)) {
             const P0 = VR.BAY.pitch;
             for (let py = Math.ceil((ya + 1) * S / P0) * P0 + P0 / 2; py <= yz * S - 10; py += P0) if (rnd() < 0.5)
@@ -4498,13 +4536,14 @@ VR.parkCars = (world, n, near) => {
   // con cordón a lo largo de ~8 baldosas (lejos de las esquinas) y sin otro vehículo enfrente, así siempre
   // queda lugar para que pasen dos autos.
   const across = (x, y, dx, dy) => { let n = 0; while (n < 14 && road(x + dx * n, y + dy * n)) n++; return n; };
-  // Rayitas de moto pintadas en el Centro (11/11/2026, ver osm_to_map.py y VR.drawBay): `line` 5-8 (5 cordón al sur,
-  // 6 norte, 7 este, 8 oeste). Donde hay rayitas se estacionan motos en batería, entre rayita y rayita; los autos van en
-  // fila y sin rayas. Las rayas viales de verdad (amarilla, cebra) son `line` 1-4 y bloquean el lugar.
-  const P = VR.BAY.pitch;
-  const bayOf = (x, y, side) => world.line[y * world.w + x] === 5 + side;
-  const lineBlock = (x, y) => { const v = world.line[y * world.w + x]; return v && v < 5; };
-  const snap = (u) => Math.round((u - P / 2) / P) * P + P / 2;   // centro del hueco entre rayitas más cercano
+  // Pintura de estacionamiento del Centro (11/11/2026, ver osm_to_map.py y VR.drawBay): `line` 5-8 rayitas de moto,
+  // 9-12 cajón de auto (fila pegada al cordón); en cada grupo 0 cordón al sur, 1 norte, 2 este, 3 oeste. Donde hay
+  // rayitas se estacionan motos en batería, entre rayita y rayita; en un cajón de auto, un auto en el centro. Las
+  // rayas viales de verdad (amarilla, cebra, pare) son `line` 1-4 y 17-20 y bloquean el lugar.
+  const P = VR.BAY.pitch, CP = VR.BAY.carPitch;
+  const bayOf = (x, y, side) => { const v = world.line[y * world.w + x]; return v === 5 + side ? 'moto' : v === 9 + side ? 'auto' : null; };
+  const lineBlock = (x, y) => { const v = world.line[y * world.w + x]; return v && (v < 5 || v > 16); };
+  const snap = (u, pp = P) => Math.round((u - pp / 2) / pp) * pp + pp / 2;   // centro del hueco entre rayas más cercano
   const spot = (x, y) => {
     if (!road(x, y)) return null;
     for (const dy of [-1, 1]) {
@@ -4512,14 +4551,14 @@ VR.parkCars = (world, n, near) => {
       if (!curb(x, y + dy) || across(x, y, 0, -dy) < (bay ? 4 : 5)) continue;
       let ok = true;
       for (let i = -3; i <= 4 && ok; i++) ok = road(x + i, y) && road(x + i, y - dy) && curb(x + i, y + dy) && !lineBlock(x + i, y);
-      if (ok) { const w = across(x, y, 0, -dy); const cx = bay ? snap(x * S + 8) : x * S + 16; return [cx, y * S + 8 - dy, rnd() < 0.5 ? Math.PI / 2 : -Math.PI / 2, dy, 0, [cx - 40, Math.min(y, y - dy * (w - 1)) * S, cx + 40, (Math.max(y, y - dy * (w - 1)) + 1) * S], bay ? 'moto' : null]; }
+      if (ok) { const w = across(x, y, 0, -dy); const cx = bay ? snap(x * S + 8, bay === 'auto' ? CP : P) : x * S + 16; return [cx, y * S + 8 - dy, rnd() < 0.5 ? Math.PI / 2 : -Math.PI / 2, dy, 0, [cx - 40, Math.min(y, y - dy * (w - 1)) * S, cx + 40, (Math.max(y, y - dy * (w - 1)) + 1) * S], bay]; }
     }
     for (const dx of [-1, 1]) {
       const bay = bayOf(x, y, dx > 0 ? 2 : 3);
       if (!curb(x + dx, y) || across(x, y, -dx, 0) < (bay ? 4 : 5)) continue;
       let ok = true;
       for (let i = -3; i <= 4 && ok; i++) ok = road(x, y + i) && road(x - dx, y + i) && curb(x + dx, y + i) && !lineBlock(x, y + i);
-      if (ok) { const w = across(x, y, -dx, 0); const cy = bay ? snap(y * S + 8) : y * S + 16; return [x * S + 8 - dx, cy, rnd() < 0.5 ? 0 : Math.PI, 0, dx, [Math.min(x, x - dx * (w - 1)) * S, cy - 40, (Math.max(x, x - dx * (w - 1)) + 1) * S, cy + 40], bay ? 'moto' : null]; }
+      if (ok) { const w = across(x, y, -dx, 0); const cy = bay ? snap(y * S + 8, bay === 'auto' ? CP : P) : y * S + 16; return [x * S + 8 - dx, cy, rnd() < 0.5 ? 0 : Math.PI, 0, dx, [Math.min(x, x - dx * (w - 1)) * S, cy - 40, (Math.max(x, x - dx * (w - 1)) + 1) * S, cy + 40], bay]; }
     }
     return null;
   };
@@ -5543,7 +5582,7 @@ VR.Peds = class {
     let c = this.flat.get(pal);
     if (!c) {
       const s = this.sprites[pal].get('down', 'idle', 0), R = VR.RES; c = VR.canvas(34 * R, 18 * R); const g = c.getContext('2d');
-      g.scale(R, R); g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(s, -8, -16, 16, 32); this.flat.set(pal, c);
+      g.scale(R, R); g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(s, -8 * VR.PS, -16 * VR.PS, 16 * VR.PS, 32 * VR.PS); this.flat.set(pal, c);
     }
     return c;
   }
@@ -5552,7 +5591,7 @@ VR.Peds = class {
       if (p.gone) continue;
       const x = Math.round(p.x - camX), y = Math.round(p.y - camY);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
-      out.push({ sy: p.y + 2, draw: (ctx) => ctx.drawImage(p.look.get(p.dir, 'sit', 0), x - 8, y - 31, 16, 32) });
+      out.push({ sy: p.y + 2, draw: (ctx) => ctx.drawImage(p.look.get(p.dir, 'sit', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS) });
     }
     for (const p of this.list) {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
@@ -5560,7 +5599,7 @@ VR.Peds = class {
       out.push({ sy: y + camY, draw: (ctx) => {
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
         if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
-        else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8, y - 31, 16, 32);
+        else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
     }
@@ -6129,7 +6168,7 @@ VR.Emergency = class {
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + cy, draw: (ctx) => {
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.drawImage(c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, 'idle', 0), x - 8, y - 31, 16, 32);
+        ctx.drawImage(c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, 'idle', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (c.say) VR.Player.prototype.drawBubble.call({ bubble: c.say, px: x + cx, x: x + cx, py: y + cy + 6, y: y + cy + 6 }, ctx, cx, cy, 1);
       } });
     }
@@ -6219,7 +6258,7 @@ VR.Weapons = class {
 
   // ---------- pistola ----------
   // Se sostiene con la mano derecha a la altura del pecho, apuntando para adelante (05/11/2026: antes salía de la cadera)
-  hand(x, y, a) { const fx = Math.sin(a), fy = -Math.cos(a), rx = Math.cos(a), ry = Math.sin(a); return [x + fx * 3 + rx * 2.5, y - 18 + fy * 2 + ry * 1.5]; }
+  hand(x, y, a) { const fx = Math.sin(a), fy = -Math.cos(a), rx = Math.cos(a), ry = Math.sin(a); return [x + fx * 3 * VR.PS + rx * 2.5 * VR.PS, y - 18 * VR.PS + fy * 2 + ry * 1.5 * VR.PS]; }
   muzzle(player) { const a = this.aim, [hx, hy] = this.hand(player.x, player.y, a), L = this.cur === 'pistola' ? 7 : 12; return [hx + Math.sin(a) * L, hy - Math.cos(a) * L * 0.75]; }
   shoot(player, at) { // at = [x, y, ángulo]: disparo de otro jugador (online), sin estrellas para vos
     const W = VR.WEAPONS.pistola, [x, y] = at || this.muzzle(player), a = at ? at[2] : this.aim + (this.rnd() - 0.5) * 0.04;
@@ -6916,7 +6955,7 @@ VR.Online = class {
         } else {
           o.car = null;
           ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.drawImage(o.mv ? o.look.get(o.d, o.mv > 1 ? 'run' : 'walk', ((now / (o.mv > 1 ? 66 : 105)) | 0) % 8) : o.look.get(o.d, 'idle', 0), x - 8, y - 31, 16, 32);
+          ctx.drawImage(o.mv ? o.look.get(o.d, o.mv > 1 ? 'run' : 'walk', ((now / (o.mv > 1 ? 66 : 105)) | 0) % 8) : o.look.get(o.d, 'idle', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         }
         const ty = o.c ? y - 22 : y - 38; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center';
         ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(o.n, x, ty); ctx.fillStyle = '#ffd84a'; ctx.fillText(o.n, x, ty);
@@ -7062,7 +7101,7 @@ VR.Teatro = class {
     if (!sit) { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(X, Y - 1, 6, 2.5, 0, 0, 7); g.fill(); }
     const img = sit ? look.get('up', 'sit', 0) : mv ? look.get(dir, mv > 1 ? 'run' : 'walk', Math.floor(anim) % 8) : look.get(dir, 'idle', 0);
     if (sit) { g.drawImage(img, 0, 0, img.width, img.height * 0.6, X - 8, Y - 24, 16, 19.2); g.fillStyle = '#101014'; g.fillRect(X - 7, Y - 6, 14, 4); g.fillStyle = '#2a2a32'; g.fillRect(X - 7, Y - 6, 14, 1); } // de espaldas, el respaldo tapa las piernas
-    else g.drawImage(img, X - 8, Y - 31, 16, 32);
+    else g.drawImage(img, X - 8 * VR.PS, Y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
     if (name) { g.font = 'bold 7px sans-serif'; g.textAlign = 'center'; g.lineWidth = 2.5; g.strokeStyle = 'rgba(0,0,0,.75)'; g.strokeText(name, X, Y - 34); g.fillStyle = '#ffd84a'; g.fillText(name, X, Y - 34); }
   }
   draw(g, sw0, sh0) {
@@ -7147,7 +7186,7 @@ VR.Changas = class {
   collect(cx, cy, tall) { // el cliente esperando con la mano levantada
     const J = this.job; if (!J || J.k !== 'taxi' || J.stage !== 0 || !J.dest || !this.peds) return;
     const x = J.dest.x - cx, y = J.dest.y - cy + 6, L = this.peds.sprites[J.pal % this.peds.sprites.length];
-    tall.push({ sy: J.dest.y + 6, draw: (g) => { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x, y - 1, 6, 2.5, 0, 0, 7); g.fill(); g.drawImage(L.get('down', 'idle', 0), x - 8, y - 31, 16, 32);
+    tall.push({ sy: J.dest.y + 6, draw: (g) => { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x, y - 1, 6, 2.5, 0, 0, 7); g.fill(); g.drawImage(L.get('down', 'idle', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
       const b = Math.sin(performance.now() / 150) * 2; g.font = '12px system-ui'; g.textAlign = 'center'; g.fillText('🙋', x + 9, y - 30 + b); } });
   }
   // en Historia (J2) las changas se abren con las misiones: las cerradas muestran 🔒
@@ -7604,7 +7643,7 @@ VR.Misiones = class {
       const dx = player.x - p.x, dy = player.y - p.y, dir = Math.hypot(dx, dy) < 70 ? (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')) : (P.dir || 'down');
       tall.push({ sy: p.y, draw: (g) => {
         g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, y - 1, 5.5, 2.3, 0, 0, 7); g.fill();
-        g.drawImage(L.get(dir, 'idle', 0), x - 8, y - 31, 16, 32);
+        g.drawImage(L.get(dir, 'idle', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (mk) { const b = Math.sin(now / 180) * 2.5, yy = y - 44 + b; g.save(); g.fillStyle = mk === 'paso' ? '#ff5fa2' : '#ffd84a'; g.strokeStyle = '#1a1a1e'; g.lineWidth = 2;
           g.beginPath(); g.moveTo(x - 6, yy - 8); g.lineTo(x + 6, yy - 8); g.lineTo(x, yy); g.closePath(); g.stroke(); g.fill();
           if (mk === 'oferta') { g.fillStyle = '#1a1a1e'; g.fillRect(x - 1, yy - 7, 2, 3); } g.restore(); }

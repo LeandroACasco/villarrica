@@ -246,7 +246,8 @@ VR.World = class {
           for (let k = 0; k < 6; k++) { const h = VR.hash(tx * 7 + k, ty * 5 + (i | 0), 331); if (h < 0.5) { const o = h * 2 * S, w = 0.5 + VR.hash(tx, ty + k, 337) * 1.5; V ? g.fillRect(x + i + (k % 3) * 0.9, y + o, 0.5, w) : g.fillRect(x + o, y + i + (k % 3) * 0.9, w, 0.5); } }
         }
       }
-      else if (l >= 5 && l <= 8) VR.drawBay(g, l, x, y, tx, ty, S);   // rayitas de estacionamiento de motos (11/11/2026)
+      else if (l >= 5 && l <= 16) VR.drawBay(g, l, x, y, tx, ty, S);   // rayitas de moto y cajones de auto (11/11/2026)
+      else if (l >= 17 && l <= 20) VR.drawStop(g, l, x, y, S);       // raya de pare (11/11/2026)
     }
     // 3b) calles en diagonal (05/11/2026): las baldosas quedan escalonadas, así que encima se dibujan lisas
     if (idx.r.length) VR.drawDiagonals(g, this, idx.r, tx0, ty0, tx1, ty1);
@@ -484,20 +485,46 @@ VR.findDiagonals = (R) => {
   }
   return out;
 };
-// Rayitas de estacionamiento de motos (11/11/2026, fotos de Leandro del Centro): rayas blancas sueltas, perpendiculares
-// al cordón, sin línea de borde ni de fondo. `l` (5-8, ver osm_to_map.py) dice dónde está el cordón: 5 sur, 6 norte,
-// 7 este, 8 oeste. `VR.BAY.pitch` (unidades; 8 = 1 m) es la distancia entre rayitas: `VR.parkCars` (car.js) acomoda
-// las motos en el medio de cada hueco. Los autos no llevan rayas.
-VR.BAY = { pitch: 10 };
+// Pintura de estacionamiento del Centro (11/11/2026, fotos de Leandro de Cnel. Gimenez). `l` (5-16, ver osm_to_map.py):
+//  - 5-8: motos en batería, rayitas sueltas perpendiculares al cordón, cada `VR.BAY.pitch` unidades (8 = 1 m);
+//  - 9-12 (fila pegada al cordón) y 13-16 (fila de al lado): cajón de auto marcado solo en las esquinas, como un
+//    encuadre: una "T" en cada esquina (brazo hacia adentro del cajón y brazo a lo largo), cada `VR.BAY.carPitch`.
+// En cada grupo el valor dice dónde está el cordón: 0 sur, 1 norte, 2 este, 3 oeste. `VR.parkCars` (car.js) acomoda
+// las motos entre rayitas y los autos en el centro de cada cajón.
+VR.BAY = { pitch: 10, carPitch: 40, carDepth: 20 };
 VR.drawBay = (g, l, x, y, tx, ty, S) => {
-  const side = l - 5, horiz = side < 2, P = VR.BAY.pitch, u0 = (horiz ? tx : ty) * S;
-  const len = 14;                                                    // largo de la rayita desde el cordón (~1,75 m)
-  const d0 = side === 0 ? S - len : side === 1 ? 0 : side === 2 ? S - len : 0;
-  for (let p = Math.ceil(u0 / P) * P; p < u0 + S; p += P) {
-    const o = p - u0 - 0.5, a = VR.hash(Math.round(p), horiz ? ty : tx, 353) > 0.8 ? 0.55 : 0.9;   // alguna medio gastada
-    g.fillStyle = 'rgba(228,226,216,' + a + ')';
-    horiz ? g.fillRect(x + o, y + d0, 1.1, len) : g.fillRect(x + d0, y + o, len, 1.1);
+  if (l <= 8) {
+    const side = l - 5, horiz = side < 2, P = VR.BAY.pitch, u0 = (horiz ? tx : ty) * S;
+    const len = 14;                                                  // largo de la rayita desde el cordón (~1,75 m)
+    const d0 = side === 0 ? S - len : side === 1 ? 0 : side === 2 ? S - len : 0;
+    for (let p = Math.ceil(u0 / P) * P; p < u0 + S; p += P) {
+      const o = p - u0 - 0.5, a = VR.hash(Math.round(p), horiz ? ty : tx, 353) > 0.8 ? 0.55 : 0.9;   // alguna medio gastada
+      g.fillStyle = 'rgba(228,226,216,' + a + ')';
+      horiz ? g.fillRect(x + o, y + d0, 1.1, len) : g.fillRect(x + d0, y + o, len, 1.1);
+    }
+    return;
   }
+  const row = l >= 13 ? 1 : 0, side = (l - 9) & 3, horiz = side < 2, P = VR.BAY.carPitch, D = VR.BAY.carDepth, A = 5, W = 1.1;
+  const u0 = (horiz ? tx : ty) * S, vb = row * S;                    // u: a lo largo del cordón; v: profundidad desde el cordón
+  g.save(); g.beginPath(); g.rect(x, y, S, S); g.clip();
+  const R = (ua, ub, va, vz) => {
+    const t0 = Math.max(va - vb, 0), t1 = Math.min(vz - vb, S); if (t1 <= t0) return;
+    if (horiz) g.fillRect(x + ua - u0, y + (side === 0 ? S - t1 : t0), ub - ua, t1 - t0);
+    else g.fillRect(x + (side === 2 ? S - t1 : t0), y + ua - u0, t1 - t0, ub - ua);
+  };
+  for (let p = Math.ceil((u0 - A) / P) * P; p < u0 + S + A; p += P) {
+    const a = VR.hash(Math.round(p), horiz ? ty : tx, 359) > 0.85 ? 0.55 : 0.9;
+    g.fillStyle = 'rgba(228,226,216,' + a + ')';
+    R(p - W / 2, p + W / 2, 0, A); R(p - A, p + A, 0.3, 0.3 + W);                    // esquinas del lado del cordón
+    R(p - W / 2, p + W / 2, D - A, D); R(p - A, p + A, D - W, D);                      // esquinas del lado de la calle
+  }
+  g.restore();
+};
+// Raya de pare (17-20): una línea blanca de cordón a cordón, perpendicular a la calle, del lado de afuera de la cebra.
+VR.drawStop = (g, l, x, y, S) => {
+  g.fillStyle = 'rgba(232,230,220,.92)';
+  if (l === 17) g.fillRect(x, y + 8.5, S, 2); else if (l === 18) g.fillRect(x, y + 5.5, S, 2);
+  else if (l === 19) g.fillRect(x + 8.5, y, 2, S); else g.fillRect(x + 5.5, y, 2, S);
 };
 VR.drawDiagonals = (g, world, list, tx0, ty0, tx1, ty1) => {
   const S = VR.TILE, T = VR.T;

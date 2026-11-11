@@ -132,20 +132,20 @@ VR.Player = class {
       else if (!dx) { for (const n of [-1, 1]) if (!box(this.x + n * 5, this.y + dy)) { this.x += n * Math.min(Math.abs(dy), 1); break; } }
     }
   }
-  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = VR.av2Lazy(this.lookData, VR.RES); }
+  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = VR.av2Lazy(this.lookData); }
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6 * VR.PS, 2.5 * VR.PS, 0, 0, Math.PI * 2); ctx.fill();
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
-    ctx.drawImage(img, x - 8, y - 31, 16, 32);
+    const PS = VR.PS; ctx.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);
     if (this.equipo === 'canasto') { // canasto de chipa en la mano (J3)
-      const r = this.dir === 'left' ? -1 : 1, bx = x + r * 5 - 3, by = y - 15; ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx - 1, by - 1, 8, 6); ctx.fillStyle = '#b07a3a'; ctx.fillRect(bx, by, 6, 4); ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx + 1, by - 1, 2, 2); ctx.fillRect(bx + 3, by - 2, 2, 2); ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx + 2, by - 4, 1, 3); ctx.fillRect(bx + 3, by - 5, 1, 1); ctx.fillRect(bx + 4, by - 4, 1, 3);
+      const r = this.dir === 'left' ? -1 : 1, bx = x + r * 4 - 3, by = y - Math.round(15 * VR.PS); ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx - 1, by - 1, 8, 6); ctx.fillStyle = '#b07a3a'; ctx.fillRect(bx, by, 6, 4); ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx + 1, by - 1, 2, 2); ctx.fillRect(bx + 3, by - 2, 2, 2); ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx + 2, by - 4, 1, 3); ctx.fillRect(bx + 3, by - 5, 1, 1); ctx.fillRect(bx + 4, by - 4, 1, 3);
     }
   }
   drawBubble(ctx, camX, camY, a) {
     if (!this.bubble) return;
-    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - 36;
+    const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY) - Math.round(31 * VR.PS + 5);
     const img = VR.gfx.textImg(this.bubble.text, '#1a1a1e', 9);
     const w = img.lw + 8, h = 15, bx = VR.clamp(x - (w >> 1), 2, VR.screen.w - w - 2); let by = y - h;
     const B = VR._bubs || (VR._bubs = []); // si choca con otro globo de este cuadro, sube

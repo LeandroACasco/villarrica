@@ -378,7 +378,7 @@ VR.Misiones = class {
       const dx = player.x - p.x, dy = player.y - p.y, dir = Math.hypot(dx, dy) < 70 ? (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')) : (P.dir || 'down');
       tall.push({ sy: p.y, draw: (g) => {
         g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, y - 1, 5.5, 2.3, 0, 0, 7); g.fill();
-        g.drawImage(L.get(dir, 'idle', 0), x - 8, y - 31, 16, 32);
+        g.drawImage(L.get(dir, 'idle', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (mk) { const b = Math.sin(now / 180) * 2.5, yy = y - 44 + b; g.save(); g.fillStyle = mk === 'paso' ? '#ff5fa2' : '#ffd84a'; g.strokeStyle = '#1a1a1e'; g.lineWidth = 2;
           g.beginPath(); g.moveTo(x - 6, yy - 8); g.lineTo(x + 6, yy - 8); g.lineTo(x, yy); g.closePath(); g.stroke(); g.fill();
           if (mk === 'oferta') { g.fillStyle = '#1a1a1e'; g.fillRect(x - 1, yy - 7, 2, 3); } g.restore(); }

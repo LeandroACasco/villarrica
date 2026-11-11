@@ -2,6 +2,7 @@
 'use strict';
 const VR = {};
 VR.TILE = 16;
+VR.PS = 0.75; // escala de las personas (11/11/2026, pedido de Leandro: más realista; antes 1 = 16×32 unidades). Fraccionaria: los cuadros se dibujan a ese tamaño (VR.RES * VR.PS)
 VR.RES = 1; // resolución del dibujo (píxeles del lienzo por unidad del mundo); la fija VR.screen.fit
 VR.clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 VR.lerp = (a, b, t) => a + (b - a) * t;

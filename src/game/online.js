@@ -212,7 +212,7 @@ VR.Online = class {
         } else {
           o.car = null;
           ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.drawImage(o.mv ? o.look.get(o.d, o.mv > 1 ? 'run' : 'walk', ((now / (o.mv > 1 ? 66 : 105)) | 0) % 8) : o.look.get(o.d, 'idle', 0), x - 8, y - 31, 16, 32);
+          ctx.drawImage(o.mv ? o.look.get(o.d, o.mv > 1 ? 'run' : 'walk', ((now / (o.mv > 1 ? 66 : 105)) | 0) % 8) : o.look.get(o.d, 'idle', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         }
         const ty = o.c ? y - 22 : y - 38; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center';
         ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(o.n, x, ty); ctx.fillStyle = '#ffd84a'; ctx.fillText(o.n, x, ty);

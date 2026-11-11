@@ -54,7 +54,7 @@ VR.Weapons = class {
 
   // ---------- pistola ----------
   // Se sostiene con la mano derecha a la altura del pecho, apuntando para adelante (05/11/2026: antes salía de la cadera)
-  hand(x, y, a) { const fx = Math.sin(a), fy = -Math.cos(a), rx = Math.cos(a), ry = Math.sin(a); return [x + fx * 3 + rx * 2.5, y - 18 + fy * 2 + ry * 1.5]; }
+  hand(x, y, a) { const fx = Math.sin(a), fy = -Math.cos(a), rx = Math.cos(a), ry = Math.sin(a); return [x + fx * 3 * VR.PS + rx * 2.5 * VR.PS, y - 18 * VR.PS + fy * 2 + ry * 1.5 * VR.PS]; }
   muzzle(player) { const a = this.aim, [hx, hy] = this.hand(player.x, player.y, a), L = this.cur === 'pistola' ? 7 : 12; return [hx + Math.sin(a) * L, hy - Math.cos(a) * L * 0.75]; }
   shoot(player, at) { // at = [x, y, ángulo]: disparo de otro jugador (online), sin estrellas para vos
     const W = VR.WEAPONS.pistola, [x, y] = at || this.muzzle(player), a = at ? at[2] : this.aim + (this.rnd() - 0.5) * 0.04;

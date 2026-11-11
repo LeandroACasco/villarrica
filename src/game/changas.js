@@ -30,7 +30,7 @@ VR.Changas = class {
   collect(cx, cy, tall) { // el cliente esperando con la mano levantada
     const J = this.job; if (!J || J.k !== 'taxi' || J.stage !== 0 || !J.dest || !this.peds) return;
     const x = J.dest.x - cx, y = J.dest.y - cy + 6, L = this.peds.sprites[J.pal % this.peds.sprites.length];
-    tall.push({ sy: J.dest.y + 6, draw: (g) => { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x, y - 1, 6, 2.5, 0, 0, 7); g.fill(); g.drawImage(L.get('down', 'idle', 0), x - 8, y - 31, 16, 32);
+    tall.push({ sy: J.dest.y + 6, draw: (g) => { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x, y - 1, 6, 2.5, 0, 0, 7); g.fill(); g.drawImage(L.get('down', 'idle', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
       const b = Math.sin(performance.now() / 150) * 2; g.font = '12px system-ui'; g.textAlign = 'center'; g.fillText('🙋', x + 9, y - 30 + b); } });
   }
   // en Historia (J2) las changas se abren con las misiones: las cerradas muestran 🔒

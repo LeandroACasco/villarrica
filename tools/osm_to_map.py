@@ -1171,9 +1171,9 @@ def main(src, out, preview=None):
             y0_, y1_, x0_, x1_ = sl[0].start, sl[0].stop - 1, sl[1].start, sl[1].stop - 1
             if (y1_ - y0_) < 2 or (x1_ - x0_) < 2:
                 continue
-            # 11/11/2026 (Leandro): la cebra no va pegada a la esquina sino un poco antes: se deja 1 baldosa (2 m)
-            # de calle lisa entre el cruce y la cebra (GAP) y recién ahí van sus 2 baldosas.
-            GAP = 1
+            # (11/11/2026: se probó dejar 1 baldosa de calle lisa antes de la cebra, GAP = 1; Leandro dijo que estaban bien
+            # como estaban, así que GAP = 0. Lo que faltaba era la raya de pare, que se pinta más abajo.)
+            GAP = 0
             arms = [(range(y0_ - 2 - GAP, y0_ - GAP), range(x0_, x1_ + 1), 3), (range(y1_ + 1 + GAP, y1_ + 3 + GAP), range(x0_, x1_ + 1), 3),
                     (range(y0_, y1_ + 1), range(x0_ - 2 - GAP, x0_ - GAP), 4), (range(y0_, y1_ + 1), range(x1_ + 1 + GAP, x1_ + 3 + GAP), 4)]
             road_at = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] in (ROAD, STONE, DIRTROAD) and not rounded[y, x]
@@ -1188,14 +1188,24 @@ def main(src, out, preview=None):
                     for y, x in cells:
                         line[y, x] = val
                     n_z += 1
+                    # raya de pare (11/11/2026, fotos de Leandro): línea blanca perpendicular a la calle, de cordón a cordón,
+                    # en la baldosa de afuera de la cebra (la que queda más lejos del cruce). `line` 17 y 18: calle N-S,
+                    # el cruce queda al sur (17) o al norte (18); 19 y 20: calle E-O, el cruce queda al este (19) o al oeste (20).
+                    if val == 3: oy, ox, sv = (min(ys_) - 1, None, 17) if ys_[0] < y0_ else (max(ys_) + 1, None, 18)
+                    else: oy, ox, sv = (None, min(xs_) - 1, 19) if xs_[0] < x0_ else (None, max(xs_) + 1, 20)
+                    for y, x in ([(oy, xx) for xx in xs_] if oy is not None else [(yy, ox) for yy in ys_]):
+                        if 0 <= y < H and 0 <= x < W and paved_rd[y, x] and line[y, x] == 0 and not rounded[y, x]:
+                            line[y, x] = sv
         print('cebras: %d en %d cruces del Centro' % (n_z, n_inter))
 
         # ---------- rayitas de estacionamiento de motos en el Centro (11/11/2026, fotos de Leandro) ----------
         # En las calles del Centro las motos se estacionan en batería (de punta contra el cordón) y la única pintura son
         # rayitas blancas sueltas, perpendiculares al cordón, cada ~1 m; sin línea de borde ni de fondo. Los autos se
-        # estacionan en fila pegados al cordón y NO llevan rayas.
-        # Valores de `line` (dibujo: `VR.drawBay` en world.js): 5-8 = rayitas de moto; el valor dice dónde está el
-        # cordón: 5 sur, 6 norte, 7 este, 8 oeste. `VR.parkCars` (car.js) las lee y acomoda las motos entre rayitas.
+        # estacionan en fila pegados al cordón, con el cajón marcado solo en las esquinas (como un encuadre).
+        # Valores de `line` (dibujo: `VR.drawBay` en world.js): 5-8 = rayitas de moto; 9-12 = cajón de auto, fila pegada al
+        # cordón, y 13-16 = fila de al lado (esquinas pintadas en las dos); 17-20 = raya de pare (ver cebras). En cada grupo
+        # el valor dice dónde está el cordón: sur, norte, este, oeste. `VR.parkCars` (car.js) las lee y acomoda las motos
+        # entre rayitas y los autos en el centro de cada cajón.
         # Solo en asfalto, en calles de 4 baldosas o más (en las de 4, de un solo lado por tramo), rectas, a 4 baldosas
         # o más de un cruce. Las cuadras de la plaza las marca `VR.parkCars` según donde pone las motos a mano.
         SW_ = (SIDEWALK, CHECKER, PAVING)
@@ -1210,7 +1220,7 @@ def main(src, out, preview=None):
                 no_bay[max(0, d_['y'] - 6):d_['y'] + d_.get('h', 1) + 6, max(0, d_['x'] - 6):d_['x'] + d_.get('w', 1) + 6] = True
         isroad = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] == ROAD and not rounded[y, x] and line[y, x] == 0
         iscurb = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] in SW_
-        n_bay = 0
+        n_bay = n_car = 0
         assign = {}   # se aplica al final, así las celdas ya pintadas no le molestan a las vecinas
         ys_c, xs_c = np.nonzero(centro & (tiles == ROAD))
         for y, x in zip(ys_c.tolist(), xs_c.tolist()):
@@ -1231,19 +1241,23 @@ def main(src, out, preview=None):
                         ok = False; break
                 if not ok:
                     continue
-                # por bloques de 8 baldosas a lo largo de la cuadra: ~45 % con rayitas
+                # por bloques de 8 baldosas a lo largo de la cuadra: ~25 % sin pintar, ~35 % rayitas de moto, ~40 % cajones de auto
                 u = x if dy else y
                 h_ = ((u // 8) * 73856093 ^ (((y if dy else x) // 6) + side * 19349663) * 83492791) & 0xffff
-                if h_ % 100 >= 45:
+                if h_ % 100 < 25:
                     continue
                 # calle de 4 baldosas (8 m): de un solo lado por tramo, para que quede lugar para dos filas de tránsito
                 if wd == 4 and ((h_ >> 9) & 1) != (side & 1):
                     continue
-                assign[(y, x)] = 5 + side; n_bay += 1
+                if h_ % 100 < 60:
+                    assign[(y, x)] = 5 + side; n_bay += 1
+                else:
+                    assign[(y, x)] = 9 + side; n_car += 1
+                    assign.setdefault((y - dy, x - dx), 13 + side)
                 break
         for (y, x), v in assign.items():
             line[y, x] = v
-        print('rayitas de moto: %d baldosas' % n_bay)
+        print('rayitas de moto: %d baldosas, cajones de auto: %d baldosas' % (n_bay, n_car))
 
     # ---------- esquinas redondeadas en toda la ciudad (Leandro, 05/11/2026: "no es solo la plaza") ----------
     # En cada cruce de calles con vereda, la punta de la vereda de cada manzana se redondea (radio 4 m, o 2 m si

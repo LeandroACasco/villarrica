@@ -666,7 +666,7 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
     return out;
   };
   // versión perezosa para el juego: cada cuadro se dibuja recién la primera vez que se usa (sin tirones)
-  VR.av2Lazy = (look, k = VR.RES || 1, n = { idle: 1, walk: 8, run: 8, sit: 1 }) => {
+  VR.av2Lazy = (look, k = (VR.RES || 1) * (VR.PS || 1), n = { idle: 1, walk: 8, run: 8, sit: 1 }) => {
     const L = Object.assign({}, VR.AV2_DEFAULT, look), c = new Map();
     return { n, look: L, get(d, a, i) {
       const key = d + a + i; let f = c.get(key);

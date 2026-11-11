@@ -67,7 +67,7 @@ VR.Teatro = class {
     if (!sit) { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(X, Y - 1, 6, 2.5, 0, 0, 7); g.fill(); }
     const img = sit ? look.get('up', 'sit', 0) : mv ? look.get(dir, mv > 1 ? 'run' : 'walk', Math.floor(anim) % 8) : look.get(dir, 'idle', 0);
     if (sit) { g.drawImage(img, 0, 0, img.width, img.height * 0.6, X - 8, Y - 24, 16, 19.2); g.fillStyle = '#101014'; g.fillRect(X - 7, Y - 6, 14, 4); g.fillStyle = '#2a2a32'; g.fillRect(X - 7, Y - 6, 14, 1); } // de espaldas, el respaldo tapa las piernas
-    else g.drawImage(img, X - 8, Y - 31, 16, 32);
+    else g.drawImage(img, X - 8 * VR.PS, Y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
     if (name) { g.font = 'bold 7px sans-serif'; g.textAlign = 'center'; g.lineWidth = 2.5; g.strokeStyle = 'rgba(0,0,0,.75)'; g.strokeText(name, X, Y - 34); g.fillStyle = '#ffd84a'; g.fillText(name, X, Y - 34); }
   }
   draw(g, sw0, sh0) {
