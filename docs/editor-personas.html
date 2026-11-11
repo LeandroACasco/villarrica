@@ -482,6 +482,7 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
       if (front) {
         // cara
         const ey = hy + 0.05;
+        if (L._face) L._face({ hx, hy, ey, k, P, skin, skinD, hair, fem: S.fem, paint, ell, SH, T, L }); else {
         if (k >= 3) {
           for (const sx of [-1, 1]) { pix(hx + sx * 0.85 - 0.45, ey, '#f4f0e6', Math.round(0.9 * k), P); pix(hx + sx * 0.85 - (sx < 0 ? 0 : 0.0), ey, '#1a1410', P, P + (k >= 4 ? 1 : 0)); }
         } else for (const sx of [-1, 1]) pix(hx + sx * 0.8 - 0.2, ey, '#1a1410', P, P);
@@ -497,8 +498,10 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
         }
         if (L.lentes) { paint((g) => { g.fillRect(hx - 1.75, ey - 0.25, 1.5, 0.75); g.fillRect(hx + 0.25, ey - 0.25, 1.5, 0.75); g.fillRect(hx - 0.3, ey - 0.15, 0.6, 0.3); }, '#18181e', { light: false, sep: false }); }
         if (L.anteojos && k >= 2) { const c = '#2a2420'; pix(hx - 1.7, ey - 0.35, c, Math.round(1.45 * k), P); pix(hx + 0.3, ey - 0.35, c, Math.round(1.45 * k), P); pix(hx - 1.7, ey + 0.5, c, Math.round(1.45 * k), P); pix(hx + 0.3, ey + 0.5, c, Math.round(1.45 * k), P); }
+        }
       }
       drawHair(true);
+      if (front && L._face2) L._face2({ hx, hy, ey: hy + 0.05, k, P, skin, skinD, hair, fem: S.fem, paint, ell, SH, T, L });
     } else {
       // ---------- perfil ----------
       const b = S.bob, lx = Math.sin(S.lean * D2R);

@@ -129,7 +129,7 @@ VR.Dialogo = {
   init() {
     if (this.el) return;
     const d = document.createElement('div'); d.id = 'dlgBox'; d.hidden = true;
-    d.innerHTML = '<div class="dlgIn"><canvas width="48" height="48"></canvas><div class="dlgTx"><b></b><p></p><div class="dlgOp"></div></div><i class="dlgMore">▼</i></div>';
+    d.innerHTML = '<div class="dlgIn"><canvas width="128" height="128"></canvas><div class="dlgTx"><b></b><p></p><div class="dlgOp"></div></div><i class="dlgMore">▼</i></div>';
     document.body.append(d); this.el = d; this.cv = d.querySelector('canvas'); this.nm = d.querySelector('b'); this.tx = d.querySelector('p'); this.op = d.querySelector('.dlgOp'); this.more = d.querySelector('.dlgMore');
     d.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; e.preventDefault(); this.next(); });
     addEventListener('keydown', (e) => {
@@ -156,20 +156,20 @@ VR.Dialogo = {
   line() {
     const L = this.cola[this.i], P = VR.PERSONAJES[L.quien] || { nombre: L.quien, color: '#fff' };
     const look = L.quien === 'yo' ? (VR.myLook ? VR.myLook() : VR.AV2_DEFAULT) : P.look;
-    const g = this.cv.getContext('2d'); g.clearRect(0, 0, 48, 48); this.cv.hidden = !look;
-    if (look) g.drawImage(VR.carita(look, L.quien === 'yo' ? null : L.quien), 0, 0);
+    this.cv.hidden = !look; this.look = look; this.pid = L.quien === 'yo' ? null : L.quien; this.pcol = P.color; this.exp = L.exp || (/[!¡]/.test(String(L.txt)) ? 'feliz' : /\?/.test(String(L.txt)) ? 'duda' : 'neutral'); this._o = false; this.cara(false);
     this.nm.textContent = L.quien === 'sis' ? (L.titulo || '') : P.nombre; this.nm.style.color = P.color; this.nm.hidden = L.quien === 'sis' && !L.titulo;
     this.full = String(L.txt); this.n = 0; this.t0 = performance.now(); this.tx.textContent = ''; this.op.innerHTML = ''; this.more.hidden = true; this.sel = 0;
     this.el.classList.toggle('sis', L.quien === 'sis');
     if (VR.audio && VR.audio.blip) VR.audio.blip();
   },
+  cara(open) { if (!this.look) return; try { const g = this.cv.getContext('2d'); g.clearRect(0, 0, 128, 128); g.drawImage(VR.retrato(this.look, this.pid, this.exp, open, this.pcol), 0, 0); } catch (e) {} },
   typing() { return this.n < this.full.length; },
   tickText() {
     if (!this.abierto) return;
-    if (this.typing()) { this.n = Math.min(this.full.length, Math.floor((performance.now() - this.t0) / 1000 * 55) + 1); this.tx.textContent = this.full.slice(0, this.n); if (!this.typing()) this.done(); }
+    if (this.typing()) { this.n = Math.min(this.full.length, Math.floor((performance.now() - this.t0) / 1000 * 55) + 1); this.tx.textContent = this.full.slice(0, this.n); if (!this.typing()) this.done(); else { const o = /[a-záéíóúñü]/i.test(this.full[this.n - 1] || '') && Math.floor((performance.now() - this.t0) / 120) % 2 === 1; if (o !== this._o) { this._o = o; this.cara(o); } } }
   },
   done() { // terminó de escribirse: muestra opciones o la flechita
-    this.tx.textContent = this.full; const L = this.cola[this.i];
+    this._o = false; this.cara(false); this.tx.textContent = this.full; const L = this.cola[this.i];
     if (L.op) { this.op.innerHTML = ''; L.op.forEach(([t, fn], k) => { const b = document.createElement('button'); b.textContent = (k + 1) + '. ' + t; b.onclick = (e) => { e.stopPropagation(); this.choose(fn); }; this.op.append(b); }); this.pick(0); this.opT = performance.now(); }
     else this.more.hidden = false;
   },

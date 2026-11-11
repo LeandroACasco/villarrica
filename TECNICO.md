@@ -463,3 +463,8 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - Ya no hay apps que abran el menú o pantallas fuera del teléfono: **Notas** (antes Metas; papel rayado con letra a mano *Caveat*, OFL, embebida en `game/caveat.js`; muestra metas, pieza, saldo, hambre, deudas y cuotas), **Misiones** (`paintMis(host, enCel)`), **Changas** (botones de `changas.lbl` → `changas.start(k)`) y **GPS** (el mapa grande se reparenta dentro de `#celBody` con la clase `enCel`; los cálculos usan el tamaño de `#mapBox`, no la ventana).
 - En Historia: `#btnMap`, la tecla del mapa, el minimapa y el menú de pausa abren el celular en el GPS (`openMapAuto`); sin teletransporte. El **Ropero** salió del celular (la ropa se cambia en la tienda Ao Porã).
 - `unmapCel()` devuelve el mapa al `body` al salir de la app.
+
+## Caritas con expresiones (11/11/2026)
+- `game/retrato.js`: `VR.retrato(look, id, exp, open, color)` dibuja el avatar a k = 16 con una cara propia (ojos con iris y brillo, cejas, nariz, boca, arrugas en los mayores, barba y lentes redibujados) y fondo con el color del personaje (variante D del mockup). Expresiones: `neutral`, `feliz`, `enojado`, `triste`, `sorpresa`, `duda`; `open` = boca abierta (se alterna mientras se escribe el texto). ~70 ms por cara, con caché.
+- Ganchos en `avatar2.js` (`L._face` antes del pelo: mejillas, nariz, boca, barba; `L._face2` después: ojos, cejas, lentes). Sin esas marcas el avatar se dibuja igual que siempre: **la tienda y el juego no cambian**.
+- En los diálogos, una línea puede llevar `exp: 'enojado'` (etc.); si no, `!` → feliz, `?` → duda, otro → neutral.
