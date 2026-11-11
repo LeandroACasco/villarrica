@@ -435,3 +435,7 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - `calle.underTree`: los vendedores no se generan bajo una copa.
 - (corrección 12/11/2026) Árboles de las plazas: copa ×1,35 levantada (`lift` = 0,8 × radio) sobre un tronco largo con cal que se dibuja ANTES que la copa; tronco y copa se vuelven transparentes si el jugador está detrás. El índice de chunks sube hasta 3,2 radios sobre el árbol.
 - Globos de vendedores y perros: se acumulan en `VR._late` y main.js los dibuja al final, sobre árboles y banderas. La pista "ACCIÓN: …" del vendedor se muestra debajo de sus pies.
+
+## Zoom suave (12/11/2026)
+- `VR.screen.setLive(base)` (escala continua, sin cambiar la resolución del lienzo) y `settle(base)` (vuelve a la escala de reposo nítida); `snapBase(base)` da la base de reposo más cercana.
+- main.js: `zoomTick(dt)` acerca `baseCur` de a poco (ease exponencial) a `wantBase()` = (WALK/DRIVE_BASE) / zoomK; 0,3 s después del último gesto el objetivo pasa a la base de reposo, así no hay salto al terminar. Subir o bajar de un vehículo también se recorre suave (antes era una transición CSS).

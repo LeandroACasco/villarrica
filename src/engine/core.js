@@ -40,16 +40,26 @@ VR.screen = {
     const dw = Math.round(innerWidth * dpr), dh = Math.round(innerHeight * dpr);
     // escala entera; en pantallas chicas también se permiten medios (×1,5 o ×2,5) para que alejar la cámara se note
     const raw = Math.min(dw, dh) / this.BASE;
-    const s = raw >= 3 ? Math.round(raw) : Math.max(1, Math.round(raw * 2) / 2);
+    // en pleno zoom (live) la escala es continua y la resolución del lienzo no cambia, para que el cambio sea suave
+    const s = this.live ? Math.max(0.7, raw) : raw >= 3 ? Math.round(raw) : Math.max(1, Math.round(raw * 2) / 2);
     this.scale = s;
     this.w = Math.ceil(dw / s); this.h = Math.ceil(dh / s);
-    const R = this.R = VR.RES = Math.min(2, s);
-    this.canvas.width = Math.round(this.w * R); this.canvas.height = Math.round(this.h * R);
+    const R = this.R = VR.RES = this.live ? (this.R || 1) : Math.min(2, s);
+    const cw = Math.round(this.w * R), ch = Math.round(this.h * R);
+    if (this.canvas.width !== cw || this.canvas.height !== ch) { this.canvas.width = cw; this.canvas.height = ch; }
     this.canvas.style.width = (this.w * s / dpr) + 'px';
     this.canvas.style.height = (this.h * s / dpr) + 'px';
     this.ctx.imageSmoothingEnabled = false;
     this.ctx.setTransform(R, 0, 0, R, 0, 0);
   },
+  // base (lado corto en unidades del juego) que da una escala "de reposo" (entera o de a medios), la más cercana a la pedida
+  snapBase(base) {
+    const dpr = window.devicePixelRatio || 1, m = Math.min(Math.round(innerWidth * dpr), Math.round(innerHeight * dpr)), raw = m / base;
+    return m / (raw >= 3 ? Math.round(raw) : Math.max(1, Math.round(raw * 2) / 2));
+  },
+  // zoom continuo (lo maneja main.js cuadro a cuadro): escala sin redondear
+  setLive(base) { this.live = true; this.BASE = base; this.canvas.style.transition = 'none'; this.canvas.style.transform = 'none'; this.fit(); },
+  settle(base) { this.live = false; this.BASE = base; this.fit(); },
   // Alejar o acercar la cámara (p. ej. al subir al auto): cambia el lado corto de la pantalla en píxeles
   // del juego. El salto entre escalas enteras se suaviza con una transición CSS desde la escala anterior.
   setBase(base, instant) {

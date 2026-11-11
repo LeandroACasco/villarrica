@@ -60,11 +60,20 @@
   const WALK_BASE = 270, DRIVE_BASE = 420; // Leandro prefirió la cámara de antes (04/11/2026)
   // Zoom del juego (rueda, pellizco con dos dedos, teclas + y −): multiplica la base de cámara; se recuerda.
   let zoomK = 1; try { zoomK = Math.min(1.8, Math.max(0.55, parseFloat(localStorage.getItem('vr_zoom')) || 1)); } catch (e) {}
-  const baseOf = (b) => Math.round(b / zoomK);
-  function setZoom(k) {
-    k = Math.min(1.8, Math.max(0.55, k)); if (Math.abs(k - zoomK) < 0.001) return; zoomK = k;
-    try { localStorage.setItem('vr_zoom', String(k)); } catch (e) {}
-    VR.screen.setBase(baseOf(car ? DRIVE_BASE : WALK_BASE), true);
+  // Zoom suave: la base de cámara (baseCur) se acerca de a poco a la que corresponde al zoom pedido y al vehículo (a pie / manejando).
+  // Mientras se ajusta, la escala es continua; unos 0,3 s después de soltar se acomoda a la escala de reposo (nítida) sin saltos.
+  let baseCur = 0, zoomIn = -1e9;
+  const wantBase = () => (car ? DRIVE_BASE : WALK_BASE) / zoomK;
+  const zoomPoke = () => {};   // subir o bajar de un vehículo cambia wantBase(): zoomTick lo recorre suave
+  function zoomJump() { baseCur = VR.screen.snapBase(wantBase()); VR.screen.settle(baseCur); }
+  function setZoom(k) { k = Math.min(1.8, Math.max(0.55, k)); if (Math.abs(k - zoomK) < 0.0005) return; zoomK = k; zoomIn = performance.now(); }
+  function zoomTick(dt) {
+    if (!baseCur) baseCur = VR.screen.BASE;
+    const settling = performance.now() - zoomIn > 300;
+    const want = wantBase(), tgt = settling ? VR.screen.snapBase(want) : want;
+    if (Math.abs(tgt - baseCur) < 0.05) { if (VR.screen.live || VR.screen.BASE !== tgt) { baseCur = tgt; VR.screen.settle(baseCur); if (settling) { zoomK = Math.min(1.8, Math.max(0.55, (car ? DRIVE_BASE : WALK_BASE) / baseCur)); try { localStorage.setItem('vr_zoom', String(zoomK)); } catch (e) {} } } return; }
+    baseCur *= Math.pow(tgt / baseCur, 1 - Math.exp(-11 * dt));
+    VR.screen.setLive(baseCur);
   }
   addEventListener('wheel', (e) => { if (mapOpen || mode !== 'game' || e.target.closest && e.target.closest('#mapView')) return; setZoom(zoomK * Math.exp(-e.deltaY * 0.0012)); }, { passive: true });
   addEventListener('keydown', (e) => {
@@ -102,7 +111,7 @@
   }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg) {
-    if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; VR.screen.setBase(baseOf(WALK_BASE)); driveLabels(false); }
+    if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; zoomPoke(); driveLabels(false); }
     player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y;
     if (emer) emer.clear();
     toast(msg);
@@ -114,7 +123,7 @@
     if (!c || c.type !== (sc.type || 'car') || (sc.model && c.model !== sc.model)) { c = new VR.Car(world, sc.x, sc.y, sc.a, sc.color || 0, sc.type || 'car', sc.model, sc.tune || null); cars.push(c); }
     world.removeBox(c); c.x = c.px = sc.x; c.y = c.py = sc.y; c.a = c.pa = sc.a; world.addBox(c);
     if (sc.in && c.type === 'moto') c.rider = me();
-    if (sc.in) { car = c; c.driven = true; player.x = player.px = c.x; player.y = player.py = c.y; VR.screen.setBase(baseOf(DRIVE_BASE)); setTimeout(() => driveLabels(true)); }
+    if (sc.in) { car = c; c.driven = true; player.x = player.px = c.x; player.y = player.py = c.y; zoomPoke(); setTimeout(() => driveLabels(true)); }
   }
   const LABELS = { action: [['✋', 'ACCIÓN'], ['📯', 'BOCINA']], run: [['»', 'CORRER'], ['⏹', 'FRENO']], car: [['🚗', 'AUTO'], ['🚪', 'BAJAR']] };
   function driveLabels(on) {
@@ -152,7 +161,7 @@
     if (emer) emer.stolen(c);
     if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : /^cam/.test(c.model) ? '🚚 ¡Te llevaste el camión!' : '🚗 ¡Te llevaste el auto!'); }
     if (c.type === 'moto') c.rider = me();
-    c.robado = true; car = c; c.driven = true; player.moving = false; VR.screen.setBase(baseOf(DRIVE_BASE)); VR.showVehicleCard(c);
+    c.robado = true; car = c; c.driven = true; player.moving = false; zoomPoke(); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
     if (VR.mis) VR.mis.emit('subir', c);
   }
@@ -189,7 +198,7 @@
     if (c !== car) return;
     const fx = Math.sin(c.a), fy = -Math.cos(c.a), vx = c.vx || 0, vy = c.vy || 0;
     if (VR.mis) VR.mis.emit('bajar', c);
-    c.driven = false; c.rider = null; car = null; VR.screen.setBase(baseOf(WALK_BASE)); driveLabels(false);
+    c.driven = false; c.rider = null; car = null; zoomPoke(); driveLabels(false);
     player.x = player.px = c.x + fx * 9; player.y = player.py = c.y + fy * 9 + 4;
     player.knock(vx * 1.0 + fx * 25, vy * 1.0 + fy * 25, Math.min(1, imp / 260)); toast('🏍💥 ¡Te caíste de la moto!'); hurtPlayer(8 + imp / 10);
     c.vx *= 0.5; c.vy *= 0.5;
@@ -205,7 +214,7 @@
       const x = c.x + dx, y = c.y + dy + 4;
       if (!world.hits(x - player.HW, y - player.HH, x + player.HW, y)) {
         player.x = player.px = x; player.y = player.py = y;
-        c.driven = false; c.v = 0; c.rider = null; car = null; VR.screen.setBase(baseOf(WALK_BASE)); driveLabels(false); return true;
+        c.driven = false; c.v = 0; c.rider = null; car = null; zoomPoke(); driveLabels(false); return true;
       }
     }
     toast('No hay lugar para bajar acá'); return false;
@@ -354,6 +363,7 @@
       if (traffic) for (const v of traffic.list) if (near(v)) th.push({ x: v.x, y: v.y, sp: Math.hypot(v.vx || 0, v.vy || 0) });
       if (peds) for (const q of peds.list) if (near(q)) th.push({ x: q.x, y: q.y, sp: 0, r: 12 });
       fauna.update(dt, cam, th);
+      if (mode === 'game') zoomTick(dt);
       if (!online.mirror) { perros.update(dt, car || player, car); calle.update(dt, car || player); }
     }
     if (weapons) weapons.update(dt, player, car, VR.input);
@@ -679,7 +689,7 @@
     paintArma(); menu.addEventListener('close', () => { paintArma(); }); 
     $('weapon').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); weapons.next(); paintArma(); });
   }
-  $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(baseOf(WALK_BASE)); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
+  $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; zoomPoke(); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
 
   // ---------- mapa de la ciudad ----------
   let mapOpen = false, mapBuilt = false;
@@ -1011,7 +1021,7 @@
     setTimeout(() => {
       mode = 'game'; document.body.classList.remove('title'); titleEl.hidden = true;
       const sw0 = cisnes.list[0]; if (sw0) sw0.auto = false; // el cisne vuelve solo al muelle
-      VR.screen.setBase(baseOf(car ? DRIVE_BASE : WALK_BASE));
+      zoomJump();
       const f = car || player; cam.x = cam.px = f.x; cam.y = cam.py = f.y - (car ? 0 : 10); cam.lx = cam.ly = 0; hint = '';
       resume(); applyTouch(); fadeEl.style.opacity = 0; tGoing = false;
       if (then) then();
