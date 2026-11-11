@@ -84,6 +84,7 @@
   const night = VR.night = new VR.Night(world);
   const cisnes = VR.cisnes = new VR.Cisnes(world, night); cisnes.onMsg = (m) => toast(m);
   const perros = VR.perros = peds ? new VR.Perros(world, peds) : { update() {}, collect() {}, pet() { return false; } }; VR.toast = (m) => toast(m);   // perros callejeros (perros.js)
+  const calle = VR.calle = peds ? new VR.Calle(world, peds, { toast: (m) => toast(m), heal: (n) => VR.heal && VR.heal(n), hambre: (n) => { if (vida && vida.s) vida.s.hambre = Math.min(100, vida.s.hambre + n); } }) : { update() {}, collect() {}, near() { return null; }, act() { return false; } };   // vendedores y gente de la calle (calle.js)
   const fauna = VR.fauna = new VR.Fauna(world); // carpinchos, patos, peces y palomas (fauna.js)
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
@@ -158,6 +159,7 @@
   // vida del jugador (11/11/2026): los golpes de vehículos la bajan, se recupera sola; en 0 te llevan al hospital
   let hp = 100, hpQuiet = 0; const hpEl = $('hpBar');
   function hpShow() { hpEl.hidden = hp >= 99.5; hpEl.textContent = '❤ ' + Math.max(0, Math.round(hp)) + '%'; }
+  VR.heal = (n) => { hp = Math.min(100, hp + n); hpShow(); };
   function hurtPlayer(dmg) {
     hp -= dmg; hpQuiet = 6; hpShow();
     if (hp <= 0) {
@@ -318,11 +320,12 @@
       if (nsw) { hint = (VR.input.source === 'touch' ? '🦢 Paseo' : VR.input.source === 'pad' ? 'X: paseo en cisne' : 'F: paseo en cisne') + ' · ' + VR.fmtGs(VR.CISNE_PRECIO); hintCar = { x: nsw.x, y: nsw.y - 8 }; }
       const nn = mis && !nc && !nsw ? mis.near(player) : null; // personajes de la Historia (J2)
       if (nn) { hint = (VR.input.source === 'touch' ? '💬 ' : VR.input.source === 'pad' ? '💬 A: ' : '💬 Espacio: ') + nn.nombre; hintCar = { x: nn.x, y: nn.y - 14 }; }
+      const nv = !nc && !nsw && !nn ? calle.near(player) : null; if (nv) { hint = (VR.input.source === 'touch' ? 'ACCIÓN: ' : 'Espacio: ') + (nv.stock > 0 ? nv.K.label.replace(/ · .*/, '') + ' · ' + VR.fmtGs(nv.K.price) : 'sin stock'); hintCar = { x: nv.x, y: nv.y - 22 }; }
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) { const no = noRobar(nc); if (no) toast(no); else enterCar(nc); } else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (ns) { openShop(); return; } if (changas.action(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (ns) { openShop(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
@@ -351,7 +354,7 @@
       if (traffic) for (const v of traffic.list) if (near(v)) th.push({ x: v.x, y: v.y, sp: Math.hypot(v.vx || 0, v.vy || 0) });
       if (peds) for (const q of peds.list) if (near(q)) th.push({ x: q.x, y: q.y, sp: 0, r: 12 });
       fauna.update(dt, cam, th);
-      if (!online.mirror) perros.update(dt, car || player, car);
+      if (!online.mirror) { perros.update(dt, car || player, car); calle.update(dt, car || player); }
     }
     if (weapons) weapons.update(dt, player, car, VR.input);
     if (emer) { const sw = VR.screen.w, sh = VR.screen.h; emer.update(dt, player, car, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, VR.input); }
@@ -379,7 +382,7 @@
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
-    perros.collect(cx, cy, sw, sh, a, tall);
+    perros.collect(cx, cy, sw, sh, a, tall); calle.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
     for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });

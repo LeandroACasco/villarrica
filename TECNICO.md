@@ -425,3 +425,7 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - `src/game/perros.js`: `VR.Perros(world, peds)`; hasta 4 perros cerca de la cámara (aparecen a 280–520 u, se borran a 950). Sprites por código (6 paletas × poses: trote 2 cuadros, parado, sentado, echado, olfateando; de frente y de espaldas). `VR.audio.bark(x, y, yelp)` en audio.js.
 - Comportamiento: idle (poses) → trot → idle; ladran cada 12–40 s; `perros.pet(player)` con ACCIÓN a menos de 26 u los hace seguirte 40 s; se apartan corriendo de cualquier vehículo a más de 45 de velocidad (`world.carsIn`). Nunca se lastiman (no usan ragdoll).
 - Se actualizan y dibujan desde main.js (`perros.update`, `perros.collect`).
+
+## Gente de la calle (12/11/2026)
+- `src/game/calle.js`: `VR.Calle(world, peds, {toast, heal, hambre})`, hasta 3 a la vez cerca de la cámara (más en el Centro), en rotación: empanadero y heladero (caminan lento con canasto / carrito), artesano hippie argentino y artesana/o indígena (manta con sus cosas), y persona en situación de calle (cartón). Todos adultos. Look por `VR.av2Lazy`.
+- ACCIÓN cerca: `calle.act(player)` cobra con `VR.Wallet` (empanada 5.000, helado 3.000, pulsera 10.000, artesanía 15.000, moneda 1.000); empanada y helado devuelven vida (`VR.heal`) y, en Historia, hambre. Pregones propios de cada uno en globos. El aviso aparece como pista (`hint`) en main.js.
