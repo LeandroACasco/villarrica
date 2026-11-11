@@ -503,7 +503,9 @@ VR.PUNTOS = {
   financiera: { lugar: 'financiera', nombre: 'Financiera', ico: '💰', mini: '₲', menu: (M) => VR.prestamoMenu(M, 'financiera') },
   celulares: { lugar: 'celulares', nombre: 'Celu Porã', ico: '📱', mini: '☎', menu: (M) => VR.celularesMenu(M), draw: VR.drawCelulares },
   despensa: { lugar: 'despensa', nombre: 'Despensa Ñande Róga', ico: '🛒', mini: '$',
-    menu: (M) => [{ quien: 'sis', titulo: '🛒 Despensa Ñande Róga', txt: '¿Qué llevás? Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op: [
+    menu: (M) => VR.despensa ? [{ quien: 'sis', titulo: '🛒 Despensa Ñande Róga', txt: 'La puerta está abierta. ¿Entrás?', op: [['🚪 Entrar a la despensa', () => { VR.despensa.entrar(); return false; }], ['Ahora no', () => false]] }] : VR.despensaCompra(M),
+    compra: (M) => VR.despensaCompra(M),
+    _menu: (M) => [{ quien: 'sis', titulo: '🛒 Despensa Ñande Róga', txt: '¿Qué llevás? Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op: [
       ...VR.DESPENSA.map(([n, k, h]) => [n + ' · ' + VR.fmtGs(VR.PRECIOS[k]), () => { M.vida.come(VR.PRECIOS[k], h, n); return false; }]),
       ['Saldo del celular (3 días) · ' + VR.fmtGs(VR.PRECIOS.saldo), () => { M.vida.cargaSaldo(); return false; }],
       ['Nada, gracias', () => false]] }],
@@ -526,6 +528,7 @@ VR.PUNTOS = {
       VR.gfx.text(g, '🏠', x, y - 10, '#fff', { center: true, size: 7 });
     } },
 };
+VR.despensaCompra = (M) => VR.PUNTOS.despensa._menu(M);
 VR.menuChela = (M) => { const V = M.vida, P = VR.PRECIOS, falta = P.canastoMax - V.s.stock, op = [];
   op.push(['Una chipa para comer · ' + VR.fmtGs(P.chipa), () => { V.come(P.chipa, 15, 'Chipa de Doña Chela'); return false; }]);
   if (!V.s.canasto) op.push(['Comprar el canasto · ' + VR.fmtGs(P.canasto), () => { if (!V.gasta(P.canasto, 'Canasto de Doña Chela')) return false; V.s.canasto = true; return [['chela', '¡Ko canasto nde mba\'e! Llenalo y a vender.']]; }]);
