@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" shape-rendering="geometricPrecision">
+<defs><clipPath id="c"><rect width="512" height="512"/></clipPath>
+<filter id="sh" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".45"/></filter></defs>
+<g clip-path="url(#c)">
+<rect width="512" height="512" fill="#3a3d48"/>
+<!-- manzanas -->
+<rect x="0" y="0" width="216" height="216" fill="#c9774a"/><rect x="0" y="0" width="216" height="216" fill="none"/>
+<g fill="#b4400f"><rect x="14" y="14" width="86" height="64"/><rect x="112" y="14" width="90" height="64"/><rect x="14" y="92" width="86" height="110"/></g>
+<g fill="#e0a27a"><rect x="112" y="92" width="90" height="110"/></g>
+<g stroke="#8c2f08" stroke-width="3"><path d="M14 30h86M14 46h86M14 62h86M112 30h90M112 46h90M112 62h90M14 110h86M14 128h86M14 146h86M14 164h86M14 182h86"/></g>
+<rect x="296" y="0" width="216" height="216" fill="#5fae4a"/>
+<g><circle cx="350" cy="60" r="34" fill="#f06fb0"/><circle cx="340" cy="52" r="18" fill="#ff9ccc"/><circle cx="440" cy="70" r="30" fill="#f7c928"/><circle cx="432" cy="62" r="15" fill="#ffe36b"/><circle cx="390" cy="150" r="28" fill="#2f8a3b"/><circle cx="382" cy="142" r="13" fill="#4fb05a"/><circle cx="460" cy="160" r="22" fill="#2f8a3b"/></g>
+<rect x="0" y="296" width="216" height="216" fill="#d9c9b4"/>
+<g fill="#cdbba3"><rect x="0" y="296" width="54" height="54"/><rect x="108" y="296" width="54" height="54"/><rect x="54" y="350" width="54" height="54"/><rect x="162" y="350" width="54" height="54"/><rect x="0" y="404" width="54" height="54"/><rect x="108" y="404" width="54" height="54"/><rect x="54" y="458" width="54" height="54"/><rect x="162" y="458" width="54" height="54"/></g>
+<rect x="296" y="296" width="216" height="216" fill="#e9e4da"/>
+<g fill="#7aa9c9"><rect x="312" y="312" width="80" height="84"/><rect x="408" y="312" width="88" height="84"/></g><g fill="#b4400f"><rect x="312" y="412" width="184" height="84"/></g>
+<g stroke="#8c2f08" stroke-width="3"><path d="M312 428h184M312 444h184M312 460h184M312 476h184"/></g>
+<!-- calles -->
+<rect x="216" y="0" width="80" height="512" fill="#3a3d48"/><rect x="0" y="216" width="512" height="80" fill="#3a3d48"/>
+<g stroke="#f7c928" stroke-width="6" stroke-dasharray="26 18"><path d="M256 0V204M256 308V512M0 256H204M308 256H512"/></g>
+<g fill="#f2f2f2"><rect x="222" y="196" width="10" height="16"/><rect x="240" y="196" width="10" height="16"/><rect x="262" y="196" width="10" height="16"/><rect x="280" y="196" width="10" height="16"/></g>
+<!-- moto -->
+<g transform="translate(110 236) rotate(90)"><rect x="-7" y="-26" width="14" height="52" rx="6" fill="#e8493a"/><rect x="-16" y="-16" width="32" height="6" rx="3" fill="#222"/><circle cx="0" cy="-2" r="8" fill="#ffd2a8"/><circle cx="0" cy="-2" r="6" fill="#2a6fdb"/></g>
+<!-- pin -->
+<g filter="url(#sh)"><path d="M256 458C200 380 150 330 150 260a106 106 0 0 1 212 0c0 70-50 120-106 198z" fill="#1d2a3a"/>
+<path d="M256 440C210 372 166 326 166 260a90 90 0 0 1 180 0c0 66-44 112-90 180z" fill="#f5a623"/>
+<circle cx="256" cy="262" r="64" fill="#1d2a3a"/></g>
+<text x="256" y="290" font-family="Arial Black,Helvetica,sans-serif" font-weight="900" font-size="86" text-anchor="middle" fill="#f5a623">V</text>
+</g></svg>
