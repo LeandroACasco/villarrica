@@ -295,7 +295,7 @@
       return;
     }
     if (VR.input.pressed('menu')) { openMenu(); return; }
-    if (VR.input.pressed('map')) { openMap(); return; }
+    if (VR.input.pressed('map')) { openMapAuto(); return; }
     if (vida) { vida.tick(dt); vidaHud(dt); }
     cisnes.netSync(online.peer ? online.others : null); cisnes.update(dt, VR.input);
     if (cisnes.riding) { // en un cisne de pedal: el jugador va sobre el cisne
@@ -483,7 +483,7 @@
   function openConfig(from) { cfgFrom = from; VR.input.releaseAll(); VR.input.enabled = false; menu.showModal(); }
   menu.addEventListener('close', () => { if (cfgFrom === 'pause' && mode === 'game') { VR.loop.paused = true; VR.input.enabled = false; pause.showModal(); } else resume(); }); // la configuración vuelve a donde estabas
   $('pSeguir').onclick = () => pause.close();
-  $('pMapa').onclick = () => pauseThen(() => { resume(); openMap(); });
+  $('pMapa').onclick = () => pauseThen(() => { resume(); openMapAuto(); });
   $('pOnline').onclick = () => pauseThen(() => { resume(); $('onDlg').showModal(); });
   $('pConfig').onclick = () => pauseThen(() => openConfig('pause'));
   $('pSalir').onclick = () => pauseThen(() => { resume(); if (cisnes.riding) toast('🦢 Bajate del cisne antes de salir'); else toTitle(); });
@@ -525,7 +525,7 @@
     });
   }
   // Pausa → Misiones (J2): la activa con su objetivo, las que hay para empezar, las cumplidas y los barrios abiertos
-  function paintMis() {
+  function paintMis(host = vBody, enCel = false) {
     const R = mis.resumen(), A = R.act;
     let h = '<h2>📌 Misiones</h2><p>Capítulo ' + R.cap + ' · <b style="color:var(--text)">' + esc(VR.CAPITULOS[R.cap] || '') + '</b></p>';
     if (A) h += '<h3>En curso</h3><div class="mv"><span><b style="color:var(--accent)">' + esc(A.titulo) + '</b> <i>paso ' + A.paso + ' de ' + A.de + '</i></span></div><p style="color:var(--text)">' + (A.fallo ? '✖ ' + esc(A.fallo) : '➡ ' + esc(A.obj)) + '</p>' +
@@ -534,13 +534,13 @@
     if (R.disp.length) h += '<h3>Para empezar</h3>' + R.disp.map((d) => '<div class="mv"><span><b style="color:var(--text)">' + esc(d.titulo) + '</b> <i>cap. ' + d.cap + '</i><br><small>' + esc(d.desc || '') + '</small></span><span>' + (d.quien ? '<button class="btn" data-o="' + d.id + '">❗ ' + esc(d.quien) + '</button>' : '<button class="btn primary" data-s="' + d.id + '">▶ Empezar</button>') + '</span></div>').join('');
     if (R.hechas.length) h += '<h3>Cumplidas</h3>' + R.hechas.map((d) => '<div class="mv"><span>✔ ' + esc(d.titulo) + '</span></div>').join('');
     h += '<h3>Barrios</h3><p>' + world.barrios.map((b) => (VR.Barrios.abierto(b) ? '🟢 ' : '🔒 ') + esc(b)).join(' · ') + '</p><p>En un barrio 🔒 todavía no conocés a nadie: no hay changas ni misiones y el GPS no marca destinos.</p>';
-    h += '<div class="row"><button class="btn" data-v="bill">💵 Billetera</button><button class="btn primary" data-v="x">Cerrar</button></div>';
-    vBody.innerHTML = h;
-    const cerrar = (f) => { vDlg._intro = true; vDlg.close(); f(); };
-    vBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { const v = b.dataset.m; if (v === 'gps') cerrar(() => mis.marcar()); else if (v === 're') cerrar(() => mis.reintentar()); else { mis.abandonar(); paintMis(); } });
-    vBody.querySelectorAll('[data-o]').forEach((b) => b.onclick = () => cerrar(() => { mis.marcarOferta(b.dataset.o); }));
-    vBody.querySelectorAll('[data-s]').forEach((b) => b.onclick = () => cerrar(() => mis.empezar(b.dataset.s)));
-    vBody.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { if (b.dataset.v === 'x') vDlg.close(); else { vTab = b.dataset.v; paintVida(); } });
+    if (!enCel) h += '<div class="row"><button class="btn" data-v="bill">💵 Billetera</button><button class="btn primary" data-v="x">Cerrar</button></div>';
+    host.innerHTML = enCel ? '<div class="nota">' + h + '</div>' : h;
+    const cerrar = enCel ? (f) => celGo(f) : (f) => { vDlg._intro = true; vDlg.close(); f(); };
+    host.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { const v = b.dataset.m; if (v === 'gps') cerrar(() => mis.marcar()); else if (v === 're') cerrar(() => mis.reintentar()); else { mis.abandonar(); paintMis(host, enCel); } });
+    host.querySelectorAll('[data-o]').forEach((b) => b.onclick = () => cerrar(() => { mis.marcarOferta(b.dataset.o); }));
+    host.querySelectorAll('[data-s]').forEach((b) => b.onclick = () => cerrar(() => mis.empezar(b.dataset.s)));
+    host.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { if (b.dataset.v === 'x') vDlg.close(); else { vTab = b.dataset.v; paintVida(); } });
   }
   vDlg.addEventListener('close', () => { if (mode === 'game' && !vDlg._intro) { VR.loop.paused = true; VR.input.enabled = false; pause.showModal(); } else { vDlg._intro = false; resume(); } });
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
@@ -554,16 +554,17 @@
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
   $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
   $('celClose').onclick = () => celDlg.close();
-  celDlg.addEventListener('close', () => { if (!celDlg._keep) { VR.loop.paused = false; VR.input.enabled = true; } celDlg._keep = false; });
+  celDlg.addEventListener('close', () => { unmapCel(); if (celStop) { celStop(); celStop = null; } if (!celDlg._keep) { VR.loop.paused = false; VR.input.enabled = true; } celDlg._keep = false; });
   function openCel(app) { if (!vida || mode !== 'game') return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; celApp = app || 'home'; paintCel(); if (!celDlg.open) celDlg.showModal(); }
+  function unmapCel() { if ($('mapView').classList.contains('enCel')) { closeMap(); $('mapView').classList.remove('enCel'); document.body.append($('mapView')); } celBody.classList.remove('mapa'); }
   const celGo = (f) => { celDlg._keep = true; celDlg.close(); f(); };
   function paintCel() {
     const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0; celDlg.classList.toggle('roto', vida.celuRoto());
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
     if (celApp === 'home') {
-      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['ropero', '👕', 'Ropero', '#f29ac8', true],
-        ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['metas', '⭐', 'Metas', '#ffb36b', true], ['mapa', '🗺', 'Mapa', '#7fe08a', true],
+      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['metas', '📝', 'Notas', '#ffe27a', true],
+        ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
@@ -580,6 +581,18 @@
         s.prestamos.map((p) => '<div class="row2" style="color:#ffb36b"><span>💳 ' + VR.PREST[p.q].n + ' · cuota ' + gs(p.cuota) + '/sáb</span><b>' + gs(p.resta) + '</b></div>').join('') +
         '<p>Efectivo: chipa, despensa, Doña Chela, Ña Ramona. Electrónica: Mbohasa, changas de la app, Ao Porã. En los 🏧 cajeros (banco del Centro y Santa Lucía) depositás o sacás.</p>' +
         s.mov.slice(0, 8).map((m) => '<div class="row2"><span>' + esc(m[3]) + '</span><span style="color:' + (m[2] < 0 ? '#ff8a7a' : '#9fe0a0') + '">' + (m[2] > 0 ? '+' : '') + gs(m[2]) + '</span></div>').join('');
+    } else if (celApp === 'metas') {
+      const W = VR.Wallet.get(), P = s.pieza, pr = VR.PRECIOS, ln = (t, r, ok) => '<div class="li"><span class="' + (ok ? 'ok' : '') + '">' + t + '</span>' + (r ? '<i>' + r + '</i>' : '') + '</div>';
+      h = '<div class="nota"><h3>Lo que quiero juntar</h3>' + VR.METAS.map(([n, c]) => { const f = c - W; return ln((f <= 0 ? '✔ ' : '☐ ') + esc(n) + ' (' + gs(c) + ')', f <= 0 ? '¡ya me alcanza!' : 'faltan ' + gs(f), f <= 0); }).join('') +
+        '<h3 style="margin-top:10px">Pendientes</h3>' +
+        ln('🏠 Pieza (Ña Ramona)', P.saldo > 0 ? 'debo ' + gs(P.saldo) : 'vence el ' + VR.DIAS[((P.vence / 1440) | 0) % 7] + ': ' + gs(pr.pieza)) +
+        ln('📱 Saldo', s.saldo > 0 ? Math.ceil(s.saldo) + ' días' : '¡cargar!') + ln('🍽 Hambre', Math.round(s.hambre) + '/100') +
+        (s.debe > 0 ? ln('Deuda (50 % de cada cobro)', gs(s.debe)) : '') + (s.fiado > 0 ? ln('Le debo a Doña Chela', gs(s.fiado)) : '') +
+        s.prestamos.map((p) => ln('💳 ' + VR.PREST[p.q].n + ': cuota ' + gs(p.cuota) + ' el sáb', 'resta ' + gs(p.resta))).join('') + '</div>';
+    } else if (celApp === 'changas') {
+      h = '<h3>📋 Changas</h3><p>Trabajos para ganar plata. Los 🔒 se abren con las misiones.</p>' + Object.keys(changas.lbl).filter((k) => k !== 'x').map((k) => '<button class="cbtn' + (k === 'no' ? ' sec' : '') + '" data-ch="' + k + '">' + (k !== 'no' && mis && !mis.changaOk(k) ? '🔒 ' : '') + changas.lbl[k] + '</button>').join('');
+    } else if (celApp === 'mis' || celApp === 'mapa') {
+      h = '';
     } else if (celApp === 'galeria') {
       const L = VR.Fotos.list(); h = '<h3>🖼 Galería</h3>' + (L.length ? '<div class="gal">' + L.map((f, i) => '<img data-f="' + i + '" src="' + f.u + '">').join('') + '</div><p>Tocá una foto para verla. Se guardan las últimas 14.</p>' : '<p>Todavía no sacaste fotos. Abrí la 📷 Cámara y recorré la ciudad.</p>');
     } else if (typeof celApp === 'string' && celApp.startsWith('foto')) {
@@ -592,8 +605,11 @@
         (s.canasto ? '<button class="cbtn" data-m="canasto">' + (s.equipo === 'canasto' ? 'Guardar el canasto' : 'Llevar el canasto en la mano') + '</button>' : '') +
         '<div class="row2"><span>🪖 Casco</span><span>' + (s.casco ? 'sí' : 'no tenés') + '</span></div><div class="row2"><span>🔧 Herramientas</span><span>' + (s.herr ? 'sí' : 'no tenés') + '</span></div>';
     }
-    if (celStop) { celStop(); celStop = null; }
+    unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.innerHTML = h;
+    celBody.querySelectorAll('[data-ch]').forEach((b) => b.onclick = () => celGo(() => changas.start(b.dataset.ch)));
+    if (celApp === 'mis' && mis) paintMis(celBody, true);
+    if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
     if (celApp === 'culebra') celStop = VR.Culebra(celBody);
     celBody.querySelectorAll('[data-f]').forEach((im) => im.onclick = () => { celApp = 'foto' + im.dataset.f; paintCel(); });
     celBody.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { VR.Fotos.del(+b.dataset.del); celApp = 'galeria'; paintCel(); });
@@ -601,10 +617,6 @@
       if (b.classList.contains('off')) { toast('📵 Sin saldo'); return; }
       if (vida.celuRoto() && Math.random() < 0.12) { toast('📱 La pantalla rota no responde... probá de nuevo'); return; }
       if (a === 'camara') celGo(() => camOn());
-      else if (a === 'ropero') celGo(() => { shop.ropero = true; openShop(); });
-      else if (a === 'changas') celGo(() => changas.open());
-      else if (a === 'mis' || a === 'metas') celGo(() => openVida(a === 'mis' ? 'mis' : 'metas'));
-      else if (a === 'mapa') celGo(() => { VR.loop.paused = false; VR.input.enabled = true; openMap(); });
       else { celApp = a; paintCel(); } });
     celBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { celGo(() => toggleEq()); });
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
@@ -755,23 +767,24 @@
   }
   // ---------- mapa grande: zoom (rueda, pellizco, botones, + y −), arrastrar, tocar para marcar destino ----------
   const mv = { k: 0, ox: 0, oy: 0 }, mapBox = $('mapBox'), mapInner = $('mapInner');
-  const fitK = () => Math.min(innerWidth / world.w, innerHeight / world.h) * 0.96;
+  const mw = () => $('mapBox').clientWidth || innerWidth, mh = () => $('mapBox').clientHeight || innerHeight;
+  const fitK = () => Math.min(mw() / world.w, mh() / world.h) * 0.96;
   function mapApply() {
     const fk = fitK();
     mv.k = VR.clamp(mv.k, fk * 0.9, 14);
     const W = world.w * mv.k, H = world.h * mv.k, m = 60;
-    mv.ox = W < innerWidth ? (innerWidth - W) / 2 : VR.clamp(mv.ox, innerWidth - W - m, m);
-    mv.oy = H < innerHeight ? (innerHeight - H) / 2 : VR.clamp(mv.oy, innerHeight - H - m, m);
+    mv.ox = W < mw() ? (mw() - W) / 2 : VR.clamp(mv.ox, mw() - W - m, m);
+    mv.oy = H < mh() ? (mh() - H) / 2 : VR.clamp(mv.oy, mh() - H - m, m);
     mapInner.style.transform = `translate(${mv.ox}px, ${mv.oy}px) scale(${mv.k})`;
     mapInner.style.setProperty('--ik', 1 / mv.k);
     // nombres chicos solo cuando hay zoom suficiente
     $('mapLabels').classList.toggle('far', mv.k < fk * 1.8);
   }
-  function mapZoom(f, cx = innerWidth / 2, cy = innerHeight / 2) {
+  function mapZoom(f, cx = mw() / 2, cy = mh() / 2) {
     const k0 = mv.k, k1 = VR.clamp(k0 * f, fitK() * 0.9, 14);
     mv.ox = cx - (cx - mv.ox) * k1 / k0; mv.oy = cy - (cy - mv.oy) * k1 / k0; mv.k = k1; mapApply();
   }
-  function mapCenterOn(px, py) { mv.ox = innerWidth / 2 - px / 16 * mv.k; mv.oy = innerHeight / 2 - py / 16 * mv.k; mapApply(); }
+  function mapCenterOn(px, py) { mv.ox = mw() / 2 - px / 16 * mv.k; mv.oy = mh() / 2 - py / 16 * mv.k; mapApply(); }
   function sizeMap() {
     $('mapCanvas').style.width = world.w + 'px'; $('mapCanvas').style.height = world.h + 'px';
     mapInner.style.width = world.w + 'px'; mapInner.style.height = world.h + 'px';
@@ -790,8 +803,9 @@
   setInterval(() => { if (mapOpen) drawMapFriends(); }, 500);
   function openMap() { if (!mapBuilt) buildMap(); if (vida) $('mapLabels').querySelectorAll('[data-barrio]').forEach((s) => { s.textContent = (VR.Barrios.abierto(s.dataset.barrio) ? '' : '🔒 ') + s.dataset.barrio; }); drawMapFriends(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }
-  $('btnMap').onclick = () => (mapOpen ? closeMap() : openMap());
-  $('mzClose').onclick = closeMap;
+  const openMapAuto = () => (vida ? openCel('mapa') : openMap());
+  $('btnMap').onclick = () => (mapOpen ? closeMap() : openMapAuto());
+  $('mzClose').onclick = () => { if ($('mapView').classList.contains('enCel')) { celApp = 'home'; paintCel(); } else closeMap(); };
   $('mzIn').onclick = () => mapZoom(1.6);
   $('mzOut').onclick = () => mapZoom(1 / 1.6);
   $('mzMe').onclick = () => { if (mv.k < fitK() * 3) mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); };
@@ -940,7 +954,7 @@
   let miniReady = false, miniZoom = 2.2, miniT = 0;
   const sizeMini = () => { const d = Math.round(mini.clientWidth * (window.devicePixelRatio || 1)); if (mini.width !== d) { mini.width = mini.height = d; } };
   if (!prueba) setTimeout(() => { buildMap(); miniReady = true; mini.hidden = false; sizeMini(); }, 400);
-  mini.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); openMap(); });
+  mini.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); openMapAuto(); });
   addEventListener('resize', () => { if (miniReady) sizeMini(); });
   function drawMini(dt) {
     if (!miniReady || mapOpen) return;

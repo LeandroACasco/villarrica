@@ -44,6 +44,17 @@
   #camTxt { position: absolute; left: 0; right: 0; top: 18px; text-align: center; color: #fff; font: 700 13px system-ui; text-shadow: 0 1px 3px #000; }
   #camFlash { position: fixed; inset: 0; background: #fff; z-index: 26; opacity: 0; pointer-events: none; transition: opacity .35s; } #camFlash.on { opacity: .9; transition: none; }
   .gal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .gal img { width: 100%; border-radius: 6px; cursor: pointer; display: block; }
+  /* apps dentro del celular (11/11/2026): notas a mano y mapa/GPS embebido */
+  #celBody .nota { background: #fbf3d2 repeating-linear-gradient(transparent 0 25px, #9ec2d8 25px 26px); color: #2a3a6a; border-radius: 4px; padding: 6px 12px 10px; margin: 2px -4px; font: 500 20px/26px Caveat, 'Segoe Print', 'Bradley Hand', cursive; box-shadow: 0 2px 6px #0006; transform: rotate(-.4deg); }
+  #celBody .nota h3 { font: 700 26px/30px Caveat, cursive; color: #1f2a55; margin: 0; } #celBody .nota p { font: 500 19px/26px Caveat, cursive; color: #2a3a6a; margin: 0; }
+  #celBody .nota .li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; border: 0; padding: 0; font: 500 20px/26px Caveat, cursive; } #celBody .nota .li i { font-style: normal; color: #a33; font-size: 17px; }
+  #celBody .nota .li i { margin-left: auto; } #celBody .nota .ok { text-decoration: line-through; color: #4a8a4a; } #celBody .nota small { font: 500 17px/20px Caveat, cursive; color: #5a6a9a; }
+  #celBody .nota button { font: 700 19px/22px Caveat, cursive; border: 2px solid #2a3a6a; background: #fff8; color: #1f2a55; border-radius: 6px; padding: 1px 8px; margin: 2px 4px 2px 0; cursor: pointer; }
+  #celBody .nota h2 { font: 700 26px/30px Caveat, cursive; margin: 0; } #celBody .nota .mv { display: flex; justify-content: space-between; gap: 8px; border: 0; padding: 0; font: 500 20px/26px Caveat, cursive; } #celBody .nota [style*="color"], #celBody .nota b, #celBody .nota i, #celBody .nota span { color: #1f2a55 !important; } #celBody .nota .li i { color: #a33 !important; }
+  #celBody.mapa { padding: 0; overflow: hidden; position: relative; }
+  #mapView.enCel { position: absolute; inset: 0; z-index: 1; border-radius: 0 0 4px 4px; } #mapView.enCel #mapTools { position: absolute; top: 6px; right: 6px; gap: 5px; } #mapView.enCel #mapTools button { min-width: 36px; height: 36px; font-size: 15px; }
+  #mapView.enCel #mapHelp { position: absolute; bottom: 4px; font-size: 10px; padding: 0 6px; line-height: 1.25; }
+  body.historia #mzGo, body.historia #btnMap { display: none !important; }
   /* celular (Historia): apps */
   #celDlg { width: min(330px, 92vw); height: min(560px, 90vh); padding: 0; border: 3px solid #0d0d10; border-radius: 30px; background: linear-gradient(160deg, #23324a, #121822); color: #fff; box-shadow: 0 0 0 6px #2a2a30, 0 14px 40px rgba(0,0,0,.6); overflow: hidden; display: none; flex-direction: column; }
   #celDlg[open] { display: flex; }

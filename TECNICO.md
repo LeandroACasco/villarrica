@@ -458,3 +458,8 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - **Colectivos:** `traffic.spawn` fuerza colectivo (30 %) en autos que aparecen a menos de 900 px de la Gobernación, la Municipalidad o la Terminal; los colectivos ahora pueden usar calles de 4 baldosas (antes 5; en `pickCar` 3 % en calles de 4 y 7 % en las de 5+).
 - **`game/celapps.js`:** `VR.Fotos` (guarda hasta 14 fotos JPEG chicas en `localStorage` `vr_fotos`, con lugar y hora al pie) y `VR.Culebra` (Snake 16×16, récord en `vr_culebra`).
 - **main.js / shell.html:** apps Cámara, Galería y Culebra en el celular. La Cámara cierra el celular y muestra el visor (`#camUI`: obturador, galería, cerrar; el HUD se oculta y el juego sigue: podés caminar y encuadrar). La Galería muestra las fotos, permite guardarlas en el teléfono (descarga) o borrarlas.
+
+## Apps dentro del celular (11/11/2026)
+- Ya no hay apps que abran el menú o pantallas fuera del teléfono: **Notas** (antes Metas; papel rayado con letra a mano *Caveat*, OFL, embebida en `game/caveat.js`; muestra metas, pieza, saldo, hambre, deudas y cuotas), **Misiones** (`paintMis(host, enCel)`), **Changas** (botones de `changas.lbl` → `changas.start(k)`) y **GPS** (el mapa grande se reparenta dentro de `#celBody` con la clase `enCel`; los cálculos usan el tamaño de `#mapBox`, no la ventana).
+- En Historia: `#btnMap`, la tecla del mapa, el minimapa y el menú de pausa abren el celular en el GPS (`openMapAuto`); sin teletransporte. El **Ropero** salió del celular (la ropa se cambia en la tienda Ao Porã).
+- `unmapCel()` devuelve el mapa al `body` al salir de la app.

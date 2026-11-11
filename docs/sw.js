@@ -1,5 +1,5 @@
 // Funcionamiento sin conexión: guarda la app en caché. Primero intenta la red (para recibir actualizaciones).
-const CACHE = 'villarrica-bf1779f6';
+const CACHE = 'villarrica-e6aa752f';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'map.bin', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/favicon.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
