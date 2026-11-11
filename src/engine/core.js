@@ -52,10 +52,11 @@ VR.screen = {
   },
   // Alejar o acercar la cámara (p. ej. al subir al auto): cambia el lado corto de la pantalla en píxeles
   // del juego. El salto entre escalas enteras se suaviza con una transición CSS desde la escala anterior.
-  setBase(base) {
+  setBase(base, instant) {
     if (base === this.BASE) return;
     const old = this.scale;
     this.BASE = base; this.fit();
+    if (instant) { this.canvas.style.transition = 'none'; this.canvas.style.transform = 'none'; return; }  // zoom del usuario: sin animación (evita barras negras)
     if (old === this.scale) return;
     const c = this.canvas;
     c.style.transition = 'none'; c.style.transform = `scale(${old / this.scale})`;

@@ -64,7 +64,7 @@
   function setZoom(k) {
     k = Math.min(1.8, Math.max(0.55, k)); if (Math.abs(k - zoomK) < 0.001) return; zoomK = k;
     try { localStorage.setItem('vr_zoom', String(k)); } catch (e) {}
-    VR.screen.setBase(baseOf(car ? DRIVE_BASE : WALK_BASE));
+    VR.screen.setBase(baseOf(car ? DRIVE_BASE : WALK_BASE), true);
   }
   addEventListener('wheel', (e) => { if (mapOpen || mode !== 'game' || e.target.closest && e.target.closest('#mapView')) return; setZoom(zoomK * Math.exp(-e.deltaY * 0.0012)); }, { passive: true });
   addEventListener('keydown', (e) => {
@@ -74,7 +74,7 @@
   });
   { let pd = 0;
     addEventListener('touchmove', (e) => {
-      if (mapOpen || mode !== 'game' || e.touches.length !== 2) { pd = 0; return; }
+      if (mapOpen || mode !== 'game' || e.touches.length !== 2 || e.touches[0].clientX < innerWidth / 2 || e.touches[1].clientX < innerWidth / 2) { pd = 0; return; }  // pellizco solo en la mitad derecha (la izquierda es del joystick)
       const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
       if (pd) setZoom(zoomK * d / pd); pd = d;
     }, { passive: true });

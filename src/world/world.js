@@ -1190,7 +1190,7 @@ VR.decorTop = {
 
 // ---------- carga del mapa armado con tools/osm_to_map.py ----------
 VR.loadMap = async (url) => {
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'no-cache' });  // que el celular no use un mapa viejo del caché HTTP
   if (!res.ok) throw new Error('No se pudo bajar el mapa (' + res.status + ')');
   const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 52000000);
   const jl = raw[0] | (raw[1] << 8) | (raw[2] << 16) | (raw[3] << 24);

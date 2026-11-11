@@ -373,7 +373,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 45eae176 · 2026-11-11</div>
+  <div class="tVer">Versión 0a152f9d · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -465,7 +465,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 45eae176 · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0a152f9d · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -644,10 +644,11 @@ VR.screen = {
   },
   // Alejar o acercar la cámara (p. ej. al subir al auto): cambia el lado corto de la pantalla en píxeles
   // del juego. El salto entre escalas enteras se suaviza con una transición CSS desde la escala anterior.
-  setBase(base) {
+  setBase(base, instant) {
     if (base === this.BASE) return;
     const old = this.scale;
     this.BASE = base; this.fit();
+    if (instant) { this.canvas.style.transition = 'none'; this.canvas.style.transform = 'none'; return; }  // zoom del usuario: sin animación (evita barras negras)
     if (old === this.scale) return;
     const c = this.canvas;
     c.style.transition = 'none'; c.style.transform = `scale(${old / this.scale})`;
@@ -2415,7 +2416,7 @@ VR.decorTop = {
 
 // ---------- carga del mapa armado con tools/osm_to_map.py ----------
 VR.loadMap = async (url) => {
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'no-cache' });  // que el celular no use un mapa viejo del caché HTTP
   if (!res.ok) throw new Error('No se pudo bajar el mapa (' + res.status + ')');
   const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 52000000);
   const jl = raw[0] | (raw[1] << 8) | (raw[2] << 16) | (raw[3] << 24);
@@ -9380,7 +9381,7 @@ VR.Titulo = class {
   function setZoom(k) {
     k = Math.min(1.8, Math.max(0.55, k)); if (Math.abs(k - zoomK) < 0.001) return; zoomK = k;
     try { localStorage.setItem('vr_zoom', String(k)); } catch (e) {}
-    VR.screen.setBase(baseOf(car ? DRIVE_BASE : WALK_BASE));
+    VR.screen.setBase(baseOf(car ? DRIVE_BASE : WALK_BASE), true);
   }
   addEventListener('wheel', (e) => { if (mapOpen || mode !== 'game' || e.target.closest && e.target.closest('#mapView')) return; setZoom(zoomK * Math.exp(-e.deltaY * 0.0012)); }, { passive: true });
   addEventListener('keydown', (e) => {
@@ -9390,7 +9391,7 @@ VR.Titulo = class {
   });
   { let pd = 0;
     addEventListener('touchmove', (e) => {
-      if (mapOpen || mode !== 'game' || e.touches.length !== 2) { pd = 0; return; }
+      if (mapOpen || mode !== 'game' || e.touches.length !== 2 || e.touches[0].clientX < innerWidth / 2 || e.touches[1].clientX < innerWidth / 2) { pd = 0; return; }  // pellizco solo en la mitad derecha (la izquierda es del joystick)
       const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
       if (pd) setZoom(zoomK * d / pd); pd = d;
     }, { passive: true });
