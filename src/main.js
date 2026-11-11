@@ -238,11 +238,12 @@
   const nearCine = () => cineDoor && !car && Math.hypot(player.x - cineDoor.x, player.y - cineDoor.y) < 40 ? cineDoor : null;
   const nearShop = () => shopDoor && !car && Math.abs(player.x - shopDoor.x) < 26 && player.y > shopDoor.y - 30 && player.y < shopDoor.y + 4 ? shopDoor : null;
   const shop = new VR.Shop({
-    onClose: () => { shop.ropero = false; VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = !!(VR.pieza && VR.pieza.on); },
+    onClose: () => { shop.ropero = false; VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = !!((VR.pieza && VR.pieza.on) || (VR.tienda && VR.tienda.on)); },
     onBuy: (L, tot) => { settings.pj = 'propio'; VR.store.set('pj', 'propio'); player.setLook('propio'); if (car && car.rider) car.rider = me(); paintPj(); toast(tot ? '🛍 ¡Aguyje! Pagaste ' + VR.fmtGs(tot) : '👕 Listo, te cambiaste'); },
   });
   if (vida) VR.pieza = new VR.Pieza({ vida, player, busy: () => !!(shop.el && shop.el.open), ropero: () => { shop.ropero = true; openShop(); } }); // interior de la pieza (11/11/2026)
-  function openShop() { VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; shop.open(player.lookData); }
+  function openShop(tab) { VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; if (tab) shop.tab = tab; shop.open(player.lookData); }
+  VR.tienda = VR.crearTienda({ player, busy: () => !!(shop.el && shop.el.open), abrir: (tab) => openShop(tab) }); // interior de la tienda Ao Porã (11/11/2026)
   VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()); };
   VR.Wallet.onChange();
   // HUD de Historia: hora y hambre, saldo y pieza, deuda en rojo
@@ -343,7 +344,7 @@
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) { const no = noRobar(nc); if (no) toast(no); else enterCar(nc); } else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (ns) { openShop(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (ns) { VR.tienda.entrar(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);

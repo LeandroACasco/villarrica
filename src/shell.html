@@ -55,10 +55,10 @@
   #mapView.enCel #mapHelp { position: absolute; bottom: 4px; font-size: 10px; padding: 0 6px; line-height: 1.25; }
   body.historia #mzGo, body.historia #btnMap { display: none !important; }
   /* interior de la pieza (11/11/2026) */
-  #piezaView { position: fixed; inset: 0; box-sizing: border-box; padding-top: 52px; z-index: 2; background: #14100c; display: flex; align-items: center; justify-content: center; } #piezaView[hidden] { display: none; }
-  #piezaView canvas { image-rendering: pixelated; border-radius: 6px; box-shadow: 0 0 0 4px #2a1c10, 0 8px 30px #000; }
-  #pzHint { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font: 800 15px system-ui; color: #fff; text-shadow: 0 2px 4px #000; opacity: 0; transition: opacity .15s; pointer-events: none; } #pzHint.on { opacity: 1; }
-  #pzOut { position: absolute; left: 12px; top: 8px; z-index: 4; border: 2px solid #ece9e2; background: rgba(20,20,26,.8); color: #fff; border-radius: 10px; padding: 8px 12px; font: 700 14px system-ui; cursor: pointer; }
+  #piezaView, #salonView { position: fixed; inset: 0; box-sizing: border-box; padding-top: 52px; z-index: 2; background: #14100c; display: flex; align-items: center; justify-content: center; } #piezaView[hidden], #salonView[hidden] { display: none; }
+  #piezaView canvas, #salonView canvas { image-rendering: pixelated; border-radius: 6px; box-shadow: 0 0 0 4px #2a1c10, 0 8px 30px #000; }
+  #pzHint, #svHint { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font: 800 15px system-ui; color: #fff; text-shadow: 0 2px 4px #000; opacity: 0; transition: opacity .15s; pointer-events: none; } #pzHint.on, #svHint.on { opacity: 1; }
+  #pzOut, #svOut { position: absolute; left: 12px; top: 8px; z-index: 4; border: 2px solid #ece9e2; background: rgba(20,20,26,.8); color: #fff; border-radius: 10px; padding: 8px 12px; font: 700 14px system-ui; cursor: pointer; }
   body.adentro #hud, body.adentro #mini, body.adentro #btnMap, body.adentro #btnChat { visibility: hidden; }
   /* celular (Historia): apps */
   #celDlg { width: min(330px, 92vw); height: min(560px, 90vh); padding: 0; border: 3px solid #0d0d10; border-radius: 30px; background: linear-gradient(160deg, #23324a, #121822); color: #fff; box-shadow: 0 0 0 6px #2a2a30, 0 14px 40px rgba(0,0,0,.6); overflow: hidden; display: none; flex-direction: column; }

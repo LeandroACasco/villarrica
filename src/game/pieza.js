@@ -198,7 +198,7 @@
       const lin = (x0, y0, x1, y1, st) => { const q = g.createLinearGradient(x0, y0, x1, y1); st.forEach((c, i) => q.addColorStop(i / (st.length - 1), c)); return q; };
       const box = (x, y, w, h, st, r = 0, hor = false) => { g.fillStyle = Array.isArray(st) ? (hor ? lin(x, 0, x + w, 0, st) : lin(0, y, 0, y + h, st)) : st; g.beginPath(); if (r) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); g.fill(); };
       const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
-      const drop = (x, y, w, h, blur = 4, a = 0.4, ox = 2.5, oy = 3.5) => { g.save(); g.shadowColor = 'rgba(8,4,0,' + a + ')'; g.shadowBlur = blur * s; g.shadowOffsetX = ox * s; g.shadowOffsetY = oy * s; g.fillStyle = '#000'; g.fillRect(x, y, w, h); g.restore(); };
+      const drop = (x, y, w, h, blur = 4, a = 0.4, ox = 2.5, oy = 3.5) => { g.save(); g.shadowColor = 'rgba(8,4,0,' + a + ')'; g.shadowBlur = blur * s; g.shadowOffsetX = (ox + 5000) * s; g.shadowOffsetY = oy * s; g.fillStyle = '#000'; g.fillRect(x - 5000, y, w, h); g.restore(); };
       const grain = (x, y, w, h, c, n, seed, hor = true) => { g.strokeStyle = c; g.lineWidth = 0.35; for (let i = 0; i < n; i++) { const o = H(seed, i, 3) * (hor ? h : w), l = 0.4 + H(seed, i, 5) * 0.6, st = H(seed, i, 7) * (1 - l); g.beginPath(); if (hor) { g.moveTo(x + st * w, y + o); g.lineTo(x + (st + l) * w, y + o + (H(seed, i, 9) - 0.5) * 0.8); } else { g.moveTo(x + o, y + st * h); g.lineTo(x + o + (H(seed, i, 9) - 0.5) * 0.8, y + (st + l) * h); } g.stroke(); } };
       R(0, 0, W, H_, '#1e1610');
       // ---- pared del fondo: revoque verde viejo, descascarado y con humedad
