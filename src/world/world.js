@@ -197,6 +197,7 @@ VR.World = class {
           const hx = x + 5, hy = y + 5; g.fillStyle = '#5c5850'; g.fillRect(hx, hy, 6, 6); g.fillStyle = '#8e897e'; g.fillRect(hx + 0.5, hy + 0.5, 5, 5);
           g.fillStyle = '#6e6a62'; for (let k = 1.5; k < 5.5; k += 1.5) g.fillRect(hx + 0.5, hy + k, 5, 0.5); g.fillStyle = '#b4aea2'; g.fillRect(hx + 0.5, hy + 0.5, 5, 0.5);
         }
+        if (t === T.SIDEWALK && VR.grime) VR.grime(g, this, tx, ty, t, x, y);
       } else if (t === T.ROAD || t === T.STONE) { // rejillas de desagüe junto al cordón y alguna tapa redonda en el asfalto
         const side = (dx, dy) => this.get(tx + dx, ty + dy) === T.SIDEWALK;
         if (VR.hash(tx, ty, 311) < 0.05) {
@@ -207,6 +208,7 @@ VR.World = class {
           g.fillStyle = '#3e3e44'; g.beginPath(); g.arc(x + 8, y + 8, 3.5, 0, 7); g.fill(); g.fillStyle = '#6c6c72'; g.beginPath(); g.arc(x + 8, y + 8, 3, 0, 7); g.fill();
           g.fillStyle = '#56565c'; for (let k = -2; k <= 2; k += 1) g.fillRect(x + 6, y + 8 + k - 0.25, 4, 0.5);
         }
+        if (VR.grime) VR.grime(g, this, tx, ty, t, x, y);
       } else if (t === T.DIRTROAD) { // borde de la calle de tierra: pasto ralo más oscuro
         const edge = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n >= 0 && VR.ROADLIKE[n] !== 1 && n !== T.SIDEWALK && n !== T.CHECKER; };
         g.fillStyle = 'rgba(70,40,20,.35)';
@@ -214,6 +216,7 @@ VR.World = class {
         if (edge(0, 1)) g.fillRect(x, y + S - 2, S, 2);
         if (edge(-1, 0)) g.fillRect(x, y, 2, S);
         if (edge(1, 0)) g.fillRect(x + S - 2, y, 2, S);
+        if (VR.grime) VR.grime(g, this, tx, ty, t, x, y);
       } else if (t === T.LAGUNA && !(lagOwn && lagOwn.owns(tx, ty))) { // orilla de la laguna Ykua Pytã: barro oscuro y un brillo verde claro; el borde del sendero lo pinta aparte
         const bank = (dx, dy) => { const n = this.get(tx + dx, ty + dy); return n !== T.LAGUNA && n !== -1 && n !== T.PAVING && n !== T.MONUMENT && n !== T.LADRILLO; };
         if (bank(0, -1)) { g.fillStyle = '#4a4030'; g.fillRect(x, y, S, 2); g.fillStyle = '#9db27a'; g.fillRect(x, y + 2, S, 0.75); }

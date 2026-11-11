@@ -474,3 +474,7 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - Adentro: cama (dormir → `vida.dormir()`), ropero (abre la tienda en modo ropero), radio, ventana, anafe (mate cocido +6 hambre), conservadora/heladera, manchas para limpiar (6; con 3 limpias aparece el gato Mbarakaja, con 6 Ña Ramona da 20.000 Gs. una vez), cucaracha (chinelazo), vecinos que se oyen por la pared, y los muebles comprados: colchón, ventilador, heladera, tele, sillón, cortinas, alfombra y lengua de suegra.
 - Estado en `vida.s.pieza`: `items`, `manchas` (máscara de 6 bits), `gato`, `premio`, `heladDia`. Al dormir vuelve una mancha y mejor pieza = menos hambre al despertar (+2 por mueble, máx. 8); el colchón nuevo cura toda la vida (si no, 40).
 - App **🛒 Mercadito** del celular (`VR.PIEZA_ITEMS`): se paga con la billetera electrónica y el mueble aparece adentro.
+
+## 6.x Suciedad y desgaste de las calles (11/11/2026)
+
+`src/world/suciedad.js` (`VR.grime`, lo llama `world.js` en el paso 3 de cada bloque). Se pinta una vez en el piso: arena/tierra contra el cordón, basuritas (bolsa, botella, papel, lata, hojas, cartón), grietas, baches, parches, manchas de aceite, pastito en el cordón y el empedrado, polvo en la vereda. Varía por baldosa (`VR.hash`) y por barrio: el Centro con factor 0,4 y el resto con 1. Para agregar un detalle: una función nueva en ese archivo y una llamada en `VR.grime`.
