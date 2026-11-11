@@ -400,7 +400,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 0a233f0f · 2026-11-11</div>
+  <div class="tVer">Versión be44ef57 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -492,7 +492,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0a233f0f · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión be44ef57 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -8105,7 +8105,7 @@ VR.Misiones = class {
     const out = [];
     for (const [k, p] of this.presentes()) { const mk = this.marca(k); if (mk) out.push({ x: p.x, y: p.y, c: mk === 'paso' ? '#ff5fa2' : '#ffd84a', ico: mk === 'paso' ? '▼' : '!', name: VR.PERSONAJES[k].nombre }); }
     const P = this.paso; if (P && P.ir && !P.hablar) { const t = this.lug.get(P.ir); if (t) out.push({ x: t.x, y: t.y, c: '#ff5fa2', ico: '●', name: t.name }); }
-    for (const k in VR.PUNTOS) { const p = this.lug.get(VR.PUNTOS[k].lugar); if (p && !(P && P.ir === VR.PUNTOS[k].lugar)) out.push({ x: p.x, y: p.y, c: '#9fe0a0', ico: VR.PUNTOS[k].mini, name: VR.PUNTOS[k].nombre }); }
+    // (los puntos fijos —cajero, financiera, despensa, pieza— los marca main.js con entradas())
     return out;
   }
   cartel(chico, grande, sub) { if (this.banner) this.banner(chico, grande, sub); }
@@ -11415,8 +11415,10 @@ VR.Titulo = class {
   const entradas = () => { const o = [];
     if (shopDoor) o.push({ x: shopDoor.x, y: shopDoor.y - 6, ico: '👕', c: '#ff9ed0', name: 'Tienda Ao Porã' });
     if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro' });
-    const d = lugE.get('despensa'); if (d) o.push({ x: d.x, y: d.y - 4, ico: '🛒', c: '#9fe0a0', name: 'Despensa Ñande Róga' });
-    if (mis) { const p = lugE.get('pieza'); if (p) o.push({ x: p.x, y: p.y, ico: '🏠', c: '#ffd84a', name: 'Tu pieza' }); }
+    const C = { despensa: '#9fe0a0', pieza: '#ffd84a', cajero: '#7fd8ff', cajero2: '#7fd8ff', financiera: '#ffb36b', celulares: '#c9a0ff' };
+    if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
+    const ks = mis ? Object.keys(VR.PUNTOS) : ['despensa'];
+    for (const k of ks) { const D = VR.PUNTOS[k], p = D && lugE.get(D.lugar); if (p) o.push({ x: p.x, y: p.y - (k === 'despensa' ? 4 : 0), ico: D.ico, c: C[k] || '#9fe0a0', name: D.nombre }); }
     return o; };
   const drawEntrada = (g, e, x, y, t) => { // flecha que late + ícono sobre la puerta
     const b = Math.sin(t * 4 + e.x) * 3, yy = y - 40 + b;

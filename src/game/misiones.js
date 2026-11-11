@@ -396,7 +396,7 @@ VR.Misiones = class {
     const out = [];
     for (const [k, p] of this.presentes()) { const mk = this.marca(k); if (mk) out.push({ x: p.x, y: p.y, c: mk === 'paso' ? '#ff5fa2' : '#ffd84a', ico: mk === 'paso' ? '▼' : '!', name: VR.PERSONAJES[k].nombre }); }
     const P = this.paso; if (P && P.ir && !P.hablar) { const t = this.lug.get(P.ir); if (t) out.push({ x: t.x, y: t.y, c: '#ff5fa2', ico: '●', name: t.name }); }
-    for (const k in VR.PUNTOS) { const p = this.lug.get(VR.PUNTOS[k].lugar); if (p && !(P && P.ir === VR.PUNTOS[k].lugar)) out.push({ x: p.x, y: p.y, c: '#9fe0a0', ico: VR.PUNTOS[k].mini, name: VR.PUNTOS[k].nombre }); }
+    // (los puntos fijos —cajero, financiera, despensa, pieza— los marca main.js con entradas())
     return out;
   }
   cartel(chico, grande, sub) { if (this.banner) this.banner(chico, grande, sub); }

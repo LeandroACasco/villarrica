@@ -719,8 +719,10 @@
   const entradas = () => { const o = [];
     if (shopDoor) o.push({ x: shopDoor.x, y: shopDoor.y - 6, ico: '👕', c: '#ff9ed0', name: 'Tienda Ao Porã' });
     if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro' });
-    const d = lugE.get('despensa'); if (d) o.push({ x: d.x, y: d.y - 4, ico: '🛒', c: '#9fe0a0', name: 'Despensa Ñande Róga' });
-    if (mis) { const p = lugE.get('pieza'); if (p) o.push({ x: p.x, y: p.y, ico: '🏠', c: '#ffd84a', name: 'Tu pieza' }); }
+    const C = { despensa: '#9fe0a0', pieza: '#ffd84a', cajero: '#7fd8ff', cajero2: '#7fd8ff', financiera: '#ffb36b', celulares: '#c9a0ff' };
+    if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
+    const ks = mis ? Object.keys(VR.PUNTOS) : ['despensa'];
+    for (const k of ks) { const D = VR.PUNTOS[k], p = D && lugE.get(D.lugar); if (p) o.push({ x: p.x, y: p.y - (k === 'despensa' ? 4 : 0), ico: D.ico, c: C[k] || '#9fe0a0', name: D.nombre }); }
     return o; };
   const drawEntrada = (g, e, x, y, t) => { // flecha que late + ícono sobre la puerta
     const b = Math.sin(t * 4 + e.x) * 3, yy = y - 40 + b;
