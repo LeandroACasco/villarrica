@@ -340,11 +340,12 @@
       const nn = mis && !nc && !nsw ? mis.near(player) : null; // personajes de la Historia (J2)
       if (nn) { hint = (VR.input.source === 'touch' ? '💬 ' : VR.input.source === 'pad' ? '💬 A: ' : '💬 Espacio: ') + nn.nombre; hintCar = { x: nn.x, y: nn.y - 14 }; }
       const nv = !nc && !nsw && !nn ? calle.near(player) : null; if (nv) { hint = (VR.input.source === 'touch' ? 'ACCIÓN: ' : 'Espacio: ') + (nv.stock > 0 ? nv.K.label.replace(/ · .*/, '') + ' · ' + VR.fmtGs(nv.K.price) : 'sin stock'); hintCar = { x: nv.x, y: nv.y + 52 }; }
+      const np = puestoL && !nc && !nsw && !nv ? puestoL.near(player) : null; if (np) { hint = (VR.input.source === 'touch' ? '🛒 ACCIÓN: despensa' : '🛒 Espacio: despensa'); hintCar = { x: np.x, y: np.y - 14 }; }
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) { const no = noRobar(nc); if (no) toast(no); else enterCar(nc); } else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (ns) { VR.tienda.entrar(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (np) { VR.despensa.entrar(); return; } if (ns) { VR.tienda.entrar(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
@@ -402,7 +403,7 @@
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && !player.rag && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && !player.rag && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); }
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall);
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
     perros.collect(cx, cy, sw, sh, a, tall); calle.collect(cx, cy, sw, sh, a, tall); if (caidas) caidas.collect(cx, cy, sw, sh, a, tall);
@@ -704,6 +705,15 @@
   const showBanner = (chico, grande, sub) => { const bn = $('banner'); bn.innerHTML = '<small>' + chico + '</small>' + grande + (sub ? '<small class="sub">' + sub + '</small>' : ''); bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2800); };
   const mis = VR.mis = vida ? new VR.Misiones({ world, player, toast, setDest, getCar: () => car, vida, changas, banner: showBanner }) : null;
   if (mis) VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => mis.dialogo(VR.despensaCompra(mis)) }); // despensa Ñande Róga por dentro
+  let puestoL = null; // en Libre no hay misiones, pero la despensa sí está (puesto en la vereda al sudeste de la plaza + el interior)
+  if (!mis) {
+    const lug = new VR.Lugares(world), D = VR.PUNTOS.despensa; VR.PUNTOS_LIBRE = true;
+    VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => VR.Dialogo.show([{ quien: 'sis', titulo: '🛒 Despensa Ñande Róga', txt: '¿Qué llevás? Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op: [
+      ...VR.DESPENSA.map(([n, k, h]) => [n + ' · ' + VR.fmtGs(VR.PRECIOS[k]), () => { if (VR.Wallet.get() < VR.PRECIOS[k]) { toast('💸 No te alcanza'); return false; } VR.Wallet.add(-VR.PRECIOS[k], n); VR.heal(Math.round(h * 0.6)); toast('🍽 ' + n + ' · −' + VR.fmtGs(VR.PRECIOS[k])); return false; }]), ['Nada, gracias', () => false]] }], () => {}, {}) });
+    puestoL = { pos: () => lug.get('despensa'),
+      collect(cx, cy, tall) { const p = this.pos(); if (!p) return; const x = Math.round(p.x - cx), y = Math.round(p.y - cy); if (x < -40 || y < -50 || x > VR.screen.w + 40 || y > VR.screen.h + 40) return; tall.push({ sy: p.y - 6, draw: (g) => D.draw(g, x, y) }); },
+      near(pl) { const p = this.pos(); return p && Math.hypot(p.x - pl.x, p.y - pl.y) < 44 ? p : null; } };
+  }
   const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars, fauna, cisnes });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
