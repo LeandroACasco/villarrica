@@ -205,6 +205,7 @@
   // ---------- lógica ----------
   const SALUDOS = ["¡Mba'éichapa!", "¡Mba'e la porte!", 'Haku la ára, che...', "¡Jaha jaha!", '¡Ára porã!'];
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
+  const btnCarT = document.querySelector('.tb[data-b="car"]'); let btnCarShow = true;
   let sayIdx = 0, hint = '', hintCar = null, holdT = 0;
   function update(dt) {
     if (mode === 'title') { updateTitle(dt); return; }
@@ -250,7 +251,7 @@
         hint = (VR.input.source === 'touch' ? '👥 ' : 'F: ') + 'subir con ' + rd.n; hintCar = { x: rd.x, y: rd.y - 8 };
         if (VR.input.pressed('car')) { online.ride = rd.id; toast('👥 Vas con ' + rd.n); }
       } else {
-      hint = nc && noRobar(nc) ? '🔒 ' + (nc.ai ? 'necesitás un arma' : 'necesitás herramientas') : nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
+      hint = nc && noRobar(nc) ? '' : nc ? (VR.input.source === 'touch' ? (nc.type === 'moto' ? '🏍 Subir' : '🚗 Subir') : VR.input.source === 'pad' ? 'X: subir' : 'F: subir') : '';
       hintCar = nc;
       const nci = nearCine(); if (nci && !nc && !ns) { hint = VR.input.source === 'touch' ? '🎬 Cine: ACCIÓN' : '🎬 Espacio: cine'; hintCar = { x: nci.x, y: nci.y - 8 }; if (VR.input.pressed('action')) { teatro.enter(); return; } }
       if (ns && !nc) { hint = VR.input.source === 'touch' ? '👕 Tienda: ACCIÓN' : VR.input.source === 'pad' ? '👕 A: entrar' : '👕 Espacio: entrar'; hintCar = { x: ns.x, y: ns.y - 8 }; }
@@ -336,6 +337,7 @@
     drawMini(dt || 0);
     drawGpsArrow(ctx, cx, cy, a);
     if (traffic) for (const v of traffic.list) if (v.honkT > 0) VR.gfx.text(ctx, v.honkTxt, Math.round(v.x - cx), Math.round(v.y - cy - 28), '#fff6d8', { center: true, shadow: '#1a1a1e' });
+    if (btnCarT) { const sh = !!car || !!cisnes.riding || !!online.ride || (hint !== '' && /ubir|aseo|ajar/.test(hint)); if (sh !== btnCarShow) { btnCarShow = sh; btnCarT.style.display = sh ? '' : 'none'; } }
     if (hint && hintCar) VR.gfx.text(ctx, hint, Math.round(hintCar.x - cx), Math.round(hintCar.y - cy - 32), '#ffd75e', { center: true, shadow: '#1a1a1e' });
     drawHud();
   }
@@ -538,7 +540,7 @@
   // empezar la Historia de cero (en Configuración)
   { let sure = 0; const bh = $('btnBorraH'); bh.onclick = () => {
     if (performance.now() > sure) { sure = performance.now() + 4000; bh.textContent = '⚠ ¿Seguro? Se borra todo lo de Historia · tocá otra vez'; setTimeout(() => { if (performance.now() > sure - 100) bh.textContent = '🗑 Empezar la Historia de cero'; }, 4100); return; }
-    VR.wiped = true; VR.store.wipeHistoria(); bh.textContent = '🗑 Empezar la Historia de cero'; sure = 0;
+    VR.wiped = true; VR.store.wipeHistoria(); try { sessionStorage.removeItem('villarrica:onl'); } catch (e) {} try { online.stop(); } catch (e) {} bh.textContent = '🗑 Empezar la Historia de cero'; sure = 0;
     if (vida) { toast('🗑 Historia borrada: arrancá de nuevo'); try { sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) {} setTimeout(() => location.reload(), 600); } else { toast('🗑 Historia borrada'); tagHist(); }
   }; }
   $('menuClose').onclick = () => menu.close();
