@@ -300,6 +300,7 @@ VR.World = class {
     const PX = this.CH * VR.TILE, S = VR.TILE, seen = new Set();
     const c0 = Math.max(0, Math.floor(camX / PX)), c1 = Math.min(this.cw - 1, Math.floor((camX + sw) / PX));
     const r0 = Math.max(0, Math.floor(camY / PX)), r1 = Math.min(this.chh - 1, Math.floor((camY + sh) / PX));
+    if (VR.postes && !VR.noPostes) VR.postes.collect(this, camX, camY, sw, sh, out);
     for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {
       const idx = this.index[cy * this.cw + cx];
       for (const t of idx.t) {

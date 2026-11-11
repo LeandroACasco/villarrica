@@ -480,3 +480,7 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 `src/world/suciedad.js` (`VR.grime`, lo llama `world.js` en el paso 3 de cada bloque). Se pinta una vez en el piso: arena/tierra contra el cordón, basuritas (bolsa, botella, papel, lata, hojas, cartón), grietas, baches, parches, manchas de aceite, pastito en el cordón y el empedrado, polvo en la vereda. Varía por baldosa (`VR.hash`) y por barrio: el Centro con factor 0,4 y el resto con 1. Para agregar un detalle: una función nueva en ese archivo y una llamada en `VR.grime`.
 
 Segunda tanda (`VR.grime2`, mismo archivo): charcos fijos (barro en calles de tierra), cordón con pintura blanca descascarada y pedazos rotos, raíces que levantan las baldosas junto a los árboles, baldosas rotas, tachos con bolsa y obras (ladrillos, arena, bolsas de cemento) frente a los edificios. Falta: postes y cables, pintura de líneas y cebras gastada, lluvia (los charcos ya están).
+
+### Postes y cables (11/11/2026)
+
+`src/world/postes.js` (`VR.postes`): se arman al primer dibujo a lo largo de la red de calles (~6.600 postes, uno cada ~30 m, más separados en el Centro, solo sobre vereda, pasto o tierra); cada poste se dibuja como objeto alto ordenado por su base (`out` de `VR.drawTop` en `world.js`), y los cables (3 por tramo, con caída) van en un solo ítem con `sy = 1e8`, por encima de todo. Se busca por bloques de 256 px. `VR.noPostes = true` los apaga. Falta: que los postes sean sólidos, farol en algunos postes y cables que crucen las esquinas.
