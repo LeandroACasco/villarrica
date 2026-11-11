@@ -99,13 +99,14 @@
             g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 13, y + 10, 26, 1);
             K.items.forEach((c, i) => { g.fillStyle = c; if (K.manta === 'hippie') g.fillRect(x - 10 + i * 4, y + 5 + (i % 2) * 2, 3, 3); else { g.fillRect(x - 11 + i * 6, y + 4 + (i % 2) * 2, 5, 4); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x - 11 + i * 6, y + 7 + (i % 2) * 2, 5, 1); } });
           } } });
+        if (d.say) (VR._late || (VR._late = [])).push({ bubble: d.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 });   // el globo se dibuja al final, sobre todo
         out.push({ sy: y + camY, draw: (g) => {
           g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); g.fill();
           const img = d.mode === 'sit' ? d.spr.get('down', 'sit', 0) : d.mode === 'walk' ? d.spr.get(d.dir, 'walk', Math.floor(d.anim) % 8) : d.spr.get(d.dir, 'idle', 0);
           g.drawImage(img, x - 8 * PS, y - 31 * PS + (d.mode === 'sit' ? 2 : 0), 16 * PS, 32 * PS);
           if (d.kind === 'empanada') { const r = d.dir === 'left' ? -1 : 1, bx = x + r * 4 - 3, by = y - Math.round(15 * PS); g.fillStyle = '#5a3a1c'; g.fillRect(bx - 1, by - 1, 9, 6); g.fillStyle = '#f2efe6'; g.fillRect(bx, by - 2, 7, 2); g.fillStyle = '#b07a3a'; g.fillRect(bx + 1, by + 1, 5, 3); }
           if (d.kind === 'helado') { const r = d.dir === 'left' ? -1 : 1, bx = x + r * 9 - 5; g.fillStyle = '#2e6fc8'; g.fillRect(bx, y - 8, 11, 8); g.fillStyle = '#f2efe6'; g.fillRect(bx, y - 10, 11, 3); g.fillStyle = '#e86aa0'; g.fillRect(bx + 2, y - 5, 3, 2); g.fillStyle = '#222'; g.fillRect(bx + 1, y - 1, 2, 2); g.fillRect(bx + 8, y - 1, 2, 2); }
-          if (d.say) VR.Player.prototype.drawBubble.call({ bubble: d.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, g, camX, camY, 1);
+
         } });
       }
     }

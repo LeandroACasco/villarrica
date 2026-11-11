@@ -374,7 +374,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión bc7e34a9 · 2026-11-11</div>
+  <div class="tVer">Versión 3e3454a2 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -466,7 +466,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión bc7e34a9 · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 3e3454a2 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -1349,7 +1349,7 @@ VR.World = class {
           this.index[cy * cw + cx][list].push(item);
     };
     const S = VR.TILE;
-    for (const t of this.trees) { const cx = t.x * S + 8, cy = t.y * S - 4; add('t', t, cx - t.r - 8, cy - t.r - 8, cx + t.r + 8, cy + t.r + 12); }
+    for (const t of this.trees) { const cx = t.x * S + 8, cy = t.y * S - 4; add('t', t, cx - t.r * 1.4 - 8, cy - t.r * 3.2 - 8, cx + t.r * 1.4 + 8, cy + t.r + 12); }   // las copas altas de las plazas suben hasta ~2,5 radios
     for (const d of this.decals) add('d', d, d.x * S, d.y * S, (d.x + d.w) * S, (d.y + d.h) * S);
     for (const e of this.diag || []) { const m = e.hs + 40; add('r', e, Math.min(e.ax, e.bx) - m, Math.min(e.ay, e.by) - m, Math.max(e.ax, e.bx) + m, Math.max(e.ay, e.by) + m); }
     this.cw = cw; this.chh = chh;
@@ -1530,18 +1530,23 @@ VR.World = class {
       for (const t of idx.t) {
         if (seen.has(t)) continue; seen.add(t);
         const x = t.x * S + 8 - t.r - 1, y = t.y * S - 6 - t.r - 1;
-        if (x > camX + sw || y > camY + sh || x + t.r * 2 + 3 < camX || y + t.r * 2 + 3 < camY) continue;
-        // la copa se vuelve transparente cuando el jugador (o su vehículo) está debajo, detrás del tronco (VR.reveal)
-        const rv = VR.reveal, ccx = t.x * S + 8, ccy = t.y * S - 6;
-        const under = rv && rv.y < t.y * S + 12 && ((rv.x - ccx) / (t.r + 3)) ** 2 + ((rv.y - 10 - ccy) / (t.r + 3)) ** 2 < 1;
-        t._a = (t._a === undefined ? 1 : t._a) + ((under ? 0.34 : 1) - (t._a === undefined ? 1 : t._a)) * 0.2;
-        out.push({ sy: t.y * S + 12, draw: (ctx) => { const cimg = VR.canopy(t.r, t.pal); if (t._a < 0.99) ctx.globalAlpha = t._a; ctx.drawImage(cimg, x - camX, y - camY, cimg.lw, cimg.lw); ctx.globalAlpha = 1; } });
-        // el tronco se ve siempre, subiendo hacia la copa (los árboles de la plaza son altos)
-        out.push({ sy: t.y * S + 12.4, draw: (ctx) => {
-          const tx = t.x * S + 6 - camX, ty = t.y * S + 12 - camY, h = Math.min(t.r * 0.95, 24), cal = this.calSet && this.calSet.has(this.area[t.y * this.w + t.x]);
-          ctx.fillStyle = '#4b2f1b'; ctx.fillRect(tx, ty - h, 4, h); ctx.fillStyle = '#6e4628'; ctx.fillRect(tx, ty - h, 2, h);
-          if (cal) { ctx.fillStyle = '#e9e7df'; ctx.fillRect(tx, ty - 7, 4, 7); ctx.fillStyle = '#fff'; ctx.fillRect(tx, ty - 7, 1.5, 7); ctx.fillStyle = '#c4c0b4'; ctx.fillRect(tx + 3, ty - 7, 1, 7); }
-          ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(tx - 1, ty - 1, 6, 1);
+        if (x > camX + sw + 20 || y > camY + sh + 60 || x + t.r * 3 + 3 < camX || y + t.r * 3 + 60 < camY) continue;
+        // árboles altos (11/11/2026): en las plazas la copa es más grande y está levantada sobre un tronco largo; la copa y el
+        // tronco se vuelven transparentes cuando el jugador (o su vehículo, VR.reveal) está detrás, para que nunca te tape
+        const big = this.calSet && this.calSet.has(this.area[t.y * this.w + t.x]), k = big ? 1.35 : 1, rk = t.r * k, lift = big ? rk * 0.8 : 0;
+        const rv = VR.reveal, ccx = t.x * S + 8, ccy = t.y * S - 6 - lift, base = t.y * S + 12;
+        const under = rv && rv.y < base && ((rv.x - ccx) / (rk + 3)) ** 2 + ((rv.y - 10 - ccy) / (rk + 3)) ** 2 < 1;
+        const a0 = t._a === undefined ? 1 : t._a; t._a = a0 + ((under ? 0.34 : 1) - a0) * 0.2;
+        const th = big ? lift + rk * 0.5 : 0;   // alto del tronco visible (en los árboles comunes alcanza el tronco del piso)
+        if (th) out.push({ sy: base, draw: (ctx) => {
+          const tx = t.x * S + 5.5 - camX, ty = base - camY; if (t._a < 0.99) ctx.globalAlpha = 0.45 + 0.55 * (t._a - 0.34) / 0.66;
+          ctx.fillStyle = '#4b2f1b'; ctx.fillRect(tx, ty - th, 5, th); ctx.fillStyle = '#6e4628'; ctx.fillRect(tx, ty - th, 2, th);
+          ctx.fillStyle = '#e9e7df'; ctx.fillRect(tx, ty - 9, 5, 9); ctx.fillStyle = '#fff'; ctx.fillRect(tx, ty - 9, 1.5, 9); ctx.fillStyle = '#c4c0b4'; ctx.fillRect(tx + 4, ty - 9, 1, 9);   // cal
+          ctx.globalAlpha = 1;
+        } });
+        out.push({ sy: base + 0.4, draw: (ctx) => {
+          const cimg = VR.canopy(t.r, t.pal), w = cimg.lw * k; if (t._a < 0.99) ctx.globalAlpha = t._a;
+          ctx.drawImage(cimg, ccx - w / 2 - camX, ccy - w / 2 - camY, w, w); ctx.globalAlpha = 1;
         } });
       }
       for (const d of idx.d) {
@@ -9431,6 +9436,7 @@ VR.Cisnes = class {
       for (const d of this.list) {
         const x = Math.round(VR.lerp(d.px, d.x, al) - camX), y = Math.round(VR.lerp(d.py, d.y, al) - camY);
         if (x < -20 || y < -24 || x > sw + 20 || y > sh + 20) continue;
+        if (d.say) (VR._late || (VR._late = [])).push({ bubble: d.say, px: x + camX, x: x + camX, py: y + camY - 4, y: y + camY - 4 });
         out.push({ sy: y + camY, draw: (ctx) => {
           const S = sprites[d.pal], moving = d.mode === 'trot' || d.mode === 'run' || (d.mode === 'follow'), fr = Math.floor(d.anim) % 2;
           let img, w, h;
@@ -9439,7 +9445,6 @@ VR.Cisnes = class {
           ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y - 1, w * 0.45, 1.6, 0, 0, Math.PI * 2); ctx.fill();
           const wag = d.follow > 0 && d.mode === 'idle' ? Math.sin(this.t * 22) : 0;
           ctx.drawImage(img, Math.round(x - w / 2 + wag * 0.4), y - h + 1, w, h);
-          if (d.say) VR.Player.prototype.drawBubble.call({ bubble: d.say, px: x + camX, x: x + camX, py: y + camY - 4, y: y + camY - 4 }, ctx, camX, camY, 1);
         } });
       }
     }
@@ -9548,13 +9553,14 @@ VR.Cisnes = class {
             g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 13, y + 10, 26, 1);
             K.items.forEach((c, i) => { g.fillStyle = c; if (K.manta === 'hippie') g.fillRect(x - 10 + i * 4, y + 5 + (i % 2) * 2, 3, 3); else { g.fillRect(x - 11 + i * 6, y + 4 + (i % 2) * 2, 5, 4); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x - 11 + i * 6, y + 7 + (i % 2) * 2, 5, 1); } });
           } } });
+        if (d.say) (VR._late || (VR._late = [])).push({ bubble: d.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 });   // el globo se dibuja al final, sobre todo
         out.push({ sy: y + camY, draw: (g) => {
           g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); g.fill();
           const img = d.mode === 'sit' ? d.spr.get('down', 'sit', 0) : d.mode === 'walk' ? d.spr.get(d.dir, 'walk', Math.floor(d.anim) % 8) : d.spr.get(d.dir, 'idle', 0);
           g.drawImage(img, x - 8 * PS, y - 31 * PS + (d.mode === 'sit' ? 2 : 0), 16 * PS, 32 * PS);
           if (d.kind === 'empanada') { const r = d.dir === 'left' ? -1 : 1, bx = x + r * 4 - 3, by = y - Math.round(15 * PS); g.fillStyle = '#5a3a1c'; g.fillRect(bx - 1, by - 1, 9, 6); g.fillStyle = '#f2efe6'; g.fillRect(bx, by - 2, 7, 2); g.fillStyle = '#b07a3a'; g.fillRect(bx + 1, by + 1, 5, 3); }
           if (d.kind === 'helado') { const r = d.dir === 'left' ? -1 : 1, bx = x + r * 9 - 5; g.fillStyle = '#2e6fc8'; g.fillRect(bx, y - 8, 11, 8); g.fillStyle = '#f2efe6'; g.fillRect(bx, y - 10, 11, 3); g.fillStyle = '#e86aa0'; g.fillRect(bx + 2, y - 5, 3, 2); g.fillStyle = '#222'; g.fillRect(bx + 1, y - 1, 2, 2); g.fillRect(bx + 8, y - 1, 2, 2); }
-          if (d.say) VR.Player.prototype.drawBubble.call({ bubble: d.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, g, camX, camY, 1);
+
         } });
       }
     }
@@ -10001,7 +10007,7 @@ VR.Titulo = class {
       if (nsw) { hint = (VR.input.source === 'touch' ? '🦢 Paseo' : VR.input.source === 'pad' ? 'X: paseo en cisne' : 'F: paseo en cisne') + ' · ' + VR.fmtGs(VR.CISNE_PRECIO); hintCar = { x: nsw.x, y: nsw.y - 8 }; }
       const nn = mis && !nc && !nsw ? mis.near(player) : null; // personajes de la Historia (J2)
       if (nn) { hint = (VR.input.source === 'touch' ? '💬 ' : VR.input.source === 'pad' ? '💬 A: ' : '💬 Espacio: ') + nn.nombre; hintCar = { x: nn.x, y: nn.y - 14 }; }
-      const nv = !nc && !nsw && !nn ? calle.near(player) : null; if (nv) { hint = (VR.input.source === 'touch' ? 'ACCIÓN: ' : 'Espacio: ') + (nv.stock > 0 ? nv.K.label.replace(/ · .*/, '') + ' · ' + VR.fmtGs(nv.K.price) : 'sin stock'); hintCar = { x: nv.x, y: nv.y - 22 }; }
+      const nv = !nc && !nsw && !nn ? calle.near(player) : null; if (nv) { hint = (VR.input.source === 'touch' ? 'ACCIÓN: ' : 'Espacio: ') + (nv.stock > 0 ? nv.K.label.replace(/ · .*/, '') + ' · ' + VR.fmtGs(nv.K.price) : 'sin stock'); hintCar = { x: nv.x, y: nv.y + 52 }; }
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
@@ -10070,6 +10076,7 @@ VR.Titulo = class {
     for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
+    if (VR._late) { for (const b of VR._late) VR.Player.prototype.drawBubble.call(b, ctx, cx, cy, 1); VR._late.length = 0; }   // globos de vendedores y perros, encima de árboles y banderas
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);

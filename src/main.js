@@ -320,7 +320,7 @@
       if (nsw) { hint = (VR.input.source === 'touch' ? '🦢 Paseo' : VR.input.source === 'pad' ? 'X: paseo en cisne' : 'F: paseo en cisne') + ' · ' + VR.fmtGs(VR.CISNE_PRECIO); hintCar = { x: nsw.x, y: nsw.y - 8 }; }
       const nn = mis && !nc && !nsw ? mis.near(player) : null; // personajes de la Historia (J2)
       if (nn) { hint = (VR.input.source === 'touch' ? '💬 ' : VR.input.source === 'pad' ? '💬 A: ' : '💬 Espacio: ') + nn.nombre; hintCar = { x: nn.x, y: nn.y - 14 }; }
-      const nv = !nc && !nsw && !nn ? calle.near(player) : null; if (nv) { hint = (VR.input.source === 'touch' ? 'ACCIÓN: ' : 'Espacio: ') + (nv.stock > 0 ? nv.K.label.replace(/ · .*/, '') + ' · ' + VR.fmtGs(nv.K.price) : 'sin stock'); hintCar = { x: nv.x, y: nv.y - 22 }; }
+      const nv = !nc && !nsw && !nn ? calle.near(player) : null; if (nv) { hint = (VR.input.source === 'touch' ? 'ACCIÓN: ' : 'Espacio: ') + (nv.stock > 0 ? nv.K.label.replace(/ · .*/, '') + ' · ' + VR.fmtGs(nv.K.price) : 'sin stock'); hintCar = { x: nv.x, y: nv.y + 52 }; }
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
@@ -389,6 +389,7 @@
     for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
+    if (VR._late) { for (const b of VR._late) VR.Player.prototype.drawBubble.call(b, ctx, cx, cy, 1); VR._late.length = 0; }   // globos de vendedores y perros, encima de árboles y banderas
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);

@@ -121,7 +121,7 @@ VR.World = class {
           this.index[cy * cw + cx][list].push(item);
     };
     const S = VR.TILE;
-    for (const t of this.trees) { const cx = t.x * S + 8, cy = t.y * S - 4; add('t', t, cx - t.r - 8, cy - t.r - 8, cx + t.r + 8, cy + t.r + 12); }
+    for (const t of this.trees) { const cx = t.x * S + 8, cy = t.y * S - 4; add('t', t, cx - t.r * 1.4 - 8, cy - t.r * 3.2 - 8, cx + t.r * 1.4 + 8, cy + t.r + 12); }   // las copas altas de las plazas suben hasta ~2,5 radios
     for (const d of this.decals) add('d', d, d.x * S, d.y * S, (d.x + d.w) * S, (d.y + d.h) * S);
     for (const e of this.diag || []) { const m = e.hs + 40; add('r', e, Math.min(e.ax, e.bx) - m, Math.min(e.ay, e.by) - m, Math.max(e.ax, e.bx) + m, Math.max(e.ay, e.by) + m); }
     this.cw = cw; this.chh = chh;
@@ -302,18 +302,23 @@ VR.World = class {
       for (const t of idx.t) {
         if (seen.has(t)) continue; seen.add(t);
         const x = t.x * S + 8 - t.r - 1, y = t.y * S - 6 - t.r - 1;
-        if (x > camX + sw || y > camY + sh || x + t.r * 2 + 3 < camX || y + t.r * 2 + 3 < camY) continue;
-        // la copa se vuelve transparente cuando el jugador (o su vehículo) está debajo, detrás del tronco (VR.reveal)
-        const rv = VR.reveal, ccx = t.x * S + 8, ccy = t.y * S - 6;
-        const under = rv && rv.y < t.y * S + 12 && ((rv.x - ccx) / (t.r + 3)) ** 2 + ((rv.y - 10 - ccy) / (t.r + 3)) ** 2 < 1;
-        t._a = (t._a === undefined ? 1 : t._a) + ((under ? 0.34 : 1) - (t._a === undefined ? 1 : t._a)) * 0.2;
-        out.push({ sy: t.y * S + 12, draw: (ctx) => { const cimg = VR.canopy(t.r, t.pal); if (t._a < 0.99) ctx.globalAlpha = t._a; ctx.drawImage(cimg, x - camX, y - camY, cimg.lw, cimg.lw); ctx.globalAlpha = 1; } });
-        // el tronco se ve siempre, subiendo hacia la copa (los árboles de la plaza son altos)
-        out.push({ sy: t.y * S + 12.4, draw: (ctx) => {
-          const tx = t.x * S + 6 - camX, ty = t.y * S + 12 - camY, h = Math.min(t.r * 0.95, 24), cal = this.calSet && this.calSet.has(this.area[t.y * this.w + t.x]);
-          ctx.fillStyle = '#4b2f1b'; ctx.fillRect(tx, ty - h, 4, h); ctx.fillStyle = '#6e4628'; ctx.fillRect(tx, ty - h, 2, h);
-          if (cal) { ctx.fillStyle = '#e9e7df'; ctx.fillRect(tx, ty - 7, 4, 7); ctx.fillStyle = '#fff'; ctx.fillRect(tx, ty - 7, 1.5, 7); ctx.fillStyle = '#c4c0b4'; ctx.fillRect(tx + 3, ty - 7, 1, 7); }
-          ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(tx - 1, ty - 1, 6, 1);
+        if (x > camX + sw + 20 || y > camY + sh + 60 || x + t.r * 3 + 3 < camX || y + t.r * 3 + 60 < camY) continue;
+        // árboles altos (11/11/2026): en las plazas la copa es más grande y está levantada sobre un tronco largo; la copa y el
+        // tronco se vuelven transparentes cuando el jugador (o su vehículo, VR.reveal) está detrás, para que nunca te tape
+        const big = this.calSet && this.calSet.has(this.area[t.y * this.w + t.x]), k = big ? 1.35 : 1, rk = t.r * k, lift = big ? rk * 0.8 : 0;
+        const rv = VR.reveal, ccx = t.x * S + 8, ccy = t.y * S - 6 - lift, base = t.y * S + 12;
+        const under = rv && rv.y < base && ((rv.x - ccx) / (rk + 3)) ** 2 + ((rv.y - 10 - ccy) / (rk + 3)) ** 2 < 1;
+        const a0 = t._a === undefined ? 1 : t._a; t._a = a0 + ((under ? 0.34 : 1) - a0) * 0.2;
+        const th = big ? lift + rk * 0.5 : 0;   // alto del tronco visible (en los árboles comunes alcanza el tronco del piso)
+        if (th) out.push({ sy: base, draw: (ctx) => {
+          const tx = t.x * S + 5.5 - camX, ty = base - camY; if (t._a < 0.99) ctx.globalAlpha = 0.45 + 0.55 * (t._a - 0.34) / 0.66;
+          ctx.fillStyle = '#4b2f1b'; ctx.fillRect(tx, ty - th, 5, th); ctx.fillStyle = '#6e4628'; ctx.fillRect(tx, ty - th, 2, th);
+          ctx.fillStyle = '#e9e7df'; ctx.fillRect(tx, ty - 9, 5, 9); ctx.fillStyle = '#fff'; ctx.fillRect(tx, ty - 9, 1.5, 9); ctx.fillStyle = '#c4c0b4'; ctx.fillRect(tx + 4, ty - 9, 1, 9);   // cal
+          ctx.globalAlpha = 1;
+        } });
+        out.push({ sy: base + 0.4, draw: (ctx) => {
+          const cimg = VR.canopy(t.r, t.pal), w = cimg.lw * k; if (t._a < 0.99) ctx.globalAlpha = t._a;
+          ctx.drawImage(cimg, ccx - w / 2 - camX, ccy - w / 2 - camY, w, w); ctx.globalAlpha = 1;
         } });
       }
       for (const d of idx.d) {

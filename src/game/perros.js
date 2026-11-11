@@ -141,6 +141,7 @@
       for (const d of this.list) {
         const x = Math.round(VR.lerp(d.px, d.x, al) - camX), y = Math.round(VR.lerp(d.py, d.y, al) - camY);
         if (x < -20 || y < -24 || x > sw + 20 || y > sh + 20) continue;
+        if (d.say) (VR._late || (VR._late = [])).push({ bubble: d.say, px: x + camX, x: x + camX, py: y + camY - 4, y: y + camY - 4 });
         out.push({ sy: y + camY, draw: (ctx) => {
           const S = sprites[d.pal], moving = d.mode === 'trot' || d.mode === 'run' || (d.mode === 'follow'), fr = Math.floor(d.anim) % 2;
           let img, w, h;
@@ -149,7 +150,6 @@
           ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y - 1, w * 0.45, 1.6, 0, 0, Math.PI * 2); ctx.fill();
           const wag = d.follow > 0 && d.mode === 'idle' ? Math.sin(this.t * 22) : 0;
           ctx.drawImage(img, Math.round(x - w / 2 + wag * 0.4), y - h + 1, w, h);
-          if (d.say) VR.Player.prototype.drawBubble.call({ bubble: d.say, px: x + camX, x: x + camX, py: y + camY - 4, y: y + camY - 4 }, ctx, camX, camY, 1);
         } });
       }
     }
