@@ -37,12 +37,19 @@
       for (let k = 0; k < 40; k++) {
         const a = Math.random() * 6.283, d = rnd(240, 520), x = f.x + Math.cos(a) * d, y = f.y + Math.sin(a) * d;
         if (!this.free(x, y) || !this.free(x + 12, y) || !this.free(x - 12, y)) continue;
+        if (this.underTree(x, y)) continue;   // que no queden escondidos bajo una copa
         const b = this.world.barrioName ? this.world.barrioName(x, y) : null;
         if (b === 'Afueras' || (k < 25 && b !== 'Centro')) continue;
         const look = pick(K.looks);
         this.list.push({ kind, K, x, y, px: x, py: y, vx: 0, vy: 0, dir: K.walk ? 'down' : 'down', spr: VR.av2Lazy(look), anim: 0, stock: K.stock, t: rnd(1, 4), mode: K.walk ? 'idle' : 'sit', say: null, sayT: rnd(3, 9), cool: 0 });
         this.n++; return;
       }
+    }
+    underTree(x, y) {
+      const W = this.world, PX = W.CH * VR.TILE, S = VR.TILE, idx = W.index && W.index[Math.floor(y / PX) * W.cw + Math.floor(x / PX)];
+      if (!idx) return false;
+      for (const t of idx.t) { const dx = (x - (t.x * S + 8)) / (t.r + 8), dy = (y - (t.y * S - 6)) / (t.r + 8); if (dx * dx + dy * dy < 1 && y < t.y * S + 12) return true; }
+      return false;
     }
     near(p) { let b = null, bd = 24; for (const d of this.list) { const k = Math.hypot(d.x - p.x, d.y - (p.y - 3)); if (k < bd) { bd = k; b = d; } } return b; }
     act(p) {

@@ -375,6 +375,7 @@
     if (mis) mis.drawGround(ctx, cx, cy);
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
+    VR.reveal = car || (online.ride ? null : player);
     world.collectTall(cx, cy, sw, sh, tall);
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);

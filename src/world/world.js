@@ -303,7 +303,18 @@ VR.World = class {
         if (seen.has(t)) continue; seen.add(t);
         const x = t.x * S + 8 - t.r - 1, y = t.y * S - 6 - t.r - 1;
         if (x > camX + sw || y > camY + sh || x + t.r * 2 + 3 < camX || y + t.r * 2 + 3 < camY) continue;
-        out.push({ sy: t.y * S + 12, draw: (ctx) => { const cimg = VR.canopy(t.r, t.pal); ctx.drawImage(cimg, x - camX, y - camY, cimg.lw, cimg.lw); } });
+        // la copa se vuelve transparente cuando el jugador (o su vehículo) está debajo, detrás del tronco (VR.reveal)
+        const rv = VR.reveal, ccx = t.x * S + 8, ccy = t.y * S - 6;
+        const under = rv && rv.y < t.y * S + 12 && ((rv.x - ccx) / (t.r + 3)) ** 2 + ((rv.y - 10 - ccy) / (t.r + 3)) ** 2 < 1;
+        t._a = (t._a === undefined ? 1 : t._a) + ((under ? 0.34 : 1) - (t._a === undefined ? 1 : t._a)) * 0.2;
+        out.push({ sy: t.y * S + 12, draw: (ctx) => { const cimg = VR.canopy(t.r, t.pal); if (t._a < 0.99) ctx.globalAlpha = t._a; ctx.drawImage(cimg, x - camX, y - camY, cimg.lw, cimg.lw); ctx.globalAlpha = 1; } });
+        // el tronco se ve siempre, subiendo hacia la copa (los árboles de la plaza son altos)
+        out.push({ sy: t.y * S + 12.4, draw: (ctx) => {
+          const tx = t.x * S + 6 - camX, ty = t.y * S + 12 - camY, h = Math.min(t.r * 0.95, 24), cal = this.calSet && this.calSet.has(this.area[t.y * this.w + t.x]);
+          ctx.fillStyle = '#4b2f1b'; ctx.fillRect(tx, ty - h, 4, h); ctx.fillStyle = '#6e4628'; ctx.fillRect(tx, ty - h, 2, h);
+          if (cal) { ctx.fillStyle = '#e9e7df'; ctx.fillRect(tx, ty - 7, 4, 7); ctx.fillStyle = '#fff'; ctx.fillRect(tx, ty - 7, 1.5, 7); ctx.fillStyle = '#c4c0b4'; ctx.fillRect(tx + 3, ty - 7, 1, 7); }
+          ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(tx - 1, ty - 1, 6, 1);
+        } });
       }
       for (const d of idx.d) {
         if (seen.has(d) || !VR.decorTop[d.kind]) continue; seen.add(d);

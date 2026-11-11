@@ -374,7 +374,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 25cae4c2 · 2026-11-11</div>
+  <div class="tVer">Versión bc7e34a9 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -466,7 +466,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 25cae4c2 · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión bc7e34a9 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -1531,7 +1531,18 @@ VR.World = class {
         if (seen.has(t)) continue; seen.add(t);
         const x = t.x * S + 8 - t.r - 1, y = t.y * S - 6 - t.r - 1;
         if (x > camX + sw || y > camY + sh || x + t.r * 2 + 3 < camX || y + t.r * 2 + 3 < camY) continue;
-        out.push({ sy: t.y * S + 12, draw: (ctx) => { const cimg = VR.canopy(t.r, t.pal); ctx.drawImage(cimg, x - camX, y - camY, cimg.lw, cimg.lw); } });
+        // la copa se vuelve transparente cuando el jugador (o su vehículo) está debajo, detrás del tronco (VR.reveal)
+        const rv = VR.reveal, ccx = t.x * S + 8, ccy = t.y * S - 6;
+        const under = rv && rv.y < t.y * S + 12 && ((rv.x - ccx) / (t.r + 3)) ** 2 + ((rv.y - 10 - ccy) / (t.r + 3)) ** 2 < 1;
+        t._a = (t._a === undefined ? 1 : t._a) + ((under ? 0.34 : 1) - (t._a === undefined ? 1 : t._a)) * 0.2;
+        out.push({ sy: t.y * S + 12, draw: (ctx) => { const cimg = VR.canopy(t.r, t.pal); if (t._a < 0.99) ctx.globalAlpha = t._a; ctx.drawImage(cimg, x - camX, y - camY, cimg.lw, cimg.lw); ctx.globalAlpha = 1; } });
+        // el tronco se ve siempre, subiendo hacia la copa (los árboles de la plaza son altos)
+        out.push({ sy: t.y * S + 12.4, draw: (ctx) => {
+          const tx = t.x * S + 6 - camX, ty = t.y * S + 12 - camY, h = Math.min(t.r * 0.95, 24), cal = this.calSet && this.calSet.has(this.area[t.y * this.w + t.x]);
+          ctx.fillStyle = '#4b2f1b'; ctx.fillRect(tx, ty - h, 4, h); ctx.fillStyle = '#6e4628'; ctx.fillRect(tx, ty - h, 2, h);
+          if (cal) { ctx.fillStyle = '#e9e7df'; ctx.fillRect(tx, ty - 7, 4, 7); ctx.fillStyle = '#fff'; ctx.fillRect(tx, ty - 7, 1.5, 7); ctx.fillStyle = '#c4c0b4'; ctx.fillRect(tx + 3, ty - 7, 1, 7); }
+          ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(tx - 1, ty - 1, 6, 1);
+        } });
       }
       for (const d of idx.d) {
         if (seen.has(d) || !VR.decorTop[d.kind]) continue; seen.add(d);
@@ -9475,12 +9486,19 @@ VR.Cisnes = class {
       for (let k = 0; k < 40; k++) {
         const a = Math.random() * 6.283, d = rnd(240, 520), x = f.x + Math.cos(a) * d, y = f.y + Math.sin(a) * d;
         if (!this.free(x, y) || !this.free(x + 12, y) || !this.free(x - 12, y)) continue;
+        if (this.underTree(x, y)) continue;   // que no queden escondidos bajo una copa
         const b = this.world.barrioName ? this.world.barrioName(x, y) : null;
         if (b === 'Afueras' || (k < 25 && b !== 'Centro')) continue;
         const look = pick(K.looks);
         this.list.push({ kind, K, x, y, px: x, py: y, vx: 0, vy: 0, dir: K.walk ? 'down' : 'down', spr: VR.av2Lazy(look), anim: 0, stock: K.stock, t: rnd(1, 4), mode: K.walk ? 'idle' : 'sit', say: null, sayT: rnd(3, 9), cool: 0 });
         this.n++; return;
       }
+    }
+    underTree(x, y) {
+      const W = this.world, PX = W.CH * VR.TILE, S = VR.TILE, idx = W.index && W.index[Math.floor(y / PX) * W.cw + Math.floor(x / PX)];
+      if (!idx) return false;
+      for (const t of idx.t) { const dx = (x - (t.x * S + 8)) / (t.r + 8), dy = (y - (t.y * S - 6)) / (t.r + 8); if (dx * dx + dy * dy < 1 && y < t.y * S + 12) return true; }
+      return false;
     }
     near(p) { let b = null, bd = 24; for (const d of this.list) { const k = Math.hypot(d.x - p.x, d.y - (p.y - 3)); if (k < bd) { bd = k; b = d; } } return b; }
     act(p) {
@@ -10038,6 +10056,7 @@ VR.Titulo = class {
     if (mis) mis.drawGround(ctx, cx, cy);
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
+    VR.reveal = car || (online.ride ? null : player);
     world.collectTall(cx, cy, sw, sh, tall);
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);

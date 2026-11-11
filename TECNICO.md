@@ -429,3 +429,7 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 ## Gente de la calle (12/11/2026)
 - `src/game/calle.js`: `VR.Calle(world, peds, {toast, heal, hambre})`, hasta 3 a la vez cerca de la cámara (más en el Centro), en rotación: empanadero y heladero (caminan lento con canasto / carrito), artesano hippie argentino y artesana/o indígena (manta con sus cosas), y persona en situación de calle (cartón). Todos adultos. Look por `VR.av2Lazy`.
 - ACCIÓN cerca: `calle.act(player)` cobra con `VR.Wallet` (empanada 5.000, helado 3.000, pulsera 10.000, artesanía 15.000, moneda 1.000); empanada y helado devuelven vida (`VR.heal`) y, en Historia, hambre. Pregones propios de cada uno en globos. El aviso aparece como pista (`hint`) en main.js.
+
+## Árboles: tronco visible y copa transparente (12/11/2026)
+- `world.collectTall`: cada árbol dibuja la copa (con `globalAlpha` suavizado en `t._a`) y, aparte y encima, el tronco (sube hacia la copa; con cal en las plazas). La copa baja a ~34 % cuando `VR.reveal` (jugador o su vehículo, se fija en main.js antes de `collectTall`) está bajo ella y detrás del tronco.
+- `calle.underTree`: los vendedores no se generan bajo una copa.
