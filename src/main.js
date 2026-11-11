@@ -154,6 +154,18 @@
     hint = ''; lastCar = c; driveLabels(true);
     if (VR.mis) VR.mis.emit('subir', c);
   }
+  // vida del jugador (11/11/2026): los golpes de vehículos la bajan, se recupera sola; en 0 te llevan al hospital
+  let hp = 100, hpQuiet = 0; const hpEl = $('hpBar');
+  function hpShow() { hpEl.hidden = hp >= 99.5; hpEl.textContent = '❤ ' + Math.max(0, Math.round(hp)) + '%'; }
+  function hurtPlayer(dmg) {
+    hp -= dmg; hpQuiet = 6; hpShow();
+    if (hp <= 0) {
+      hp = 60; hpShow(); player.rag = null; const cost = VR.PRECIOS && VR.PRECIOS.remedios || 30000;
+      if (vida) vida.cobrarODeber(cost, 'Hospital: curaciones'); else VR.Wallet.add(-Math.min(VR.Wallet.get(), cost));
+      sentTo('🏥 Quedaste muy mal y te llevaron al hospital. Curaciones: ' + VR.fmtGs(cost));
+    }
+  }
+  function hpTick(dt) { if (hp >= 100) return; hpQuiet -= dt; if (hpQuiet <= 0) { hp = Math.min(100, hp + dt * 2.5); hpShow(); } }
   // ¿te atropelló un vehículo en movimiento? Salís despedido (ragdoll) y no controlás un rato
   function runOverCheck() {
     if (player.rag || !world.carsIn) return;
@@ -163,7 +175,7 @@
       const vx = o.vx !== undefined ? o.vx : Math.sin(o.a) * (o.v || 0), vy = o.vy !== undefined ? o.vy : -Math.cos(o.a) * (o.v || 0), sp = Math.hypot(vx, vy);
       if (sp < 35) continue;
       if (!VR.obbIn(VR.obb(o.x + vx * 0.03, o.y + vy * 0.03, o.a, o.spec.len / 2 + 1, o.spec.wid / 2 + 3), player.x, player.y - 4)) continue;
-      player.knock(vx * 0.9, vy * 0.9, sp / 160); VR.audio.ouch(player.x, player.y); toast('💥 ¡Te atropellaron!');
+      player.knock(vx * 0.9, vy * 0.9, sp / 160); VR.audio.ouch(player.x, player.y); toast('💥 ¡Te atropellaron!'); hurtPlayer(12 + sp / 5);
       if (o.vx !== undefined) { o.vx *= 0.85; o.vy *= 0.85; } o.hit = 0.15;
       if (VR.input.buzz) VR.input.buzz(40);
       return;
@@ -176,7 +188,7 @@
     if (VR.mis) VR.mis.emit('bajar', c);
     c.driven = false; c.rider = null; car = null; VR.screen.setBase(baseOf(WALK_BASE)); driveLabels(false);
     player.x = player.px = c.x + fx * 9; player.y = player.py = c.y + fy * 9 + 4;
-    player.knock(vx * 1.0 + fx * 25, vy * 1.0 + fy * 25, Math.min(1, imp / 260)); toast('🏍💥 ¡Te caíste de la moto!');
+    player.knock(vx * 1.0 + fx * 25, vy * 1.0 + fy * 25, Math.min(1, imp / 260)); toast('🏍💥 ¡Te caíste de la moto!'); hurtPlayer(8 + imp / 10);
     c.vx *= 0.5; c.vy *= 0.5;
   };
   function exitCar() {
@@ -291,7 +303,7 @@
           hint = VR.input.source === 'touch' ? '👥 Bajar' : 'F: bajar'; hintCar = null;
           if (VR.input.pressed('car')) { online.leave(player, world); toast('Te bajaste'); } }
       } else {
-      player.update(dt, VR.input); runOverCheck();
+      player.update(dt, VR.input); runOverCheck(); hpTick(dt);
       const nc = nearCar(), ns = nearShop(), rd = online.nearRide(player);
       if (rd && (!nc || Math.hypot(rd.x - player.x, rd.y - player.y) < Math.hypot(nc.x - player.x, nc.y - player.y))) {
         hint = (VR.input.source === 'touch' ? '👥 ' : 'F: ') + 'subir con ' + rd.n; hintCar = { x: rd.x, y: rd.y - 8 };

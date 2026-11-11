@@ -413,3 +413,10 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 ### Celular roto, préstamos y barrios (11/11/2026)
 
 `vida.js`: `s.celu` ('roto'/'ok'), `celuRoto()`, `arreglaCelu()`, `compraCelu()`, `VR.PREST` (banco/financiera), `pidePrestamo`, `pagaPrestamo`, `cobraCuotas` (sábado mediodía). `misiones.js`: lugares `financiera` y `celulares`, `VR.prestamoMenu`, `VR.celularesMenu`. `shell.html`: `#celRoto` (SVG), `.celNav`; el aviso (`#toast`) baja con `body:has(#vcard.show)`. `main.js`: `paintCel`, `buildMap` (tinte y límites por `world.barrio`).
+
+## Atropellos y vida del jugador (11/11/2026)
+- `src/game/ragdoll.js`: `VR.Ragdoll(vx, vy, power, dir)` con `step(dt, obj, world)` y `draw(ctx, sprite, x, y)`. Vuelo (z, gravedad), giro, hasta 3 rebotes, patina y queda tendido; solo choca contra paredes (vuela sobre los autos).
+- Peatones: `peds.carHit(p)` busca vehículos en movimiento (>30) sobre la persona; `p.rag` reemplaza al sprite acostado. Si el vehículo es el del jugador (`o.driven`) sigue llamando a `VR.onPedHit` (crimen y ambulancia).
+- Jugador a pie: `player.knock(vx, vy, power)`; `runOverCheck()` en main.js. Moto: `VR.onEject` (impacto > 140) te tira de la moto.
+- Vida: `hp` en main.js (`hurtPlayer`, `hpTick`), barra "❤ n%" solo cuando está por debajo de 100; a 0 te llevan al hospital (`sentTo`) y se cobra curaciones.
+- Los vehículos ya contaban como paredes para el jugador y los peatones (`world.hits` incluye `boxOverlap`).
