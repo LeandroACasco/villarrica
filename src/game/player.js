@@ -103,8 +103,19 @@ VR.Player = class {
     this.bubble = null;
     this.HW = 4; this.HH = 4; // caja de colisión en los pies
   }
+  // golpe de un vehículo: sale despedido (ragdoll) y no controlás hasta que se levanta
+  knock(vx, vy, power) {
+    if (this.rag) return;
+    this.rag = new VR.Ragdoll(vx, vy, power, this.dir); this.downT = 1.3 + power * 1.3; this.moving = false; this.anim = 0;
+  }
   update(dt, input) {
     this.px = this.x; this.py = this.y;
+    if (this.rag) {
+      this.rag.step(dt, this, this.world); this.downT -= dt; this.moving = false;
+      if (this.bubble) { this.bubble.t -= dt; if (this.bubble.t <= 0) this.bubble = null; }
+      if (this.downT <= 0 && this.rag.landed) this.rag = null;
+      return;
+    }
     const ax = input.ax, ay = input.ay, mag = Math.min(1, Math.hypot(ax, ay));
     const run = input.down('run') && !VR.noRun; // con hambre (Historia) no se corre
     const target = mag * (run ? 104 : 58);
@@ -122,7 +133,7 @@ VR.Player = class {
   // movimiento por ejes separados, con "deslizamiento" en las esquinas
   move(dx, dy) {
     const W = this.world, hw = this.HW, hh = this.HH;
-    const box = (x, y) => W.hits(x - hw, y - hh, x + hw, y);
+    const box = (x, y) => W.hits(x - hw, y - hh, x + hw, y);   // incluye las cajas de los vehículos
     if (dx) {
       if (!box(this.x + dx, this.y)) this.x += dx;
       else if (!dy) { for (const n of [-1, 1]) if (!box(this.x + dx, this.y + n * 5)) { this.y += n * Math.min(Math.abs(dx), 1); break; } }
@@ -136,6 +147,7 @@ VR.Player = class {
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
+    if (this.rag) { this.rag.draw(ctx, this.sprites.get(this.rag.dir, 'idle', 0), x, y); return; }
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6 * VR.PS, 2.5 * VR.PS, 0, 0, Math.PI * 2); ctx.fill();
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
     const PS = VR.PS; ctx.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);

@@ -373,7 +373,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 0a152f9d · 2026-11-11</div>
+  <div class="tVer">Versión 59d99c84 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -465,7 +465,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0a152f9d · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 59d99c84 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -3749,8 +3749,19 @@ VR.Player = class {
     this.bubble = null;
     this.HW = 4; this.HH = 4; // caja de colisión en los pies
   }
+  // golpe de un vehículo: sale despedido (ragdoll) y no controlás hasta que se levanta
+  knock(vx, vy, power) {
+    if (this.rag) return;
+    this.rag = new VR.Ragdoll(vx, vy, power, this.dir); this.downT = 1.3 + power * 1.3; this.moving = false; this.anim = 0;
+  }
   update(dt, input) {
     this.px = this.x; this.py = this.y;
+    if (this.rag) {
+      this.rag.step(dt, this, this.world); this.downT -= dt; this.moving = false;
+      if (this.bubble) { this.bubble.t -= dt; if (this.bubble.t <= 0) this.bubble = null; }
+      if (this.downT <= 0 && this.rag.landed) this.rag = null;
+      return;
+    }
     const ax = input.ax, ay = input.ay, mag = Math.min(1, Math.hypot(ax, ay));
     const run = input.down('run') && !VR.noRun; // con hambre (Historia) no se corre
     const target = mag * (run ? 104 : 58);
@@ -3768,7 +3779,7 @@ VR.Player = class {
   // movimiento por ejes separados, con "deslizamiento" en las esquinas
   move(dx, dy) {
     const W = this.world, hw = this.HW, hh = this.HH;
-    const box = (x, y) => W.hits(x - hw, y - hh, x + hw, y);
+    const box = (x, y) => W.hits(x - hw, y - hh, x + hw, y);   // incluye las cajas de los vehículos
     if (dx) {
       if (!box(this.x + dx, this.y)) this.x += dx;
       else if (!dy) { for (const n of [-1, 1]) if (!box(this.x + dx, this.y + n * 5)) { this.y += n * Math.min(Math.abs(dx), 1); break; } }
@@ -3782,6 +3793,7 @@ VR.Player = class {
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
+    if (this.rag) { this.rag.draw(ctx, this.sprites.get(this.rag.dir, 'idle', 0), x, y); return; }
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6 * VR.PS, 2.5 * VR.PS, 0, 0, Math.PI * 2); ctx.fill();
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
     const PS = VR.PS; ctx.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);
@@ -3802,6 +3814,54 @@ VR.Player = class {
     ctx.fillStyle = '#1a1a1e'; ctx.fillRect(x - 2, by + h + 1, 5, 1); ctx.fillRect(x - 1, by + h + 2, 3, 1); ctx.fillRect(x, by + h + 3, 1, 1);
     ctx.fillStyle = '#fbf8ef'; ctx.fillRect(x - 1, by + h, 3, 1); ctx.fillRect(x, by + h + 1, 1, 1);
     ctx.drawImage(img, bx + 4, by + 2, img.lw, img.lh);
+  }
+};
+
+// ===== game/ragdoll.js =====
+// Ragdoll simple (12/11/2026): cuando un auto o una moto golpea a una persona, el cuerpo sale despedido
+// (altura z + gravedad), gira sobre sí mismo, rebota un par de veces, patina por el piso y queda tendido.
+// Lo usan los peatones (peds.js) y el jugador (player.js). Trabaja sobre cualquier objeto con x, y.
+VR.Ragdoll = class {
+  constructor(vx, vy, power, dir) {
+    const sp = Math.hypot(vx, vy);
+    this.power = Math.min(1, Math.max(0.15, power));
+    this.vx = vx * 0.85; this.vy = vy * 0.85;
+    this.z = 0; this.vz = 70 + this.power * 150;
+    this.rot = 0; this.spin = (Math.random() < 0.5 ? -1 : 1) * (5 + this.power * 12);
+    this.target = Math.random() < 0.5 ? Math.PI / 2 : -Math.PI / 2;   // cómo queda tendido
+    this.bounces = 0; this.landed = false; this.t = 0; this.dir = dir || 'down';
+    if (sp < 1) { this.vx = (Math.random() - 0.5) * 30; this.vy = (Math.random() - 0.5) * 30; }
+  }
+  step(dt, o, world) {
+    this.t += dt;
+    if (!this.landed) {
+      this.z += this.vz * dt; this.vz -= 560 * dt;
+      if (this.z <= 0) {
+        this.z = 0;
+        if (this.vz < -45 && this.bounces < 3) { this.vz *= -0.36; this.vx *= 0.7; this.vy *= 0.7; this.spin *= 0.6; this.bounces++; if (VR.audio && VR.audio.ouch && this.bounces === 1) VR.audio.ouch(o.x, o.y); }
+        else { this.vz = 0; this.landed = true; }
+      }
+    }
+    const nx = o.x + this.vx * dt, ny = o.y + this.vy * dt;
+    const S = VR.TILE, blocked = (x, y) => world.solid(Math.floor((x - 3) / S), Math.floor((y - 3) / S)) || world.solid(Math.floor((x + 3) / S), Math.floor(y / S));   // solo paredes: el cuerpo vuela por encima de los autos
+    if (!blocked(nx, ny)) { o.x = nx; o.y = ny; } else { this.vx *= -0.25; this.vy *= -0.25; }
+    const k = Math.exp(-(this.z > 0 ? 0.5 : 4.2) * dt);
+    this.vx *= k; this.vy *= k;
+    if (this.landed) {
+      // el giro se frena y el cuerpo se acomoda boca arriba o boca abajo
+      this.spin *= Math.exp(-6 * dt);
+      const turns = Math.round((this.rot - this.target) / (Math.PI * 2)), goal = this.target + turns * Math.PI * 2;
+      this.rot += (goal - this.rot) * Math.min(1, 8 * dt) + this.spin * dt;
+    } else this.rot += this.spin * dt;
+  }
+  // img: sprite de persona de frente a "dir"; (x, y): pies en pantalla
+  draw(ctx, img, x, y) {
+    const PS = VR.PS, C = 15 * PS, lie = Math.abs(Math.sin(this.rot));
+    const lift = C * (1 - lie) + 3 * lie;                    // el centro del cuerpo baja al piso al acostarse
+    ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, (5.5 + lie * 3) * (1 - Math.min(0.5, this.z / 120)), 2.3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.translate(x, Math.round(y - this.z - lift)); ctx.rotate(this.rot);
+    ctx.drawImage(img, -8 * PS, -(31 * PS - C), 16 * PS, 32 * PS);
+    ctx.restore();
   }
 };
 
@@ -4379,7 +4439,7 @@ VR.Car = class {
         }
       }
       this.w = VR.clamp(this.w, -6, 6);
-      if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); }
+      if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); if (this.driven && this.type === 'moto' && impact > 140 && VR.onEject) VR.onEject(this, impact); }
       // no se mete en la pared: si el giro solo ya lo traba, no gira; y si quedó pegado, se separa un poco
       if (!this.contacts(this.x, this.y, na)) this.a = na;
       else if (this.contacts(this.x, this.y, this.a)) {
@@ -5529,21 +5589,24 @@ VR.Peds = class {
     for (const p of this.list) {
       p.px = p.x; p.py = p.y;
       if (p.say) { p.say.t -= dt; if (p.say.t <= 0) p.say = null; }
-      // ¿lo chocaste?
-      if (car && p.mode !== 'down' && cs > 30 && Math.hypot(p.x - car.x, p.y - 4 - car.y) < car.WID / 2 + 6) {
-        p.mode = 'down'; p.t = 2.4; p.vx = car.vx * 0.7; p.vy = car.vy * 0.7;
-        car.vx *= 0.82; car.vy *= 0.82; car.hit = 0.15;
-        if (VR.onPedHit) VR.onPedHit(p, cs);
-        continue;
+      // ¿lo chocó un vehículo (el tuyo o uno del tránsito)? Sale despedido (ragdoll)
+      if (p.mode !== 'down') {
+        const hitBy = this.carHit(p);
+        if (hitBy) {
+          const o = hitBy.c, sp = hitBy.sp;
+          p.mode = 'down'; p.t = 2.6 + Math.min(1, sp / 150);
+          p.rag = new VR.Ragdoll(hitBy.vx, hitBy.vy, sp / 160, p.dir || 'down');
+          if (o.driven) { o.vx *= 0.82; o.vy *= 0.82; o.hit = 0.15; if (VR.onPedHit) VR.onPedHit(p, sp); }
+          else if (VR.audio && VR.audio.ouch) VR.audio.ouch(p.x, p.y);
+          continue;
+        }
       }
       if (p.mode === 'down') {
-        const k = Math.exp(-4 * dt);
-        const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
-        if (!this.world.hits(nx - 3, ny - 3, nx + 3, ny)) { p.x = nx; p.y = ny; } else { p.vx *= -0.3; p.vy *= -0.3; }
-        p.vx *= k; p.vy *= k; p.t -= dt;
+        if (p.rag) p.rag.step(dt, p, this.world);
+        p.t -= dt;
         if (p.injured && p.t > 0) continue;
         p.injured = false;
-        if (p.t <= 0) { p.mode = 'flee'; p.t = 1.4; this.talk(p, 'hit'); if (!this.free(p.x, p.y)) this.toWalkable(p); this.awayFrom(p, car || focus); }
+        if (p.t <= 0 && (!p.rag || p.rag.landed)) { p.rag = null; p.mode = 'flee'; p.t = 1.4; this.talk(p, 'hit'); if (!this.free(p.x, p.y)) this.toWalkable(p); this.awayFrom(p, car || focus); }
         continue;
       }
       // ¿le venís encima?
@@ -5566,6 +5629,19 @@ VR.Peds = class {
         else this.newDir(p);
       }
     }
+  }
+  // vehículo en movimiento que está pasando por encima de esta persona (o null)
+  carHit(p) {
+    const W = this.world, out = this._cq || (this._cq = []); out.length = 0;
+    if (!W.carsIn || !VR.obb) return null;
+    W.carsIn(p.x - 40, p.y - 40, p.x + 40, p.y + 40, out);
+    for (const o of out) {
+      if (!o.spec) continue;
+      const vx = o.vx !== undefined ? o.vx : Math.sin(o.a) * (o.v || 0), vy = o.vy !== undefined ? o.vy : -Math.cos(o.a) * (o.v || 0), sp = Math.hypot(vx, vy);
+      if (sp < 30) continue;
+      if (VR.obbIn(VR.obb(o.x + vx * 0.03, o.y + vy * 0.03, o.a, o.spec.len / 2 + 1, o.spec.wid / 2 + 3), p.x, p.y - 4)) return { c: o, sp, vx, vy };
+    }
+    return null;
   }
   awayFrom(p, o) {
     const dx = p.x - o.x, dy = p.y - o.y;
@@ -5599,7 +5675,8 @@ VR.Peds = class {
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
+        if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal].get(p.rag.dir, 'idle', 0), x, y);
+        else if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
         else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
@@ -9471,6 +9548,31 @@ VR.Titulo = class {
     hint = ''; lastCar = c; driveLabels(true);
     if (VR.mis) VR.mis.emit('subir', c);
   }
+  // ¿te atropelló un vehículo en movimiento? Salís despedido (ragdoll) y no controlás un rato
+  function runOverCheck() {
+    if (player.rag || !world.carsIn) return;
+    const out = []; world.carsIn(player.x - 40, player.y - 40, player.x + 40, player.y + 40, out);
+    for (const o of out) {
+      if (!o.spec || o.driven) continue;
+      const vx = o.vx !== undefined ? o.vx : Math.sin(o.a) * (o.v || 0), vy = o.vy !== undefined ? o.vy : -Math.cos(o.a) * (o.v || 0), sp = Math.hypot(vx, vy);
+      if (sp < 35) continue;
+      if (!VR.obbIn(VR.obb(o.x + vx * 0.03, o.y + vy * 0.03, o.a, o.spec.len / 2 + 1, o.spec.wid / 2 + 3), player.x, player.y - 4)) continue;
+      player.knock(vx * 0.9, vy * 0.9, sp / 160); VR.audio.ouch(player.x, player.y); toast('💥 ¡Te atropellaron!');
+      if (o.vx !== undefined) { o.vx *= 0.85; o.vy *= 0.85; } o.hit = 0.15;
+      if (VR.input.buzz) VR.input.buzz(40);
+      return;
+    }
+  }
+  // te caés de la moto en un choque fuerte: salís volando hacia adelante y la moto sigue sola
+  VR.onEject = (c, imp) => {
+    if (c !== car) return;
+    const fx = Math.sin(c.a), fy = -Math.cos(c.a), vx = c.vx || 0, vy = c.vy || 0;
+    if (VR.mis) VR.mis.emit('bajar', c);
+    c.driven = false; c.rider = null; car = null; VR.screen.setBase(baseOf(WALK_BASE)); driveLabels(false);
+    player.x = player.px = c.x + fx * 9; player.y = player.py = c.y + fy * 9 + 4;
+    player.knock(vx * 1.0 + fx * 25, vy * 1.0 + fy * 25, Math.min(1, imp / 260)); toast('🏍💥 ¡Te caíste de la moto!');
+    c.vx *= 0.5; c.vy *= 0.5;
+  };
   function exitCar() {
     if (VR.mis) VR.mis.emit('bajar', car);
     const c = car, a = c.a, rx = Math.cos(a), ry = Math.sin(a), fx = Math.sin(a), fy = -Math.cos(a);
@@ -9583,7 +9685,7 @@ VR.Titulo = class {
           hint = VR.input.source === 'touch' ? '👥 Bajar' : 'F: bajar'; hintCar = null;
           if (VR.input.pressed('car')) { online.leave(player, world); toast('Te bajaste'); } }
       } else {
-      player.update(dt, VR.input);
+      player.update(dt, VR.input); runOverCheck();
       const nc = nearCar(), ns = nearShop(), rd = online.nearRide(player);
       if (rd && (!nc || Math.hypot(rd.x - player.x, rd.y - player.y) < Math.hypot(nc.x - player.x, nc.y - player.y))) {
         hint = (VR.input.source === 'touch' ? '👥 ' : 'F: ') + 'subir con ' + rd.n; hintCar = { x: rd.x, y: rd.y - 8 };
@@ -9653,7 +9755,7 @@ VR.Titulo = class {
     world.collectTall(cx, cy, sw, sh, tall);
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
-    if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
+    if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && !player.rag && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && !player.rag && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);

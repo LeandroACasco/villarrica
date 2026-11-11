@@ -98,21 +98,24 @@ VR.Peds = class {
     for (const p of this.list) {
       p.px = p.x; p.py = p.y;
       if (p.say) { p.say.t -= dt; if (p.say.t <= 0) p.say = null; }
-      // ¿lo chocaste?
-      if (car && p.mode !== 'down' && cs > 30 && Math.hypot(p.x - car.x, p.y - 4 - car.y) < car.WID / 2 + 6) {
-        p.mode = 'down'; p.t = 2.4; p.vx = car.vx * 0.7; p.vy = car.vy * 0.7;
-        car.vx *= 0.82; car.vy *= 0.82; car.hit = 0.15;
-        if (VR.onPedHit) VR.onPedHit(p, cs);
-        continue;
+      // ¿lo chocó un vehículo (el tuyo o uno del tránsito)? Sale despedido (ragdoll)
+      if (p.mode !== 'down') {
+        const hitBy = this.carHit(p);
+        if (hitBy) {
+          const o = hitBy.c, sp = hitBy.sp;
+          p.mode = 'down'; p.t = 2.6 + Math.min(1, sp / 150);
+          p.rag = new VR.Ragdoll(hitBy.vx, hitBy.vy, sp / 160, p.dir || 'down');
+          if (o.driven) { o.vx *= 0.82; o.vy *= 0.82; o.hit = 0.15; if (VR.onPedHit) VR.onPedHit(p, sp); }
+          else if (VR.audio && VR.audio.ouch) VR.audio.ouch(p.x, p.y);
+          continue;
+        }
       }
       if (p.mode === 'down') {
-        const k = Math.exp(-4 * dt);
-        const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
-        if (!this.world.hits(nx - 3, ny - 3, nx + 3, ny)) { p.x = nx; p.y = ny; } else { p.vx *= -0.3; p.vy *= -0.3; }
-        p.vx *= k; p.vy *= k; p.t -= dt;
+        if (p.rag) p.rag.step(dt, p, this.world);
+        p.t -= dt;
         if (p.injured && p.t > 0) continue;
         p.injured = false;
-        if (p.t <= 0) { p.mode = 'flee'; p.t = 1.4; this.talk(p, 'hit'); if (!this.free(p.x, p.y)) this.toWalkable(p); this.awayFrom(p, car || focus); }
+        if (p.t <= 0 && (!p.rag || p.rag.landed)) { p.rag = null; p.mode = 'flee'; p.t = 1.4; this.talk(p, 'hit'); if (!this.free(p.x, p.y)) this.toWalkable(p); this.awayFrom(p, car || focus); }
         continue;
       }
       // ¿le venís encima?
@@ -135,6 +138,19 @@ VR.Peds = class {
         else this.newDir(p);
       }
     }
+  }
+  // vehículo en movimiento que está pasando por encima de esta persona (o null)
+  carHit(p) {
+    const W = this.world, out = this._cq || (this._cq = []); out.length = 0;
+    if (!W.carsIn || !VR.obb) return null;
+    W.carsIn(p.x - 40, p.y - 40, p.x + 40, p.y + 40, out);
+    for (const o of out) {
+      if (!o.spec) continue;
+      const vx = o.vx !== undefined ? o.vx : Math.sin(o.a) * (o.v || 0), vy = o.vy !== undefined ? o.vy : -Math.cos(o.a) * (o.v || 0), sp = Math.hypot(vx, vy);
+      if (sp < 30) continue;
+      if (VR.obbIn(VR.obb(o.x + vx * 0.03, o.y + vy * 0.03, o.a, o.spec.len / 2 + 1, o.spec.wid / 2 + 3), p.x, p.y - 4)) return { c: o, sp, vx, vy };
+    }
+    return null;
   }
   awayFrom(p, o) {
     const dx = p.x - o.x, dy = p.y - o.y;
@@ -168,7 +184,8 @@ VR.Peds = class {
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
+        if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal].get(p.rag.dir, 'idle', 0), x, y);
+        else if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
         else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
