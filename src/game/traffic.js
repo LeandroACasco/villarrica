@@ -96,7 +96,7 @@ VR.Traffic = class {
       const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false, e.w);
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
-      if (VR.CAR_MODELS[model] && VR.CAR_MODELS[model].bus && W.boxOverlap(lx - 52, ly - 52, lx + 52, ly + 52)) continue; // los colectivos necesitan más lugar para aparecer
+      if (VR.CAR_MODELS[model] && (VR.CAR_MODELS[model].bus || VR.CAR_MODELS[model].big) && W.boxOverlap(lx - Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly - Math.max(52, VR.CAR_MODELS[model].len * 0.6), lx + Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly + Math.max(52, VR.CAR_MODELS[model].len * 0.6))) continue; // colectivos y camiones grandes necesitan más lugar para aparecer
       const tune = this.rnd() < 0.1 && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model, tune);
       { const h = v.contacts(lx, ly, v.a); if (h && h.other) continue; } // no aparecer encima de nadie
@@ -105,7 +105,7 @@ VR.Traffic = class {
         v.rider = { shirt: VR.RIDER_SHIRTS[0], head: '#2a1b12', L: VR.RIDER_LOOKS[(this.rnd() * VR.RIDER_LOOKS.length) | 0] };
       }
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (v.spec.cruiseK || 1) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
-      v.ai.next = this.pickNext(e, to, v.spec.bus ? 5 * VR.TILE - 1 : 0);
+      v.ai.next = this.pickNext(e, to, v.spec.minW || (v.spec.bus ? 5 * VR.TILE - 1 : 0));
       v.v = v.ai.cruise * 0.6;
       v.tid = ++this.seq || (this.seq = 1); W.addBox(v); this.list.push(v);
       return v;
@@ -157,7 +157,7 @@ VR.Traffic = class {
         ai.s -= ai.e.len;
         const to = ai.from === ai.e.a ? ai.e.b : ai.e.a;
         ai.e = this.edges[ai.next[0]]; ai.from = to;
-        ai.next = this.pickNext(ai.e, ai.next[1], v.spec.bus ? 5 * VR.TILE - 1 : 0);
+        ai.next = this.pickNext(ai.e, ai.next[1], v.spec.minW || (v.spec.bus ? 5 * VR.TILE - 1 : 0));
       }
       ai.latT = (ai.latT || 0) - dt;
       if (ai.latT <= 0) { ai.latT = 0.12; ai.latW = this.measureLane(v, ai, L + 6); if (ai.lat === undefined) ai.lat = ai.latW; }
@@ -181,7 +181,7 @@ VR.Traffic = class {
         const ne = this.edges[ai.next[0]], to = ai.from === ai.e.a ? ai.e.b : ai.e.a;
         const ax = this.nx[to] - this.nx[ai.from], ay = this.ny[to] - this.ny[ai.from], bx = this.nx[ai.next[1]] - this.nx[to], by = this.ny[ai.next[1]] - this.ny[to];
         const cos = (ax * bx + ay * by) / (Math.hypot(ax, ay) * Math.hypot(bx, by) || 1);
-        if (cos < 0.7) target = Math.min(target, v.type === 'moto' ? 70 : v.spec.bus ? 36 : 55);
+        if (cos < 0.7) target = Math.min(target, v.type === 'moto' ? 70 : (v.spec.bus || v.spec.big) ? 36 : v.spec.aiTurn ? 46 : 55);
         void ne;
       }
       // ¿algo adelante? mirar unos puntos sobre el rumbo

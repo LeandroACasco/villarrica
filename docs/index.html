@@ -359,7 +359,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 0060bb9e · 2026-11-10</div>
+  <div class="tVer">Versión 90fe939c · 2026-11-10</div>
 </div>
 <div id="fade"></div>
 
@@ -443,7 +443,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0060bb9e · 2026-11-10</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 90fe939c · 2026-11-10</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -4834,6 +4834,102 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
   };
 })();
 
+// ===== game/camiones.js =====
+// Camiones (10/11/2026, pedido de Leandro con fotos): la categoría de los que se ven en Villarrica, con diseño propio,
+// sin marcas ni logos ni letras (regla del proyecto) y nombres inventados:
+//   camchata / camcarpa / camfurgon   camión liviano de cabina adelantada (chata, baranda con carpa negra, furgón)
+//   camvolcador                       volcador de tres ejes (amarillo o rojo)
+//   camtractor                        tractor con semirremolque granelero de lona (rojo, azul o blanco)
+// Desde arriba se ve el techo de la cabina y la carga; el dibujo de costado (tarjeta) está en sidehd.js.
+// Los livianos andan por cualquier calle; el volcador (5 baldosas) y el tractor (6) solo por las anchas (big + minW). Giran
+// más despacio y no se tunean (como los colectivos).
+'use strict';
+(() => {
+  const WHITE = [['#f2f0ea', '#b9b6ae', '#ffffff']], YELLOW = [['#f2c21a', '#b08a08', '#ffe06a']];
+  const RED = ['#c8281e', '#8a1810', '#e85040'], BLUE = ['#2a4fa8', '#1a3274', '#5a82d8'], WHT = ['#f2f0ea', '#b9b6ae', '#ffffff'];
+  const GL = ['#1b2634', '#2c3e54', '#8fb0cc'];
+
+  // c: kind (flat, tarp, box, dump, grain), W, L, cab (largo de la cabina), ws (parabrisas), axles
+  VR.drawTruck = (c) => (pal, t = {}) => VR.vbase(c.W, c.L, (T) => {
+    const [C, D, L] = pal, g = T.g, W = c.W, Ln = c.L, x0 = 0.9, x1 = W - 0.9, bw = x1 - x0, mid = W / 2, cl = c.cab;
+    const heavy = c.kind === 'dump' || c.kind === 'grain';
+    for (const y of c.axles) { T.tire(-0.1, y - 3.5, 2.5, 7); T.tire(W - 2.4, y - 3.5, 2.5, 7); }              // ruedas
+    T.rr(x0 + 2.4, cl - 2, bw - 4.8, Ln - cl + 1.4, 0.8, '#232327');                                              // chasis
+    const cy0 = c.kind === 'grain' ? cl + 4 : cl + 0.8, ce = Ln - 0.5, cLen = ce - cy0;
+    if (c.kind === 'flat') {                                                                                     // chata: plataforma con bordes bajos
+      T.rr(x0, cy0, bw, cLen, 0.8, T.hg(x0, x1, ['#7e828a', '#b4b8c0', '#7e828a']));
+      g.fillStyle = 'rgba(0,0,0,.18)'; for (let y = cy0 + 2.4; y < ce - 1.6; y += 2.4) g.fillRect(x0 + 1.4, y, bw - 2.8, 0.3);
+      T.rr(x0, cy0, 1.5, cLen, 0.5, WHT[0]); T.rr(x1 - 1.5, cy0, 1.5, cLen, 0.5, WHT[0]); T.rr(x0, ce - 1.5, bw, 1.5, 0.5, WHT[0]); T.rr(x0, cy0, bw, 1.3, 0.5, WHT[1]);
+      g.fillStyle = '#2a4fa8'; g.fillRect(x0, cy0 + cLen * 0.5, 1.5, 0.7); g.fillRect(x1 - 1.5, cy0 + cLen * 0.5, 1.5, 0.7);
+    } else if (c.kind === 'tarp') {                                                                              // baranda azul y blanca con carpa negra
+      T.rr(x0, cy0, bw, cLen, 1, T.hg(x0, x1, [WHT[1], WHT[0], WHT[2], WHT[0], WHT[1]]));
+      T.rr(x0, cy0, 0.9, cLen, 0.3, '#2a4fa8'); T.rr(x1 - 0.9, cy0, 0.9, cLen, 0.3, '#2a4fa8');
+      T.rr(x0 + 1.2, cy0 + 0.6, bw - 2.4, cLen - 1.4, 2.6, T.hg(x0, x1, ['#08080b', '#2c2c34', '#4a4a56', '#2c2c34', '#08080b']));
+      g.strokeStyle = 'rgba(160,160,175,.35)'; g.lineWidth = 0.35; for (let y = cy0 + 5; y < ce - 2; y += 6.4) { g.beginPath(); g.moveTo(x0 + 1.4, y); g.quadraticCurveTo(mid, y - 0.8, x1 - 1.4, y); g.stroke(); }
+      g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(mid - 3.6, cy0 + 1.6, 1.4, cLen - 3.6);
+    } else if (c.kind === 'box') {                                                                               // furgón blanco con franja azul
+      T.rr(x0 - 0.2, cy0 - 0.4, bw + 0.4, cLen + 0.4, 1.2, T.hg(x0, x1, [WHT[1], WHT[0], WHT[2], WHT[0], WHT[1]]));
+      g.fillStyle = '#2a4fa8'; g.fillRect(mid - 1.8, cy0 + 0.8, 3.6, cLen - 1.6);
+      g.fillStyle = 'rgba(255,255,255,.55)'; g.fillRect(mid - 0.3, cy0 + 0.8, 0.6, cLen - 1.6);
+      T.rr(x0 + 1.4, cy0 + cLen * 0.55, 3.6, 3.2, 0.5, '#dfe3ea'); T.rr(x1 - 5, cy0 + cLen * 0.25, 3.6, 3.2, 0.5, '#dfe3ea');
+      g.strokeStyle = 'rgba(0,0,0,.22)'; g.lineWidth = 0.3; g.beginPath(); g.moveTo(x0 + 0.3, ce - 2); g.lineTo(x1 - 0.3, ce - 2); g.stroke();
+    } else if (c.kind === 'dump') {                                                                              // volcador: caja con costillas
+      T.rr(x0 - 0.3, cy0, bw + 0.6, cLen, 1, T.hg(x0, x1, [D, C, L, C, D]));
+      T.rr(x0 + 1.5, cy0 + 2.4, bw - 3, cLen - 3.6, 0.6, T.hg(x0, x1, ['#2a2418', '#4a4030', '#2a2418']));
+      g.fillStyle = 'rgba(0,0,0,.35)'; for (let y = cy0 + 6; y < ce - 3; y += 5) g.fillRect(x0 + 1.5, y, bw - 3, 0.4);
+      g.fillStyle = L; for (let y = cy0 + 4; y < ce - 3; y += 5) { g.fillRect(x0 - 0.3, y, 1.1, 1.3); g.fillRect(x1 - 0.8, y, 1.1, 1.3); }
+      T.rr(x0 - 0.3, ce - 2, bw + 0.6, 2, 0.5, D);                                                               // compuerta
+    } else {                                                                                                     // granelero: semirremolque con lona
+      T.rr(x0 + 3, cl - 1, bw - 6, 7, 0.6, '#1c1c20'); T.rr(mid - 2.6, cl + 0.6, 5.2, 3.6, 1.4, '#6a6e76');    // quinta rueda
+      T.rr(x0, cy0, bw, cLen, 1.8, T.hg(x0, x1, [D, C, L, C, D]));
+      g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 0.45; for (let y = cy0 + 3.6; y < ce - 1.5; y += 4.4) { g.beginPath(); g.moveTo(x0 + 0.6, y); g.quadraticCurveTo(mid, y - 0.6, x1 - 0.6, y); g.stroke(); }
+      g.fillStyle = 'rgba(255,255,255,.14)'; g.fillRect(mid - 3.4, cy0 + 1.4, 2, cLen - 2.8);
+      g.fillStyle = D; g.fillRect(x0, cy0, 1, cLen); g.fillRect(x1 - 1, cy0, 1, cLen);
+      T.rr(x0 + 1.4, ce - 1.4, 2.8, 1.2, 0.4, '#d8302a'); T.rr(x1 - 4.2, ce - 1.4, 2.8, 1.2, 0.4, '#d8302a');   // luces
+    }
+    // cabina adelantada
+    const fb = 2.2, yW1 = fb + c.ws;
+    T.rr(x0, 0.2, bw, cl, [3.4, 3.4, 1.4, 1.4], T.hg(x0, x1, [D, L, C, C, D]));
+    T.rr(x0 + 0.2, 0.2, bw - 0.4, fb, [3.4, 3.4, 0.3, 0.3], T.hg(x0, x1, [D, C, C, D]));
+    T.rr(x0 + 0.5, 0, bw - 1, 1, 0.5, '#26262c');                                                                // paragolpes
+    T.rr(x0 + 0.8, 0.9, 2.8, 1.5, 0.6, '#fff4c0'); T.rr(x1 - 3.6, 0.9, 2.8, 1.5, 0.6, '#fff4c0'); T.rr(mid - 2.6, 0.9, 5.2, 1.3, 0.4, '#2a2a30'); // faros y parrilla
+    T.poly([[x0 + 1.1, fb], [x1 - 1.1, fb], [x1 - 0.5, yW1], [x0 + 0.5, yW1]], T.vg(fb, yW1, GL));             // parabrisas
+    T.poly([[x0 + 3, fb + 0.4], [x0 + 5.6, fb + 0.4], [x0 + 3.8, yW1 - 0.4], [x0 + 1.6, yW1 - 0.4]], 'rgba(255,255,255,.28)');
+    T.rr(x0 + 1, yW1 + 0.3, bw - 2, cl - yW1 - 1.6, 1.6, T.hg(x0, x1, [D, C, L, C, D]));                         // techo
+    if (heavy) { T.rr(x0 + 1.6, yW1 + 1.4, bw - 3.2, 2.4, 0.8, L); T.rr(mid - 3.4, yW1 + 5, 6.8, 2.6, 1, D); }   // deflector y baliza
+    else { T.rr(mid - 2.4, yW1 + 2.2, 4.8, 3, 0.8, L); }
+    for (const sx of [-0.7, W - 1.7]) { T.rr(sx, 3.2, 2.4, 5, 0.9, '#1e1e22'); T.rr(sx + 0.5, 3.6, 0.8, 3, 0.4, 'rgba(255,255,255,.35)'); } // espejos grandes
+    if (c.kind === 'dump') { T.rr(x0 - 0.4, cl - 2.6, bw + 0.8, 4.6, 1.2, T.hg(x0, x1, [D, C, L, C, D])); }       // visera de la caja sobre la cabina
+  });
+
+  const L1 = { cab: 17, ws: 4.6, axles: [8, 35], W: 19, L: 48 };
+  const FOUR = { max: { road: 175, stone: 155, dirt: 140, side: 100, grass: 105 } };
+  Object.assign(VR.CAR_MODELS, {
+    camchata: { len: 48, wid: 19, S: 54, acc: 115, rev: 45, turn: 1.7, brake: 340, mass: 2.4, ...FOUR, aiTurn: 0.8, cruiseK: 0.92, colors: WHITE,
+      name: 'Kamyõ Mirĩ Chata', desc: 'Camión liviano de plataforma.', side: 'camchata', base: VR.drawTruck({ ...L1, kind: 'flat' }) },
+    camcarpa: { len: 48, wid: 19, S: 54, acc: 115, rev: 45, turn: 1.7, brake: 340, mass: 2.5, ...FOUR, aiTurn: 0.8, cruiseK: 0.92, colors: WHITE,
+      name: 'Kamyõ Mirĩ Carpa', desc: 'Camión liviano con baranda y carpa.', side: 'camcarpa', base: VR.drawTruck({ ...L1, kind: 'tarp' }) },
+    camfurgon: { len: 48, wid: 19, S: 54, acc: 112, rev: 45, turn: 1.7, brake: 340, mass: 2.5, ...FOUR, aiTurn: 0.8, cruiseK: 0.92, colors: WHITE,
+      name: 'Kamyõ Mirĩ Furgón', desc: 'Camión liviano de furgón blanco.', side: 'camfurgon', base: VR.drawTruck({ ...L1, kind: 'box' }) },
+    camvolcador: { len: 72, wid: 21, S: 78, acc: 95, rev: 40, turn: 1.4, brake: 320, mass: 4, max: { road: 185, stone: 165, dirt: 160, side: 105, grass: 115 }, big: true, minW: 5 * VR.TILE - 1, aiTurn: 0.55, cruiseK: 0.85, colors: [YELLOW[0], [RED[0], RED[1], RED[2]]],
+      name: 'Kamyõ Volcador', desc: 'Volcador de tres ejes. Pesadísimo.', side: 'camvolcador', base: VR.drawTruck({ kind: 'dump', W: 21, L: 72, cab: 21, ws: 5, axles: [9, 49, 58] }) },
+    camtractor: { len: 100, wid: 21, S: 106, acc: 85, rev: 35, turn: 1.15, brake: 300, mass: 5.4, max: { road: 205, stone: 160, dirt: 130, side: 95, grass: 95 }, big: true, minW: 5 * VR.TILE - 1, aiTurn: 0.4, cruiseK: 0.88, colors: [RED, BLUE, WHT],
+      name: 'Kamyõ Guasu Granelero', desc: 'Tractor con semirremolque de lona.', side: 'camtractor', base: VR.drawTruck({ kind: 'grain', W: 21, L: 100, cab: 24, ws: 5.4, axles: [8, 30, 37, 82, 89, 96] }) },
+  });
+
+  // sorteo: en el tránsito aparecen camiones además de los autos (según el ancho de la calle en px)
+  const pickCar0 = VR.pickCar;
+  VR.pickCar = (rnd, parked, roadW = 0) => {
+    if (!parked) {
+      const r = rnd(), T6 = 6 * VR.TILE - 1, T5 = 5 * VR.TILE - 1;
+      if (roadW >= T6 && r < 0.02) return 'camtractor';
+      if (roadW >= T5 && r < 0.045) return 'camvolcador';
+      if (r < 0.085) { const q = rnd(); return q < 0.4 ? 'camcarpa' : q < 0.72 ? 'camchata' : 'camfurgon'; }
+    }
+    return pickCar0(rnd, parked, roadW);
+  };
+})();
+
 // ===== game/tune.js =====
 // Taller de tuning (04/11/2026): colores, franjas, llantas, polarizado, alerón, techo, escape, faros xenón,
 // suspensión baja y neón para el auto y las motos. Todo dibujado por código, sin marcas. Lo usan el probador de
@@ -5017,7 +5113,7 @@ VR.Traffic = class {
       const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false, e.w);
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
-      if (VR.CAR_MODELS[model] && VR.CAR_MODELS[model].bus && W.boxOverlap(lx - 52, ly - 52, lx + 52, ly + 52)) continue; // los colectivos necesitan más lugar para aparecer
+      if (VR.CAR_MODELS[model] && (VR.CAR_MODELS[model].bus || VR.CAR_MODELS[model].big) && W.boxOverlap(lx - Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly - Math.max(52, VR.CAR_MODELS[model].len * 0.6), lx + Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly + Math.max(52, VR.CAR_MODELS[model].len * 0.6))) continue; // colectivos y camiones grandes necesitan más lugar para aparecer
       const tune = this.rnd() < 0.1 && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model, tune);
       { const h = v.contacts(lx, ly, v.a); if (h && h.other) continue; } // no aparecer encima de nadie
@@ -5026,7 +5122,7 @@ VR.Traffic = class {
         v.rider = { shirt: VR.RIDER_SHIRTS[0], head: '#2a1b12', L: VR.RIDER_LOOKS[(this.rnd() * VR.RIDER_LOOKS.length) | 0] };
       }
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (v.spec.cruiseK || 1) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
-      v.ai.next = this.pickNext(e, to, v.spec.bus ? 5 * VR.TILE - 1 : 0);
+      v.ai.next = this.pickNext(e, to, v.spec.minW || (v.spec.bus ? 5 * VR.TILE - 1 : 0));
       v.v = v.ai.cruise * 0.6;
       v.tid = ++this.seq || (this.seq = 1); W.addBox(v); this.list.push(v);
       return v;
@@ -5078,7 +5174,7 @@ VR.Traffic = class {
         ai.s -= ai.e.len;
         const to = ai.from === ai.e.a ? ai.e.b : ai.e.a;
         ai.e = this.edges[ai.next[0]]; ai.from = to;
-        ai.next = this.pickNext(ai.e, ai.next[1], v.spec.bus ? 5 * VR.TILE - 1 : 0);
+        ai.next = this.pickNext(ai.e, ai.next[1], v.spec.minW || (v.spec.bus ? 5 * VR.TILE - 1 : 0));
       }
       ai.latT = (ai.latT || 0) - dt;
       if (ai.latT <= 0) { ai.latT = 0.12; ai.latW = this.measureLane(v, ai, L + 6); if (ai.lat === undefined) ai.lat = ai.latW; }
@@ -5102,7 +5198,7 @@ VR.Traffic = class {
         const ne = this.edges[ai.next[0]], to = ai.from === ai.e.a ? ai.e.b : ai.e.a;
         const ax = this.nx[to] - this.nx[ai.from], ay = this.ny[to] - this.ny[ai.from], bx = this.nx[ai.next[1]] - this.nx[to], by = this.ny[ai.next[1]] - this.ny[to];
         const cos = (ax * bx + ay * by) / (Math.hypot(ax, ay) * Math.hypot(bx, by) || 1);
-        if (cos < 0.7) target = Math.min(target, v.type === 'moto' ? 70 : v.spec.bus ? 36 : 55);
+        if (cos < 0.7) target = Math.min(target, v.type === 'moto' ? 70 : (v.spec.bus || v.spec.big) ? 36 : v.spec.aiTurn ? 46 : 55);
         void ne;
       }
       // ¿algo adelante? mirar unos puntos sobre el rumbo
@@ -7606,7 +7702,7 @@ VR.drawSide = (kind, pal, t = {}) => {
   };
   if (t.neon && t.neon !== 'no' && VR.NEON) { const gr = g.createRadialGradient(32, 32, 1, 32, 32, 30); gr.addColorStop(0, `rgba(${VR.NEON[t.neon]},.85)`); gr.addColorStop(1, `rgba(${VR.NEON[t.neon]},0)`); g.save(); g.translate(0, 32); g.scale(1, 0.14); g.translate(0, -32); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); g.restore(); }
   const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
-  if ((kind === 'bomba' || kind === 'busindep' || kind === 'busguai') && VR.drawSideHD) { g.imageSmoothingEnabled = true; g.drawImage(VR.drawSideHD(kind, pal, t, 64, 36), 0, 0); return c; }
+  if ((kind === 'bomba' || kind === 'busindep' || kind === 'busguai' || /^cam/.test(kind)) && VR.drawSideHD) { g.imageSmoothingEnabled = true; g.drawImage(VR.drawSideHD(kind, pal, t, 64, 36), 0, 0); return c; }
   if (kind !== 'mita' && VR.CAR_MODELS && VR.CAR_MODELS[kind] && VR.CAR_MODELS[kind].sideShape || kind === 'karumbe') { VR.drawSideAuto(kind, pal, t, P, g, wheel, HL, S2); return c; }
   if (kind === 'car') {
     const lo = +t.bajo ? 2 : 0; g.save(); g.translate(0, lo);
@@ -8047,6 +8143,89 @@ VR.showVehicleCard = (v) => {
     busWheels(g, [16, 49], 5.2, 29.6);
   };
 
+  // ---------- camiones (10/11/2026) ----------
+  // Cabina adelantada a la derecha; la carga va atrás. Diseño propio, sin marcas ni letras. kind: camchata, camcarpa,
+  // camfurgon (livianos), camvolcador y camtractor (pesados). La pintura de la cabina sale de la paleta.
+  const truckHD = (g, kind, pal) => {
+    const [C, D, L] = pal, heavy = kind === 'camvolcador' || kind === 'camtractor', BLU = '#2a4fa8', WH = ['#f4f2ec', '#b9b6ae', '#ffffff'];
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(32, 34.2, 31, 1.2, 0, 0, Math.PI * 2); g.fill();
+    const wr = heavy ? 4.6 : 4.4, cy = 29.6;
+    const cabX = kind === 'camtractor' ? 43 : heavy ? 41 : 42;         // dónde empieza la cabina
+    const top = heavy ? 4.6 : 7.4;
+    // chasis
+    g.fillStyle = '#1c1c20'; g.fillRect(1.4, 24.6, cabX + 18 - 1.4, 2.2);
+    // carga
+    const cargoTop = (y) => lin(g, 0, y, 0, 24, ['#ffffff55', '#00000022']);
+    if (kind === 'camchata') {                                         // plataforma con bordes bajos
+      g.fillStyle = lin(g, 0, 20.4, 0, 24.6, ['#b4b8c0', '#6a6e76']); rrect(g, 1.6, 20.2, cabX - 2.2, 4.4, 0.4); g.fill();
+      g.fillStyle = lin(g, 0, 15.6, 0, 20.4, [WH[2], WH[0], WH[1]]); rrect(g, 1.6, 15.8, cabX - 2.2, 4.6, 0.5); g.fill();
+      g.fillStyle = BLU; g.fillRect(1.8, 17.6, cabX - 2.6, 1.1);
+      g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 0.3; for (let x = 6; x < cabX - 2; x += 5.4) { g.beginPath(); g.moveTo(x, 15.9); g.lineTo(x, 20.2); g.stroke(); }
+    } else if (kind === 'camcarpa') {                                  // baranda azul y blanca con carpa negra
+      g.fillStyle = lin(g, 0, 15, 0, 24.4, [WH[2], WH[0], WH[1]]); rrect(g, 1.6, 15, cabX - 2.2, 9.4, 0.5); g.fill();
+      g.fillStyle = BLU; g.fillRect(1.8, 18.2, cabX - 2.6, 1.6); g.fillRect(1.8, 22.4, cabX - 2.6, 0.9);
+      g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 0.3; for (let x = 6; x < cabX - 2; x += 4.6) { g.beginPath(); g.moveTo(x, 15.2); g.lineTo(x, 24.2); g.stroke(); }
+      g.fillStyle = lin(g, 0, 5.4, 0, 15.2, ['#4a4a56', '#1c1c22', '#0c0c10']);
+      g.beginPath(); g.moveTo(1.8, 15.2); g.lineTo(2.6, 8.6); g.quadraticCurveTo(3.4, 5.6, 7.4, 5.4); g.lineTo(cabX - 3.4, 5.6); g.quadraticCurveTo(cabX - 0.6, 5.8, cabX - 0.4, 9.4); g.lineTo(cabX - 0.4, 15.2); g.closePath(); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,.14)'; g.lineWidth = 0.35; g.beginPath(); g.moveTo(5, 7.4); g.quadraticCurveTo(20, 6.2, cabX - 4, 7.2); g.stroke();
+      g.strokeStyle = 'rgba(200,200,210,.4)'; g.lineWidth = 0.3; for (let x = 9; x < cabX - 3; x += 7) { g.beginPath(); g.moveTo(x, 6.2); g.quadraticCurveTo(x - 0.6, 11, x - 1.4, 15); g.stroke(); }
+    } else if (kind === 'camfurgon') {                                 // furgón blanco con franja azul
+      g.fillStyle = lin(g, 0, 5.4, 0, 24.4, [WH[2], WH[0], WH[1]]); rrect(g, 1.6, 5.4, cabX - 2.2, 19, 1); g.fill();
+      g.fillStyle = BLU; g.fillRect(1.8, 15.4, cabX - 2.6, 1.9); g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(1.8, 15.6, cabX - 2.6, 0.35);
+      g.fillStyle = 'rgba(255,255,255,.55)'; g.fillRect(2.4, 6, cabX - 3.8, 0.4);
+      g.strokeStyle = 'rgba(0,0,0,.22)'; g.lineWidth = 0.3; g.beginPath(); g.moveTo(2.6, 6); g.lineTo(2.6, 24); g.moveTo(cabX - 2, 6); g.lineTo(cabX - 2, 24); g.stroke();
+      g.fillStyle = '#9aa0aa'; g.fillRect(3.2, 12, 0.5, 4); g.fillRect(4.3, 12, 0.5, 4);
+    } else if (kind === 'camvolcador') {                               // caja volcadora con costillas y escalerita
+      g.fillStyle = lin(g, 0, 9, 0, 24.4, [L, C, D]); g.beginPath(); g.moveTo(1.6, 24.4); g.lineTo(1.6, 9.4); g.lineTo(cabX - 8, 9.4); g.lineTo(cabX + 3, 5.2); g.lineTo(cabX + 5, 5.4); g.lineTo(cabX + 5.4, 8.6); g.lineTo(cabX + 0.4, 24.4); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(1.8, 9.6, cabX - 9.6, 0.45);
+      g.fillStyle = D; g.fillRect(1.8, 23.2, cabX - 1.8, 1.2); g.fillRect(1.6, 9.4, 1, 15);
+      g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 0.4; for (let x = 7; x < cabX - 9; x += 5.4) { g.beginPath(); g.moveTo(x, 10.6); g.lineTo(x, 23); g.stroke(); }
+      g.strokeStyle = D; g.lineWidth = 0.5; g.beginPath(); g.moveTo(cabX - 7, 13); g.lineTo(cabX - 7, 22.6); g.moveTo(cabX - 4.6, 13); g.lineTo(cabX - 4.6, 22.6); g.stroke();
+      g.lineWidth = 0.35; for (let y = 14.4; y < 22; y += 1.8) { g.beginPath(); g.moveTo(cabX - 7, y); g.lineTo(cabX - 4.6, y); g.stroke(); } // escalerita
+    } else {                                                           // tractor con semirremolque granelero de lona
+      g.fillStyle = '#26262a'; g.fillRect(cabX - 6, 22.6, 8, 2.2); g.fillStyle = '#6a6e76'; g.fillRect(cabX - 3.2, 18, 3.6, 4.6); g.fillStyle = '#d8302a'; g.fillRect(cabX - 2.6, 19, 0.5, 3); g.fillStyle = '#2a58d8'; g.fillRect(cabX - 1.6, 19, 0.5, 3); // quinta rueda y mangueras
+      g.fillStyle = lin(g, 0, 5, 0, 24, [L, C, D]);
+      g.beginPath(); g.moveTo(1.6, 24); g.lineTo(1.6, 8); g.quadraticCurveTo(2, 5, 6, 4.8); g.lineTo(cabX - 6, 4.8); g.quadraticCurveTo(cabX - 3.2, 5, cabX - 3.2, 9); g.lineTo(cabX - 3.2, 24); g.closePath(); g.fill();
+      g.fillStyle = D; g.fillRect(1.6, 20.4, cabX - 4.8, 3.6);                                                  // faldón
+      g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 0.4; for (let x = 6; x < cabX - 5; x += 4.2) { g.beginPath(); g.moveTo(x, 6); g.quadraticCurveTo(x + 0.4, 13, x, 20.4); g.stroke(); }
+      g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 0.4; g.beginPath(); g.moveTo(4, 8); g.quadraticCurveTo(20, 6.6, cabX - 7, 7.6); g.stroke();
+      g.fillStyle = '#d8302a'; g.fillRect(1.6, 21.6, 0.9, 1.6);
+    }
+    // cabina adelantada
+    const cx1 = kind === 'camtractor' ? 62.4 : 62;
+    g.fillStyle = lin(g, 0, top, 0, 25, [L, C, C, D]);
+    g.beginPath();
+    if (heavy) { g.moveTo(cabX, 25); g.lineTo(cabX, 7.2); g.quadraticCurveTo(cabX, top, cabX + 3, top); g.lineTo(cx1 - 6, top); g.quadraticCurveTo(cx1 - 1, top + 0.6, cx1 - 0.6, 9.4); g.lineTo(cx1, 25); }
+    else { g.moveTo(cabX, 25); g.lineTo(cabX, 9.4); g.quadraticCurveTo(cabX, top, cabX + 3, top); g.lineTo(cx1 - 8, top - 0.2); g.quadraticCurveTo(cx1 - 2, top + 0.2, cx1 - 0.8, 10.6); g.lineTo(cx1, 25); }
+    g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 0.3; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(cabX + 1, top + 0.8, cx1 - cabX - 8, 0.4);
+    if (kind === 'camtractor') { g.fillStyle = lin(g, 0, 2.6, 0, 5, [L, D]); rrect(g, cabX + 2, 3.2, cx1 - cabX - 4, 2, 0.8); g.fill(); }   // deflector de techo
+    if (kind === 'camvolcador') { g.fillStyle = lin(g, 0, 2.8, 0, 5.6, [L, C, D]); g.beginPath(); g.moveTo(cabX - 8, 8); g.lineTo(cabX + 1, 3.4); g.lineTo(cabX + 7.4, 3); g.lineTo(cabX + 7.6, 5.6); g.lineTo(cabX + 0.6, 6.4); g.lineTo(cabX - 6, 10); g.closePath(); g.fill(); } // visera de la caja sobre la cabina
+    // ventanilla, puerta, manija
+    const wy0 = top + 2.4, wy1 = wy0 + (heavy ? 7.2 : 6.6), wx0 = cabX + 2.6, wx1 = cx1 - 5.4;
+    g.fillStyle = lin(g, 0, wy0, 0, wy1, ['#8fb0cc', '#2c3e54', '#16202e']); g.beginPath(); g.moveTo(wx0, wy1); g.lineTo(wx0, wy0); g.lineTo(wx1 - 1.4, wy0); g.lineTo(wx1 + 2.2, wy1); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.28)'; g.beginPath(); g.moveTo(wx0 + 1.4, wy1); g.lineTo(wx0 + 3.6, wy0); g.lineTo(wx0 + 5, wy0); g.lineTo(wx0 + 2.8, wy1); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 0.3; g.beginPath(); g.moveTo(cabX + 1.4, wy1 + 1.2); g.lineTo(cabX + 1.4, 24.6); g.moveTo(cx1 - 3.6, wy0); g.lineTo(cx1 - 3.6, 24.6); g.stroke();
+    g.fillStyle = '#26262a'; g.fillRect(cabX + 3.4, wy1 + 2.2, 2.2, 0.6);
+    // espejo grande y luces
+    g.fillStyle = '#1e1e22'; rrect(g, cx1 - 2.2, wy0 + 0.4, 2.6, 5.4, 1); g.fill(); g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(cx1 - 1.6, wy0 + 1, 0.5, 3.6);
+    headlight(g, cx1 - 3.2, 19.6, 3.2, 2.6, false, 0.8);
+    g.fillStyle = '#f0a020'; rrect(g, cx1 - 3, 22.2, 2.6, 1.1, 0.4); g.fill();                                     // guiñe
+    // paragolpes y parrilla
+    g.fillStyle = lin(g, 0, 22.6, 0, 25.6, ['#4a4a52', '#16161a']); rrect(g, cx1 - 5.6, 23.8, 6.4, 2.2, 0.7); g.fill();
+    g.fillStyle = lin(g, 0, 22.6, 0, 24, ['#f4f6fa', '#8a909a']); g.fillRect(cx1 - 5, 23.9, 5.2, 0.5);
+    g.fillStyle = '#16161a'; g.fillRect(cx1 - 0.4, 12.6, 0.8, 6);
+    if (heavy) { g.fillStyle = lin(g, 0, 6, 0, 24, ['#f4f6fa', '#6a707a']); rrect(g, cabX - 2.8, 5, 1.1, 14, 0.5); g.fill(); g.fillStyle = '#9aa0aa'; g.fillRect(cabX + 4.4, 25.2, 5, 2); } // escape vertical y tanque
+    taillight(g, 0.6, 21, 1.4, 3);
+    // ruedas
+    const arch = (x) => { g.fillStyle = '#0e0e10'; g.beginPath(); g.arc(x, cy, wr + 1.2, Math.PI, 0); g.fill(); };
+    const xs = kind === 'camtractor' ? [56, 37, 30, 20, 13, 6] : kind === 'camvolcador' ? [55, 24, 31, 38] : [51, 14];
+    const xs2 = kind === 'camvolcador' ? [55, 24, 31] : xs;
+    for (const x of xs2) arch(x);
+    for (const x of xs2) wheelHD(g, x, cy, wr, 'serie', true);
+  };
+
   VR.drawSideHD = (kind, pal, t = {}, W = 320, H = 180) => {
     const c = VR.canvas(W, H), g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.scale(W / 64, H / 36);
     if (kind === 'car') kind = 'mita';
@@ -8054,6 +8233,7 @@ VR.showVehicleCard = (v) => {
     else if (kind === 'busindep') busIndepHD(g, pal);
     else if (kind === 'busguai') busGuaiHD(g, pal);
     else if (kind === 'bomba') bombaHD(g, pal);
+    else if (/^cam/.test(kind)) truckHD(g, kind, pal);
     else if (VR.CAR_MODELS[kind]) carHD(g, kind, pal, t);
     else motoHD(g, kind, pal, t);
     return c;
@@ -9088,7 +9268,7 @@ VR.Titulo = class {
   function enterCar(c) {
     if (c._nid !== undefined && online) online.take(c); // un auto del anfitrión: pasa a ser tuyo
     if (emer) emer.stolen(c);
-    if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : '🚗 ¡Te llevaste el auto!'); }
+    if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : /^cam/.test(c.model) ? '🚚 ¡Te llevaste el camión!' : '🚗 ¡Te llevaste el auto!'); }
     if (c.type === 'moto') c.rider = me();
     c.robado = true; car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
