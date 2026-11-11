@@ -719,6 +719,34 @@ VR.parkCars = (world, n, near) => {
     (world.parkingDemo = world.parkingDemo || []).push({ x0: X - 20, x1: (d.x + d.w) * S + 20, y0: Y - 20, y1: (d.ry + 4) * S });
   }
 
+  // Terminal, hospital y comisarías (11/11/2026): micros estacionados en la terminal, ambulancias en el Hospital Regional
+  // y una patrullera frente a cada comisaría. También deja en `world.hospital` / `world.comisarias` un punto a pie para reaparecer.
+  {
+    const P = world.pois || {}, PIE = [0, 2, 4, 7, 11, 12], tl = (world.labels || []).find((l) => /Terminal/.test(l.text));
+    const foot = (x, y) => { const ok = (px, py) => !world.hits(px - 16, py - 8, px + 16, py + 4) && PIE.includes(world.get(Math.floor(px / S), Math.floor(py / S))); if (ok(x, y)) return { x, y };
+      for (let r = 4; r < 400; r += 4) for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283, px = Math.round(x + Math.cos(a) * r), py = Math.round(y + Math.sin(a) * r); if (ok(px, py)) return { x: px, y: py }; } return { x, y }; };
+    const spots = (cx, cy, R) => { // lugares contra el cordón, mirando en el sentido de la mano (derecha), de más cerca a más lejos
+      const out = [], tx = Math.floor(cx / S), ty = Math.floor(cy / S);
+      for (let y = ty - R; y <= ty + R; y++) for (let x = tx - R; x <= tx + R; x++) {
+        if (!road(x, y)) continue;
+        const hz = road(x - 2, y) && road(x + 2, y), vt = road(x, y - 2) && road(x, y + 2);
+        let q = null;
+        if (hz && curb(x, y - 1) && !road(x, y - 2) && !road(x, y - 3) && road(x, y + 1) && road(x, y + 2)) q = { x: (x + 0.5) * S, y: y * S + 14, a: -Math.PI / 2 };
+        else if (hz && curb(x, y + 1) && !road(x, y + 2) && !road(x, y + 3) && road(x, y - 1) && road(x, y - 2)) q = { x: (x + 0.5) * S, y: (y + 1) * S - 14, a: Math.PI / 2 };
+        else if (vt && curb(x + 1, y) && !road(x + 2, y) && !road(x + 3, y) && road(x - 1, y) && road(x - 2, y)) q = { x: (x + 1) * S - 14, y: (y + 0.5) * S, a: 0 };
+        else if (vt && curb(x - 1, y) && !road(x - 2, y) && !road(x - 3, y) && road(x + 1, y) && road(x + 2, y)) q = { x: x * S + 14, y: (y + 0.5) * S, a: Math.PI };
+        if (q) { q.d = Math.hypot(q.x - cx, q.y - cy); out.push(q); }
+      }
+      return out.sort((a, b) => a.d - b.d);
+    };
+    const fill = (cx, cy, R, models, gap) => { const put = []; for (const q of spots(cx, cy, R)) { if (put.length >= models.length) break; if (put.some((o) => Math.hypot(o.x - q.x, o.y - q.y) < gap) || world.boxOverlap(q.x - 40, q.y - 40, q.x + 40, q.y + 40)) continue; put.push(q); add(q.x, q.y, q.a, (rnd() * 4) | 0, 'car', models[put.length - 1]); } return put; };
+    if (tl) fill(tl.x, tl.y + 40, 18, ['guairena', 'indep', 'guairena', 'indep', 'guairena'], 88);
+    const hs = P['Hospital Regional'];
+    if (hs) { const cx = (hs[0] + 0.5) * S, cy = (hs[1] + 0.5) * S, f = foot(cx, cy + 60); world.hospital = { x: f.x, y: f.y, cx, cy }; fill(cx, cy, 40, ['ambulancia', 'ambulancia'], 60); }
+    world.comisarias = [];
+    for (const k in P) if (/^Comisar|^Jefatura/.test(k)) { const cx = (P[k][0] + 0.5) * S, cy = (P[k][1] + 0.5) * S, f = foot(cx, cy + 40); world.comisarias.push({ name: k, x: f.x, y: f.y, cx, cy }); fill(cx, cy, 14, ['patrulla'], 60); }
+  }
+
   // Filas pedidas por el mapa (05/11/2026): Mcal. López al oeste de Coronel Bogado, autos en fila contra el
   // cordón sur mirando al oeste, como en el video de Leandro
   for (const d of world.decals || []) {

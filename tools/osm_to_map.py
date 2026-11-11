@@ -625,18 +625,50 @@ def main(src, out, preview=None):
     xmin = np.full(n_b, W); xmax = np.zeros(n_b, int); ymin = np.full(n_b, H); ymax = np.zeros(n_b, int)
     np.minimum.at(xmin, bv, bxs); np.maximum.at(xmax, bv, bxs); np.minimum.at(ymin, bv, bys); np.maximum.at(ymax, bv, bys)
     xsum = np.bincount(bv, weights=bxs, minlength=n_b); cnt = np.bincount(bv, minlength=n_b)
+    # ---------- hospital, comisarías (11/11/2026): edificios que OSM no nombra, ubicados por coordenadas ----------
+    # cada uno: (nombre, cartel, (lat, lon) o caja (lat0, lat1, lon0, lon1), estilo). Con caja: todos los edificios dentro; el cartel va en el más grande.
+    HOSP = {'floors': 2, 'roof': 'losa', 'roofc': 0, 'wallc': 4}
+    POLI = {'floors': 1, 'roof': 'teja', 'roofc': 1, 'wallc': 9}
+    POIS = [('hospital', 'Hospital Regional', (-25.7771, -25.7760, -56.4623, -56.4609), HOSP),
+            ('sanatorio', 'Sanatorio Modelo', (-25.7826581, -56.448532), HOSP),
+            ('comisaria', 'Comisaría 3ª', (-25.7825242, -56.4476626), POLI), ('comisaria', 'Comisaría 2ª', (-25.790715, -56.4498238), POLI),
+            ('comisaria', 'Comisaría 1ª', (-25.7930376, -56.4605633), POLI), ('comisaria', 'Comisaría 4ª', (-25.7772221, -56.4371089), POLI),
+            ('comisaria', 'Comisaría 5ª', (-25.7685736, -56.4460124), POLI), ('comisaria', 'Comisaría 6ª', (-25.7805313, -56.4609607), POLI),
+            ('comisaria', 'Comisaría 26', (-25.7786781, -56.4727953), POLI), ('comisaria', 'Comisaría 32', (-25.7954947, -56.4378973), POLI),
+            ('jefatura', 'Jefatura de Policía', (-25.7839495, -56.4315364), POLI)]
+    poi_lm, poi_pos = {}, {}
+    for kind_, text_, where_, st_ in POIS:
+        pts_ = [(where_[0], where_[2]), (where_[1], where_[3])] if len(where_) == 4 else [(where_[0] + 0.00006, where_[1] - 0.00006), (where_[0] - 0.00006, where_[1] + 0.00006)]
+        (ax_, ay_), (bx_, by_) = [T(place(*proj(la_, lo_))) for la_, lo_ in pts_]
+        tx0_, tx1_, ty0_, ty1_ = int(min(ax_, bx_)), int(max(ax_, bx_)), int(min(ay_, by_)), int(max(ay_, by_))
+        cx0_, cx1_, cy0_, cy1_ = tx0_, tx1_, ty0_, ty1_
+        for rad_ in ((5, 10, 20) if len(where_) == 2 else (0,)):
+            tx0_, tx1_, ty0_, ty1_ = cx0_ - rad_, cx1_ + rad_, cy0_ - rad_, cy1_ + rad_
+            sub_ = bid[max(0, ty0_):ty1_ + 1, max(0, tx0_):tx1_ + 1]
+            found_ = [int(v) for v in np.unique(sub_) if v > 0]
+            if found_: break
+        if len(where_) == 2 and len(found_) > 1:  # punto: solo el edificio más cercano al centro
+            cy_, cx_ = (cy0_ + cy1_) // 2, (cx0_ + cx1_) // 2
+            yy_, xx_ = np.nonzero(sub_ > 0); k_ = int(np.argmin((yy_ + max(0, ty0_) - cy_) ** 2 + (xx_ + max(0, tx0_) - cx_) ** 2)); found_ = [int(sub_[yy_[k_], xx_[k_]])]
+        poi_pos[text_] = ((tx0_ + tx1_) // 2, (ty0_ + ty1_) // 2)
+        if not found_: print('SIN EDIFICIO para', text_, poi_pos[text_]); continue
+        big_ = max(found_, key=lambda v: (sub_ == v).sum())
+        for v in found_: poi_lm[v] = dict(st_, label=text_ if v == big_ else None, kind=kind_)
+    print('POIs: %d edificios marcados' % len(poi_lm))
     for new_id, old in enumerate(ids, 1):
         tags = buildings[old - 1]['tags']
         xm = int(xsum[new_id] / cnt[new_id])
         below = street[min(H - 1, ymax[new_id] + 2), xm]
-        lm = LANDMARKS.get(tags.get('name', ''))
+        lm = LANDMARKS.get(tags.get('name', '')) or poi_lm.get(new_id)
         try:
             floors = int(float(tags.get('building:levels', '0')))
         except ValueError:
             floors = 0
         if lm:
             floors, rt, rc, wc, shop = lm['floors'], ROOF_TYPES.index(lm['roof']), N_ROOFS + lm['roofc'], lm['wallc'], lm.get('shop', 0)
-            labels.append({'text': lm['label'], 'x': int(xm * 16 + 8), 'y': int(ymin[new_id] * 16 - 12)})
+            if lm.get('label'): labels.append({'text': lm['label'], 'x': int(xm * 16 + 8), 'y': int(ymin[new_id] * 16 - 12)})
+            if lm.get('label') and lm.get('kind') in ('hospital', 'sanatorio', 'comisaria', 'jefatura'):  # cruz roja / escudo azul sobre el techo
+                decals.append({'kind': 'cruz' if lm['kind'] in ('hospital', 'sanatorio') else 'escudo', 'x': xm - 1, 'y': int((ymin[new_id] + ymax[new_id]) // 2) - 1, 'w': 3, 'h': 3})
         else:
             if not floors:
                 floors = 1 if rnd.random() < 0.7 else 2 if rnd.random() < 0.85 else 3
@@ -1338,7 +1370,7 @@ def main(src, out, preview=None):
 
     # ---------- empaquetar ----------
     roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'swidths': [ROADS[k][1] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
-    meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
+    meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'pois': {k: [int(v[0]), int(v[1])] for k, v in poi_pos.items()}, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
             'spawn': spawn, 'nb': len(ids), 'nt': len(trees), 'bounds': [mnla, mnlo, mxla, mxlo], 'rot': round(ang, 3),
             'credit': '© colaboradores de OpenStreetMap (ODbL) · barrios: INE Paraguay'}
     js = json.dumps(meta, ensure_ascii=False).encode()

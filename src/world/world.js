@@ -700,6 +700,16 @@ VR.decor = {
 VR.MUNI = { SAL: '#eeece6', SAL_D: '#c9c5bc', SAL_L: '#ffffff', CREAM: '#ffffff', CREAM_D: '#d6d2c8', TEJA: '#b5573c', TEJA_D: '#8e3f2b', GLASS: '#3a3f4c' };
 VR.MUNI_OLD = { SAL: '#e99c82', SAL_D: '#c97a62', SAL_L: '#f4b8a0', CREAM: '#f2deae', CREAM_D: '#cdb582' };
 VR.decorOver = {
+  cruz(g, d) { // cruz roja sobre el techo (hospital y sanatorio): placa blanca con cruz
+    const S = VR.TILE, cx = (d.x + 1.5) * S, cy = (d.y + 1.5) * S;
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(cx - 14, cy - 12, 30, 30); g.fillStyle = '#f6f6f2'; g.fillRect(cx - 16, cy - 16, 32, 32);
+    g.fillStyle = '#d02828'; g.fillRect(cx - 4.5, cy - 12, 9, 24); g.fillRect(cx - 12, cy - 4.5, 24, 9);
+  },
+  escudo(g, d) { // placa azul con estrella blanca sobre el techo de las comisarías
+    const S = VR.TILE, cx = (d.x + 1.5) * S, cy = (d.y + 1.5) * S;
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(cx - 11, cy - 9, 24, 24); g.fillStyle = '#1f3f9a'; g.fillRect(cx - 12, cy - 12, 24, 24); g.fillStyle = '#e8eefc'; g.fillRect(cx - 12, cy - 12, 24, 2); g.fillRect(cx - 12, cy + 10, 24, 2);
+    g.fillStyle = '#f0d040'; g.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 3.5 : 8, a = -Math.PI / 2 + k * Math.PI / 5; g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } g.closePath(); g.fill();
+  },
   // frente de un negocio que mira al este (a la plaza): toldo/alero sobre la vereda, cartel y detalles
   frente(g, d) {
     const S = VR.TILE, X = d.x * S, Y = d.y * S + 2, H = d.h * S - 4;
@@ -1230,6 +1240,7 @@ VR.loadMap = async (url) => {
   w.calSet = new Set(w.plazaSet); (meta.areas || []).forEach((n, i) => { if (/parque manuel ortiz/i.test(n)) w.calSet.add(i + 1); }); // troncos pintados con cal (plazas y parque Ortiz Guerrero)
   { const t = (meta.decals || []).find((d) => d.kind === 'tienda'), T = VR.T; // taller (05/11/2026): cerca del Centro, misma vereda que la tienda, hacia el oeste
     if (t) for (let x = t.x - 6; x > t.x - 120; x--) { let ok = true; for (let k = 0; k < 7 && ok; k++) ok = w.get(x - k, t.y) === T.SIDEWALK && w.get(x - k, t.y + 1) === T.BUILDING; if (ok) { meta.decals.push({ kind: 'taller', x: x - 6, y: t.y, w: 7, h: 1 }); break; } } }
+  w.pois = meta.pois || {};
   w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
   w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
   w.roads = meta.roads || null; w.special = meta.special || {};

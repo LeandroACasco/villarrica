@@ -100,8 +100,8 @@
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
   const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
-    onBusted: () => { sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'); if (VR.mis) VR.mis.emit('arresto'); },
-    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al hospital.'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
+    onBusted: () => { sentTo('🚔 ¡Te agarró la Policía! Saliste de la comisaría después de un rato.', 'comisaria'); if (VR.mis) VR.mis.emit('arresto'); },
+    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al Hospital Regional.', 'hospital'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
   const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
@@ -109,12 +109,15 @@
   VR.audio.setOn(VR.store.get('snd', true));
   if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
     vida.onMsg = (m) => toast(m);
-    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios)); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
+    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios), 'hospital'); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
   }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
-  function sentTo(msg) {
+  function sentTo(msg, to) {
     if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; zoomPoke(); driveLabels(false); }
-    player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y;
+    let dest = world.spawn; // 11/11/2026: al hospital (Hospital Regional) o a la comisaría más cercana, si existen en el mapa
+    if (to === 'hospital' && world.hospital) dest = world.hospital;
+    else if (to === 'comisaria' && world.comisarias && world.comisarias.length) dest = world.comisarias.reduce((b, c) => (Math.hypot(c.x - player.x, c.y - player.y) < Math.hypot(b.x - player.x, b.y - player.y) ? c : b));
+    player.x = player.px = dest.x; player.y = player.py = dest.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y;
     if (emer) emer.clear();
     toast(msg);
   }
@@ -178,7 +181,7 @@
     if (hp <= 0) {
       hp = 60; hpShow(); player.rag = null; const cost = VR.PRECIOS && VR.PRECIOS.remedios || 30000;
       if (vida) vida.cobrarODeber(cost, 'Hospital: curaciones'); else VR.Wallet.add(-Math.min(VR.Wallet.get(), cost));
-      sentTo('🏥 Quedaste muy mal y te llevaron al hospital. Curaciones: ' + VR.fmtGs(cost));
+      sentTo('🏥 Quedaste muy mal y te llevaron al hospital. Curaciones: ' + VR.fmtGs(cost), 'hospital');
     }
   }
   function hpTick(dt) { if (hp >= 100) return; hpQuiet -= dt; if (hpQuiet <= 0) { hp = Math.min(100, hp + dt * 2.5); hpShow(); } }

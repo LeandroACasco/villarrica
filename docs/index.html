@@ -374,7 +374,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 6bc7b6ba · 2026-11-11</div>
+  <div class="tVer">Versión 1d428057 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -466,7 +466,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 6bc7b6ba · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 1d428057 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -1938,6 +1938,16 @@ VR.decor = {
 VR.MUNI = { SAL: '#eeece6', SAL_D: '#c9c5bc', SAL_L: '#ffffff', CREAM: '#ffffff', CREAM_D: '#d6d2c8', TEJA: '#b5573c', TEJA_D: '#8e3f2b', GLASS: '#3a3f4c' };
 VR.MUNI_OLD = { SAL: '#e99c82', SAL_D: '#c97a62', SAL_L: '#f4b8a0', CREAM: '#f2deae', CREAM_D: '#cdb582' };
 VR.decorOver = {
+  cruz(g, d) { // cruz roja sobre el techo (hospital y sanatorio): placa blanca con cruz
+    const S = VR.TILE, cx = (d.x + 1.5) * S, cy = (d.y + 1.5) * S;
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(cx - 14, cy - 12, 30, 30); g.fillStyle = '#f6f6f2'; g.fillRect(cx - 16, cy - 16, 32, 32);
+    g.fillStyle = '#d02828'; g.fillRect(cx - 4.5, cy - 12, 9, 24); g.fillRect(cx - 12, cy - 4.5, 24, 9);
+  },
+  escudo(g, d) { // placa azul con estrella blanca sobre el techo de las comisarías
+    const S = VR.TILE, cx = (d.x + 1.5) * S, cy = (d.y + 1.5) * S;
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(cx - 11, cy - 9, 24, 24); g.fillStyle = '#1f3f9a'; g.fillRect(cx - 12, cy - 12, 24, 24); g.fillStyle = '#e8eefc'; g.fillRect(cx - 12, cy - 12, 24, 2); g.fillRect(cx - 12, cy + 10, 24, 2);
+    g.fillStyle = '#f0d040'; g.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 3.5 : 8, a = -Math.PI / 2 + k * Math.PI / 5; g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } g.closePath(); g.fill();
+  },
   // frente de un negocio que mira al este (a la plaza): toldo/alero sobre la vereda, cartel y detalles
   frente(g, d) {
     const S = VR.TILE, X = d.x * S, Y = d.y * S + 2, H = d.h * S - 4;
@@ -2468,6 +2478,7 @@ VR.loadMap = async (url) => {
   w.calSet = new Set(w.plazaSet); (meta.areas || []).forEach((n, i) => { if (/parque manuel ortiz/i.test(n)) w.calSet.add(i + 1); }); // troncos pintados con cal (plazas y parque Ortiz Guerrero)
   { const t = (meta.decals || []).find((d) => d.kind === 'tienda'), T = VR.T; // taller (05/11/2026): cerca del Centro, misma vereda que la tienda, hacia el oeste
     if (t) for (let x = t.x - 6; x > t.x - 120; x--) { let ok = true; for (let k = 0; k < 7 && ok; k++) ok = w.get(x - k, t.y) === T.SIDEWALK && w.get(x - k, t.y + 1) === T.BUILDING; if (ok) { meta.decals.push({ kind: 'taller', x: x - 6, y: t.y, w: 7, h: 1 }); break; } } }
+  w.pois = meta.pois || {};
   w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
   w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
   w.roads = meta.roads || null; w.special = meta.special || {};
@@ -4634,6 +4645,34 @@ VR.parkCars = (world, n, near) => {
     (world.parkingDemo = world.parkingDemo || []).push({ x0: X - 20, x1: (d.x + d.w) * S + 20, y0: Y - 20, y1: (d.ry + 4) * S });
   }
 
+  // Terminal, hospital y comisarías (11/11/2026): micros estacionados en la terminal, ambulancias en el Hospital Regional
+  // y una patrullera frente a cada comisaría. También deja en `world.hospital` / `world.comisarias` un punto a pie para reaparecer.
+  {
+    const P = world.pois || {}, PIE = [0, 2, 4, 7, 11, 12], tl = (world.labels || []).find((l) => /Terminal/.test(l.text));
+    const foot = (x, y) => { const ok = (px, py) => !world.hits(px - 16, py - 8, px + 16, py + 4) && PIE.includes(world.get(Math.floor(px / S), Math.floor(py / S))); if (ok(x, y)) return { x, y };
+      for (let r = 4; r < 400; r += 4) for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283, px = Math.round(x + Math.cos(a) * r), py = Math.round(y + Math.sin(a) * r); if (ok(px, py)) return { x: px, y: py }; } return { x, y }; };
+    const spots = (cx, cy, R) => { // lugares contra el cordón, mirando en el sentido de la mano (derecha), de más cerca a más lejos
+      const out = [], tx = Math.floor(cx / S), ty = Math.floor(cy / S);
+      for (let y = ty - R; y <= ty + R; y++) for (let x = tx - R; x <= tx + R; x++) {
+        if (!road(x, y)) continue;
+        const hz = road(x - 2, y) && road(x + 2, y), vt = road(x, y - 2) && road(x, y + 2);
+        let q = null;
+        if (hz && curb(x, y - 1) && !road(x, y - 2) && !road(x, y - 3) && road(x, y + 1) && road(x, y + 2)) q = { x: (x + 0.5) * S, y: y * S + 14, a: -Math.PI / 2 };
+        else if (hz && curb(x, y + 1) && !road(x, y + 2) && !road(x, y + 3) && road(x, y - 1) && road(x, y - 2)) q = { x: (x + 0.5) * S, y: (y + 1) * S - 14, a: Math.PI / 2 };
+        else if (vt && curb(x + 1, y) && !road(x + 2, y) && !road(x + 3, y) && road(x - 1, y) && road(x - 2, y)) q = { x: (x + 1) * S - 14, y: (y + 0.5) * S, a: 0 };
+        else if (vt && curb(x - 1, y) && !road(x - 2, y) && !road(x - 3, y) && road(x + 1, y) && road(x + 2, y)) q = { x: x * S + 14, y: (y + 0.5) * S, a: Math.PI };
+        if (q) { q.d = Math.hypot(q.x - cx, q.y - cy); out.push(q); }
+      }
+      return out.sort((a, b) => a.d - b.d);
+    };
+    const fill = (cx, cy, R, models, gap) => { const put = []; for (const q of spots(cx, cy, R)) { if (put.length >= models.length) break; if (put.some((o) => Math.hypot(o.x - q.x, o.y - q.y) < gap) || world.boxOverlap(q.x - 40, q.y - 40, q.x + 40, q.y + 40)) continue; put.push(q); add(q.x, q.y, q.a, (rnd() * 4) | 0, 'car', models[put.length - 1]); } return put; };
+    if (tl) fill(tl.x, tl.y + 40, 18, ['guairena', 'indep', 'guairena', 'indep', 'guairena'], 88);
+    const hs = P['Hospital Regional'];
+    if (hs) { const cx = (hs[0] + 0.5) * S, cy = (hs[1] + 0.5) * S, f = foot(cx, cy + 60); world.hospital = { x: f.x, y: f.y, cx, cy }; fill(cx, cy, 40, ['ambulancia', 'ambulancia'], 60); }
+    world.comisarias = [];
+    for (const k in P) if (/^Comisar|^Jefatura/.test(k)) { const cx = (P[k][0] + 0.5) * S, cy = (P[k][1] + 0.5) * S, f = foot(cx, cy + 40); world.comisarias.push({ name: k, x: f.x, y: f.y, cx, cy }); fill(cx, cy, 14, ['patrulla'], 60); }
+  }
+
   // Filas pedidas por el mapa (05/11/2026): Mcal. López al oeste de Coronel Bogado, autos en fila contra el
   // cordón sur mirando al oeste, como en el video de Leandro
   for (const d of world.decals || []) {
@@ -6060,7 +6099,10 @@ VR.Emergency = class {
     if (kind !== 'policia' && this.units.some((u) => u.kind === kind && !u.dead && u.task !== 'leave')) { const u = this.units.find((q) => q.kind === kind && q.task !== 'leave'); if (u && !u.queue.includes(target)) u.queue.push(target); return; }
     // los bomberos salen del cuartel de la Plaza Pettirossi si el fuego no queda demasiado lejos (05/11/2026)
     const fh = this.world.firehouse, fromHouse = kind === 'bomberos' && fh && target && Math.hypot(target.x - fh.x, target.y - fh.y) < 9000 && !this.world.boxOverlap(fh.x - 34, fh.y - 14, fh.x + 34, fh.y + 14);
-    const p = fromHouse ? [fh.x, fh.y] : this.spawnPoint(); if (!p) return null;
+    // la ambulancia sale del Hospital Regional y la patrulla de la comisaría más cercana si quedan cerca de donde pasa algo (la patrulla, a menos de 1300 px de vos) (11/11/2026)
+    const hq = kind === 'ambulancia' ? this.world.hospital && [this.world.hospital] : kind === 'policia' ? this.world.comisarias : null;
+    let base = null, tg = target || this.focus; if (hq && tg && !fromHouse) for (const c of hq) { const d = Math.hypot(c.x - tg.x, c.y - tg.y); if (d < (kind === 'policia' ? 1300 : 9000) && (!base || d < base.d) && !this.world.boxOverlap(c.x - 34, c.y - 14, c.x + 34, c.y + 14)) base = { c, d }; }
+    const p = fromHouse ? [fh.x, fh.y] : base ? [base.c.x, base.c.y] : this.spawnPoint(); if (!p) return null;
     const ang = fromHouse ? (target.x >= fh.x ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(this.focus.x - p[0], -(this.focus.y - p[1]));
     if (fromHouse && Math.hypot(this.focus.x - fh.x, this.focus.y - fh.y) < 600) this.toast('🚒 Salen los bomberos del cuartel');
     const v = new VR.Car(this.world, p[0], p[1], ang, 0, 'car', model);
@@ -9936,8 +9978,8 @@ VR.Titulo = class {
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
   const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
-    onBusted: () => { sentTo('🚔 ¡Te agarró la Policía! Saliste después de un rato.'); if (VR.mis) VR.mis.emit('arresto'); },
-    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al hospital.'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
+    onBusted: () => { sentTo('🚔 ¡Te agarró la Policía! Saliste de la comisaría después de un rato.', 'comisaria'); if (VR.mis) VR.mis.emit('arresto'); },
+    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al Hospital Regional.', 'hospital'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
   const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
@@ -9945,12 +9987,15 @@ VR.Titulo = class {
   VR.audio.setOn(VR.store.get('snd', true));
   if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
     vida.onMsg = (m) => toast(m);
-    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios)); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
+    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios), 'hospital'); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
   }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
-  function sentTo(msg) {
+  function sentTo(msg, to) {
     if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; zoomPoke(); driveLabels(false); }
-    player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y;
+    let dest = world.spawn; // 11/11/2026: al hospital (Hospital Regional) o a la comisaría más cercana, si existen en el mapa
+    if (to === 'hospital' && world.hospital) dest = world.hospital;
+    else if (to === 'comisaria' && world.comisarias && world.comisarias.length) dest = world.comisarias.reduce((b, c) => (Math.hypot(c.x - player.x, c.y - player.y) < Math.hypot(b.x - player.x, b.y - player.y) ? c : b));
+    player.x = player.px = dest.x; player.y = player.py = dest.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y;
     if (emer) emer.clear();
     toast(msg);
   }
@@ -10014,7 +10059,7 @@ VR.Titulo = class {
     if (hp <= 0) {
       hp = 60; hpShow(); player.rag = null; const cost = VR.PRECIOS && VR.PRECIOS.remedios || 30000;
       if (vida) vida.cobrarODeber(cost, 'Hospital: curaciones'); else VR.Wallet.add(-Math.min(VR.Wallet.get(), cost));
-      sentTo('🏥 Quedaste muy mal y te llevaron al hospital. Curaciones: ' + VR.fmtGs(cost));
+      sentTo('🏥 Quedaste muy mal y te llevaron al hospital. Curaciones: ' + VR.fmtGs(cost), 'hospital');
     }
   }
   function hpTick(dt) { if (hp >= 100) return; hpQuiet -= dt; if (hpQuiet <= 0) { hp = Math.min(100, hp + dt * 2.5); hpShow(); } }

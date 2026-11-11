@@ -151,7 +151,10 @@ VR.Emergency = class {
     if (kind !== 'policia' && this.units.some((u) => u.kind === kind && !u.dead && u.task !== 'leave')) { const u = this.units.find((q) => q.kind === kind && q.task !== 'leave'); if (u && !u.queue.includes(target)) u.queue.push(target); return; }
     // los bomberos salen del cuartel de la Plaza Pettirossi si el fuego no queda demasiado lejos (05/11/2026)
     const fh = this.world.firehouse, fromHouse = kind === 'bomberos' && fh && target && Math.hypot(target.x - fh.x, target.y - fh.y) < 9000 && !this.world.boxOverlap(fh.x - 34, fh.y - 14, fh.x + 34, fh.y + 14);
-    const p = fromHouse ? [fh.x, fh.y] : this.spawnPoint(); if (!p) return null;
+    // la ambulancia sale del Hospital Regional y la patrulla de la comisaría más cercana si quedan cerca de donde pasa algo (la patrulla, a menos de 1300 px de vos) (11/11/2026)
+    const hq = kind === 'ambulancia' ? this.world.hospital && [this.world.hospital] : kind === 'policia' ? this.world.comisarias : null;
+    let base = null, tg = target || this.focus; if (hq && tg && !fromHouse) for (const c of hq) { const d = Math.hypot(c.x - tg.x, c.y - tg.y); if (d < (kind === 'policia' ? 1300 : 9000) && (!base || d < base.d) && !this.world.boxOverlap(c.x - 34, c.y - 14, c.x + 34, c.y + 14)) base = { c, d }; }
+    const p = fromHouse ? [fh.x, fh.y] : base ? [base.c.x, base.c.y] : this.spawnPoint(); if (!p) return null;
     const ang = fromHouse ? (target.x >= fh.x ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(this.focus.x - p[0], -(this.focus.y - p[1]));
     if (fromHouse && Math.hypot(this.focus.x - fh.x, this.focus.y - fh.y) < 600) this.toast('🚒 Salen los bomberos del cuartel');
     const v = new VR.Car(this.world, p[0], p[1], ang, 0, 'car', model);
