@@ -35,6 +35,12 @@
   body.historia .soloLibre, body.historia #pOnline { display: none !important; }
   body:not(.historia) .soloHist { display: none !important; }
   body.historia #btnChat, body.historia #btnJobs, body.historia #btnOnline { display: none; } /* en Historia, changas y online van por el celular / no hay online */
+  /* cámara en la mano (11/11/2026): marco de celular chico, el juego sigue y se camina */
+  #camPhone { position: fixed; right: 10px; top: 56px; z-index: 25; width: clamp(130px, 22vw, 200px); background: #121216; border: 3px solid #3a3a44; border-radius: 16px; padding: 7px 7px 6px; box-shadow: 0 6px 20px #000a; }
+  #camPhone canvas { width: 100%; display: block; border-radius: 8px; background: #000; } #camFl { position: absolute; left: 7px; right: 7px; top: 7px; aspect-ratio: 16 / 10; background: #fff; opacity: 0; pointer-events: none; border-radius: 8px; } #camFl.on { opacity: .9; }
+  #camTxt { color: #cfd2da; font: 700 11px system-ui; text-align: center; margin: 4px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #camPhone .camBt { display: flex; align-items: center; justify-content: space-between; } #camPhone .camBt button { border: 2px solid #fff; background: rgba(60,60,70,.8); color: #fff; border-radius: 50%; width: 32px; height: 32px; font-size: 14px; cursor: pointer; }
+  #camPhone #camShot { width: 44px; height: 44px; background: #e8e8ee; box-shadow: inset 0 0 0 4px #121216; } #camPhone #camShot:active { transform: scale(.92); }
   /* cámara del celular (11/11/2026) */
   .gal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .gal img { width: 100%; border-radius: 6px; cursor: pointer; display: block; }
   /* apps dentro del celular (11/11/2026): notas a mano y mapa/GPS embebido */
@@ -394,7 +400,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión d9de7dab · 2026-11-11</div>
+  <div class="tVer">Versión 1cd19bda · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -486,7 +492,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d9de7dab · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 1cd19bda · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -10829,13 +10835,13 @@ VR.Titulo = class {
     if (celApp === 'mis' && mis) paintMis(celBody, true);
     if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
     if (celApp === 'culebra') celStop = VR.Culebra(celBody);
-    if (celApp === 'camara') celStop = camaraApp();
     celBody.querySelectorAll('[data-buy]').forEach((b) => b.onclick = () => { const it = VR.PIEZA_ITEMS.find((q) => q.k === b.dataset.buy); if (!it || !vida.pagaBanco(it.p, 'Mercadito: ' + it.n)) { paintCel(); return; } vida.s.pieza.items = vida.s.pieza.items || {}; vida.s.pieza.items[it.k] = 1; vida.save(); toast('📦 ' + it.n + ': te lo dejan en la pieza'); paintCel(); });
     celBody.querySelectorAll('[data-f]').forEach((im) => im.onclick = () => { celApp = 'foto' + im.dataset.f; paintCel(); });
     celBody.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { VR.Fotos.del(+b.dataset.del); celApp = 'galeria'; paintCel(); });
     celBody.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => { const a = b.dataset.a;
       if (b.classList.contains('off')) { toast('📵 Sin saldo'); return; }
       if (vida.celuRoto() && Math.random() < 0.12) { toast('📱 La pantalla rota no responde... probá de nuevo'); return; }
+      if (a === 'camara') { celGo(() => camOn()); return; }
       celApp = a; paintCel(); });
     celBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { celGo(() => toggleEq()); });
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
@@ -10843,21 +10849,25 @@ VR.Titulo = class {
       if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }
       jaha = { tipo: b.dataset.j, precio: +b.dataset.p, t: 8 + Math.random() * 10, dest: { ...dest } }; celDlg.close(); toast(JAHA[jaha.tipo].ico + ' Pediste un Mbohasa: llega en ' + Math.ceil(jaha.t) + ' s'); });
   }
-  // Cámara dentro del celular (11/11/2026): visor en vivo de lo que ve el juego (o la pieza, si estás adentro); el mundo sigue andando.
-  function camaraApp() {
-    const src = () => (VR.pieza && VR.pieza.on ? VR.pieza.cv : $('game')), s0 = src(), ar = s0.width / s0.height;
-    celBody.innerHTML = '<h3>📷 Cámara</h3><div style="position:relative"><canvas id="camVf" width="320" height="' + Math.round(320 / ar) + '" style="width:100%;border:3px solid #111;border-radius:8px;background:#000;display:block"></canvas><div id="camFl" style="position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;border-radius:8px"></div></div><div id="camTxt" style="text-align:center;font-size:12px;margin:6px 0;opacity:.8"></div><div class="row"><button class="cbtn" id="camShot" style="font-size:22px">⚪ Sacar foto</button><button class="cbtn sec" id="camGal">🖼 Galería</button></div>';
-    const vf = celBody.querySelector('#camVf'), g = vf.getContext('2d'), fl = celBody.querySelector('#camFl'); let on = true;
-    VR.loop.paused = !!(VR.pieza && VR.pieza.on); VR.input.enabled = false;
-    const tick = () => { if (!on || !vf.isConnected) { on = false; return; } const c = src(); try { g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, vf.width, vf.height); } catch (e) {} celBody.querySelector('#camTxt').textContent = '📍 ' + ((VR.pieza && VR.pieza.on) ? 'Tu pieza' : ($('zone').textContent || 'Villarrica')); requestAnimationFrame(tick); };
+  // Cámara (11/11/2026): el celular queda en tu mano (marco chico a un costado) con el visor en vivo; el juego sigue y caminás con el dedo,
+  // las flechas o el control. Funciona también en la pieza (saca lo que ves ahí).
+  let camRaf = 0;
+  const camSrc = () => (VR.pieza && VR.pieza.on ? VR.pieza.cv : $('game')), camLugar = () => ((VR.pieza && VR.pieza.on) ? 'Mi pieza' : ($('zone').textContent || 'Villarrica'));
+  function camOn() {
+    camOff(); const s0 = camSrc(), ar = s0.width / s0.height, d = document.createElement('div'); d.id = 'camPhone';
+    d.innerHTML = '<canvas id="camVf" width="240" height="' + Math.round(240 / ar) + '"></canvas><div id="camFl"></div><div id="camTxt"></div><div class="camBt"><button id="camX" title="Guardar el celular">✕</button><button id="camShot" title="Sacar foto"></button><button id="camGal" title="Galería">🖼</button></div>';
+    document.body.append(d); const vf = d.querySelector('#camVf'), g = vf.getContext('2d'); VR.loop.paused = false; VR.input.enabled = true;
+    const tick = () => { if (!d.isConnected) return; try { g.imageSmoothingEnabled = false; g.drawImage(camSrc(), 0, 0, vf.width, vf.height); } catch (e) {} d.querySelector('#camTxt').textContent = '📍 ' + camLugar(); camRaf = requestAnimationFrame(tick); };
     tick();
-    celBody.querySelector('#camShot').onclick = () => {
-      fl.style.transition = 'none'; fl.style.opacity = '.9'; setTimeout(() => { fl.style.transition = 'opacity .35s'; fl.style.opacity = '0'; }, 60);
-      try { VR.Fotos.snap(src(), ((VR.pieza && VR.pieza.on) ? 'Mi pieza' : ($('zone').textContent || 'Villarrica')) + ' · ' + (vida ? vida.diaSemana + ' ' + vida.hhmm : '')); toast('📸 Foto guardada en la Galería'); } catch (e) { toast('No se pudo sacar la foto'); }
+    d.querySelector('#camX').onclick = camOff;
+    d.querySelector('#camGal').onclick = () => { camOff(); openCel('galeria'); };
+    d.querySelector('#camShot').onclick = () => {
+      const f = d.querySelector('#camFl'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 70);
+      try { VR.Fotos.snap(camSrc(), camLugar() + ' · ' + (vida ? vida.diaSemana + ' ' + vida.hhmm : '')); toast('📸 Foto guardada en la Galería'); } catch (e) { toast('No se pudo sacar la foto'); }
     };
-    celBody.querySelector('#camGal').onclick = () => { celApp = 'galeria'; paintCel(); };
-    return () => { on = false; VR.loop.paused = true; };
   }
+  function camOff() { cancelAnimationFrame(camRaf); const d = $('camPhone'); if (d) d.remove(); }
+  addEventListener('keydown', (e) => { if (e.code === 'KeyF' && $('camPhone')) { e.preventDefault(); $('camShot').click(); } });
   // el Mbohasa llega: subís y en un ratito estás (pasa la hora del viaje y se cobra de la billetera electrónica)
   function updateMbohasa(dt) {
     if (!jaha) return; jaha.t -= dt; if (jaha.t > 0) return;
