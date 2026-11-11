@@ -499,3 +499,6 @@ El **Teatro Municipal** por dentro también se redibujó en alta (11/11/2026): `
 
 ## Despensa en modo Libre
 En Libre no existen `mis` ni `VR.PUNTOS`, así que `main.js` crea `VR.despensa` con una compra por `VR.Wallet` y un `puestoL` (puesto dibujado con `VR.PUNTOS.despensa.draw` en `Lugares('despensa')`, radio de interacción 44). En Historia sigue yendo por `VR.Misiones`.
+
+## Marcadores de entrada
+`entradas()` (main.js) lista los lugares enterables (tienda Ao Porã, teatro, despensa, pieza en Historia). Se dibujan: en la calle con `drawEntrada` (flecha + ícono que late, se oculta a <44 u porque ahí aparece el hint), en el minimapa (pegados al borde si están lejos) y en el mapa grande (ícono + nombre). Para sumar un lugar nuevo, agregalo ahí.

@@ -400,7 +400,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 824b320f · 2026-11-11</div>
+  <div class="tVer">Versión 0a233f0f · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -492,7 +492,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 824b320f · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0a233f0f · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -11099,7 +11099,7 @@ VR.Titulo = class {
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && !player.rag && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && !player.rag && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall);
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
     perros.collect(cx, cy, sw, sh, a, tall); calle.collect(cx, cy, sw, sh, a, tall); if (caidas) caidas.collect(cx, cy, sw, sh, a, tall);
@@ -11410,6 +11410,23 @@ VR.Titulo = class {
       collect(cx, cy, tall) { const p = this.pos(); if (!p) return; const x = Math.round(p.x - cx), y = Math.round(p.y - cy); if (x < -40 || y < -50 || x > VR.screen.w + 40 || y > VR.screen.h + 40) return; tall.push({ sy: p.y - 6, draw: (g) => D.draw(g, x, y) }); },
       near(pl) { const p = this.pos(); return p && Math.hypot(p.x - pl.x, p.y - pl.y) < 44 ? p : null; } };
   }
+  // ---------- lugares donde se puede entrar: marcador siempre visible en la calle, minimapa y mapa grande ----------
+  const lugE = mis ? mis.lug : new VR.Lugares(world);
+  const entradas = () => { const o = [];
+    if (shopDoor) o.push({ x: shopDoor.x, y: shopDoor.y - 6, ico: '👕', c: '#ff9ed0', name: 'Tienda Ao Porã' });
+    if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro' });
+    const d = lugE.get('despensa'); if (d) o.push({ x: d.x, y: d.y - 4, ico: '🛒', c: '#9fe0a0', name: 'Despensa Ñande Róga' });
+    if (mis) { const p = lugE.get('pieza'); if (p) o.push({ x: p.x, y: p.y, ico: '🏠', c: '#ffd84a', name: 'Tu pieza' }); }
+    return o; };
+  const drawEntrada = (g, e, x, y, t) => { // flecha que late + ícono sobre la puerta
+    const b = Math.sin(t * 4 + e.x) * 3, yy = y - 40 + b;
+    g.save(); g.lineJoin = 'round';
+    g.fillStyle = '#1a1a1e'; g.beginPath(); g.arc(x, yy - 9, 11, 0, 7); g.fill();
+    g.fillStyle = e.c; g.beginPath(); g.arc(x, yy - 9, 9, 0, 7); g.fill();
+    g.fillStyle = '#1a1a1e'; g.beginPath(); g.moveTo(x - 6, yy + 1); g.lineTo(x + 6, yy + 1); g.lineTo(x, yy + 9); g.closePath(); g.fill();
+    g.fillStyle = e.c; g.beginPath(); g.moveTo(x - 4, yy + 1); g.lineTo(x + 4, yy + 1); g.lineTo(x, yy + 7); g.closePath(); g.fill();
+    g.font = '11px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e.ico, x, yy - 8.5);
+    g.restore(); };
   const online = new VR.Online(); cine = new VR.Cine(online); const teatro = new VR.Teatro(player, online, toast); teatro.btn.onclick = () => cine.open(); online.bind({ world, traffic, peds, emer, weapons, night: VR.night, cars, fauna, cisnes });
   $('onNick').value = VR.store.get('nick', ''); $('onRoom').value = VR.store.get('sala', '');
   online.onStatus = (st) => { $('onStatus').textContent = st; };
@@ -11523,6 +11540,8 @@ VR.Titulo = class {
     $('mapFriends').innerHTML = (mis ? mis.marcas() : []).map((m) => { const x = m.x / 16 * mv.k + mv.ox, y = m.y / 16 * mv.k + mv.oy;
       return `<div style="position:absolute;left:${x - 10}px;top:${y - 10}px;width:20px;height:20px;border-radius:50%;background:${m.c};border:2px solid #1a1a1e;box-sizing:border-box;font:900 12px/16px system-ui;text-align:center;color:#1a1a1e">${m.ico === '●' ? '' : m.ico}</div><div style="position:absolute;left:${x}px;top:${y - 30}px;transform:translateX(-50%);font:700 12px system-ui;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap">${String(m.name || '').replace(/[<>&"]/g, '')}</div>`; }).join('') + [...online.others.values()].map((o) => { const x = o.x / 16 * mv.k + mv.ox, y = o.y / 16 * mv.k + mv.oy, n = String(o.n || '').replace(/[<>&"]/g, '');
       return `<div style="position:absolute;left:${x - 8}px;top:${y - 8}px;width:16px;height:16px;border-radius:50%;background:#3fd3ff;border:2px solid #0b2a36;box-sizing:border-box"></div><div style="position:absolute;left:${x}px;top:${y - 26}px;transform:translateX(-50%);font:700 13px system-ui;color:#fff;text-shadow:0 0 3px #0b2a36,0 0 3px #0b2a36;white-space:nowrap">${n}</div>`; }).join('');
+    $('mapFriends').innerHTML += entradas().map((e) => { const x = e.x / 16 * mv.k + mv.ox, y = e.y / 16 * mv.k + mv.oy;
+      return `<div style="position:absolute;pointer-events:none;left:${x - 12}px;top:${y - 12}px;width:24px;height:24px;border-radius:50%;background:${e.c};border:2px solid #1a1a1e;box-sizing:border-box;font:13px/20px system-ui;text-align:center">${e.ico}</div><div style="position:absolute;pointer-events:none;left:${x}px;top:${y - 32}px;transform:translateX(-50%);font:700 12px system-ui;color:#fff;text-shadow:0 0 3px #1a1a1e,0 0 3px #1a1a1e;white-space:nowrap">${e.name}</div>`; }).join('');
   };
   setInterval(() => { if (mapOpen) drawMapFriends(); }, 500);
   function openMap() { if (!mapBuilt) buildMap(); if (vida) $('mapLabels').querySelectorAll('[data-barrio]').forEach((s) => { s.textContent = (VR.Barrios.abierto(s.dataset.barrio) ? '' : '🔒 ') + s.dataset.barrio; }); drawMapFriends(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
@@ -11719,6 +11738,12 @@ VR.Titulo = class {
       if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
       const R0 = 6.5 * D / 112; mctx.fillStyle = '#1a1a1e'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = m.c; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
       mctx.fillStyle = '#1a1a1e'; mctx.font = `900 ${Math.round(9 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText(m.ico === '●' ? '' : m.ico, px, py + 0.5);
+    }
+    for (const e of entradas()) { // lugares donde se puede entrar
+      let px = (e.x / VR.TILE - sx) * k, py = (e.y / VR.TILE - sy) * k; const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 9 * D / 112;
+      if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
+      const R0 = 6.5 * D / 112; mctx.fillStyle = '#1a1a1e'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = e.c; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
+      mctx.font = `${Math.round(8.5 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText(e.ico, px, py + 0.5);
     }
     if (dest && !(dest.mis && mis && mis.s.act)) {
       let px = (dest.x / VR.TILE - sx) * k, py = (dest.y / VR.TILE - sy) * k;
