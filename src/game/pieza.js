@@ -26,7 +26,7 @@
     }
     get P() { return this.vida.s.pieza; }
     has(k) { return !!(this.P.items && this.P.items[k]); }
-    fit() { const u = Math.max(1, Math.min(innerWidth / W, innerHeight / H) * 0.96); this.u = u; this.cv.width = Math.round(W * u); this.cv.height = Math.round(H * u); this.cv.style.width = this.cv.width + 'px'; this.cv.style.height = this.cv.height + 'px'; }
+    fit() { const u = Math.max(1, Math.min(innerWidth / W, (innerHeight - 52) / H) * 0.96); this.u = u; this.cv.width = Math.round(W * u); this.cv.height = Math.round(H * u); this.cv.style.width = this.cv.width + 'px'; this.cv.style.height = this.cv.height + 'px'; }
     entrar() {
       if (this.on) return; const P = this.P; P.items = P.items || {}; P.manchas = P.manchas | 0;
       this.on = true; this.el.hidden = false; document.body.classList.add('adentro'); this.fit();
@@ -87,6 +87,7 @@
     }
     loop(t) {
       if (!this.on) return; const dt = Math.min(0.05, (t - this.last) / 1000); this.last = t; this.t += dt;
+      VR.loop.paused = true; // el menú del lugar reanuda el juego al cerrarse: acá adentro siempre en pausa
       VR.input.poll(); const busy = VR.Dialogo.abierto || this.busy();
       if (!busy) this.update(dt); else { this.moving = false; }
       this.draw(); VR.input.consume(); requestAnimationFrame((tt) => this.loop(tt));
