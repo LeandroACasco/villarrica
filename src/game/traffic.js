@@ -93,7 +93,12 @@ VR.Traffic = class {
       const s0 = Math.min(e.len * 0.5, 20);
       const [lx, ly, dx, dy] = this.lane(e, n, s0);
       if (W.boxOverlap(lx - 24, ly - 24, lx + 24, ly + 24)) continue;
-      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false, e.w);
+      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car'; let model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false, e.w);
+      // 11/11/2026: más colectivos cerca de la Gobernación, la Municipalidad y la Terminal (y más micros en calles anchas / rutas)
+      if (!moto && e.w >= 4 * VR.TILE - 1) {
+        if (!this.hot) this.hot = (W.labels || []).filter((l) => /^Gobernaci|^Municipalidad|^Terminal/.test(l.text));
+        if (!(VR.CAR_MODELS[model] && VR.CAR_MODELS[model].bus) && this.hot.some((h) => Math.hypot(h.x - lx, h.y - ly) < 900) && this.rnd() < 0.3) model = this.rnd() < (e.w >= 6 * VR.TILE - 1 ? 0.5 : 0.25) ? 'guairena' : 'indep';
+      }
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       if (VR.CAR_MODELS[model] && (VR.CAR_MODELS[model].bus || VR.CAR_MODELS[model].big) && W.boxOverlap(lx - Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly - Math.max(52, VR.CAR_MODELS[model].len * 0.6), lx + Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly + Math.max(52, VR.CAR_MODELS[model].len * 0.6))) continue; // colectivos y camiones grandes necesitan más lugar para aparecer
@@ -105,7 +110,7 @@ VR.Traffic = class {
         v.rider = { shirt: VR.RIDER_SHIRTS[0], head: '#2a1b12', L: VR.RIDER_LOOKS[(this.rnd() * VR.RIDER_LOOKS.length) | 0] };
       }
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (v.spec.cruiseK || 1) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
-      v.ai.next = this.pickNext(e, to, v.spec.minW || (v.spec.bus ? 5 * VR.TILE - 1 : 0));
+      v.ai.next = this.pickNext(e, to, v.spec.minW || (v.spec.bus ? 4 * VR.TILE - 1 : 0));
       v.v = v.ai.cruise * 0.6;
       v.tid = ++this.seq || (this.seq = 1); W.addBox(v); this.list.push(v);
       return v;
@@ -157,7 +162,7 @@ VR.Traffic = class {
         ai.s -= ai.e.len;
         const to = ai.from === ai.e.a ? ai.e.b : ai.e.a;
         ai.e = this.edges[ai.next[0]]; ai.from = to;
-        ai.next = this.pickNext(ai.e, ai.next[1], v.spec.minW || (v.spec.bus ? 5 * VR.TILE - 1 : 0));
+        ai.next = this.pickNext(ai.e, ai.next[1], v.spec.minW || (v.spec.bus ? 4 * VR.TILE - 1 : 0));
       }
       ai.latT = (ai.latT || 0) - dt;
       if (ai.latT <= 0) { ai.latT = 0.12; ai.latW = this.measureLane(v, ai, L + 6); if (ai.lat === undefined) ai.lat = ai.latW; }

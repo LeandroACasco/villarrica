@@ -453,3 +453,8 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - **Vehículos estacionados** (`VR.parkCars`, bloque "Terminal, hospital y comisarías"): 5 micros (Guaireña/Independencia) contra el cordón frente a la Terminal, 2 ambulancias frente al hospital y una patrullera por comisaría; deja `world.hospital` y `world.comisarias` (punto a pie).
 - **Juego:** `sentTo(msg, 'hospital'|'comisaria')` en `main.js` (explotar, desmayo y vida 0 → Hospital Regional; arresto → comisaría más cercana). `emerg.dispatch`: la ambulancia sale del hospital y la patrulla de la comisaría más cercana si queda a < 1300 px.
 - Pendiente: sirena y entrada visible, paradas y pasajeros en la terminal, más frecuencia de colectivos, hospital público vs. sanatorio privado (cobro distinto).
+
+## Más colectivos y apps del celular (11/11/2026)
+- **Colectivos:** `traffic.spawn` fuerza colectivo (30 %) en autos que aparecen a menos de 900 px de la Gobernación, la Municipalidad o la Terminal; los colectivos ahora pueden usar calles de 4 baldosas (antes 5; en `pickCar` 3 % en calles de 4 y 7 % en las de 5+).
+- **`game/celapps.js`:** `VR.Fotos` (guarda hasta 14 fotos JPEG chicas en `localStorage` `vr_fotos`, con lugar y hora al pie) y `VR.Culebra` (Snake 16×16, récord en `vr_culebra`).
+- **main.js / shell.html:** apps Cámara, Galería y Culebra en el celular. La Cámara cierra el celular y muestra el visor (`#camUI`: obturador, galería, cerrar; el HUD se oculta y el juego sigue: podés caminar y encuadrar). La Galería muestra las fotos, permite guardarlas en el teléfono (descarga) o borrarlas.

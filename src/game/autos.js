@@ -318,7 +318,7 @@
   // sorteo de auto: en el tránsito, a veces un karumbe; estacionados, no. roadW = ancho de la calle en px
   // (los colectivos solo salen en calles de 5 baldosas o más: avenidas y calles principales)
   VR.pickCar = (rnd, parked, roadW = 0) => {
-    if (!parked && roadW >= 5 * VR.TILE - 1) { const b = rnd(); if (b < 0.07) return rnd() < (roadW >= 6 * VR.TILE - 1 ? 0.55 : 0.3) ? 'guairena' : 'indep'; }
+    if (!parked && roadW >= 4 * VR.TILE - 1) { const b = rnd(); if (b < (roadW >= 5 * VR.TILE - 1 ? 0.07 : 0.03)) return rnd() < (roadW >= 6 * VR.TILE - 1 ? 0.55 : 0.3) ? 'guairena' : 'indep'; }
     const r = rnd();
     if (!parked && r < 0.025) return 'karumbe';
     if (!parked && r < 0.055) return rnd() < 0.7 ? 'policam' : 'patrulla'; // alguna patrullera recorriendo

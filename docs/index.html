@@ -35,6 +35,15 @@
   body.historia .soloLibre, body.historia #pOnline { display: none !important; }
   body:not(.historia) .soloHist { display: none !important; }
   body.historia #btnChat, body.historia #btnJobs, body.historia #btnOnline { display: none; } /* en Historia, changas y online van por el celular / no hay online */
+  /* cámara del celular (11/11/2026) */
+  #camUI { position: fixed; inset: 0; z-index: 25; pointer-events: none; } #camUI[hidden] { display: none; }
+  #camUI .cf { position: absolute; width: 34px; height: 34px; border: 0 solid #fff; opacity: .85; } #camUI .a { left: 14px; top: 14px; border-width: 3px 0 0 3px; } #camUI .b { right: 14px; top: 14px; border-width: 3px 3px 0 0; } #camUI .c { left: 14px; bottom: 14px; border-width: 0 0 3px 3px; } #camUI .d { right: 14px; bottom: 14px; border-width: 0 3px 3px 0; }
+  #camUI button { position: absolute; pointer-events: auto; border: 3px solid #fff; background: rgba(20,20,24,.55); color: #fff; border-radius: 50%; font-size: 20px; cursor: pointer; }
+  #camShot { right: 26px; top: 50%; width: 68px; height: 68px; margin-top: -34px; background: #e8e8ee !important; box-shadow: inset 0 0 0 5px rgba(20,20,24,.7); } #camShot:active { transform: scale(.92); }
+  #camX { right: 36px; top: 34px; width: 44px; height: 44px; } #camGal { right: 36px; bottom: 34px; width: 44px; height: 44px; }
+  #camTxt { position: absolute; left: 0; right: 0; top: 18px; text-align: center; color: #fff; font: 700 13px system-ui; text-shadow: 0 1px 3px #000; }
+  #camFlash { position: fixed; inset: 0; background: #fff; z-index: 26; opacity: 0; pointer-events: none; transition: opacity .35s; } #camFlash.on { opacity: .9; transition: none; }
+  .gal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .gal img { width: 100%; border-radius: 6px; cursor: pointer; display: block; }
   /* celular (Historia): apps */
   #celDlg { width: min(330px, 92vw); height: min(560px, 90vh); padding: 0; border: 3px solid #0d0d10; border-radius: 30px; background: linear-gradient(160deg, #23324a, #121822); color: #fff; box-shadow: 0 0 0 6px #2a2a30, 0 14px 40px rgba(0,0,0,.6); overflow: hidden; display: none; flex-direction: column; }
   #celDlg[open] { display: flex; }
@@ -352,6 +361,7 @@
   <p id="ovSub">Cargando la ciudad…</p>
 </div>
 <div id="toast"></div>
+<div id="camUI" hidden><i class="cf a"></i><i class="cf b"></i><i class="cf c"></i><i class="cf d"></i><span id="camTxt"></span><button id="camX" title="Cerrar cámara">✕</button><button id="camShot" title="Sacar foto"></button><button id="camGal" title="Galería">🖼</button></div><div id="camFlash"></div>
 <div id="wanted" hidden></div>
 <button id="weapon" hidden></button>
 <div id="vcard"><canvas width="256" height="144"></canvas><div><b></b><span></span></div></div>
@@ -374,7 +384,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 1d428057 · 2026-11-11</div>
+  <div class="tVer">Versión bf1779f6 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -466,7 +476,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 1d428057 · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión bf1779f6 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -5079,7 +5089,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
   // sorteo de auto: en el tránsito, a veces un karumbe; estacionados, no. roadW = ancho de la calle en px
   // (los colectivos solo salen en calles de 5 baldosas o más: avenidas y calles principales)
   VR.pickCar = (rnd, parked, roadW = 0) => {
-    if (!parked && roadW >= 5 * VR.TILE - 1) { const b = rnd(); if (b < 0.07) return rnd() < (roadW >= 6 * VR.TILE - 1 ? 0.55 : 0.3) ? 'guairena' : 'indep'; }
+    if (!parked && roadW >= 4 * VR.TILE - 1) { const b = rnd(); if (b < (roadW >= 5 * VR.TILE - 1 ? 0.07 : 0.03)) return rnd() < (roadW >= 6 * VR.TILE - 1 ? 0.55 : 0.3) ? 'guairena' : 'indep'; }
     const r = rnd();
     if (!parked && r < 0.025) return 'karumbe';
     if (!parked && r < 0.055) return rnd() < 0.7 ? 'policam' : 'patrulla'; // alguna patrullera recorriendo
@@ -5365,7 +5375,12 @@ VR.Traffic = class {
       const s0 = Math.min(e.len * 0.5, 20);
       const [lx, ly, dx, dy] = this.lane(e, n, s0);
       if (W.boxOverlap(lx - 24, ly - 24, lx + 24, ly + 24)) continue;
-      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false, e.w);
+      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car'; let model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false, e.w);
+      // 11/11/2026: más colectivos cerca de la Gobernación, la Municipalidad y la Terminal (y más micros en calles anchas / rutas)
+      if (!moto && e.w >= 4 * VR.TILE - 1) {
+        if (!this.hot) this.hot = (W.labels || []).filter((l) => /^Gobernaci|^Municipalidad|^Terminal/.test(l.text));
+        if (!(VR.CAR_MODELS[model] && VR.CAR_MODELS[model].bus) && this.hot.some((h) => Math.hypot(h.x - lx, h.y - ly) < 900) && this.rnd() < 0.3) model = this.rnd() < (e.w >= 6 * VR.TILE - 1 ? 0.5 : 0.25) ? 'guairena' : 'indep';
+      }
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       if (VR.CAR_MODELS[model] && (VR.CAR_MODELS[model].bus || VR.CAR_MODELS[model].big) && W.boxOverlap(lx - Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly - Math.max(52, VR.CAR_MODELS[model].len * 0.6), lx + Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly + Math.max(52, VR.CAR_MODELS[model].len * 0.6))) continue; // colectivos y camiones grandes necesitan más lugar para aparecer
@@ -5377,7 +5392,7 @@ VR.Traffic = class {
         v.rider = { shirt: VR.RIDER_SHIRTS[0], head: '#2a1b12', L: VR.RIDER_LOOKS[(this.rnd() * VR.RIDER_LOOKS.length) | 0] };
       }
       v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (v.spec.cruiseK || 1) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
-      v.ai.next = this.pickNext(e, to, v.spec.minW || (v.spec.bus ? 5 * VR.TILE - 1 : 0));
+      v.ai.next = this.pickNext(e, to, v.spec.minW || (v.spec.bus ? 4 * VR.TILE - 1 : 0));
       v.v = v.ai.cruise * 0.6;
       v.tid = ++this.seq || (this.seq = 1); W.addBox(v); this.list.push(v);
       return v;
@@ -5429,7 +5444,7 @@ VR.Traffic = class {
         ai.s -= ai.e.len;
         const to = ai.from === ai.e.a ? ai.e.b : ai.e.a;
         ai.e = this.edges[ai.next[0]]; ai.from = to;
-        ai.next = this.pickNext(ai.e, ai.next[1], v.spec.minW || (v.spec.bus ? 5 * VR.TILE - 1 : 0));
+        ai.next = this.pickNext(ai.e, ai.next[1], v.spec.minW || (v.spec.bus ? 4 * VR.TILE - 1 : 0));
       }
       ai.latT = (ai.latT || 0) - dt;
       if (ai.latT <= 0) { ai.latT = 0.12; ai.latW = this.measureLane(v, ai, L + 6); if (ai.lat === undefined) ai.lat = ai.latW; }
@@ -9758,6 +9773,57 @@ VR.Cisnes = class {
   };
 })();
 
+// ===== game/celapps.js =====
+// Apps extra del celular (11/11/2026): Cámara + Galería (fotos del juego) y Culebra (el clásico de los celulares viejos).
+// Todo original. Las fotos se guardan chicas (JPEG) en localStorage, hasta 14.
+(function () {
+  const KEY = 'vr_fotos', MAX = 14;
+  VR.Fotos = {
+    list() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } },
+    save(l) { while (l.length) { try { localStorage.setItem(KEY, JSON.stringify(l)); return true; } catch (e) { l.pop(); } } return false; },
+    // saca la foto del canvas del juego, con un marquito y el lugar / hora abajo
+    snap(cv, caption) {
+      const W = 640, H = Math.round(W * cv.height / cv.width), o = document.createElement('canvas'); o.width = W; o.height = H + 26;
+      const g = o.getContext('2d'); g.imageSmoothingEnabled = false; g.fillStyle = '#f4efe4'; g.fillRect(0, 0, W, H + 26); g.drawImage(cv, 0, 0, W, H);
+      g.fillStyle = '#3a3226'; g.font = '700 13px system-ui'; g.textBaseline = 'middle'; g.fillText(caption, 10, H + 14);
+      const url = o.toDataURL('image/jpeg', 0.72), l = this.list(); l.unshift({ t: Date.now(), c: caption, u: url }); this.save(l.slice(0, MAX)); return url;
+    },
+    del(i) { const l = this.list(); l.splice(i, 1); this.save(l); },
+  };
+  // Culebra: 16×16, se maneja con flechas / WASD / deslizando el dedo / botones. Come chipa 🥖 y crece.
+  VR.Culebra = function (box, onExit) {
+    const N = 16, C = 18, hs = +(localStorage.getItem('vr_culebra') || 0); let best = hs;
+    box.innerHTML = '<h3>🐍 Culebra <span id="cbPts" style="float:right;font-weight:600;font-size:13px"></span></h3><canvas id="cbCv" width="' + N * C + '" height="' + N * C + '" style="width:100%;background:#9bbc0f;border:3px solid #0f380f;border-radius:6px;image-rendering:pixelated;touch-action:none"></canvas>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px"><span></span><button class="cbtn sec" data-d="u">▲</button><span></span><button class="cbtn sec" data-d="l">◀</button><button class="cbtn sec" data-d="d">▼</button><button class="cbtn sec" data-d="r">▶</button></div>';
+    const cv = box.querySelector('#cbCv'), g = cv.getContext('2d'), pts = box.querySelector('#cbPts');
+    let s, dir, nd, food, score, dead, timer;
+    const rnd = () => ({ x: (Math.random() * N) | 0, y: (Math.random() * N) | 0 });
+    const reset = () => { s = [{ x: 8, y: 8 }, { x: 7, y: 8 }, { x: 6, y: 8 }]; dir = nd = { x: 1, y: 0 }; score = 0; dead = false; place(); draw(); };
+    const place = () => { do food = rnd(); while (s.some((q) => q.x === food.x && q.y === food.y)); };
+    const turn = (x, y) => { if (dead) { reset(); return; } if (x !== -dir.x || y !== -dir.y) nd = { x, y }; };
+    const step = () => {
+      if (!box.isConnected) { clearInterval(timer); return; }
+      if (dead) return; dir = nd; const h = { x: s[0].x + dir.x, y: s[0].y + dir.y };
+      if (h.x < 0 || h.y < 0 || h.x >= N || h.y >= N || s.some((q) => q.x === h.x && q.y === h.y)) { dead = true; if (score > best) { best = score; try { localStorage.setItem('vr_culebra', best); } catch (e) {} } draw(); return; }
+      s.unshift(h); if (h.x === food.x && h.y === food.y) { score++; place(); } else s.pop(); draw();
+    };
+    const draw = () => {
+      g.fillStyle = '#9bbc0f'; g.fillRect(0, 0, N * C, N * C);
+      g.fillStyle = '#0f380f'; s.forEach((q, i) => g.fillRect(q.x * C + 1, q.y * C + 1, C - 2, C - 2)); g.fillStyle = '#9bbc0f'; g.fillRect(s[0].x * C + 6, s[0].y * C + 5, 3, 3);
+      g.fillStyle = '#306230'; g.beginPath(); g.ellipse(food.x * C + C / 2, food.y * C + C / 2, 6, 4, 0.5, 0, 7); g.fill(); g.fillStyle = '#9bbc0f'; g.fillRect(food.x * C + 6, food.y * C + 8, 6, 1);
+      pts.textContent = 'chipa: ' + score + ' · récord: ' + best;
+      if (dead) { g.fillStyle = 'rgba(15,56,15,.75)'; g.fillRect(0, N * C / 2 - 28, N * C, 56); g.fillStyle = '#9bbc0f'; g.font = '700 18px system-ui'; g.textAlign = 'center'; g.fillText('¡Chocaste! Tocá para jugar', N * C / 2, N * C / 2 + 6); g.textAlign = 'left'; }
+    };
+    box.querySelectorAll('[data-d]').forEach((b) => b.onclick = () => { const d = b.dataset.d; turn(d === 'l' ? -1 : d === 'r' ? 1 : 0, d === 'u' ? -1 : d === 'd' ? 1 : 0); });
+    let t0 = null; cv.addEventListener('touchstart', (e) => { t0 = [e.touches[0].clientX, e.touches[0].clientY]; if (dead) reset(); }, { passive: true });
+    cv.addEventListener('touchend', (e) => { if (!t0) return; const dx = e.changedTouches[0].clientX - t0[0], dy = e.changedTouches[0].clientY - t0[1]; if (Math.hypot(dx, dy) > 18) Math.abs(dx) > Math.abs(dy) ? turn(dx > 0 ? 1 : -1, 0) : turn(0, dy > 0 ? 1 : -1); t0 = null; });
+    cv.addEventListener('click', () => { if (dead) reset(); });
+    const key = (e) => { if (!box.isConnected) { removeEventListener('keydown', key); return; } const m = { ArrowUp: [0, -1], KeyW: [0, -1], ArrowDown: [0, 1], KeyS: [0, 1], ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0] }[e.code]; if (m) { e.preventDefault(); turn(m[0], m[1]); } };
+    addEventListener('keydown', key); reset(); timer = setInterval(step, 140);
+    return () => { clearInterval(timer); removeEventListener('keydown', key); };
+  };
+})();
+
 // ===== game/titulo.js =====
 // Pantalla de título (10/11/2026, etapa J0 de claude/menu-plan.md): el mundo de verdad corriendo detrás del menú,
 // con la cámara en travelling lento y sin jugador ni HUD.
@@ -10425,7 +10491,7 @@ VR.Titulo = class {
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
   // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
-  const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', jaha = null;
+  const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', jaha = null, celStop = null;
   const JAHA = { moto: { n: 'Moto', ico: '🏍', base: 10000, km: 3000, kmh: 28 }, auto: { n: 'Auto', ico: '🚗', base: 15000, km: 5000, kmh: 32 } };
   if (vida) $('btnCel').hidden = false;
   $('btnCel').onclick = () => openCel();
@@ -10441,7 +10507,8 @@ VR.Titulo = class {
     let h = '';
     if (celApp === 'home') {
       const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['ropero', '👕', 'Ropero', '#f29ac8', true],
-        ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['metas', '⭐', 'Metas', '#ffb36b', true], ['mapa', '🗺', 'Mapa', '#7fe08a', true]];
+        ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['metas', '⭐', 'Metas', '#ffb36b', true], ['mapa', '🗺', 'Mapa', '#7fe08a', true],
+        ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
       h = '<h3>🛵 Mbohasa</h3>';
@@ -10457,16 +10524,28 @@ VR.Titulo = class {
         s.prestamos.map((p) => '<div class="row2" style="color:#ffb36b"><span>💳 ' + VR.PREST[p.q].n + ' · cuota ' + gs(p.cuota) + '/sáb</span><b>' + gs(p.resta) + '</b></div>').join('') +
         '<p>Efectivo: chipa, despensa, Doña Chela, Ña Ramona. Electrónica: Mbohasa, changas de la app, Ao Porã. En los 🏧 cajeros (banco del Centro y Santa Lucía) depositás o sacás.</p>' +
         s.mov.slice(0, 8).map((m) => '<div class="row2"><span>' + esc(m[3]) + '</span><span style="color:' + (m[2] < 0 ? '#ff8a7a' : '#9fe0a0') + '">' + (m[2] > 0 ? '+' : '') + gs(m[2]) + '</span></div>').join('');
+    } else if (celApp === 'galeria') {
+      const L = VR.Fotos.list(); h = '<h3>🖼 Galería</h3>' + (L.length ? '<div class="gal">' + L.map((f, i) => '<img data-f="' + i + '" src="' + f.u + '">').join('') + '</div><p>Tocá una foto para verla. Se guardan las últimas 14.</p>' : '<p>Todavía no sacaste fotos. Abrí la 📷 Cámara y recorré la ciudad.</p>');
+    } else if (typeof celApp === 'string' && celApp.startsWith('foto')) {
+      const i = +celApp.slice(4), f = VR.Fotos.list()[i];
+      h = f ? '<h3>🖼 ' + esc(f.c) + '</h3><img src="' + f.u + '" style="width:100%;border-radius:8px"><a class="cbtn" style="text-align:center;text-decoration:none;box-sizing:border-box;background:#3cc87a;color:#06210f" download="villarrica-' + f.t + '.jpg" href="' + f.u + '">⬇ Guardar en el teléfono</a><button class="cbtn sec" data-del="' + i + '">🗑 Borrar</button>' : '<p>No está más.</p>';
+    } else if (celApp === 'culebra') {
+      h = '';
     } else if (celApp === 'mochila') {
       h = '<h3>🎒 Mochila</h3><div class="row2"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' chipas' : '—') + '</span></div>' +
         (s.canasto ? '<button class="cbtn" data-m="canasto">' + (s.equipo === 'canasto' ? 'Guardar el canasto' : 'Llevar el canasto en la mano') + '</button>' : '') +
         '<div class="row2"><span>🪖 Casco</span><span>' + (s.casco ? 'sí' : 'no tenés') + '</span></div><div class="row2"><span>🔧 Herramientas</span><span>' + (s.herr ? 'sí' : 'no tenés') + '</span></div>';
     }
+    if (celStop) { celStop(); celStop = null; }
     celBody.innerHTML = h;
+    if (celApp === 'culebra') celStop = VR.Culebra(celBody);
+    celBody.querySelectorAll('[data-f]').forEach((im) => im.onclick = () => { celApp = 'foto' + im.dataset.f; paintCel(); });
+    celBody.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { VR.Fotos.del(+b.dataset.del); celApp = 'galeria'; paintCel(); });
     celBody.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => { const a = b.dataset.a;
       if (b.classList.contains('off')) { toast('📵 Sin saldo'); return; }
       if (vida.celuRoto() && Math.random() < 0.12) { toast('📱 La pantalla rota no responde... probá de nuevo'); return; }
-      if (a === 'ropero') celGo(() => { shop.ropero = true; openShop(); });
+      if (a === 'camara') celGo(() => camOn());
+      else if (a === 'ropero') celGo(() => { shop.ropero = true; openShop(); });
       else if (a === 'changas') celGo(() => changas.open());
       else if (a === 'mis' || a === 'metas') celGo(() => openVida(a === 'mis' ? 'mis' : 'metas'));
       else if (a === 'mapa') celGo(() => { VR.loop.paused = false; VR.input.enabled = true; openMap(); });
@@ -10477,6 +10556,15 @@ VR.Titulo = class {
       if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }
       jaha = { tipo: b.dataset.j, precio: +b.dataset.p, t: 8 + Math.random() * 10, dest: { ...dest } }; celDlg.close(); toast(JAHA[jaha.tipo].ico + ' Pediste un Mbohasa: llega en ' + Math.ceil(jaha.t) + ' s'); });
   }
+  // modo cámara (11/11/2026): el juego sigue andando; podés caminar y encuadrar. El obturador saca el canvas del juego.
+  function camOn() { $('camUI').hidden = false; $('hud').style.visibility = 'hidden'; $('camTxt').textContent = '📷 ' + ($('zone').textContent || ''); }
+  function camOff() { $('camUI').hidden = true; $('hud').style.visibility = ''; }
+  $('camX').onclick = camOff;
+  $('camGal').onclick = () => { camOff(); openCel('galeria'); };
+  $('camShot').onclick = () => {
+    const f = $('camFlash'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 60);
+    try { VR.Fotos.snap($('game'), ($('zone').textContent || 'Villarrica') + ' · ' + (vida ? vida.diaSemana + ' ' + vida.hhmm : '')); toast('📸 Foto guardada en la Galería'); } catch (e) { toast('No se pudo sacar la foto'); }
+  };
   // el Mbohasa llega: subís y en un ratito estás (pasa la hora del viaje y se cobra de la billetera electrónica)
   function updateMbohasa(dt) {
     if (!jaha) return; jaha.t -= dt; if (jaha.t > 0) return;

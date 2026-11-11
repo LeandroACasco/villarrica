@@ -547,7 +547,7 @@
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
   // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
-  const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', jaha = null;
+  const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', jaha = null, celStop = null;
   const JAHA = { moto: { n: 'Moto', ico: '🏍', base: 10000, km: 3000, kmh: 28 }, auto: { n: 'Auto', ico: '🚗', base: 15000, km: 5000, kmh: 32 } };
   if (vida) $('btnCel').hidden = false;
   $('btnCel').onclick = () => openCel();
@@ -563,7 +563,8 @@
     let h = '';
     if (celApp === 'home') {
       const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['ropero', '👕', 'Ropero', '#f29ac8', true],
-        ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['metas', '⭐', 'Metas', '#ffb36b', true], ['mapa', '🗺', 'Mapa', '#7fe08a', true]];
+        ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['metas', '⭐', 'Metas', '#ffb36b', true], ['mapa', '🗺', 'Mapa', '#7fe08a', true],
+        ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
       h = '<h3>🛵 Mbohasa</h3>';
@@ -579,16 +580,28 @@
         s.prestamos.map((p) => '<div class="row2" style="color:#ffb36b"><span>💳 ' + VR.PREST[p.q].n + ' · cuota ' + gs(p.cuota) + '/sáb</span><b>' + gs(p.resta) + '</b></div>').join('') +
         '<p>Efectivo: chipa, despensa, Doña Chela, Ña Ramona. Electrónica: Mbohasa, changas de la app, Ao Porã. En los 🏧 cajeros (banco del Centro y Santa Lucía) depositás o sacás.</p>' +
         s.mov.slice(0, 8).map((m) => '<div class="row2"><span>' + esc(m[3]) + '</span><span style="color:' + (m[2] < 0 ? '#ff8a7a' : '#9fe0a0') + '">' + (m[2] > 0 ? '+' : '') + gs(m[2]) + '</span></div>').join('');
+    } else if (celApp === 'galeria') {
+      const L = VR.Fotos.list(); h = '<h3>🖼 Galería</h3>' + (L.length ? '<div class="gal">' + L.map((f, i) => '<img data-f="' + i + '" src="' + f.u + '">').join('') + '</div><p>Tocá una foto para verla. Se guardan las últimas 14.</p>' : '<p>Todavía no sacaste fotos. Abrí la 📷 Cámara y recorré la ciudad.</p>');
+    } else if (typeof celApp === 'string' && celApp.startsWith('foto')) {
+      const i = +celApp.slice(4), f = VR.Fotos.list()[i];
+      h = f ? '<h3>🖼 ' + esc(f.c) + '</h3><img src="' + f.u + '" style="width:100%;border-radius:8px"><a class="cbtn" style="text-align:center;text-decoration:none;box-sizing:border-box;background:#3cc87a;color:#06210f" download="villarrica-' + f.t + '.jpg" href="' + f.u + '">⬇ Guardar en el teléfono</a><button class="cbtn sec" data-del="' + i + '">🗑 Borrar</button>' : '<p>No está más.</p>';
+    } else if (celApp === 'culebra') {
+      h = '';
     } else if (celApp === 'mochila') {
       h = '<h3>🎒 Mochila</h3><div class="row2"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' chipas' : '—') + '</span></div>' +
         (s.canasto ? '<button class="cbtn" data-m="canasto">' + (s.equipo === 'canasto' ? 'Guardar el canasto' : 'Llevar el canasto en la mano') + '</button>' : '') +
         '<div class="row2"><span>🪖 Casco</span><span>' + (s.casco ? 'sí' : 'no tenés') + '</span></div><div class="row2"><span>🔧 Herramientas</span><span>' + (s.herr ? 'sí' : 'no tenés') + '</span></div>';
     }
+    if (celStop) { celStop(); celStop = null; }
     celBody.innerHTML = h;
+    if (celApp === 'culebra') celStop = VR.Culebra(celBody);
+    celBody.querySelectorAll('[data-f]').forEach((im) => im.onclick = () => { celApp = 'foto' + im.dataset.f; paintCel(); });
+    celBody.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { VR.Fotos.del(+b.dataset.del); celApp = 'galeria'; paintCel(); });
     celBody.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => { const a = b.dataset.a;
       if (b.classList.contains('off')) { toast('📵 Sin saldo'); return; }
       if (vida.celuRoto() && Math.random() < 0.12) { toast('📱 La pantalla rota no responde... probá de nuevo'); return; }
-      if (a === 'ropero') celGo(() => { shop.ropero = true; openShop(); });
+      if (a === 'camara') celGo(() => camOn());
+      else if (a === 'ropero') celGo(() => { shop.ropero = true; openShop(); });
       else if (a === 'changas') celGo(() => changas.open());
       else if (a === 'mis' || a === 'metas') celGo(() => openVida(a === 'mis' ? 'mis' : 'metas'));
       else if (a === 'mapa') celGo(() => { VR.loop.paused = false; VR.input.enabled = true; openMap(); });
@@ -599,6 +612,15 @@
       if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }
       jaha = { tipo: b.dataset.j, precio: +b.dataset.p, t: 8 + Math.random() * 10, dest: { ...dest } }; celDlg.close(); toast(JAHA[jaha.tipo].ico + ' Pediste un Mbohasa: llega en ' + Math.ceil(jaha.t) + ' s'); });
   }
+  // modo cámara (11/11/2026): el juego sigue andando; podés caminar y encuadrar. El obturador saca el canvas del juego.
+  function camOn() { $('camUI').hidden = false; $('hud').style.visibility = 'hidden'; $('camTxt').textContent = '📷 ' + ($('zone').textContent || ''); }
+  function camOff() { $('camUI').hidden = true; $('hud').style.visibility = ''; }
+  $('camX').onclick = camOff;
+  $('camGal').onclick = () => { camOff(); openCel('galeria'); };
+  $('camShot').onclick = () => {
+    const f = $('camFlash'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 60);
+    try { VR.Fotos.snap($('game'), ($('zone').textContent || 'Villarrica') + ' · ' + (vida ? vida.diaSemana + ' ' + vida.hhmm : '')); toast('📸 Foto guardada en la Galería'); } catch (e) { toast('No se pudo sacar la foto'); }
+  };
   // el Mbohasa llega: subís y en un ratito estás (pasa la hora del viaje y se cobra de la billetera electrónica)
   function updateMbohasa(dt) {
     if (!jaha) return; jaha.t -= dt; if (jaha.t > 0) return;
