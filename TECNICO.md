@@ -481,6 +481,10 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 
 Segunda tanda (`VR.grime2`, mismo archivo): charcos fijos (barro en calles de tierra), cordón con pintura blanca descascarada y pedazos rotos, raíces que levantan las baldosas junto a los árboles, baldosas rotas, tachos con bolsa y obras (ladrillos, arena, bolsas de cemento) frente a los edificios. Falta: postes y cables, pintura de líneas y cebras gastada, lluvia (los charcos ya están).
 
-### Postes y cables (11/11/2026)
+### Postes y cables (11/11/2026) — quitados
 
-`src/world/postes.js` (`VR.postes`): se arman al primer dibujo a lo largo de la red de calles (~6.600 postes, uno cada ~30 m, más separados en el Centro, solo sobre vereda, pasto o tierra); cada poste se dibuja como objeto alto ordenado por su base (`out` de `VR.drawTop` en `world.js`), y los cables (3 por tramo, con caída) van en un solo ítem con `sy = 1e8`, por encima de todo. Se busca por bloques de 256 px. `VR.noPostes = true` los apaga. Falta: que los postes sean sólidos, farol en algunos postes y cables que crucen las esquinas.
+Se probaron postes de luz con cables (6.600 postes sobre la red de calles) y Leandro los sacó por poco realistas: una ciudad real tendría cables cruzando todas las calles. El código se borró del repo (está en el commit d00abd0).
+
+### Pieza en alta (11/11/2026)
+
+`pieza.js` ya no usa el sprite chico: la escena (256×224 unidades) se pinta vectorial a la resolución de la pantalla (`this.s` = escala × devicePixelRatio, máx. 2). `buildBG()` arma el fondo fijo (pared con descascarado y humedad, piso de cerámica con brillo y grietas, ventana con cielo, muebles con sombras, alfombra, manchas) y lo guarda en `this.bg`; se rehace solo si cambian muebles, manchas, hora del juego (noche) o el tamaño. Cada cuadro solo se dibuja lo que se mueve (`dyn`: aspas, pantalla de la tele, vapor, polvo), el personaje (`VR.av2Lazy(look, 7)`, alta), el gato y la cucaracha (vectoriales). De noche la pieza se oscurece, el foco brilla y la ventana muestra luna y estrellas.
