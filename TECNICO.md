@@ -420,3 +420,8 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - Jugador a pie: `player.knock(vx, vy, power)`; `runOverCheck()` en main.js. Moto: `VR.onEject` (impacto > 140) te tira de la moto.
 - Vida: `hp` en main.js (`hurtPlayer`, `hpTick`), barra "❤ n%" solo cuando está por debajo de 100; a 0 te llevan al hospital (`sentTo`) y se cobra curaciones.
 - Los vehículos ya contaban como paredes para el jugador y los peatones (`world.hits` incluye `boxOverlap`).
+
+## Perros callejeros (12/11/2026)
+- `src/game/perros.js`: `VR.Perros(world, peds)`; hasta 4 perros cerca de la cámara (aparecen a 280–520 u, se borran a 950). Sprites por código (6 paletas × poses: trote 2 cuadros, parado, sentado, echado, olfateando; de frente y de espaldas). `VR.audio.bark(x, y, yelp)` en audio.js.
+- Comportamiento: idle (poses) → trot → idle; ladran cada 12–40 s; `perros.pet(player)` con ACCIÓN a menos de 26 u los hace seguirte 40 s; se apartan corriendo de cualquier vehículo a más de 45 de velocidad (`world.carsIn`). Nunca se lastiman (no usan ragdoll).
+- Se actualizan y dibujan desde main.js (`perros.update`, `perros.collect`).
