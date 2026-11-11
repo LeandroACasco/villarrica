@@ -1190,17 +1190,14 @@ def main(src, out, preview=None):
                     n_z += 1
         print('cebras: %d en %d cruces del Centro' % (n_z, n_inter))
 
-        # ---------- cajones de estacionamiento pintados en el Centro (11/11/2026, pedido de Leandro) ----------
-        # Rayas blancas sobre el asfalto, pegadas al cordón, como en las calles reales:
-        #   - cajón de AUTO (cada 54 unidades = 6,75 m): línea de borde a 22 unidades del cordón y una raya
-        #     perpendicular entre cajón y cajón. Ocupa la fila pegada al cordón (A) y 6 unidades de la fila de al lado (B).
-        #   - cajón de MOTO en batería (cada 14 unidades = 1,75 m): rayitas perpendiculares y una línea al fondo,
-        #     solo en la fila pegada al cordón (A).
-        # Valores de `line` (el dibujo está en world.js, `VR.drawBay`): 5-8 auto fila A, 9-12 moto fila A, 13-16 auto
-        # fila B; dentro de cada grupo de 4: 0 = cordón al sur, 1 = al norte, 2 = al este, 3 = al oeste.
-        # `VR.parkCars` (car.js) lee estos valores y acomoda los estacionados dentro de los cajones.
-        # Solo en calles de asfalto de 4 baldosas o más (en las de 4, de un solo lado), rectas, lejos de los cruces y de las cebras, y sin tocar
-        # las cuadras alrededor de la plaza, que tienen sus estacionados puestos a mano.
+        # ---------- rayitas de estacionamiento de motos en el Centro (11/11/2026, fotos de Leandro) ----------
+        # En las calles del Centro las motos se estacionan en batería (de punta contra el cordón) y la única pintura son
+        # rayitas blancas sueltas, perpendiculares al cordón, cada ~1 m; sin línea de borde ni de fondo. Los autos se
+        # estacionan en fila pegados al cordón y NO llevan rayas.
+        # Valores de `line` (dibujo: `VR.drawBay` en world.js): 5-8 = rayitas de moto; el valor dice dónde está el
+        # cordón: 5 sur, 6 norte, 7 este, 8 oeste. `VR.parkCars` (car.js) las lee y acomoda las motos entre rayitas.
+        # Solo en asfalto, en calles de 4 baldosas o más (en las de 4, de un solo lado por tramo), rectas, a 4 baldosas
+        # o más de un cruce. Las cuadras de la plaza las marca `VR.parkCars` según donde pone las motos a mano.
         SW_ = (SIDEWALK, CHECKER, PAVING)
         near_x = ndimage.binary_dilation((cover >= 2) & (tiles == ROAD), structure=np.ones((3, 3), bool), iterations=4)
         no_bay = np.zeros((H, W), bool)
@@ -1213,48 +1210,40 @@ def main(src, out, preview=None):
                 no_bay[max(0, d_['y'] - 6):d_['y'] + d_.get('h', 1) + 6, max(0, d_['x'] - 6):d_['x'] + d_.get('w', 1) + 6] = True
         isroad = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] == ROAD and not rounded[y, x] and line[y, x] == 0
         iscurb = lambda y, x: 0 <= y < H and 0 <= x < W and tiles[y, x] in SW_
-        # (lado del cordón, dy, dx): 0 sur (+y), 1 norte (-y), 2 este (+x), 3 oeste (-x)
-        n_bay = {'auto': 0, 'moto': 0}
+        n_bay = 0
         assign = {}   # se aplica al final, así las celdas ya pintadas no le molestan a las vecinas
         ys_c, xs_c = np.nonzero(centro & (tiles == ROAD))
         for y, x in zip(ys_c.tolist(), xs_c.tolist()):
             if line[y, x] or (y, x) in assign or near_x[y, x] or no_bay[y, x] or y < 8 or x < 8 or y > H - 9 or x > W - 9:
                 continue
-            for side, dy, dx in ((0, 1, 0), (1, -1, 0), (2, 0, 1), (3, 0, -1)):
+            for side, dy, dx in ((0, 1, 0), (1, -1, 0), (2, 0, 1), (3, 0, -1)):   # lado del cordón: sur, norte, este, oeste
                 if not iscurb(y + dy, x + dx):
                     continue
-                # ancho de la calle hacia adentro (>= 5 baldosas de asfalto) y cordón recto +-3 baldosas a lo largo
-                wd = 0
+                wd = 0                                   # ancho de la calle hacia adentro (>= 4 baldosas de asfalto)
                 while wd < 6 and isroad(y - dy * wd, x - dx * wd): wd += 1
                 if wd < 4:
                     continue
-                ax_y, ax_x = (0, 1) if dy else (1, 0)      # eje a lo largo del cordón
+                ax_y, ax_x = (0, 1) if dy else (1, 0)    # eje a lo largo del cordón
                 ok = True
-                for i in range(-3, 4):
+                for i in range(-3, 4):                   # cordón recto +-3 baldosas a lo largo
                     yy, xx = y + ax_y * i, x + ax_x * i
                     if not (isroad(yy, xx) and isroad(yy - dy, xx - dx) and iscurb(yy + dy, xx + dx) and not near_x[yy, xx] and not no_bay[yy, xx]):
                         ok = False; break
                 if not ok:
                     continue
-                # por bloques de 8 baldosas a lo largo de la cuadra: 25 % sin pintar, 45 % autos, 30 % motos
+                # por bloques de 8 baldosas a lo largo de la cuadra: ~45 % con rayitas
                 u = x if dy else y
                 h_ = ((u // 8) * 73856093 ^ (((y if dy else x) // 6) + side * 19349663) * 83492791) & 0xffff
-                r_ = (h_ % 100)
-                if r_ < 25:
+                if h_ % 100 >= 45:
                     continue
-                # calle de 4 baldosas (8 m, la mayoría del Centro): cajones de un solo lado por tramo, para que quede
-                # lugar para dos filas de tránsito; en las de 5 o más, de los dos lados
+                # calle de 4 baldosas (8 m): de un solo lado por tramo, para que quede lugar para dos filas de tránsito
                 if wd == 4 and ((h_ >> 9) & 1) != (side & 1):
                     continue
-                if r_ < 70:
-                    assign[(y, x)] = 5 + side; n_bay['auto'] += 1
-                    assign.setdefault((y - dy, x - dx), 13 + side)
-                else:
-                    assign[(y, x)] = 9 + side; n_bay['moto'] += 1
+                assign[(y, x)] = 5 + side; n_bay += 1
                 break
         for (y, x), v in assign.items():
             line[y, x] = v
-        print('cajones pintados: %d baldosas de auto, %d de moto' % (n_bay['auto'], n_bay['moto']))
+        print('rayitas de moto: %d baldosas' % n_bay)
 
     # ---------- esquinas redondeadas en toda la ciudad (Leandro, 05/11/2026: "no es solo la plaza") ----------
     # En cada cruce de calles con vereda, la punta de la vereda de cada manzana se redondea (radio 4 m, o 2 m si

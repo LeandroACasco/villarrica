@@ -246,7 +246,7 @@ VR.World = class {
           for (let k = 0; k < 6; k++) { const h = VR.hash(tx * 7 + k, ty * 5 + (i | 0), 331); if (h < 0.5) { const o = h * 2 * S, w = 0.5 + VR.hash(tx, ty + k, 337) * 1.5; V ? g.fillRect(x + i + (k % 3) * 0.9, y + o, 0.5, w) : g.fillRect(x + o, y + i + (k % 3) * 0.9, w, 0.5); } }
         }
       }
-      else if (l >= 5 && l <= 16) VR.drawBay(g, l, x, y, tx, ty, S);   // cajones de estacionamiento (11/11/2026)
+      else if (l >= 5 && l <= 8) VR.drawBay(g, l, x, y, tx, ty, S);   // rayitas de estacionamiento de motos (11/11/2026)
     }
     // 3b) calles en diagonal (05/11/2026): las baldosas quedan escalonadas, así que encima se dibujan lisas
     if (idx.r.length) VR.drawDiagonals(g, this, idx.r, tx0, ty0, tx1, ty1);
@@ -484,28 +484,19 @@ VR.findDiagonals = (R) => {
   }
   return out;
 };
-// Cajones de estacionamiento pintados en el asfalto (11/11/2026, pedido de Leandro). `l` (5-16, ver osm_to_map.py):
-// (l-5)>>2 = 0 auto fila pegada al cordón, 1 moto en batería, 2 auto fila de al lado; (l-5)&3 = dónde está el cordón
-// (0 sur, 1 norte, 2 este, 3 oeste). Autos: raya cada 54 unidades y línea de borde a 22 del cordón; motos: raya cada
-// 14 y una línea al fondo. `VR.BAY` tiene las medidas: `VR.parkCars` (car.js) acomoda los estacionados con ellas.
-VR.BAY = { carPitch: 54, motoPitch: 14, carDepth: 22 };
+// Rayitas de estacionamiento de motos (11/11/2026, fotos de Leandro del Centro): rayas blancas sueltas, perpendiculares
+// al cordón, sin línea de borde ni de fondo. `l` (5-8, ver osm_to_map.py) dice dónde está el cordón: 5 sur, 6 norte,
+// 7 este, 8 oeste. `VR.BAY.pitch` (unidades; 8 = 1 m) es la distancia entre rayitas: `VR.parkCars` (car.js) acomoda
+// las motos en el medio de cada hueco. Los autos no llevan rayas.
+VR.BAY = { pitch: 10 };
 VR.drawBay = (g, l, x, y, tx, ty, S) => {
-  const grp = (l - 5) >> 2, side = (l - 5) & 3, horiz = side < 2;       // horiz: el cordón es horizontal, las rayas van en x
-  const u0 = (horiz ? tx : ty) * S, pitch = grp === 1 ? VR.BAY.motoPitch : VR.BAY.carPitch;
-  const paint = (cx, cy, w, h, a) => { g.fillStyle = a < 1 ? 'rgba(226,224,214,' + a + ')' : '#e2e0d6'; g.fillRect(x + cx, y + cy, w, h); };
-  // rayas entre cajón y cajón, en toda la profundidad de la fila (A) o en el trozo de la fila B (6 unidades)
-  const d0 = grp === 2 ? (side === 0 ? 10 : side === 1 ? 0 : side === 2 ? 10 : 0) : 0;   // desde dónde
-  const dl = grp === 2 ? 6 : S;                                                          // cuánto mide
-  for (let p = Math.ceil(u0 / pitch) * pitch; p < u0 + S; p += pitch) {
-    const o = p - u0 - 0.5, a = VR.hash(Math.round(p), horiz ? ty : tx, 353) > 0.8 ? 0.6 : 0.92;   // alguna medio gastada
-    horiz ? paint(o, d0, 1.2, dl, a) : paint(d0, o, dl, 1.2, a);
-  }
-  if (grp === 2) {                                                       // línea de borde del cajón de auto
-    const e = side === 0 ? 9.4 : side === 1 ? 5.4 : side === 2 ? 9.4 : 5.4;
-    horiz ? paint(0, e, S, 1.2, 0.9) : paint(e, 0, 1.2, S, 0.9);
-  } else if (grp === 1) {                                                // línea del fondo del cajón de moto
-    const e = side === 0 ? 0 : side === 1 ? S - 1.2 : side === 2 ? 0 : S - 1.2;
-    horiz ? paint(0, e, S, 1.2, 0.9) : paint(e, 0, 1.2, S, 0.9);
+  const side = l - 5, horiz = side < 2, P = VR.BAY.pitch, u0 = (horiz ? tx : ty) * S;
+  const len = 14;                                                    // largo de la rayita desde el cordón (~1,75 m)
+  const d0 = side === 0 ? S - len : side === 1 ? 0 : side === 2 ? S - len : 0;
+  for (let p = Math.ceil(u0 / P) * P; p < u0 + S; p += P) {
+    const o = p - u0 - 0.5, a = VR.hash(Math.round(p), horiz ? ty : tx, 353) > 0.8 ? 0.55 : 0.9;   // alguna medio gastada
+    g.fillStyle = 'rgba(228,226,216,' + a + ')';
+    horiz ? g.fillRect(x + o, y + d0, 1.1, len) : g.fillRect(x + d0, y + o, len, 1.1);
   }
 };
 VR.drawDiagonals = (g, world, list, tx0, ty0, tx1, ty1) => {
