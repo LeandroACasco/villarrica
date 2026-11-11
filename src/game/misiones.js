@@ -51,6 +51,8 @@ VR.Lugares = class {
       case 'terminal': return L(/Terminal/);
       case 'cajero': { const d = (W.decals || []).find((x) => x.kind === 'cartel' && x.style === 'banco'); return d && { x: (d.x + d.w / 2) * VR.TILE, y: (d.y + 1) * VR.TILE + 12 }; } // frente al banco de la esquina noroeste
       case 'cajero2': { const c = VR.vida && VR.vida.s.casa; return c && { x: c.x - 150, y: c.y }; } // cajero de Santa Lucía, cerca de tu pieza
+      case 'financiera': { const d = (W.decals || []).find((x) => x.kind === 'frente' && x.style === 'credito'); return d && { x: (d.x + 1) * VR.TILE, y: (d.y + d.h / 2) * VR.TILE }; } // la casona de cartel verde de la esquina sudoeste de la plaza
+      case 'celulares': { const p = L(/Plaza de los H/); return p && { x: p.x - 420, y: p.y + 660 }; } // servicio técnico de celulares, en la vereda sur al sudoeste de la plaza (inventado)
       case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
     }
     return null;
@@ -66,7 +68,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
 
 // ---------------- barrios por historia ----------------
@@ -461,16 +463,45 @@ VR.MISIONES = {
 
 // ---------------- J3: lugares para usar (despensa y pieza) y menús de Doña Chela y Ña Ramona ----------------
 VR.DESPENSA = [['Chipa', 'chipa', 15], ['Empanada', 'empanada', 25], ['Mbeju', 'mbeju', 35], ['Plato del día', 'plato', 60]];
+// préstamos (11/11/2026): q = 'banco' o 'financiera'. Cada opción devuelve el submenú siguiente.
+VR.prestamoMenu = (M, q) => { const V = M.vida, C = VR.PREST[q], gs = VR.fmtGs, mis = V.s.prestamos.map((p, i) => [p, i]).filter(([p]) => p.q === q), op = [];
+  const cond = q === 'banco' ? 'Pide estar sin deudas. ' : 'Presta a cualquiera, pero cobra caro y castiga la mora. ';
+  for (const m of C.montos) op.push(['Pedir ' + gs(m) + ' (devolvés ' + gs(Math.round(m * (1 + C.interes) / 1000) * 1000) + ' en ' + C.sem + ' semanas)', () => {
+    const mal = V.noPrestamo(q, m); if (mal) return [{ quien: 'sis', titulo: '🏦 ' + C.n, txt: mal, op: [['Volver', () => VR.prestamoMenu(M, q)], ['Salir', () => false]] }];
+    const r = V.pidePrestamo(q, m); if (!r) return false;
+    return [{ quien: 'sis', titulo: '🏦 ' + C.n, txt: 'Listo: ' + gs(m) + (q === 'banco' ? ' en tu billetera electrónica' : ' en efectivo') + '. Se descuenta una cuota de ' + gs(r.cuota) + ' cada sábado (' + C.sem + ' semanas). Si no alcanza, se atrasa y sube con la mora.', op: [['Aguyje', () => false]] }]; }]);
+  for (const [p, i] of mis) op.push(['Pagar el préstamo (debés ' + gs(p.resta) + ')', () => { V.pagaPrestamo(i); return VR.prestamoMenu(M, q); }]);
+  op.push(['Salir', () => false]);
+  return [{ quien: 'sis', titulo: '🏦 ' + C.n + ': préstamos', txt: cond + 'Interés ' + Math.round(C.interes * 100) + ' % en ' + C.sem + ' semanas. Debés en préstamos: ' + gs(V.prestamosResta()) + '.', op }]; };
 VR.cajeroMenu = (M) => { const V = M.vida, e = VR.Wallet.get(), b = V.s.banco, op = [];
   if (e > 0) op.push(['Depositar todo el efectivo (' + VR.fmtGs(e) + ')', () => { V.deposita(e); return false; }]);
   for (const n of [50000, 100000]) if (b >= n) op.push(['Sacar ' + VR.fmtGs(n), () => { V.retira(n); return false; }]);
   if (b > 0) op.push(['Sacar todo (' + VR.fmtGs(b) + ')', () => { V.retira(b); return false; }]);
+  op.push(['🏦 Préstamos del banco', () => VR.prestamoMenu(M, 'banco')]);
   op.push(['Salir', () => false]);
   return [{ quien: 'sis', titulo: '🏧 Cajero', txt: 'Efectivo: ' + VR.fmtGs(e) + ' · Billetera electrónica: ' + VR.fmtGs(b), op }]; };
+// servicio técnico de celulares: cambiar la pantalla rota o comprar uno nuevo
+VR.celularesMenu = (M) => { const V = M.vida, gs = VR.fmtGs, P = VR.PRECIOS;
+  if (!V.celuRoto()) return [{ quien: 'sis', titulo: '📱 Celu Porã', txt: 'Tu celular anda bien. Cuando se rompa, pasá por acá.', op: [['Aguyje', () => false]] }];
+  return [{ quien: 'sis', titulo: '📱 Celu Porã', txt: 'Tu pantalla está hecha pedazos. Tenés ' + gs(VR.Wallet.get()) + ' en efectivo.', op: [
+    ['Cambiar la pantalla · ' + gs(P.celuArreglo), () => { V.arreglaCelu(); return false; }],
+    ['Celular nuevo · ' + gs(P.celuNuevo), () => { V.compraCelu(); return false; }],
+    ['Después vuelvo', () => false]] }]; };
 VR.drawCajero = (g, x, y) => { g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 6, y - 1, 13, 3); g.fillStyle = '#3a4a5a'; g.fillRect(x - 6, y - 20, 12, 20); g.fillStyle = '#6d8fb0'; g.fillRect(x - 5, y - 19, 10, 6); g.fillStyle = '#9fe0ff'; g.fillRect(x - 4, y - 18, 8, 4); g.fillStyle = '#20262e'; g.fillRect(x - 4, y - 11, 8, 3); g.fillStyle = '#c8d0d8'; g.fillRect(x - 3, y - 7, 6, 2); VR.gfx.text(g, '🏧', x, y - 24, '#fff', { center: true, size: 7 }); };
+VR.drawCelulares = (g, x, y) => { // puesto chico: mostrador azul, toldo celeste y blanco, celulares en vitrina
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 15, y - 2, 32, 5);
+  g.fillStyle = '#3a6ea8'; g.fillRect(x - 14, y - 12, 28, 12); g.fillStyle = '#2a5688'; g.fillRect(x - 14, y - 4, 28, 4);
+  g.fillStyle = '#9fd4ff'; g.fillRect(x - 12, y - 11, 24, 6); g.fillStyle = '#dff1ff'; g.fillRect(x - 12, y - 11, 24, 1);
+  g.fillStyle = '#20262e'; for (let i = 0; i < 4; i++) g.fillRect(x - 10 + i * 6, y - 10, 3, 5);
+  for (let i = 0; i < 7; i++) { g.fillStyle = i % 2 ? '#ffffff' : '#4aa8ff'; g.fillRect(x - 15 + i * 4.6, y - 20, 5, 7); }
+  g.fillStyle = '#26262c'; g.fillRect(x - 15, y - 21, 31, 1);
+  g.fillStyle = '#ff5a5a'; g.fillRect(x + 8, y - 17, 3, 3);
+};
 VR.PUNTOS = {
   cajero: { lugar: 'cajero', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
   cajero2: { lugar: 'cajero2', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
+  financiera: { lugar: 'financiera', nombre: 'Financiera', ico: '💰', mini: '₲', menu: (M) => VR.prestamoMenu(M, 'financiera') },
+  celulares: { lugar: 'celulares', nombre: 'Celu Porã', ico: '📱', mini: '☎', menu: (M) => VR.celularesMenu(M), draw: VR.drawCelulares },
   despensa: { lugar: 'despensa', nombre: 'Despensa Ñande Róga', ico: '🛒', mini: '$',
     menu: (M) => [{ quien: 'sis', titulo: '🛒 Despensa Ñande Róga', txt: '¿Qué llevás? Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op: [
       ...VR.DESPENSA.map(([n, k, h]) => [n + ' · ' + VR.fmtGs(VR.PRECIOS[k]), () => { M.vida.come(VR.PRECIOS[k], h, n); return false; }]),

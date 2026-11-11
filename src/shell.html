@@ -34,14 +34,24 @@
     display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
   body.historia .soloLibre, body.historia #pOnline { display: none !important; }
   body:not(.historia) .soloHist { display: none !important; }
-  body.historia #btnChat { display: none; }
+  body.historia #btnChat, body.historia #btnJobs, body.historia #btnOnline { display: none; } /* en Historia, changas y online van por el celular / no hay online */
   /* celular (Historia): apps */
   #celDlg { width: min(330px, 92vw); height: min(560px, 90vh); padding: 0; border: 3px solid #0d0d10; border-radius: 30px; background: linear-gradient(160deg, #23324a, #121822); color: #fff; box-shadow: 0 0 0 6px #2a2a30, 0 14px 40px rgba(0,0,0,.6); overflow: hidden; display: none; flex-direction: column; }
   #celDlg[open] { display: flex; }
   #celDlg::backdrop { background: rgba(0,0,0,.45); }
   .celTop { display: flex; justify-content: space-between; padding: 10px 18px 4px; font: 700 12px system-ui; color: #cfe0f5; }
   #celBody { flex: 1; overflow: auto; padding: 8px 14px; }
-  .celHome { margin: 6px auto 10px; width: 90px; height: 5px; border-radius: 3px; border: 0; background: #cfd6e0; cursor: pointer; }
+  .celNav { display: flex; justify-content: space-around; align-items: center; padding: 4px 24px 8px; position: relative; z-index: 2; }
+  .celNav button { width: 52px; height: 30px; border: 0; border-radius: 15px; background: transparent; color: #cfd6e0; font: 700 18px system-ui; cursor: pointer; }
+  .celNav button:active { background: #ffffff22; }
+  /* pantalla rota (11/11/2026): grietas, líneas de píxeles muertos y manchones encima de todo */
+  #celRoto { position: absolute; inset: 0; pointer-events: none; z-index: 3; display: none; overflow: hidden; border-radius: 27px; }
+  #celDlg.roto #celRoto { display: block; }
+  #celRoto svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #celRoto .dp { position: absolute; top: 0; bottom: 0; width: 2px; opacity: .85; mix-blend-mode: screen; }
+  #celRoto .dh { position: absolute; left: 0; right: 0; height: 3px; opacity: .8; mix-blend-mode: screen; }
+  #celRoto .gar { position: absolute; left: 0; right: 0; height: 26px; background: repeating-linear-gradient(90deg, #ff2ad4 0 2px, #19e6ff 2px 4px, #2aff3a 4px 6px, #0000 6px 14px); opacity: .55; mix-blend-mode: screen; }
+  #celRoto .man { position: absolute; border-radius: 50%; filter: blur(7px); }
   .apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; padding-top: 10px; }
   .app { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; color: #fff; font: 600 11px system-ui; cursor: pointer; }
   .app i { font-style: normal; font-size: 26px; width: 54px; height: 54px; border-radius: 14px; display: grid; place-items: center; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
@@ -158,6 +168,10 @@
   #vcard canvas { width: 128px; height: 72px; background: #3a3f4a; border-radius: 6px; flex: none; }
   @media (max-height: 500px), (max-width: 700px) { #vcard { font-size: 10.5px; padding: 5px 9px 5px 5px; gap: 7px; } #vcard canvas { width: 80px; height: 45px; } #vcard b { font-size: 13px; } }
   @media (max-width: 600px) { #vcard { top: calc(env(safe-area-inset-top) + 64px); max-width: calc(100vw - 150px); } }
+  /* el aviso ("te llevaste…") baja debajo de la tarjeta del vehículo para no taparla */
+  body:has(#vcard.show) #toast { top: calc(env(safe-area-inset-top) + 100px); }
+  @media (max-height: 500px), (max-width: 700px) { body:has(#vcard.show) #toast { top: calc(env(safe-area-inset-top) + 62px); } }
+  @media (max-width: 600px) { body:has(#vcard.show) #toast { top: calc(env(safe-area-inset-top) + 122px); } }
   #vcard b { display: block; font-size: 15px; color: #ffd75e; letter-spacing: .03em; margin-bottom: 2px; }
   #banner { position: fixed; left: 0; right: 0; top: 24%; z-index: 5; text-align: center; pointer-events: none; opacity: 0; transition: opacity .6s;
     font: 900 clamp(26px, 7vw, 52px)/1 system-ui, sans-serif; letter-spacing: .06em; color: #ffd75e; text-transform: uppercase;
@@ -371,7 +385,15 @@
 </dialog>
 
 <div id="celFade"></div>
-<dialog id="celDlg"><div class="celTop"><span id="celHora"></span><span id="celSaldo"></span></div><div id="celBody"></div><button class="celHome" id="celHome" aria-label="Inicio"></button></dialog>
+<dialog id="celDlg"><div class="celTop"><span id="celHora"></span><span id="celSaldo"></span></div><div id="celBody"></div><div class="celNav"><button id="celBack" aria-label="Atrás">◀</button><button id="celHome" aria-label="Inicio">●</button><button id="celClose" aria-label="Cerrar">■</button></div>
+  <div id="celRoto"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#000" stroke-opacity=".55" stroke-width="1.1"><path id="cr1" d="M72 22 L58 30 L47 44 L40 61 L29 78 L21 100"/><path d="M72 22 L84 33 L90 52 L100 66"/><path d="M72 22 L66 8 L68 0"/><path d="M72 22 L90 14 L100 9"/><path d="M58 30 L36 28 L18 34 L0 31"/><path d="M47 44 L62 53 L70 70 L76 100"/></g>
+    <g stroke="#fff" stroke-opacity=".8" stroke-width=".5"><path d="M72 22 L58 30 L47 44 L40 61 L29 78 L21 100"/><path d="M72 22 L84 33 L90 52 L100 66"/><path d="M72 22 L66 8 L68 0"/><path d="M72 22 L90 14 L100 9"/><path d="M58 30 L36 28 L18 34 L0 31"/><path d="M47 44 L62 53 L70 70 L76 100"/><path d="M84 33 L78 45 L82 58"/><path d="M40 61 L52 66 L55 80"/></g></g></svg>
+    <i class="man" style="left:48%;top:56%;width:62%;height:34%;background:radial-gradient(#0a0612cc,#0a061200 70%)"></i>
+    <i class="man" style="left:-12%;top:8%;width:46%;height:22%;background:radial-gradient(#3a1a6acc,#3a1a6a00 70%)"></i>
+    <i class="man" style="left:6%;top:70%;width:38%;height:18%;background:radial-gradient(#d8e86a55,#d8e86a00 70%)"></i>
+    <i class="dp" style="left:19%;background:#ff2ad4"></i><i class="dp" style="left:61%;background:#19e6ff;width:1px"></i><i class="dp" style="left:83%;background:#2aff3a;width:3px;opacity:.5"></i>
+    <i class="dh" style="top:41%;background:#fff"></i><i class="dh" style="top:77%;background:#ff2ad4;height:1px"></i><i class="gar" style="top:25%"></i><i class="gar" style="top:88%;height:10px"></i></div></dialog>
 <dialog id="vDlg">
   <div class="dlg" id="vBody"></div>
 </dialog>

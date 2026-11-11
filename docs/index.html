@@ -34,14 +34,24 @@
     display: flex; flex-direction: column; line-height: 1.15; pointer-events: none; }
   body.historia .soloLibre, body.historia #pOnline { display: none !important; }
   body:not(.historia) .soloHist { display: none !important; }
-  body.historia #btnChat { display: none; }
+  body.historia #btnChat, body.historia #btnJobs, body.historia #btnOnline { display: none; } /* en Historia, changas y online van por el celular / no hay online */
   /* celular (Historia): apps */
   #celDlg { width: min(330px, 92vw); height: min(560px, 90vh); padding: 0; border: 3px solid #0d0d10; border-radius: 30px; background: linear-gradient(160deg, #23324a, #121822); color: #fff; box-shadow: 0 0 0 6px #2a2a30, 0 14px 40px rgba(0,0,0,.6); overflow: hidden; display: none; flex-direction: column; }
   #celDlg[open] { display: flex; }
   #celDlg::backdrop { background: rgba(0,0,0,.45); }
   .celTop { display: flex; justify-content: space-between; padding: 10px 18px 4px; font: 700 12px system-ui; color: #cfe0f5; }
   #celBody { flex: 1; overflow: auto; padding: 8px 14px; }
-  .celHome { margin: 6px auto 10px; width: 90px; height: 5px; border-radius: 3px; border: 0; background: #cfd6e0; cursor: pointer; }
+  .celNav { display: flex; justify-content: space-around; align-items: center; padding: 4px 24px 8px; position: relative; z-index: 2; }
+  .celNav button { width: 52px; height: 30px; border: 0; border-radius: 15px; background: transparent; color: #cfd6e0; font: 700 18px system-ui; cursor: pointer; }
+  .celNav button:active { background: #ffffff22; }
+  /* pantalla rota (11/11/2026): grietas, líneas de píxeles muertos y manchones encima de todo */
+  #celRoto { position: absolute; inset: 0; pointer-events: none; z-index: 3; display: none; overflow: hidden; border-radius: 27px; }
+  #celDlg.roto #celRoto { display: block; }
+  #celRoto svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #celRoto .dp { position: absolute; top: 0; bottom: 0; width: 2px; opacity: .85; mix-blend-mode: screen; }
+  #celRoto .dh { position: absolute; left: 0; right: 0; height: 3px; opacity: .8; mix-blend-mode: screen; }
+  #celRoto .gar { position: absolute; left: 0; right: 0; height: 26px; background: repeating-linear-gradient(90deg, #ff2ad4 0 2px, #19e6ff 2px 4px, #2aff3a 4px 6px, #0000 6px 14px); opacity: .55; mix-blend-mode: screen; }
+  #celRoto .man { position: absolute; border-radius: 50%; filter: blur(7px); }
   .apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; padding-top: 10px; }
   .app { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; color: #fff; font: 600 11px system-ui; cursor: pointer; }
   .app i { font-style: normal; font-size: 26px; width: 54px; height: 54px; border-radius: 14px; display: grid; place-items: center; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
@@ -158,6 +168,10 @@
   #vcard canvas { width: 128px; height: 72px; background: #3a3f4a; border-radius: 6px; flex: none; }
   @media (max-height: 500px), (max-width: 700px) { #vcard { font-size: 10.5px; padding: 5px 9px 5px 5px; gap: 7px; } #vcard canvas { width: 80px; height: 45px; } #vcard b { font-size: 13px; } }
   @media (max-width: 600px) { #vcard { top: calc(env(safe-area-inset-top) + 64px); max-width: calc(100vw - 150px); } }
+  /* el aviso ("te llevaste…") baja debajo de la tarjeta del vehículo para no taparla */
+  body:has(#vcard.show) #toast { top: calc(env(safe-area-inset-top) + 100px); }
+  @media (max-height: 500px), (max-width: 700px) { body:has(#vcard.show) #toast { top: calc(env(safe-area-inset-top) + 62px); } }
+  @media (max-width: 600px) { body:has(#vcard.show) #toast { top: calc(env(safe-area-inset-top) + 122px); } }
   #vcard b { display: block; font-size: 15px; color: #ffd75e; letter-spacing: .03em; margin-bottom: 2px; }
   #banner { position: fixed; left: 0; right: 0; top: 24%; z-index: 5; text-align: center; pointer-events: none; opacity: 0; transition: opacity .6s;
     font: 900 clamp(26px, 7vw, 52px)/1 system-ui, sans-serif; letter-spacing: .06em; color: #ffd75e; text-transform: uppercase;
@@ -359,7 +373,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 90fe939c · 2026-11-10</div>
+  <div class="tVer">Versión 329bdcd9 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -374,7 +388,15 @@
 </dialog>
 
 <div id="celFade"></div>
-<dialog id="celDlg"><div class="celTop"><span id="celHora"></span><span id="celSaldo"></span></div><div id="celBody"></div><button class="celHome" id="celHome" aria-label="Inicio"></button></dialog>
+<dialog id="celDlg"><div class="celTop"><span id="celHora"></span><span id="celSaldo"></span></div><div id="celBody"></div><div class="celNav"><button id="celBack" aria-label="Atrás">◀</button><button id="celHome" aria-label="Inicio">●</button><button id="celClose" aria-label="Cerrar">■</button></div>
+  <div id="celRoto"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#000" stroke-opacity=".55" stroke-width="1.1"><path id="cr1" d="M72 22 L58 30 L47 44 L40 61 L29 78 L21 100"/><path d="M72 22 L84 33 L90 52 L100 66"/><path d="M72 22 L66 8 L68 0"/><path d="M72 22 L90 14 L100 9"/><path d="M58 30 L36 28 L18 34 L0 31"/><path d="M47 44 L62 53 L70 70 L76 100"/></g>
+    <g stroke="#fff" stroke-opacity=".8" stroke-width=".5"><path d="M72 22 L58 30 L47 44 L40 61 L29 78 L21 100"/><path d="M72 22 L84 33 L90 52 L100 66"/><path d="M72 22 L66 8 L68 0"/><path d="M72 22 L90 14 L100 9"/><path d="M58 30 L36 28 L18 34 L0 31"/><path d="M47 44 L62 53 L70 70 L76 100"/><path d="M84 33 L78 45 L82 58"/><path d="M40 61 L52 66 L55 80"/></g></g></svg>
+    <i class="man" style="left:48%;top:56%;width:62%;height:34%;background:radial-gradient(#0a0612cc,#0a061200 70%)"></i>
+    <i class="man" style="left:-12%;top:8%;width:46%;height:22%;background:radial-gradient(#3a1a6acc,#3a1a6a00 70%)"></i>
+    <i class="man" style="left:6%;top:70%;width:38%;height:18%;background:radial-gradient(#d8e86a55,#d8e86a00 70%)"></i>
+    <i class="dp" style="left:19%;background:#ff2ad4"></i><i class="dp" style="left:61%;background:#19e6ff;width:1px"></i><i class="dp" style="left:83%;background:#2aff3a;width:3px;opacity:.5"></i>
+    <i class="dh" style="top:41%;background:#fff"></i><i class="dh" style="top:77%;background:#ff2ad4;height:1px"></i><i class="gar" style="top:25%"></i><i class="gar" style="top:88%;height:10px"></i></div></dialog>
 <dialog id="vDlg">
   <div class="dlg" id="vBody"></div>
 </dialog>
@@ -443,7 +465,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 90fe939c · 2026-11-10</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 329bdcd9 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -6491,6 +6513,13 @@ VR.PRECIOS = { // en guaraníes (referencias de Leandro, 10/11/2026)
   saldo: 10000, // 3 días
   remedios: 120000, // hospital
   canasto: 40000, chipaMayor: 3000, canastoMax: 20, // Doña Chela (J3): canasto y chipa al por mayor
+  celuArreglo: 150000, celuNuevo: 1200000, // servicio técnico: cambiar la pantalla o comprar uno nuevo
+};
+// Préstamos (11/11/2026): el banco presta más barato pero pide estar sin deudas; la financiera presta a cualquiera, en efectivo, pero
+// cobra mucho más y castiga la mora. Se paga una cuota por semana (los sábados, con la pieza), primero de la billetera electrónica.
+VR.PREST = {
+  banco: { n: 'Banco', montos: [500000, 1000000, 2000000], interes: 0.10, sem: 8, mora: 0.05, tope: 2000000 },
+  financiera: { n: 'Financiera', montos: [200000, 500000, 1000000], interes: 0.35, sem: 6, mora: 0.25, tope: 1500000 },
 };
 VR.METAS = [ // lista de sueños (Menú → Metas): se van tachando con las etapas J3–J6
   ['Celular nuevo', 1200000], ['Bici usada', 450000], ['Casco', 180000], ['Licencia de conducir', 250000],
@@ -6501,7 +6530,7 @@ VR.DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 VR.Vida = class {
   constructor() {
-    const d = { min: 7 * 60, hambre: 80, saldo: 0, debe: 0, banco: 0, canasto: false, stock: 0, fiado: 0, pieza: { saldo: 0, vence: 5 * 1440 + 12 * 60, fuera: false }, mov: [], metas: [], aviso: 0 };
+    const d = { min: 7 * 60, hambre: 80, saldo: 0, debe: 0, banco: 0, canasto: false, stock: 0, fiado: 0, pieza: { saldo: 0, vence: 5 * 1440 + 12 * 60, fuera: false }, mov: [], metas: [], aviso: 0, celu: 'roto', prestamos: [] };
     const s = VR.store.get('vida', null);
     this.s = Object.assign(d, s || {}); this.s.pieza = Object.assign(d.pieza, (s && s.pieza) || {});
     this.nueva = !s; this.onMsg = null; this.onDesmayo = null; this._hud = ''; this._acc = 0; this._save = 0;
@@ -6525,7 +6554,7 @@ VR.Vida = class {
     if (s.hambre <= 0) { s.hambre = 40; s.min += 180; this.sync(); if (this.onDesmayo) this.onDesmayo(); }
     const P = s.pieza;
     if (s.min >= P.vence) { // cada sábado al mediodía se cobra la semana
-      P.saldo += VR.PRECIOS.pieza; P.vence += 7 * 1440;
+      P.saldo += VR.PRECIOS.pieza; P.vence += 7 * 1440; this.cobraCuotas();
       if (P.saldo >= 2 * VR.PRECIOS.pieza && !P.fuera) { P.fuera = true; this.msg('🏠 Ña Ramona te sacó las cosas de la pieza. Pagale lo que debés'); }
       else this.msg(P.saldo > VR.PRECIOS.pieza ? '🏠 Ña Ramona: "¡Ya van dos semanas, mitã!"' : '🏠 Hoy vence la pieza: ' + VR.fmtGs(P.saldo));
     }
@@ -6593,7 +6622,46 @@ VR.Vida = class {
     const s = this.s, dias = Math.ceil(s.saldo), P = s.pieza, venceEn = Math.max(0, Math.ceil((P.vence - s.min) / 1440));
     return '📱 ' + (dias > 0 ? dias + ' d' : 'sin saldo') + '  🏠 ' + (P.saldo > 0 ? 'debés' : venceEn <= 1 ? 'vence hoy' : 'vence ' + VR.DIAS[((P.vence / 1440 | 0)) % 7]);
   }
-  deudaTotal() { return this.s.debe + Math.max(0, this.s.pieza.saldo) + this.s.fiado; }
+  deudaTotal() { return this.s.debe + Math.max(0, this.s.pieza.saldo) + this.s.fiado + this.prestamosResta(); }
+  // ---- celular: arrancás con la pantalla rota; se arregla o se compra uno nuevo en el servicio técnico ----
+  celuRoto() { return this.s.celu === 'roto'; }
+  arreglaCelu() { if (!this.celuRoto()) return false; if (!this.gasta(VR.PRECIOS.celuArreglo, 'Servicio técnico: pantalla del celular')) return false; this.s.celu = 'ok'; this.save(); this.msg('📱 ¡Pantalla arreglada!'); return true; }
+  compraCelu() { if (!this.celuRoto()) return false; if (!this.gasta(VR.PRECIOS.celuNuevo, 'Celular nuevo')) return false; this.s.celu = 'ok'; this.save(); this.msg('📱 ¡Celular nuevo!'); return true; }
+  // ---- préstamos ----
+  prestamosResta() { return (this.s.prestamos || []).reduce((a, p) => a + p.resta, 0); }
+  // devuelve null si se puede, o el motivo por el que no
+  noPrestamo(q, monto) {
+    const C = VR.PREST[q];
+    if (q === 'banco' && this.deudaTotal() > 0) return 'El banco no presta a quien ya debe algo: saldá tus deudas primero.';
+    if (this.prestamosResta() + monto > C.tope) return 'Con lo que ya debés, te pasás del tope de ' + VR.fmtGs(C.tope) + '.';
+    return null;
+  }
+  pidePrestamo(q, monto) {
+    const C = VR.PREST[q], mal = this.noPrestamo(q, monto); if (mal) { this.msg('🏦 ' + mal); return false; }
+    const total = Math.round(monto * (1 + C.interes) / 1000) * 1000, cuota = Math.ceil(total / C.sem / 1000) * 1000;
+    this.s.prestamos.push({ q, resta: total, cuota, sem: C.sem });
+    if (q === 'banco') { this.s.banco += monto; this.log(monto, '🏦 Préstamo del banco'); } else { VR.Wallet.set(VR.Wallet.get() + monto); this.log(monto, 'Préstamo de la financiera'); }
+    this.sync(); this.save(); return { total, cuota };
+  }
+  // pagar el préstamo i (todo lo que alcance, de la billetera electrónica y después del efectivo)
+  pagaPrestamo(i) {
+    const p = (this.s.prestamos || [])[i]; if (!p) return 0; let n = Math.min(p.resta, this.s.banco + VR.Wallet.get()); if (n <= 0) { this.msg('💸 No tenés plata para pagar'); return 0; }
+    const b = Math.min(this.s.banco, n); if (b > 0) { this.s.banco -= b; this.log(-b, '🏦 Pago de préstamo (' + VR.PREST[p.q].n + ')'); } const e = n - b; if (e > 0) { VR.Wallet.set(VR.Wallet.get() - e); this.log(-e, 'Pago de préstamo (' + VR.PREST[p.q].n + ')'); }
+    p.resta -= n; if (p.resta <= 0) { this.s.prestamos.splice(i, 1); this.msg('✅ Terminaste de pagar el préstamo'); } else this.msg('💸 Pagaste ' + VR.fmtGs(n) + ' · te quedan ' + VR.fmtGs(p.resta));
+    this.sync(); this.save(); return n;
+  }
+  // los sábados: la cuota de cada préstamo; lo que no alcanza se atrasa y se recarga con la mora
+  cobraCuotas() {
+    const s = this.s; if (!s.prestamos || !s.prestamos.length) return; let atraso = false, cobrado = 0;
+    for (const p of s.prestamos) {
+      const C = VR.PREST[p.q], n = Math.min(p.cuota, p.resta); let pago = 0;
+      const b = Math.min(s.banco, n); if (b > 0) { s.banco -= b; pago += b; this.log(-b, '🏦 Cuota del préstamo (' + C.n + ')'); }
+      const e = Math.min(VR.Wallet.get(), n - pago); if (e > 0) { VR.Wallet.set(VR.Wallet.get() - e); pago += e; this.log(-e, 'Cuota del préstamo (' + C.n + ')'); }
+      p.resta -= pago; cobrado += pago; if (pago < n) { p.resta += Math.round((n - pago) * C.mora); atraso = true; }
+    }
+    s.prestamos = s.prestamos.filter((p) => p.resta > 0);
+    this.msg(atraso ? '⚠ No alcanzó para la cuota del préstamo: se atrasa y sube con la mora' : '🏦 Se descontó la cuota del préstamo: ' + VR.fmtGs(cobrado));
+  }
 };
 
 // ===== game/online.js =====
@@ -7172,6 +7240,8 @@ VR.Lugares = class {
       case 'terminal': return L(/Terminal/);
       case 'cajero': { const d = (W.decals || []).find((x) => x.kind === 'cartel' && x.style === 'banco'); return d && { x: (d.x + d.w / 2) * VR.TILE, y: (d.y + 1) * VR.TILE + 12 }; } // frente al banco de la esquina noroeste
       case 'cajero2': { const c = VR.vida && VR.vida.s.casa; return c && { x: c.x - 150, y: c.y }; } // cajero de Santa Lucía, cerca de tu pieza
+      case 'financiera': { const d = (W.decals || []).find((x) => x.kind === 'frente' && x.style === 'credito'); return d && { x: (d.x + 1) * VR.TILE, y: (d.y + d.h / 2) * VR.TILE }; } // la casona de cartel verde de la esquina sudoeste de la plaza
+      case 'celulares': { const p = L(/Plaza de los H/); return p && { x: p.x - 420, y: p.y + 660 }; } // servicio técnico de celulares, en la vereda sur al sudoeste de la plaza (inventado)
       case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
     }
     return null;
@@ -7187,7 +7257,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
 
 // ---------------- barrios por historia ----------------
@@ -7582,16 +7652,45 @@ VR.MISIONES = {
 
 // ---------------- J3: lugares para usar (despensa y pieza) y menús de Doña Chela y Ña Ramona ----------------
 VR.DESPENSA = [['Chipa', 'chipa', 15], ['Empanada', 'empanada', 25], ['Mbeju', 'mbeju', 35], ['Plato del día', 'plato', 60]];
+// préstamos (11/11/2026): q = 'banco' o 'financiera'. Cada opción devuelve el submenú siguiente.
+VR.prestamoMenu = (M, q) => { const V = M.vida, C = VR.PREST[q], gs = VR.fmtGs, mis = V.s.prestamos.map((p, i) => [p, i]).filter(([p]) => p.q === q), op = [];
+  const cond = q === 'banco' ? 'Pide estar sin deudas. ' : 'Presta a cualquiera, pero cobra caro y castiga la mora. ';
+  for (const m of C.montos) op.push(['Pedir ' + gs(m) + ' (devolvés ' + gs(Math.round(m * (1 + C.interes) / 1000) * 1000) + ' en ' + C.sem + ' semanas)', () => {
+    const mal = V.noPrestamo(q, m); if (mal) return [{ quien: 'sis', titulo: '🏦 ' + C.n, txt: mal, op: [['Volver', () => VR.prestamoMenu(M, q)], ['Salir', () => false]] }];
+    const r = V.pidePrestamo(q, m); if (!r) return false;
+    return [{ quien: 'sis', titulo: '🏦 ' + C.n, txt: 'Listo: ' + gs(m) + (q === 'banco' ? ' en tu billetera electrónica' : ' en efectivo') + '. Se descuenta una cuota de ' + gs(r.cuota) + ' cada sábado (' + C.sem + ' semanas). Si no alcanza, se atrasa y sube con la mora.', op: [['Aguyje', () => false]] }]; }]);
+  for (const [p, i] of mis) op.push(['Pagar el préstamo (debés ' + gs(p.resta) + ')', () => { V.pagaPrestamo(i); return VR.prestamoMenu(M, q); }]);
+  op.push(['Salir', () => false]);
+  return [{ quien: 'sis', titulo: '🏦 ' + C.n + ': préstamos', txt: cond + 'Interés ' + Math.round(C.interes * 100) + ' % en ' + C.sem + ' semanas. Debés en préstamos: ' + gs(V.prestamosResta()) + '.', op }]; };
 VR.cajeroMenu = (M) => { const V = M.vida, e = VR.Wallet.get(), b = V.s.banco, op = [];
   if (e > 0) op.push(['Depositar todo el efectivo (' + VR.fmtGs(e) + ')', () => { V.deposita(e); return false; }]);
   for (const n of [50000, 100000]) if (b >= n) op.push(['Sacar ' + VR.fmtGs(n), () => { V.retira(n); return false; }]);
   if (b > 0) op.push(['Sacar todo (' + VR.fmtGs(b) + ')', () => { V.retira(b); return false; }]);
+  op.push(['🏦 Préstamos del banco', () => VR.prestamoMenu(M, 'banco')]);
   op.push(['Salir', () => false]);
   return [{ quien: 'sis', titulo: '🏧 Cajero', txt: 'Efectivo: ' + VR.fmtGs(e) + ' · Billetera electrónica: ' + VR.fmtGs(b), op }]; };
+// servicio técnico de celulares: cambiar la pantalla rota o comprar uno nuevo
+VR.celularesMenu = (M) => { const V = M.vida, gs = VR.fmtGs, P = VR.PRECIOS;
+  if (!V.celuRoto()) return [{ quien: 'sis', titulo: '📱 Celu Porã', txt: 'Tu celular anda bien. Cuando se rompa, pasá por acá.', op: [['Aguyje', () => false]] }];
+  return [{ quien: 'sis', titulo: '📱 Celu Porã', txt: 'Tu pantalla está hecha pedazos. Tenés ' + gs(VR.Wallet.get()) + ' en efectivo.', op: [
+    ['Cambiar la pantalla · ' + gs(P.celuArreglo), () => { V.arreglaCelu(); return false; }],
+    ['Celular nuevo · ' + gs(P.celuNuevo), () => { V.compraCelu(); return false; }],
+    ['Después vuelvo', () => false]] }]; };
 VR.drawCajero = (g, x, y) => { g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 6, y - 1, 13, 3); g.fillStyle = '#3a4a5a'; g.fillRect(x - 6, y - 20, 12, 20); g.fillStyle = '#6d8fb0'; g.fillRect(x - 5, y - 19, 10, 6); g.fillStyle = '#9fe0ff'; g.fillRect(x - 4, y - 18, 8, 4); g.fillStyle = '#20262e'; g.fillRect(x - 4, y - 11, 8, 3); g.fillStyle = '#c8d0d8'; g.fillRect(x - 3, y - 7, 6, 2); VR.gfx.text(g, '🏧', x, y - 24, '#fff', { center: true, size: 7 }); };
+VR.drawCelulares = (g, x, y) => { // puesto chico: mostrador azul, toldo celeste y blanco, celulares en vitrina
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 15, y - 2, 32, 5);
+  g.fillStyle = '#3a6ea8'; g.fillRect(x - 14, y - 12, 28, 12); g.fillStyle = '#2a5688'; g.fillRect(x - 14, y - 4, 28, 4);
+  g.fillStyle = '#9fd4ff'; g.fillRect(x - 12, y - 11, 24, 6); g.fillStyle = '#dff1ff'; g.fillRect(x - 12, y - 11, 24, 1);
+  g.fillStyle = '#20262e'; for (let i = 0; i < 4; i++) g.fillRect(x - 10 + i * 6, y - 10, 3, 5);
+  for (let i = 0; i < 7; i++) { g.fillStyle = i % 2 ? '#ffffff' : '#4aa8ff'; g.fillRect(x - 15 + i * 4.6, y - 20, 5, 7); }
+  g.fillStyle = '#26262c'; g.fillRect(x - 15, y - 21, 31, 1);
+  g.fillStyle = '#ff5a5a'; g.fillRect(x + 8, y - 17, 3, 3);
+};
 VR.PUNTOS = {
   cajero: { lugar: 'cajero', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
   cajero2: { lugar: 'cajero2', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
+  financiera: { lugar: 'financiera', nombre: 'Financiera', ico: '💰', mini: '₲', menu: (M) => VR.prestamoMenu(M, 'financiera') },
+  celulares: { lugar: 'celulares', nombre: 'Celu Porã', ico: '📱', mini: '☎', menu: (M) => VR.celularesMenu(M), draw: VR.drawCelulares },
   despensa: { lugar: 'despensa', nombre: 'Despensa Ñande Róga', ico: '🛒', mini: '$',
     menu: (M) => [{ quien: 'sis', titulo: '🛒 Despensa Ñande Róga', txt: '¿Qué llevás? Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op: [
       ...VR.DESPENSA.map(([n, k, h]) => [n + ' · ' + VR.fmtGs(VR.PRECIOS[k]), () => { M.vida.come(VR.PRECIOS[k], h, n); return false; }]),
@@ -9409,7 +9508,7 @@ VR.Titulo = class {
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
     if (mis) mis.update(dt, player, car);
-    syncEq(); if (vida) updateJaha(dt);
+    syncEq(); if (vida) updateMbohasa(dt);
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
     updateCamera(dt);
@@ -9599,27 +9698,29 @@ VR.Titulo = class {
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
-  // ---------- celular (Historia): apps; Jaha (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
+  // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
   const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', jaha = null;
   const JAHA = { moto: { n: 'Moto', ico: '🏍', base: 10000, km: 3000, kmh: 28 }, auto: { n: 'Auto', ico: '🚗', base: 15000, km: 5000, kmh: 32 } };
   if (vida) $('btnCel').hidden = false;
   $('btnCel').onclick = () => openCel();
-  $('celHome').onclick = () => { if (celApp === 'home') celDlg.close(); else { celApp = 'home'; paintCel(); } };
+  $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
+  $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
+  $('celClose').onclick = () => celDlg.close();
   celDlg.addEventListener('close', () => { if (!celDlg._keep) { VR.loop.paused = false; VR.input.enabled = true; } celDlg._keep = false; });
   function openCel(app) { if (!vida || mode !== 'game') return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; celApp = app || 'home'; paintCel(); if (!celDlg.open) celDlg.showModal(); }
   const celGo = (f) => { celDlg._keep = true; celDlg.close(); f(); };
   function paintCel() {
-    const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0;
-    $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo';
+    const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0; celDlg.classList.toggle('roto', vida.celuRoto());
+    $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
     if (celApp === 'home') {
-      const A = [['jaha', '🛵', 'Jaha', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['ropero', '👕', 'Ropero', '#f29ac8', true],
+      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['ropero', '👕', 'Ropero', '#f29ac8', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['metas', '⭐', 'Metas', '#ffb36b', true], ['mapa', '🗺', 'Mapa', '#7fe08a', true]];
-      h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>');
+      h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
-      h = '<h3>🛵 Jaha</h3>';
+      h = '<h3>🛵 Mbohasa</h3>';
       if (jaha) h += '<p>' + JAHA[jaha.tipo].ico + ' Tu ' + JAHA[jaha.tipo].n.toLowerCase() + ' llega en ' + Math.ceil(jaha.t) + ' s.</p><button class="cbtn sec" data-j="x">Cancelar</button>';
-      else if (!dest) h += '<p>Marcá a dónde vas en el 🗺 Mapa y volvé a abrir Jaha.</p><button class="cbtn" data-a="mapa">🗺 Abrir el mapa</button>';
+      else if (!dest) h += '<p>Marcá a dónde vas en el 🗺 Mapa y volvé a abrir Mbohasa.</p><button class="cbtn" data-a="mapa">🗺 Abrir el mapa</button>';
       else { const km = Math.hypot(dest.x - player.x, dest.y - player.y) / 8000 * 1.3;
         h += '<p>A: <b>' + esc(dest.name || 'destino') + '</b> · ' + km.toFixed(1).replace('.', ',') + ' km</p><p>Se paga con la billetera electrónica (tenés ' + gs(s.banco) + ').</p>';
         for (const t in JAHA) { const J = JAHA[t], pr = Math.round((J.base + J.km * km) / 1000) * 1000; h += '<button class="cbtn" data-j="' + t + '" data-p="' + pr + '"' + (s.banco < pr || car ? ' disabled' : '') + '>' + J.ico + ' ' + J.n + ' · ' + gs(pr) + '</button>'; }
@@ -9627,7 +9728,8 @@ VR.Titulo = class {
     } else if (celApp === 'bill') {
       h = '<h3>🏦 Billetera</h3><div class="row2"><span>💵 Efectivo</span><b>' + gs(VR.Wallet.get()) + '</b></div><div class="row2"><span>🏦 Electrónica</span><b>' + gs(s.banco) + '</b></div>' +
         (vida.deudaTotal() > 0 ? '<div class="row2" style="color:#ff8a7a"><span>⚠ Deudas</span><b>' + gs(vida.deudaTotal()) + '</b></div>' : '') +
-        '<p>Efectivo: chipa, despensa, Doña Chela, Ña Ramona. Electrónica: Jaha, changas de la app, Ao Porã. En los 🏧 cajeros (banco del Centro y Santa Lucía) depositás o sacás.</p>' +
+        s.prestamos.map((p) => '<div class="row2" style="color:#ffb36b"><span>💳 ' + VR.PREST[p.q].n + ' · cuota ' + gs(p.cuota) + '/sáb</span><b>' + gs(p.resta) + '</b></div>').join('') +
+        '<p>Efectivo: chipa, despensa, Doña Chela, Ña Ramona. Electrónica: Mbohasa, changas de la app, Ao Porã. En los 🏧 cajeros (banco del Centro y Santa Lucía) depositás o sacás.</p>' +
         s.mov.slice(0, 8).map((m) => '<div class="row2"><span>' + esc(m[3]) + '</span><span style="color:' + (m[2] < 0 ? '#ff8a7a' : '#9fe0a0') + '">' + (m[2] > 0 ? '+' : '') + gs(m[2]) + '</span></div>').join('');
     } else if (celApp === 'mochila') {
       h = '<h3>🎒 Mochila</h3><div class="row2"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' chipas' : '—') + '</span></div>' +
@@ -9637,6 +9739,7 @@ VR.Titulo = class {
     celBody.innerHTML = h;
     celBody.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => { const a = b.dataset.a;
       if (b.classList.contains('off')) { toast('📵 Sin saldo'); return; }
+      if (vida.celuRoto() && Math.random() < 0.12) { toast('📱 La pantalla rota no responde... probá de nuevo'); return; }
       if (a === 'ropero') celGo(() => { shop.ropero = true; openShop(); });
       else if (a === 'changas') celGo(() => changas.open());
       else if (a === 'mis' || a === 'metas') celGo(() => openVida(a === 'mis' ? 'mis' : 'metas'));
@@ -9644,17 +9747,17 @@ VR.Titulo = class {
       else { celApp = a; paintCel(); } });
     celBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { celGo(() => toggleEq()); });
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
-      if (b.dataset.j === 'x') { jaha = null; toast('Cancelaste el Jaha'); paintCel(); return; }
-      if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Jaha no entra acá: ' + VR.Barrios.CARTEL); return; }
-      jaha = { tipo: b.dataset.j, precio: +b.dataset.p, t: 8 + Math.random() * 10, dest: { ...dest } }; celDlg.close(); toast(JAHA[jaha.tipo].ico + ' Pediste un Jaha: llega en ' + Math.ceil(jaha.t) + ' s'); });
+      if (b.dataset.j === 'x') { jaha = null; toast('Cancelaste el Mbohasa'); paintCel(); return; }
+      if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }
+      jaha = { tipo: b.dataset.j, precio: +b.dataset.p, t: 8 + Math.random() * 10, dest: { ...dest } }; celDlg.close(); toast(JAHA[jaha.tipo].ico + ' Pediste un Mbohasa: llega en ' + Math.ceil(jaha.t) + ' s'); });
   }
-  // el Jaha llega: subís y en un ratito estás (pasa la hora del viaje y se cobra de la billetera electrónica)
-  function updateJaha(dt) {
+  // el Mbohasa llega: subís y en un ratito estás (pasa la hora del viaje y se cobra de la billetera electrónica)
+  function updateMbohasa(dt) {
     if (!jaha) return; jaha.t -= dt; if (jaha.t > 0) return;
     const J = jaha, T = JAHA[J.tipo]; jaha = null;
-    if (car) { toast('Tu Jaha te esperó y se fue: estabas manejando'); return; }
-    mis.dialogo([{ quien: 'sis', titulo: '🛵 Jaha', txt: T.ico + ' Llegó tu ' + T.n.toLowerCase() + '. Viaje a ' + (J.dest.name || 'tu destino') + ' por ' + VR.fmtGs(J.precio) + '.', op: [['Subir', () => true], ['Cancelar', () => false]] }], () => {
-      if (!vida.pagaBanco(J.precio, 'Jaha (' + T.n.toLowerCase() + ')')) return;
+    if (car) { toast('Tu Mbohasa te esperó y se fue: estabas manejando'); return; }
+    mis.dialogo([{ quien: 'sis', titulo: '🛵 Mbohasa', txt: T.ico + ' Llegó tu ' + T.n.toLowerCase() + '. Viaje a ' + (J.dest.name || 'tu destino') + ' por ' + VR.fmtGs(J.precio) + '.', op: [['Subir', () => true], ['Cancelar', () => false]] }], () => {
+      if (!vida.pagaBanco(J.precio, 'Mbohasa (' + T.n.toLowerCase() + ')')) return;
       const f = $('celFade'), km = Math.hypot(J.dest.x - player.x, J.dest.y - player.y) / 8000 * 1.3; f.textContent = T.ico + ' En viaje…'; f.classList.add('on');
       setTimeout(() => { teleport(J.dest.x, J.dest.y, J.dest.name, true); vida.s.min += km / T.kmh * 60; vida.sync(); if (mis) mis.emit('jaha', J); setTimeout(() => f.classList.remove('on'), 300); }, 900);
     });
@@ -9760,6 +9863,17 @@ VR.Titulo = class {
       let col = MAPCOL[world.tiles[i]] || [255, 0, 255];
       if (world.line[i] === 1 || world.line[i] === 2) col = [226, 191, 69];
       d[i * 4] = col[0]; d[i * 4 + 1] = col[1]; d[i * 4 + 2] = col[2]; d[i * 4 + 3] = 255;
+    }
+    // límites de los barrios (11/11/2026): cada barrio con su color suave y un borde marcado entre barrios
+    if (world.barrio) {
+      const BC = [[255, 120, 90], [90, 170, 255], [255, 205, 70], [190, 110, 255], [70, 220, 150], [255, 120, 190], [120, 230, 235], [255, 160, 60]], N = world.w * world.h, w = world.w, B = world.barrio;
+      for (let i = 0; i < N; i++) { const b = B[i]; if (!b) continue; const c = BC[(b - 1) % BC.length]; for (let k = 0; k < 3; k++) d[i * 4 + k] = d[i * 4 + k] * 0.7 + c[k] * 0.3; }
+      const put = (i, c) => { if (i < 0 || i >= N) return; d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; };
+      for (let y = 1; y < world.h - 1; y++) for (let xx = 1; xx < w - 1; xx++) {
+        const i = y * w + xx, b = B[i];
+        if (b !== B[i + 1]) { const c = BC[((b || B[i + 1]) - 1) % BC.length]; put(i, c); put(i + 1, c); put(i - 1, c); put(i + 2, c); put(i - 2, c); put(i + 3, c); }
+        if (b !== B[i + w]) { const c = BC[((b || B[i + w]) - 1) % BC.length]; put(i, c); put(i + w, c); put(i - w, c); put(i + 2 * w, c); put(i - 2 * w, c); put(i + 3 * w, c); }
+      }
     }
     x.putImageData(img, 0, 0);
     const L = $('mapLabels'); L.innerHTML = '';

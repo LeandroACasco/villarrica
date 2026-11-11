@@ -268,7 +268,7 @@
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
     if (mis) mis.update(dt, player, car);
-    syncEq(); if (vida) updateJaha(dt);
+    syncEq(); if (vida) updateMbohasa(dt);
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
     updateCamera(dt);
@@ -458,27 +458,29 @@
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
-  // ---------- celular (Historia): apps; Jaha (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
+  // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
   const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', jaha = null;
   const JAHA = { moto: { n: 'Moto', ico: '🏍', base: 10000, km: 3000, kmh: 28 }, auto: { n: 'Auto', ico: '🚗', base: 15000, km: 5000, kmh: 32 } };
   if (vida) $('btnCel').hidden = false;
   $('btnCel').onclick = () => openCel();
-  $('celHome').onclick = () => { if (celApp === 'home') celDlg.close(); else { celApp = 'home'; paintCel(); } };
+  $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
+  $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
+  $('celClose').onclick = () => celDlg.close();
   celDlg.addEventListener('close', () => { if (!celDlg._keep) { VR.loop.paused = false; VR.input.enabled = true; } celDlg._keep = false; });
   function openCel(app) { if (!vida || mode !== 'game') return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; celApp = app || 'home'; paintCel(); if (!celDlg.open) celDlg.showModal(); }
   const celGo = (f) => { celDlg._keep = true; celDlg.close(); f(); };
   function paintCel() {
-    const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0;
-    $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo';
+    const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0; celDlg.classList.toggle('roto', vida.celuRoto());
+    $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
     if (celApp === 'home') {
-      const A = [['jaha', '🛵', 'Jaha', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['ropero', '👕', 'Ropero', '#f29ac8', true],
+      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['ropero', '👕', 'Ropero', '#f29ac8', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['metas', '⭐', 'Metas', '#ffb36b', true], ['mapa', '🗺', 'Mapa', '#7fe08a', true]];
-      h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>');
+      h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
-      h = '<h3>🛵 Jaha</h3>';
+      h = '<h3>🛵 Mbohasa</h3>';
       if (jaha) h += '<p>' + JAHA[jaha.tipo].ico + ' Tu ' + JAHA[jaha.tipo].n.toLowerCase() + ' llega en ' + Math.ceil(jaha.t) + ' s.</p><button class="cbtn sec" data-j="x">Cancelar</button>';
-      else if (!dest) h += '<p>Marcá a dónde vas en el 🗺 Mapa y volvé a abrir Jaha.</p><button class="cbtn" data-a="mapa">🗺 Abrir el mapa</button>';
+      else if (!dest) h += '<p>Marcá a dónde vas en el 🗺 Mapa y volvé a abrir Mbohasa.</p><button class="cbtn" data-a="mapa">🗺 Abrir el mapa</button>';
       else { const km = Math.hypot(dest.x - player.x, dest.y - player.y) / 8000 * 1.3;
         h += '<p>A: <b>' + esc(dest.name || 'destino') + '</b> · ' + km.toFixed(1).replace('.', ',') + ' km</p><p>Se paga con la billetera electrónica (tenés ' + gs(s.banco) + ').</p>';
         for (const t in JAHA) { const J = JAHA[t], pr = Math.round((J.base + J.km * km) / 1000) * 1000; h += '<button class="cbtn" data-j="' + t + '" data-p="' + pr + '"' + (s.banco < pr || car ? ' disabled' : '') + '>' + J.ico + ' ' + J.n + ' · ' + gs(pr) + '</button>'; }
@@ -486,7 +488,8 @@
     } else if (celApp === 'bill') {
       h = '<h3>🏦 Billetera</h3><div class="row2"><span>💵 Efectivo</span><b>' + gs(VR.Wallet.get()) + '</b></div><div class="row2"><span>🏦 Electrónica</span><b>' + gs(s.banco) + '</b></div>' +
         (vida.deudaTotal() > 0 ? '<div class="row2" style="color:#ff8a7a"><span>⚠ Deudas</span><b>' + gs(vida.deudaTotal()) + '</b></div>' : '') +
-        '<p>Efectivo: chipa, despensa, Doña Chela, Ña Ramona. Electrónica: Jaha, changas de la app, Ao Porã. En los 🏧 cajeros (banco del Centro y Santa Lucía) depositás o sacás.</p>' +
+        s.prestamos.map((p) => '<div class="row2" style="color:#ffb36b"><span>💳 ' + VR.PREST[p.q].n + ' · cuota ' + gs(p.cuota) + '/sáb</span><b>' + gs(p.resta) + '</b></div>').join('') +
+        '<p>Efectivo: chipa, despensa, Doña Chela, Ña Ramona. Electrónica: Mbohasa, changas de la app, Ao Porã. En los 🏧 cajeros (banco del Centro y Santa Lucía) depositás o sacás.</p>' +
         s.mov.slice(0, 8).map((m) => '<div class="row2"><span>' + esc(m[3]) + '</span><span style="color:' + (m[2] < 0 ? '#ff8a7a' : '#9fe0a0') + '">' + (m[2] > 0 ? '+' : '') + gs(m[2]) + '</span></div>').join('');
     } else if (celApp === 'mochila') {
       h = '<h3>🎒 Mochila</h3><div class="row2"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' chipas' : '—') + '</span></div>' +
@@ -496,6 +499,7 @@
     celBody.innerHTML = h;
     celBody.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => { const a = b.dataset.a;
       if (b.classList.contains('off')) { toast('📵 Sin saldo'); return; }
+      if (vida.celuRoto() && Math.random() < 0.12) { toast('📱 La pantalla rota no responde... probá de nuevo'); return; }
       if (a === 'ropero') celGo(() => { shop.ropero = true; openShop(); });
       else if (a === 'changas') celGo(() => changas.open());
       else if (a === 'mis' || a === 'metas') celGo(() => openVida(a === 'mis' ? 'mis' : 'metas'));
@@ -503,17 +507,17 @@
       else { celApp = a; paintCel(); } });
     celBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { celGo(() => toggleEq()); });
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
-      if (b.dataset.j === 'x') { jaha = null; toast('Cancelaste el Jaha'); paintCel(); return; }
-      if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Jaha no entra acá: ' + VR.Barrios.CARTEL); return; }
-      jaha = { tipo: b.dataset.j, precio: +b.dataset.p, t: 8 + Math.random() * 10, dest: { ...dest } }; celDlg.close(); toast(JAHA[jaha.tipo].ico + ' Pediste un Jaha: llega en ' + Math.ceil(jaha.t) + ' s'); });
+      if (b.dataset.j === 'x') { jaha = null; toast('Cancelaste el Mbohasa'); paintCel(); return; }
+      if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }
+      jaha = { tipo: b.dataset.j, precio: +b.dataset.p, t: 8 + Math.random() * 10, dest: { ...dest } }; celDlg.close(); toast(JAHA[jaha.tipo].ico + ' Pediste un Mbohasa: llega en ' + Math.ceil(jaha.t) + ' s'); });
   }
-  // el Jaha llega: subís y en un ratito estás (pasa la hora del viaje y se cobra de la billetera electrónica)
-  function updateJaha(dt) {
+  // el Mbohasa llega: subís y en un ratito estás (pasa la hora del viaje y se cobra de la billetera electrónica)
+  function updateMbohasa(dt) {
     if (!jaha) return; jaha.t -= dt; if (jaha.t > 0) return;
     const J = jaha, T = JAHA[J.tipo]; jaha = null;
-    if (car) { toast('Tu Jaha te esperó y se fue: estabas manejando'); return; }
-    mis.dialogo([{ quien: 'sis', titulo: '🛵 Jaha', txt: T.ico + ' Llegó tu ' + T.n.toLowerCase() + '. Viaje a ' + (J.dest.name || 'tu destino') + ' por ' + VR.fmtGs(J.precio) + '.', op: [['Subir', () => true], ['Cancelar', () => false]] }], () => {
-      if (!vida.pagaBanco(J.precio, 'Jaha (' + T.n.toLowerCase() + ')')) return;
+    if (car) { toast('Tu Mbohasa te esperó y se fue: estabas manejando'); return; }
+    mis.dialogo([{ quien: 'sis', titulo: '🛵 Mbohasa', txt: T.ico + ' Llegó tu ' + T.n.toLowerCase() + '. Viaje a ' + (J.dest.name || 'tu destino') + ' por ' + VR.fmtGs(J.precio) + '.', op: [['Subir', () => true], ['Cancelar', () => false]] }], () => {
+      if (!vida.pagaBanco(J.precio, 'Mbohasa (' + T.n.toLowerCase() + ')')) return;
       const f = $('celFade'), km = Math.hypot(J.dest.x - player.x, J.dest.y - player.y) / 8000 * 1.3; f.textContent = T.ico + ' En viaje…'; f.classList.add('on');
       setTimeout(() => { teleport(J.dest.x, J.dest.y, J.dest.name, true); vida.s.min += km / T.kmh * 60; vida.sync(); if (mis) mis.emit('jaha', J); setTimeout(() => f.classList.remove('on'), 300); }, 900);
     });
@@ -619,6 +623,17 @@
       let col = MAPCOL[world.tiles[i]] || [255, 0, 255];
       if (world.line[i] === 1 || world.line[i] === 2) col = [226, 191, 69];
       d[i * 4] = col[0]; d[i * 4 + 1] = col[1]; d[i * 4 + 2] = col[2]; d[i * 4 + 3] = 255;
+    }
+    // límites de los barrios (11/11/2026): cada barrio con su color suave y un borde marcado entre barrios
+    if (world.barrio) {
+      const BC = [[255, 120, 90], [90, 170, 255], [255, 205, 70], [190, 110, 255], [70, 220, 150], [255, 120, 190], [120, 230, 235], [255, 160, 60]], N = world.w * world.h, w = world.w, B = world.barrio;
+      for (let i = 0; i < N; i++) { const b = B[i]; if (!b) continue; const c = BC[(b - 1) % BC.length]; for (let k = 0; k < 3; k++) d[i * 4 + k] = d[i * 4 + k] * 0.7 + c[k] * 0.3; }
+      const put = (i, c) => { if (i < 0 || i >= N) return; d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; };
+      for (let y = 1; y < world.h - 1; y++) for (let xx = 1; xx < w - 1; xx++) {
+        const i = y * w + xx, b = B[i];
+        if (b !== B[i + 1]) { const c = BC[((b || B[i + 1]) - 1) % BC.length]; put(i, c); put(i + 1, c); put(i - 1, c); put(i + 2, c); put(i - 2, c); put(i + 3, c); }
+        if (b !== B[i + w]) { const c = BC[((b || B[i + w]) - 1) % BC.length]; put(i, c); put(i + w, c); put(i - w, c); put(i + 2 * w, c); put(i - 2 * w, c); put(i + 3 * w, c); }
+      }
     }
     x.putImageData(img, 0, 0);
     const L = $('mapLabels'); L.innerHTML = '';
