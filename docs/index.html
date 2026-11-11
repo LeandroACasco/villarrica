@@ -400,7 +400,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión d4dfda43 · 2026-11-11</div>
+  <div class="tVer">Versión a1b11f1e · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -492,7 +492,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d4dfda43 · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión a1b11f1e · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -10128,10 +10128,41 @@ VR.Cisnes = class {
         c.fillStyle = 'rgba(14,16,24,.92)'; c.strokeStyle = '#ffd84a'; c.lineWidth = 2 * kk; c.beginPath(); c.roundRect(x, y, w, lines.length * lh + 14 * kk, 10 * kk); c.fill(); c.stroke(); c.fillStyle = '#fff'; c.textBaseline = 'top'; lines.forEach((l, i) => c.fillText(l, x + 12 * kk, y + 8 * kk + i * lh)); }
     }
     noche() { const h = this.vida && this.vida.hora; return h === undefined ? 0 : (h >= 19.5 || h < 5.5) ? 1 : (h >= 18 || h < 6.5) ? 0.5 : 0; }
+    // la calle por la ventana (11/11/2026): pasa gente caminando y a veces una moto o un auto; se ven recortados por el vidrio y el marco queda encima
+    ventana(g) {
+      const t = this.t, nt = this.noche(), X = 151.5, Y = 11.5, Wd = 47, Hh = 37, sy = 46;
+      if (!this.outs) { this.outs = []; this.nextOut = t + 0.6; this.looks = []; for (let i = 0; i < 6; i++) this.looks.push(VR.av2Lazy(VR.av2Random(), 4)); }
+      if (t > this.nextOut) { this.nextOut = t + 2.2 + Math.random() * 5.5; const r = Math.random(), dir = Math.random() < 0.5 ? 1 : -1, o = { t0: t, dir, x0: dir > 0 ? X - 30 : X + Wd + 30 };
+        if (r < 0.62) Object.assign(o, { k: 'p', v: 15 + Math.random() * 7, sp: this.looks[(Math.random() * 6) | 0] }); else if (r < 0.84) Object.assign(o, { k: 'm', v: 34 + Math.random() * 14, col: ['#d8402e', '#2e6fc8', '#2a2a30', '#e8e8ee'][(Math.random() * 4) | 0], hel: Math.random() < 0.8 }); else Object.assign(o, { k: 'c', v: 26 + Math.random() * 12, col: ['#c8c8d0', '#d8402e', '#2e6fc8', '#e8c030', '#2a2a30', '#3a8a5a'][(Math.random() * 6) | 0] });
+        this.outs.push(o); }
+      this.outs = this.outs.filter((o) => (t - o.t0) * o.v < Wd + 100);
+      g.save(); g.beginPath(); g.rect(X, Y, Wd, Hh); g.clip();
+      // la vereda y el cordón de enfrente
+      const sg = g.createLinearGradient(0, 38, 0, 49); sg.addColorStop(0, '#a8a498'); sg.addColorStop(1, '#8e8a7e'); g.fillStyle = '#7a7e84'; g.fillRect(X, 43.5, Wd, 6); g.fillStyle = sg; g.fillRect(X, 38, Wd, 5.5); g.fillStyle = '#d8d2c4'; g.fillRect(X, 43.2, Wd, 0.8); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(X, 38, Wd, 0.5);
+      for (const o of this.outs) { const x = o.x0 + o.dir * o.v * (t - o.t0), ph = t * 9 + o.t0 * 3;
+        if (o.k === 'p') { const sc = 0.78, fr = Math.floor(ph) % 8, img = o.sp.get(o.dir > 0 ? 'right' : 'left', 'walk', fr); if (img) { g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, sy + 0.5, 5, 1.4, 0, 0, 7); g.fill(); g.drawImage(img, x - 8 * sc, sy - 31.5 * sc, 16 * sc, 32 * sc); } }
+        else if (o.k === 'm') { const y = 47.5; g.save(); g.translate(x, y); g.scale(o.dir, 1); g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(0, 0.6, 9, 1.4, 0, 0, 7); g.fill(); const rot = t * 20;
+          for (const wx of [-5.4, 5.4]) { g.fillStyle = '#1a1a1e'; g.beginPath(); g.arc(wx, -3, 3, 0, 7); g.fill(); g.strokeStyle = '#8a8a92'; g.lineWidth = 0.4; g.beginPath(); g.moveTo(wx, -3); g.lineTo(wx + Math.cos(rot) * 2.4, -3 + Math.sin(rot) * 2.4); g.stroke(); }
+          g.fillStyle = o.col; g.beginPath(); g.moveTo(-6, -4); g.quadraticCurveTo(-1, -9, 5.5, -5.2); g.lineTo(5, -3.6); g.lineTo(-5, -3.2); g.fill(); g.fillStyle = '#2a2a30'; g.fillRect(-3, -6.4, 4.4, 1.6); g.fillStyle = '#6a6a72'; g.fillRect(5, -9, 0.8, 4.6); g.fillStyle = '#fff6c0'; g.fillRect(6.4, -6, 1.4, 1.2);
+          g.fillStyle = '#2e3a52'; g.beginPath(); g.roundRect(-3.4, -14, 5, 7.4, 1.6); g.fill(); g.fillStyle = '#e8c8a0'; g.beginPath(); g.arc(0.4, -16, 2.1, 0, 7); g.fill(); g.fillStyle = o.hel ? '#d8d8de' : '#2a1a10'; g.beginPath(); g.arc(0.4, -16.4, 2.4, Math.PI, 0); g.fill(); g.fillStyle = '#4a5a82'; g.fillRect(1.4, -11.6, 4.4, 1.2); g.restore(); }
+        else { const y = 47.8; g.save(); g.translate(x, y); g.scale(o.dir, 1); g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(0, 0.4, 22, 1.8, 0, 0, 7); g.fill();
+          const bg = g.createLinearGradient(0, -12, 0, -3); bg.addColorStop(0, o.col); bg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = o.col; g.beginPath(); g.roundRect(-21, -9, 42, 6.4, 2); g.fill(); g.beginPath(); g.moveTo(-11, -9); g.quadraticCurveTo(-8, -15.6, -2, -15.6); g.lineTo(7, -15.6); g.quadraticCurveTo(10, -14, 13, -9); g.fill();
+          g.fillStyle = 'rgba(255,255,255,.28)'; g.fillRect(-20, -9, 40, 1); g.fillStyle = '#9ac8e0'; g.beginPath(); g.moveTo(-8.6, -9.4); g.quadraticCurveTo(-6.6, -14, -2, -14); g.lineTo(2, -14); g.lineTo(2, -9.4); g.fill(); g.beginPath(); g.moveTo(3.6, -9.4); g.lineTo(3.6, -14); g.lineTo(7, -14); g.quadraticCurveTo(9, -13, 10.6, -9.4); g.fill(); g.fillStyle = 'rgba(40,40,50,.55)'; g.fillRect(2, -14, 1.6, 4.8);
+          g.fillStyle = '#fff6c0'; g.fillRect(19.4, -7.4, 2, 1.6); g.fillStyle = '#d02a20'; g.fillRect(-21.2, -7.4, 1.6, 1.6); for (const wx of [-12.5, 12.5]) { g.fillStyle = '#141418'; g.beginPath(); g.arc(wx, -2.8, 3.4, 0, 7); g.fill(); g.fillStyle = '#b8bcc6'; g.beginPath(); g.arc(wx, -2.8, 1.7, 0, 7); g.fill(); }
+          if (nt > 0.3) { const hl = g.createRadialGradient(22, -6.6, 0.5, 30, -6.6, 16); hl.addColorStop(0, 'rgba(255,240,170,.8)'); hl.addColorStop(1, 'rgba(255,240,170,0)'); g.fillStyle = hl; g.fillRect(20, -16, 30, 20); } g.restore(); void bg; }
+      }
+      if (nt > 0) { g.fillStyle = 'rgba(8,14,40,' + (0.78 * nt) + ')'; g.fillRect(X, Y, Wd, Hh); }
+      g.fillStyle = 'rgba(255,255,255,.14)'; g.beginPath(); g.moveTo(X + 3, Y + Hh - 2); g.lineTo(X + 20, Y + 1); g.lineTo(X + 30, Y + 1); g.lineTo(X + 13, Y + Hh - 2); g.fill();
+      g.restore();
+      // el marco, el travesaño, la reja y las cortinas vuelven a ir por encima (se copian del fondo)
+      g.save(); g.beginPath(); g.rect(138, 0, 74, 62); g.rect(X, Y, Wd, Hh); g.clip('evenodd'); const s = this.s; g.drawImage(this.bg, 138 * s, 0, 74 * s, 62 * s, 138, 0, 74, 62); g.restore();
+      g.save(); g.beginPath(); g.rect(X, Y, Wd, Hh); g.clip(); g.drawImage(this.bg, 172.5 * s, Y * s, 3 * s, Hh * s, 172.5, Y, 3, Hh); g.drawImage(this.bg, X * s, 28.4 * s, Wd * s, 3 * s, X, 28.4, Wd, 3); g.strokeStyle = 'rgba(40,30,20,.7)'; g.lineWidth = 0.5; for (let x = 156; x < 198; x += 8) { g.beginPath(); g.moveTo(x, Y); g.lineTo(x, Y + Hh); g.stroke(); } if (this.has('cortinas')) g.drawImage(this.bg, 138 * s, Y * s, 22 * s, Hh * s, 138, Y, 22, Hh), g.drawImage(this.bg, 190 * s, Y * s, 22 * s, Hh * s, 190, Y, 22, Hh); g.restore();
+    }
     // lo que se mueve o cambia: aspas del ventilador, pantalla de la tele, vapor del anafe y polvo en la luz (0 = detrás de la gente, 1 = delante)
     dyn(g, pass) {
       const t = this.t, it = (k) => this.has(k);
       if (pass === 0) {
+        this.ventana(g);
         if (it('ventilador')) { g.save(); g.translate(157, 80); g.fillStyle = 'rgba(200,214,226,.35)'; g.beginPath(); g.ellipse(0, 0, 9.5, 9.5, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(70,88,104,.9)'; g.lineWidth = 0.7; for (let a = 0; a < 3; a++) { const an = a * 2.094 + t * 22; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(Math.cos(an - 0.3) * 5, Math.sin(an - 0.3) * 5, Math.cos(an) * 8, Math.sin(an) * 8); g.stroke(); } g.fillStyle = '#556a7c'; g.beginPath(); g.arc(0, 0, 1.6, 0, 7); g.fill(); g.strokeStyle = 'rgba(40,52,64,.8)'; g.lineWidth = 0.5; g.beginPath(); g.arc(0, 0, 9.5, 0, 7); g.stroke(); g.restore(); }
         if (it('tv')) { const on = this.near && this.near.id === 'tv'; g.save(); g.beginPath(); g.roundRect(107, 147, 34, 21, 2); g.clip(); if (on) { const gr = g.createLinearGradient(107, 147, 141, 168); gr.addColorStop(0, '#5aa6ec'); gr.addColorStop(1, '#2c66b0'); g.fillStyle = gr; g.fillRect(107, 147, 34, 21); const o = (t * 18) % 34; g.fillStyle = '#e8c040'; g.fillRect(110, 152, 12, 8); g.fillStyle = '#e85a5a'; g.fillRect(126, 156, 12, 6); g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(107 + o, 147, 3, 21); g.fillStyle = 'rgba(255,255,255,.1)'; for (let y = 147; y < 168; y += 2) g.fillRect(107, y, 34, 0.6); } else { const gr = g.createLinearGradient(107, 147, 141, 168); gr.addColorStop(0, '#1d2a36'); gr.addColorStop(1, '#0c1218'); g.fillStyle = gr; g.fillRect(107, 147, 34, 21); g.fillStyle = 'rgba(255,255,255,.07)'; g.beginPath(); g.moveTo(107, 147); g.lineTo(125, 147); g.lineTo(107, 160); g.fill(); } g.restore();
           if (on) { const gl = g.createRadialGradient(124, 172, 4, 124, 172, 60); gl.addColorStop(0, 'rgba(110,170,240,.28)'); gl.addColorStop(1, 'rgba(110,170,240,0)'); g.fillStyle = gl; g.fillRect(60, 120, 130, 100); } }
