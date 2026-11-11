@@ -616,29 +616,35 @@
     if (celApp === 'mis' && mis) paintMis(celBody, true);
     if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
     if (celApp === 'culebra') celStop = VR.Culebra(celBody);
+    if (celApp === 'camara') celStop = camaraApp();
     celBody.querySelectorAll('[data-buy]').forEach((b) => b.onclick = () => { const it = VR.PIEZA_ITEMS.find((q) => q.k === b.dataset.buy); if (!it || !vida.pagaBanco(it.p, 'Mercadito: ' + it.n)) { paintCel(); return; } vida.s.pieza.items = vida.s.pieza.items || {}; vida.s.pieza.items[it.k] = 1; vida.save(); toast('📦 ' + it.n + ': te lo dejan en la pieza'); paintCel(); });
     celBody.querySelectorAll('[data-f]').forEach((im) => im.onclick = () => { celApp = 'foto' + im.dataset.f; paintCel(); });
     celBody.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { VR.Fotos.del(+b.dataset.del); celApp = 'galeria'; paintCel(); });
     celBody.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => { const a = b.dataset.a;
       if (b.classList.contains('off')) { toast('📵 Sin saldo'); return; }
       if (vida.celuRoto() && Math.random() < 0.12) { toast('📱 La pantalla rota no responde... probá de nuevo'); return; }
-      if (a === 'camara') celGo(() => camOn());
-      else { celApp = a; paintCel(); } });
+      celApp = a; paintCel(); });
     celBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { celGo(() => toggleEq()); });
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
       if (b.dataset.j === 'x') { jaha = null; toast('Cancelaste el Mbohasa'); paintCel(); return; }
       if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }
       jaha = { tipo: b.dataset.j, precio: +b.dataset.p, t: 8 + Math.random() * 10, dest: { ...dest } }; celDlg.close(); toast(JAHA[jaha.tipo].ico + ' Pediste un Mbohasa: llega en ' + Math.ceil(jaha.t) + ' s'); });
   }
-  // modo cámara (11/11/2026): el juego sigue andando; podés caminar y encuadrar. El obturador saca el canvas del juego.
-  function camOn() { $('camUI').hidden = false; $('hud').style.visibility = 'hidden'; $('camTxt').textContent = '📷 ' + ($('zone').textContent || ''); }
-  function camOff() { $('camUI').hidden = true; $('hud').style.visibility = ''; }
-  $('camX').onclick = camOff;
-  $('camGal').onclick = () => { camOff(); openCel('galeria'); };
-  $('camShot').onclick = () => {
-    const f = $('camFlash'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 60);
-    try { VR.Fotos.snap($('game'), ($('zone').textContent || 'Villarrica') + ' · ' + (vida ? vida.diaSemana + ' ' + vida.hhmm : '')); toast('📸 Foto guardada en la Galería'); } catch (e) { toast('No se pudo sacar la foto'); }
-  };
+  // Cámara dentro del celular (11/11/2026): visor en vivo de lo que ve el juego (o la pieza, si estás adentro); el mundo sigue andando.
+  function camaraApp() {
+    const src = () => (VR.pieza && VR.pieza.on ? VR.pieza.cv : $('game')), s0 = src(), ar = s0.width / s0.height;
+    celBody.innerHTML = '<h3>📷 Cámara</h3><div style="position:relative"><canvas id="camVf" width="320" height="' + Math.round(320 / ar) + '" style="width:100%;border:3px solid #111;border-radius:8px;background:#000;display:block"></canvas><div id="camFl" style="position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;border-radius:8px"></div></div><div id="camTxt" style="text-align:center;font-size:12px;margin:6px 0;opacity:.8"></div><div class="row"><button class="cbtn" id="camShot" style="font-size:22px">⚪ Sacar foto</button><button class="cbtn sec" id="camGal">🖼 Galería</button></div>';
+    const vf = celBody.querySelector('#camVf'), g = vf.getContext('2d'), fl = celBody.querySelector('#camFl'); let on = true;
+    VR.loop.paused = !!(VR.pieza && VR.pieza.on); VR.input.enabled = false;
+    const tick = () => { if (!on || !vf.isConnected) { on = false; return; } const c = src(); try { g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, vf.width, vf.height); } catch (e) {} celBody.querySelector('#camTxt').textContent = '📍 ' + ((VR.pieza && VR.pieza.on) ? 'Tu pieza' : ($('zone').textContent || 'Villarrica')); requestAnimationFrame(tick); };
+    tick();
+    celBody.querySelector('#camShot').onclick = () => {
+      fl.style.transition = 'none'; fl.style.opacity = '.9'; setTimeout(() => { fl.style.transition = 'opacity .35s'; fl.style.opacity = '0'; }, 60);
+      try { VR.Fotos.snap(src(), ((VR.pieza && VR.pieza.on) ? 'Mi pieza' : ($('zone').textContent || 'Villarrica')) + ' · ' + (vida ? vida.diaSemana + ' ' + vida.hhmm : '')); toast('📸 Foto guardada en la Galería'); } catch (e) { toast('No se pudo sacar la foto'); }
+    };
+    celBody.querySelector('#camGal').onclick = () => { celApp = 'galeria'; paintCel(); };
+    return () => { on = false; VR.loop.paused = true; };
+  }
   // el Mbohasa llega: subís y en un ratito estás (pasa la hora del viaje y se cobra de la billetera electrónica)
   function updateMbohasa(dt) {
     if (!jaha) return; jaha.t -= dt; if (jaha.t > 0) return;
