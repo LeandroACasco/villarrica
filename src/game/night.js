@@ -129,7 +129,8 @@ VR.Night = class {
       if (!(v.driven || v.ai) || v.spec.noLights) continue;
       const fx = Math.sin(v.a), fy = -Math.cos(v.a);
       cones.push(v);
-      vis.push([v.x - fx * v.LEN / 2, v.y - fy * v.LEN / 2, 10, '255,40,30', 0.9]); // luz trasera
+      if (v.type === 'moto') vis.push([v.x - fx * v.LEN / 2, v.y - fy * v.LEN / 2, 10, '255,40,30', 0.9]); // luz trasera
+      else for (const s of [-1, 1]) vis.push([v.x - fx * v.LEN / 2 - fy * s * v.WID * 0.34, v.y - fy * v.LEN / 2 + fx * s * v.WID * 0.34, 7, '255,40,30', 0.9]); // dos luces traseras
       if (v.siren && v.spec.lights) { const on = ((performance.now() / 130) | 0) % 2; vis.push([v.x, v.y, 34, v.spec.lights[on], 0.9]); }
       if (v.tune && v.tune.neon !== 'no') vis.push([v.x, v.y, Math.max(v.LEN, v.WID) * 0.9, VR.NEON[v.tune.neon], 0.6]); // neón
     }
@@ -141,9 +142,11 @@ VR.Night = class {
       g.globalAlpha = k; g.drawImage(W, px - r, py - r, r * 2, r * 2);
     }
     for (const v of cones) {
-      const L = v.type === 'moto' ? 70 : 90;
+      const moto = v.type === 'moto', L = moto ? 70 : 90;
       g.save(); g.translate(v.x - cx + Math.sin(v.a) * v.LEN / 2, v.y - cy - Math.cos(v.a) * v.LEN / 2); g.rotate(v.a);
-      g.globalAlpha = 0.9; g.drawImage(this.cone, -L * 0.33, -L, L * 0.66, L); g.restore();
+      if (moto) { g.globalAlpha = 0.9; g.drawImage(this.cone, -L * 0.33, -L, L * 0.66, L); }
+      else for (const s of [-1, 1]) { g.globalAlpha = 0.7; g.drawImage(this.cone, s * v.WID * 0.27 - L * 0.22, -L, L * 0.44, L); } // dos haces, uno por faro
+      g.restore();
     }
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     ctx.drawImage(m, 0, 0);
