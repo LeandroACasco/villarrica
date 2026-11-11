@@ -359,7 +359,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 53c19f68 · 2026-11-10</div>
+  <div class="tVer">Versión 0b1ffaa5 · 2026-11-10</div>
 </div>
 <div id="fade"></div>
 
@@ -443,7 +443,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 53c19f68 · 2026-11-10</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0b1ffaa5 · 2026-11-10</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -4758,8 +4758,73 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
   });
   VR.CAR_MODELS.patrulla.sideShape = { ...VR.CAR_MODELS.sedan.sideShape };
   VR.CAR_MODELS.policam.sideShape = { ...VR.CAR_MODELS.pickup.sideShape };
-  // sorteo de auto: en el tránsito, a veces un karumbe; estacionados, no
-  VR.pickCar = (rnd, parked) => {
+
+  // ---------- Colectivos (10/11/2026, pedido de Leandro con fotos) ----------
+  // Dos colectivos con la pintura de dos empresas de la zona, reconocibles por los colores y la silueta; sin logos,
+  // letras ni nombres de empresa (regla del proyecto) y con nombres de modelo inventados:
+  //   indep    colectivo urbano: blanco con franjas verde, roja y amarilla, trompa verde
+  //   guairena micro de larga distancia: blanco con franjas amarilla, naranja y azul, trompa roja, espejos rojos
+  // Desde arriba se ve el techo: la pintura va en la trompa, en el borde de los costados y en franjas en diagonal
+  // sobre el techo de atrás; el dibujo de costado completo (tarjeta) está en sidehd.js.
+  const BUS_GL = ['#1b2634', '#2c3e54', '#8fb0cc'], BUS_DARK = ['#0c1018', '#161e28', '#34404e'];
+  VR.drawBus = (c) => (pal, t = {}) => VR.vbase(c.W, c.L, (T) => {
+    const [C, D, L] = pal, g = T.g, W = c.W, Ln = c.L, x0 = 0.9, x1 = W - 0.9, bw = x1 - x0, mid = W / 2, urban = c.kind === 'urban', K = c.liv;
+    const fb = 2.8, yW0 = fb, yW1 = fb + c.ws, yR0 = yW1 + 0.3, yR1 = Ln - (urban ? 6.6 : 4.2), rl = yR1 - yR0, rf = urban ? 2.4 : 3.8;
+    for (const y of c.axles) { T.tire(-0.1, y - 3.7, 2.4, 7.4); T.tire(W - 2.3, y - 3.7, 2.4, 7.4); }       // ruedas
+    T.rr(x0, 0.3, bw, Ln - 0.6, [rf, rf, 1.6, 1.6], T.hg(x0, x1, [D, L, C, C, D]));                           // carrocería
+    g.fillStyle = K.edge; g.fillRect(x0, yW1, 0.7, Ln - yW1 - 2); g.fillRect(x1 - 0.7, yW1, 0.7, Ln - yW1 - 2); // pintura del borde del costado
+    T.rr(x0 + 0.2, 0.3, bw - 0.4, fb - 0.2, [rf, rf, 0.3, 0.3], T.hg(x0, x1, [K.front[1], K.front[0], K.front[0], K.front[1]])); // trompa de color
+    if (urban) {                                                                                               // faros y parrilla
+      T.rr(x0 + 0.7, 0.7, 2.6, 1.5, 0.6, '#fff4c0'); T.rr(x1 - 3.3, 0.7, 2.6, 1.5, 0.6, '#fff4c0');
+      T.rr(mid - 3, 0.5, 6, 1.4, 0.4, '#26262c'); T.rr(mid - 1.6, 0.9, 3.2, 0.9, 0.2, '#f2f0ea');
+    } else {
+      T.poly([[x0 + 0.8, 1.6], [x0 + 4.4, 0.7], [x0 + 4.4, 2], [x0 + 0.9, 2.5]], '#e6f2ff'); T.poly([[x1 - 0.8, 1.6], [x1 - 4.4, 0.7], [x1 - 4.4, 2], [x1 - 0.9, 2.5]], '#e6f2ff');
+      T.rr(mid - 2.8, 0.9, 5.6, 1.2, 0.4, '#2a2a30'); T.rr(mid - 1.5, 1, 3, 0.9, 0.2, '#f2f0ea');
+    }
+    T.poly([[x0 + 1.1, yW0], [x1 - 1.1, yW0], [x1 - 0.5, yW1], [x0 + 0.5, yW1]], T.vg(yW0, yW1, BUS_GL));     // parabrisas
+    T.poly([[x0 + 3, yW0 + 0.5], [x0 + 5.4, yW0 + 0.5], [x0 + 3.6, yW1 - 0.4], [x0 + 1.6, yW1 - 0.4]], 'rgba(255,255,255,.28)');
+    if (urban) T.line(mid, yW0, mid, yW1, 0.5, '#e8e6e0');
+    T.rr(mid - 3.6, yW0 + 0.35, 7.2, 1.2, 0.3, urban ? '#ffb030' : '#dff0ff');                                 // cartel de destino
+    T.rr(x0 + 1.6, yR0, bw - 3.2, rl, 1.6, T.hg(x0, x1, [D, C, L, C, D]));                                     // techo
+    for (const sx of [x0 + 0.7, x1 - 1.8]) {                                                                   // ventanillas
+      T.rr(sx, yR0 + 0.2, 1.1, rl - 0.4, 0.4, T.vg(yR0, yR1, urban ? BUS_GL : BUS_DARK));
+      g.fillStyle = C; for (let y = yR0 + c.pitch; y < yR1 - 2; y += c.pitch) g.fillRect(sx - 0.2, y, 1.5, 0.45);
+    }
+    if (urban) for (const f of [0.3, 0.62]) { T.rr(mid - 2.9, yR0 + rl * f - 0.3, 5.8, 3.8, 0.7, '#9aa0aa'); T.rr(mid - 2.6, yR0 + rl * f, 5.2, 3.2, 0.5, '#dfe3ea'); } // ventilaciones
+    else { // aire acondicionado del micro
+      const ay = yR0 + rl * 0.34; T.rr(mid - 3.6, ay, 7.2, 12.6, 2, '#8a909a'); T.rr(mid - 3.2, ay + 0.4, 6.4, 11.8, 1.6, T.hg(mid - 3.2, mid + 3.2, ['#aab0ba', '#e6eaf0', '#c4c9d2']));
+      g.fillStyle = 'rgba(0,0,0,.18)'; for (let y = ay + 2; y < ay + 11; y += 1.6) g.fillRect(mid - 2.6, y, 5.2, 0.35);
+    }
+    g.save(); g.beginPath(); g.roundRect(x0 + 1.6, yR0, bw - 3.2, rl, 1.6); g.clip();                          // franjas en diagonal sobre el techo
+    for (const [dy, h, col] of K.swoosh) T.poly([[x0 + 1.6, yR0 + rl * 0.7 + dy + 4.4], [x1 - 1.6, yR0 + rl * 0.7 + dy], [x1 - 1.6, yR0 + rl * 0.7 + dy + h], [x0 + 1.6, yR0 + rl * 0.7 + dy + 4.4 + h]], col);
+    g.restore();
+    if (urban) {                                                                                               // motor atrás, paragolpes, luces
+      T.rr(x0 + 2, yR1 + 0.5, bw - 4, 4.2, 0.6, '#c8ccd4'); g.fillStyle = 'rgba(0,0,0,.25)'; for (let y = yR1 + 1.2; y < yR1 + 4.4; y += 0.9) g.fillRect(x0 + 2.4, y, bw - 4.8, 0.3);
+      T.rr(x0 + 0.2, Ln - 2.4, bw - 0.4, 2, [0.3, 0.3, 1.6, 1.6], '#2a2a2e'); T.rr(x0 + 0.5, Ln - 5.8, 1.3, 3.6, 0.5, '#d8302a'); T.rr(x1 - 1.8, Ln - 5.8, 1.3, 3.6, 0.5, '#d8302a'); T.rr(mid - 1.8, Ln - 2, 3.6, 1, 0.2, '#f2f0ea');
+    } else {
+      T.rr(x0 + 1.8, yR1 + 0.4, bw - 3.6, 2.2, 0.6, '#10161e'); T.rr(x0 + 0.2, Ln - 2.8, bw - 0.4, 2.4, [0.3, 0.3, 1.6, 1.6], '#2a2f8c');
+      T.rr(x0 + 0.6, Ln - 2.6, 3.4, 1.2, 0.5, '#d8302a'); T.rr(x1 - 4, Ln - 2.6, 3.4, 1.2, 0.5, '#d8302a'); T.rr(mid - 1.6, Ln - 2.2, 3.2, 0.9, 0.2, '#f2f0ea');
+    }
+    for (const sx of urban ? [-0.1, W - 2.1] : [-0.1, W - 2.9]) {                                              // espejos grandes
+      if (urban) T.rr(sx, 3.4, 2.2, 3.8, 0.8, K.mirror); else { T.rr(sx, 2.6, 3, 4.2, 1.3, K.mirror); T.rr(sx + 0.4, 3, 1, 2.4, 0.5, 'rgba(255,255,255,.35)'); }
+    }
+  });
+  const BUS_INDEP = { kind: 'urban', L: 66, W: 19, ws: 4.2, axles: [14, 50], pitch: 5.6,
+    liv: { edge: '#1f8a3c', front: ['#1f8a3c', '#14662a'], swoosh: [[0, 2.6, '#1f8a3c'], [3.4, 1.8, '#d02a26'], [5.8, 1.3, '#f0c828']], mirror: '#1e1e22' } };
+  const BUS_GUAI = { kind: 'coach', L: 76, W: 20, ws: 5.4, axles: [17, 58], pitch: 6.2,
+    liv: { edge: '#f4b81c', front: ['#c4262e', '#8e1a20'], swoosh: [[0, 2.4, '#2a2f8c'], [3.2, 1.8, '#ee7a14'], [5.4, 2.6, '#f4b81c']], mirror: '#c4262e' } };
+  Object.assign(VR.CAR_MODELS, {
+    // bus: true → el tránsito los usa solo en calles anchas, giran más despacio, van un poco más lento y vienen con bocina grave
+    indep: { len: 66, wid: 19, S: 72, acc: 105, rev: 40, turn: 1.45, brake: 320, mass: 3.6, max: { road: 185, stone: 165, dirt: 150, side: 105, grass: 110 }, bus: true, aiTurn: 0.6, cruiseK: 0.85, colors: WHITE,
+      name: 'Colectivo Tape Rupi', desc: 'Colectivo urbano de franjas verde, roja y amarilla. Largo y pesado.', side: 'busindep', base: VR.drawBus(BUS_INDEP) },
+    guairena: { len: 76, wid: 20, S: 82, acc: 95, rev: 38, turn: 1.3, brake: 300, mass: 4.2, max: { road: 215, stone: 170, dirt: 140, side: 100, grass: 100 }, bus: true, aiTurn: 0.55, cruiseK: 0.9, colors: WHITE,
+      name: 'Micro Tape Guasu', desc: 'Micro de larga distancia a Asunción. Enorme, pesado y de trompa roja.', side: 'busguai', base: VR.drawBus(BUS_GUAI) },
+  });
+
+  // sorteo de auto: en el tránsito, a veces un karumbe; estacionados, no. roadW = ancho de la calle en px
+  // (los colectivos solo salen en calles de 5 baldosas o más: avenidas y calles principales)
+  VR.pickCar = (rnd, parked, roadW = 0) => {
+    if (!parked && roadW >= 5 * VR.TILE - 1) { const b = rnd(); if (b < 0.07) return rnd() < (roadW >= 6 * VR.TILE - 1 ? 0.55 : 0.3) ? 'guairena' : 'indep'; }
     const r = rnd();
     if (!parked && r < 0.025) return 'karumbe';
     if (!parked && r < 0.055) return rnd() < 0.7 ? 'policam' : 'patrulla'; // alguna patrullera recorriendo
@@ -4910,8 +4975,9 @@ VR.Traffic = class {
     ai.room = { R: R - lat - hw, L: Lf + lat - hw };
     return lat;
   }
-  pickNext(e, to) {
-    const outs = this.out[to].filter(([id]) => id !== e.id);
+  pickNext(e, to, minW = 0) {
+    let outs = this.out[to].filter(([id]) => id !== e.id);
+    if (minW) { const wide = outs.filter(([id]) => this.edges[id].w >= minW); if (wide.length) outs = wide; } // colectivos: avenidas si hay
     const opts = outs.length ? outs : this.out[to];
     if (!opts.length) return null;
     // preferir seguir derecho
@@ -4948,9 +5014,10 @@ VR.Traffic = class {
       const s0 = Math.min(e.len * 0.5, 20);
       const [lx, ly, dx, dy] = this.lane(e, n, s0);
       if (W.boxOverlap(lx - 24, ly - 24, lx + 24, ly + 24)) continue;
-      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false);
+      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false, e.w);
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
+      if (VR.CAR_MODELS[model] && VR.CAR_MODELS[model].bus && W.boxOverlap(lx - 52, ly - 52, lx + 52, ly + 52)) continue; // los colectivos necesitan más lugar para aparecer
       const tune = this.rnd() < 0.1 && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model, tune);
       { const h = v.contacts(lx, ly, v.a); if (h && h.other) continue; } // no aparecer encima de nadie
@@ -4958,8 +5025,8 @@ VR.Traffic = class {
         if (!VR.RIDER_LOOKS) { const r = VR.rng(31); VR.RIDER_LOOKS = Array.from({ length: 12 }, (_, i) => { const L = VR.av2Random(r); L.mochila = false; L.termo = false; if (i % 3 !== 2) { L.hat = 'casco'; L.hatColor = (r() * VR.AV2_CAT.cloth.length) | 0; } return L; }); }
         v.rider = { shirt: VR.RIDER_SHIRTS[0], head: '#2a1b12', L: VR.RIDER_LOOKS[(this.rnd() * VR.RIDER_LOOKS.length) | 0] };
       }
-      v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
-      v.ai.next = this.pickNext(e, to);
+      v.ai = { e, from: n, s: s0, next: null, cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (v.spec.cruiseK || 1) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
+      v.ai.next = this.pickNext(e, to, v.spec.bus ? 5 * VR.TILE - 1 : 0);
       v.v = v.ai.cruise * 0.6;
       v.tid = ++this.seq || (this.seq = 1); W.addBox(v); this.list.push(v);
       return v;
@@ -5011,7 +5078,7 @@ VR.Traffic = class {
         ai.s -= ai.e.len;
         const to = ai.from === ai.e.a ? ai.e.b : ai.e.a;
         ai.e = this.edges[ai.next[0]]; ai.from = to;
-        ai.next = this.pickNext(ai.e, ai.next[1]);
+        ai.next = this.pickNext(ai.e, ai.next[1], v.spec.bus ? 5 * VR.TILE - 1 : 0);
       }
       ai.latT = (ai.latT || 0) - dt;
       if (ai.latT <= 0) { ai.latT = 0.12; ai.latW = this.measureLane(v, ai, L + 6); if (ai.lat === undefined) ai.lat = ai.latW; }
@@ -5026,7 +5093,7 @@ VR.Traffic = class {
       // girar hacia la zanahoria
       const want = Math.atan2(cx - v.x, -(cy - v.y));
       let d = want - v.a; d = Math.atan2(Math.sin(d), Math.cos(d));
-      const tr = (v.type === 'moto' ? 4.2 : 3.4) * dt;
+      const tr = (v.type === 'moto' ? 4.2 : 3.4 * (v.spec.aiTurn || 1)) * dt; // los colectivos giran más despacio
       v.a += VR.clamp(d, -tr, tr);
       // velocidad deseada: crucero, menos en curvas y antes de doblar en la esquina
       let target = ai.cruise * (ai.e.surf === VR.T.DIRTROAD ? 0.75 : ai.e.surf === VR.T.STONE ? 0.9 : 1);
@@ -5035,7 +5102,7 @@ VR.Traffic = class {
         const ne = this.edges[ai.next[0]], to = ai.from === ai.e.a ? ai.e.b : ai.e.a;
         const ax = this.nx[to] - this.nx[ai.from], ay = this.ny[to] - this.ny[ai.from], bx = this.nx[ai.next[1]] - this.nx[to], by = this.ny[ai.next[1]] - this.ny[to];
         const cos = (ax * bx + ay * by) / (Math.hypot(ax, ay) * Math.hypot(bx, by) || 1);
-        if (cos < 0.7) target = Math.min(target, v.type === 'moto' ? 70 : 55);
+        if (cos < 0.7) target = Math.min(target, v.type === 'moto' ? 70 : v.spec.bus ? 36 : 55);
         void ne;
       }
       // ¿algo adelante? mirar unos puntos sobre el rumbo
@@ -7536,7 +7603,7 @@ VR.drawSide = (kind, pal, t = {}) => {
   };
   if (t.neon && t.neon !== 'no' && VR.NEON) { const gr = g.createRadialGradient(32, 32, 1, 32, 32, 30); gr.addColorStop(0, `rgba(${VR.NEON[t.neon]},.85)`); gr.addColorStop(1, `rgba(${VR.NEON[t.neon]},0)`); g.save(); g.translate(0, 32); g.scale(1, 0.14); g.translate(0, -32); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); g.restore(); }
   const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
-  if (kind === 'bomba' && VR.drawSideHD) { g.imageSmoothingEnabled = true; g.drawImage(VR.drawSideHD(kind, pal, t, 64, 36), 0, 0); return c; }
+  if ((kind === 'bomba' || kind === 'busindep' || kind === 'busguai') && VR.drawSideHD) { g.imageSmoothingEnabled = true; g.drawImage(VR.drawSideHD(kind, pal, t, 64, 36), 0, 0); return c; }
   if (kind !== 'mita' && VR.CAR_MODELS && VR.CAR_MODELS[kind] && VR.CAR_MODELS[kind].sideShape || kind === 'karumbe') { VR.drawSideAuto(kind, pal, t, P, g, wheel, HL, S2); return c; }
   if (kind === 'car') {
     const lo = +t.bajo ? 2 : 0; g.save(); g.translate(0, lo);
@@ -7910,10 +7977,79 @@ VR.showVehicleCard = (v) => {
     }
   };
 
+  // ---------- colectivos (10/11/2026) ----------
+  // Pintura por colores y silueta, sin logos, letras ni nombres de empresa (regla del proyecto). Frente a la derecha.
+  const busWheels = (g, xs, r, cy) => { for (const x of xs) { g.fillStyle = '#0e0e10'; g.beginPath(); g.arc(x, cy, r + 1.3, Math.PI, 0); g.fill(); } for (const x of xs) wheelHD(g, x, cy, r, 'serie', true); }; // arcos y ruedas
+  const busGlass = (g, a, b, y0, y1, dark) => { rrect(g, a, y0, b - a, y1 - y0, 0.9); g.fillStyle = lin(g, 0, y0, 0, y1, dark ? ['#3a4a5e', '#10161e', '#0a0e14'] : ['#7a96b0', '#26364a', '#14202e']); g.fill(); g.fillStyle = 'rgba(255,255,255,.26)'; g.beginPath(); g.moveTo(a + 2, y1); g.lineTo(a + 5, y0); g.lineTo(a + 6.6, y0); g.lineTo(a + 3.6, y1); g.fill(); };
+  // Colectivo urbano blanco con franjas verde, roja y amarilla
+  const busIndepHD = (g, pal) => {
+    const [C, D, L] = pal, GRN = '#1f8a3c', RED = '#d02a26', YEL = '#f0c828';
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(32, 34.2, 31, 1.2, 0, 0, Math.PI * 2); g.fill();
+    g.save(); g.translate(0, 28.2); g.scale(1, 0.92); g.translate(0, -26.4); // más bajo y largo, como el colectivo de verdad
+    g.save();
+    pathPts(g, [[2, 26.4], [2, 6.4], [4, 4.6], [58, 4.6], [61.2, 6.4], [62.4, 10], [62.4, 26.4]], 1.4); g.fillStyle = lin(g, 0, 4.6, 0, 26.4, [L, C, C, D]); g.fill(); g.clip();
+    g.fillStyle = GRN; g.fillRect(0, 4.6, 64, 1.5); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(0, 4.8, 64, 0.35);   // franja verde del techo
+    g.save(); g.beginPath(); g.rect(0, 16.4, 64, 12); g.clip();                                                         // franjas en diagonal
+    const sw = (dy, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(66, 28.6 + dy); g.bezierCurveTo(46, 24.8 + dy, 26, 24 + dy, -2, 17.4 + dy); g.stroke(); };
+    sw(1.9, 3.4, GRN); sw(-1.2, 2.1, RED); sw(-3.3, 1.7, YEL); sw(-5.3, 0.9, RED);
+    g.fillStyle = GRN; g.beginPath(); g.moveTo(64, 27); g.lineTo(64, 15.6); g.bezierCurveTo(58, 16.6, 54, 20, 50, 27); g.closePath(); g.fill(); // trompa verde
+    g.strokeStyle = YEL; g.lineWidth = 0.6; g.beginPath(); g.moveTo(64, 15.6); g.bezierCurveTo(58, 16.6, 54, 20, 50, 27); g.stroke();
+    g.restore();
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(2, 16.5, 61, 0.3);
+    for (const [a, b] of [[5.2, 16.2], [17.6, 28.6], [30, 41], [42.4, 51.4]]) {                                         // ventanillas corredizas
+      busGlass(g, a, b, 8, 16);
+      g.strokeStyle = 'rgba(245,245,245,.9)'; g.lineWidth = 0.35; g.beginPath(); g.moveTo(a, 12); g.lineTo(b, 12); g.stroke();
+    }
+    busGlass(g, 53.6, 60.4, 8, 24); g.strokeStyle = '#f2f0ea'; g.lineWidth = 0.4; g.beginPath(); g.moveTo(57, 8); g.lineTo(57, 24); g.stroke(); // puerta de adelante
+    g.fillStyle = '#c8ccd4'; g.fillRect(56.2, 15, 0.5, 2.4); g.fillRect(57.4, 15, 0.5, 2.4);
+    g.restore();
+    g.fillStyle = '#2a2a2e'; rrect(g, 1.2, 25.6, 62.4, 1.8, 0.6); g.fill();                                           // paragolpes
+    g.fillStyle = lin(g, 0, 2.6, 0, 4.6, ['#e8ecf2', '#9aa0aa']); rrect(g, 25, 2.9, 9, 1.8, 0.7); g.fill();          // ventilación del techo
+    g.fillStyle = '#1e1e22'; rrect(g, 61, 7.6, 2.6, 6.4, 1); g.fill(); g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(61.4, 8, 0.5, 4);   // espejo grande
+    headlight(g, 60.6, 19.6, 3, 2.8, false, 0.9); taillight(g, 0.4, 20.4, 1.8, 3.4);
+    g.restore();
+    busWheels(g, [16.6, 49.6], 5.1, 29.4);
+  };
+  // Micro de larga distancia: blanco, trompa roja, franjas amarilla, naranja y azul
+  const busGuaiHD = (g, pal) => {
+    const [C, D, L] = pal, NAVY = '#2a2f8c', ORG = '#ee7a14', YEL = '#f4b81c';
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(32, 34.4, 31.4, 1.2, 0, 0, Math.PI * 2); g.fill();
+    g.save(); g.translate(0, 28.4); g.scale(1, 0.9); g.translate(0, -26.4); // bajo y largo, de ruta
+    g.save();
+    pathPts(g, [[1.6, 26.4], [1.6, 5.8], [3.4, 3.6], [53, 3.4], [57.4, 4.6], [61.8, 15], [62.8, 26.4]], 1.6); g.fillStyle = lin(g, 0, 3.4, 0, 26.4, [L, C, C, D]); g.fill(); g.clip();
+    g.fillStyle = 'rgba(255,255,255,.4)'; g.fillRect(2, 4.2, 54, 0.35);
+    busGlass(g, 4, 55.4, 6.4, 16.2, true);                                                                             // ventanas panorámicas
+    g.fillStyle = C; for (const x of [14.2, 24.4, 34.6, 44.8]) g.fillRect(x, 6.4, 0.55, 9.8);
+    g.fillStyle = 'rgba(255,255,255,.2)'; g.beginPath(); g.moveTo(8, 16.2); g.lineTo(13, 6.4); g.lineTo(16, 6.4); g.lineTo(11, 16.2); g.fill();
+    g.beginPath(); g.moveTo(30, 16.2); g.lineTo(35, 6.4); g.lineTo(37.4, 6.4); g.lineTo(32.4, 16.2); g.fill();
+    g.beginPath(); g.moveTo(55.4, 5.6); g.lineTo(58.6, 5.4); g.lineTo(62, 14.8); g.lineTo(62, 16.8); g.lineTo(55.8, 16.8); g.closePath();   // parabrisas
+    g.fillStyle = lin(g, 0, 5.4, 0, 16.8, ['#6f8aa4', '#1b2634', '#0e141c']); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(56, 6.6, 3.6, 0.9);
+    g.save(); g.beginPath(); g.rect(0, 16.6, 64, 12); g.clip();                                                         // pintura de abajo
+    g.fillStyle = NAVY; g.fillRect(1.6, 16.4, 4.6, 11);
+    g.fillStyle = lin(g, 0, 16.4, 0, 27, ['#ffd24a', YEL, '#d89a10']); g.beginPath(); g.moveTo(6, 16.4); g.lineTo(40, 16.4); g.lineTo(47, 27); g.lineTo(6, 27); g.fill();
+    g.fillStyle = ORG; g.beginPath(); g.moveTo(40, 16.4); g.lineTo(44.2, 16.4); g.lineTo(51.2, 27); g.lineTo(47, 27); g.fill();
+    g.fillStyle = NAVY; g.beginPath(); g.moveTo(46.2, 16.4); g.lineTo(49.6, 16.4); g.lineTo(56.6, 27); g.lineTo(53.2, 27); g.fill();
+    g.fillStyle = NAVY; g.fillRect(1.6, 24.4, 60, 2.6);                                                                 // zócalo azul
+    g.fillStyle = lin(g, 0, 15.6, 0, 27, ['#e04a4a', '#c4262e', '#8e1a20']); g.beginPath(); g.moveTo(64, 27); g.lineTo(64, 15.4); g.lineTo(60, 16.6); g.lineTo(56.2, 27); g.fill(); // trompa roja
+    g.strokeStyle = 'rgba(0,0,0,.2)'; g.lineWidth = 0.25; for (const x of [16, 28]) { g.beginPath(); g.moveTo(x, 17.4); g.lineTo(x, 24); g.stroke(); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x + 0.8, 20, 1.6, 0.4); } // bodegas
+    g.restore();
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(2, 16.8, 58, 0.3);
+    g.restore();
+    g.fillStyle = '#2a2a2e'; rrect(g, 1.2, 25.8, 62.6, 1.6, 0.6); g.fill();
+    g.fillStyle = lin(g, 0, 1.4, 0, 3.6, ['#e8ecf2', '#8a909a']); rrect(g, 21, 1.8, 16, 2, 0.8); g.fill();            // aire acondicionado
+    g.fillStyle = '#c4262e'; rrect(g, 59.4, 8.6, 3.8, 2.4, 1); g.fill(); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(60, 9, 2, 0.5);   // espejo rojo
+    headlight(g, 60.8, 18, 3.4, 2.4, false, 0.8); taillight(g, 0.4, 19.4, 1.8, 3.6);
+    g.restore();
+    busWheels(g, [16, 49], 5.2, 29.6);
+  };
+
   VR.drawSideHD = (kind, pal, t = {}, W = 320, H = 180) => {
     const c = VR.canvas(W, H), g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.scale(W / 64, H / 36);
     if (kind === 'car') kind = 'mita';
     if (kind === 'karumbe') karumbeHD(g);
+    else if (kind === 'busindep') busIndepHD(g, pal);
+    else if (kind === 'busguai') busGuaiHD(g, pal);
     else if (kind === 'bomba') bombaHD(g, pal);
     else if (VR.CAR_MODELS[kind]) carHD(g, kind, pal, t);
     else motoHD(g, kind, pal, t);
@@ -8949,7 +9085,7 @@ VR.Titulo = class {
   function enterCar(c) {
     if (c._nid !== undefined && online) online.take(c); // un auto del anfitrión: pasa a ser tuyo
     if (emer) emer.stolen(c);
-    if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : '🚗 ¡Te llevaste el auto!'); }
+    if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : '🚗 ¡Te llevaste el auto!'); }
     if (c.type === 'moto') c.rider = me();
     c.robado = true; car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
@@ -8978,7 +9114,7 @@ VR.Titulo = class {
   const garD = (world.decals || []).find((d) => d.kind === 'taller'), garDoor = garD ? { x: (garD.x + garD.w / 2) * VR.TILE, y: garD.y * VR.TILE + 4 } : null;
   const muD = (world.decals || []).find((d) => d.kind === 'muni'), cineDoor = muD ? { x: (muD.bx + (muD.tx || muD.bw / 2)) * VR.TILE, y: (muD.y + muD.bh) * VR.TILE + 10 } : null;
   const garage = new VR.Garage(); let cine = null;
-  const nearGarage = () => garDoor && car && Math.hypot(car.x - garDoor.x, car.y - garDoor.y) < 44 && Math.abs(car.v) < 40 ? garDoor : null;
+  const nearGarage = () => garDoor && car && VR.TUNE_MODELS[car.model] && Math.hypot(car.x - garDoor.x, car.y - garDoor.y) < 44 && Math.abs(car.v) < 40 ? garDoor : null;
   const nearCine = () => cineDoor && !car && Math.hypot(player.x - cineDoor.x, player.y - cineDoor.y) < 40 ? cineDoor : null;
   const nearShop = () => shopDoor && !car && Math.abs(player.x - shopDoor.x) < 26 && player.y > shopDoor.y - 30 && player.y < shopDoor.y + 4 ? shopDoor : null;
   const shop = new VR.Shop({

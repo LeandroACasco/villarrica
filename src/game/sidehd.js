@@ -290,10 +290,79 @@
     }
   };
 
+  // ---------- colectivos (10/11/2026) ----------
+  // Pintura por colores y silueta, sin logos, letras ni nombres de empresa (regla del proyecto). Frente a la derecha.
+  const busWheels = (g, xs, r, cy) => { for (const x of xs) { g.fillStyle = '#0e0e10'; g.beginPath(); g.arc(x, cy, r + 1.3, Math.PI, 0); g.fill(); } for (const x of xs) wheelHD(g, x, cy, r, 'serie', true); }; // arcos y ruedas
+  const busGlass = (g, a, b, y0, y1, dark) => { rrect(g, a, y0, b - a, y1 - y0, 0.9); g.fillStyle = lin(g, 0, y0, 0, y1, dark ? ['#3a4a5e', '#10161e', '#0a0e14'] : ['#7a96b0', '#26364a', '#14202e']); g.fill(); g.fillStyle = 'rgba(255,255,255,.26)'; g.beginPath(); g.moveTo(a + 2, y1); g.lineTo(a + 5, y0); g.lineTo(a + 6.6, y0); g.lineTo(a + 3.6, y1); g.fill(); };
+  // Colectivo urbano blanco con franjas verde, roja y amarilla
+  const busIndepHD = (g, pal) => {
+    const [C, D, L] = pal, GRN = '#1f8a3c', RED = '#d02a26', YEL = '#f0c828';
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(32, 34.2, 31, 1.2, 0, 0, Math.PI * 2); g.fill();
+    g.save(); g.translate(0, 28.2); g.scale(1, 0.92); g.translate(0, -26.4); // más bajo y largo, como el colectivo de verdad
+    g.save();
+    pathPts(g, [[2, 26.4], [2, 6.4], [4, 4.6], [58, 4.6], [61.2, 6.4], [62.4, 10], [62.4, 26.4]], 1.4); g.fillStyle = lin(g, 0, 4.6, 0, 26.4, [L, C, C, D]); g.fill(); g.clip();
+    g.fillStyle = GRN; g.fillRect(0, 4.6, 64, 1.5); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(0, 4.8, 64, 0.35);   // franja verde del techo
+    g.save(); g.beginPath(); g.rect(0, 16.4, 64, 12); g.clip();                                                         // franjas en diagonal
+    const sw = (dy, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(66, 28.6 + dy); g.bezierCurveTo(46, 24.8 + dy, 26, 24 + dy, -2, 17.4 + dy); g.stroke(); };
+    sw(1.9, 3.4, GRN); sw(-1.2, 2.1, RED); sw(-3.3, 1.7, YEL); sw(-5.3, 0.9, RED);
+    g.fillStyle = GRN; g.beginPath(); g.moveTo(64, 27); g.lineTo(64, 15.6); g.bezierCurveTo(58, 16.6, 54, 20, 50, 27); g.closePath(); g.fill(); // trompa verde
+    g.strokeStyle = YEL; g.lineWidth = 0.6; g.beginPath(); g.moveTo(64, 15.6); g.bezierCurveTo(58, 16.6, 54, 20, 50, 27); g.stroke();
+    g.restore();
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(2, 16.5, 61, 0.3);
+    for (const [a, b] of [[5.2, 16.2], [17.6, 28.6], [30, 41], [42.4, 51.4]]) {                                         // ventanillas corredizas
+      busGlass(g, a, b, 8, 16);
+      g.strokeStyle = 'rgba(245,245,245,.9)'; g.lineWidth = 0.35; g.beginPath(); g.moveTo(a, 12); g.lineTo(b, 12); g.stroke();
+    }
+    busGlass(g, 53.6, 60.4, 8, 24); g.strokeStyle = '#f2f0ea'; g.lineWidth = 0.4; g.beginPath(); g.moveTo(57, 8); g.lineTo(57, 24); g.stroke(); // puerta de adelante
+    g.fillStyle = '#c8ccd4'; g.fillRect(56.2, 15, 0.5, 2.4); g.fillRect(57.4, 15, 0.5, 2.4);
+    g.restore();
+    g.fillStyle = '#2a2a2e'; rrect(g, 1.2, 25.6, 62.4, 1.8, 0.6); g.fill();                                           // paragolpes
+    g.fillStyle = lin(g, 0, 2.6, 0, 4.6, ['#e8ecf2', '#9aa0aa']); rrect(g, 25, 2.9, 9, 1.8, 0.7); g.fill();          // ventilación del techo
+    g.fillStyle = '#1e1e22'; rrect(g, 61, 7.6, 2.6, 6.4, 1); g.fill(); g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(61.4, 8, 0.5, 4);   // espejo grande
+    headlight(g, 60.6, 19.6, 3, 2.8, false, 0.9); taillight(g, 0.4, 20.4, 1.8, 3.4);
+    g.restore();
+    busWheels(g, [16.6, 49.6], 5.1, 29.4);
+  };
+  // Micro de larga distancia: blanco, trompa roja, franjas amarilla, naranja y azul
+  const busGuaiHD = (g, pal) => {
+    const [C, D, L] = pal, NAVY = '#2a2f8c', ORG = '#ee7a14', YEL = '#f4b81c';
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(32, 34.4, 31.4, 1.2, 0, 0, Math.PI * 2); g.fill();
+    g.save(); g.translate(0, 28.4); g.scale(1, 0.9); g.translate(0, -26.4); // bajo y largo, de ruta
+    g.save();
+    pathPts(g, [[1.6, 26.4], [1.6, 5.8], [3.4, 3.6], [53, 3.4], [57.4, 4.6], [61.8, 15], [62.8, 26.4]], 1.6); g.fillStyle = lin(g, 0, 3.4, 0, 26.4, [L, C, C, D]); g.fill(); g.clip();
+    g.fillStyle = 'rgba(255,255,255,.4)'; g.fillRect(2, 4.2, 54, 0.35);
+    busGlass(g, 4, 55.4, 6.4, 16.2, true);                                                                             // ventanas panorámicas
+    g.fillStyle = C; for (const x of [14.2, 24.4, 34.6, 44.8]) g.fillRect(x, 6.4, 0.55, 9.8);
+    g.fillStyle = 'rgba(255,255,255,.2)'; g.beginPath(); g.moveTo(8, 16.2); g.lineTo(13, 6.4); g.lineTo(16, 6.4); g.lineTo(11, 16.2); g.fill();
+    g.beginPath(); g.moveTo(30, 16.2); g.lineTo(35, 6.4); g.lineTo(37.4, 6.4); g.lineTo(32.4, 16.2); g.fill();
+    g.beginPath(); g.moveTo(55.4, 5.6); g.lineTo(58.6, 5.4); g.lineTo(62, 14.8); g.lineTo(62, 16.8); g.lineTo(55.8, 16.8); g.closePath();   // parabrisas
+    g.fillStyle = lin(g, 0, 5.4, 0, 16.8, ['#6f8aa4', '#1b2634', '#0e141c']); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(56, 6.6, 3.6, 0.9);
+    g.save(); g.beginPath(); g.rect(0, 16.6, 64, 12); g.clip();                                                         // pintura de abajo
+    g.fillStyle = NAVY; g.fillRect(1.6, 16.4, 4.6, 11);
+    g.fillStyle = lin(g, 0, 16.4, 0, 27, ['#ffd24a', YEL, '#d89a10']); g.beginPath(); g.moveTo(6, 16.4); g.lineTo(40, 16.4); g.lineTo(47, 27); g.lineTo(6, 27); g.fill();
+    g.fillStyle = ORG; g.beginPath(); g.moveTo(40, 16.4); g.lineTo(44.2, 16.4); g.lineTo(51.2, 27); g.lineTo(47, 27); g.fill();
+    g.fillStyle = NAVY; g.beginPath(); g.moveTo(46.2, 16.4); g.lineTo(49.6, 16.4); g.lineTo(56.6, 27); g.lineTo(53.2, 27); g.fill();
+    g.fillStyle = NAVY; g.fillRect(1.6, 24.4, 60, 2.6);                                                                 // zócalo azul
+    g.fillStyle = lin(g, 0, 15.6, 0, 27, ['#e04a4a', '#c4262e', '#8e1a20']); g.beginPath(); g.moveTo(64, 27); g.lineTo(64, 15.4); g.lineTo(60, 16.6); g.lineTo(56.2, 27); g.fill(); // trompa roja
+    g.strokeStyle = 'rgba(0,0,0,.2)'; g.lineWidth = 0.25; for (const x of [16, 28]) { g.beginPath(); g.moveTo(x, 17.4); g.lineTo(x, 24); g.stroke(); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x + 0.8, 20, 1.6, 0.4); } // bodegas
+    g.restore();
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(2, 16.8, 58, 0.3);
+    g.restore();
+    g.fillStyle = '#2a2a2e'; rrect(g, 1.2, 25.8, 62.6, 1.6, 0.6); g.fill();
+    g.fillStyle = lin(g, 0, 1.4, 0, 3.6, ['#e8ecf2', '#8a909a']); rrect(g, 21, 1.8, 16, 2, 0.8); g.fill();            // aire acondicionado
+    g.fillStyle = '#c4262e'; rrect(g, 59.4, 8.6, 3.8, 2.4, 1); g.fill(); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(60, 9, 2, 0.5);   // espejo rojo
+    headlight(g, 60.8, 18, 3.4, 2.4, false, 0.8); taillight(g, 0.4, 19.4, 1.8, 3.6);
+    g.restore();
+    busWheels(g, [16, 49], 5.2, 29.6);
+  };
+
   VR.drawSideHD = (kind, pal, t = {}, W = 320, H = 180) => {
     const c = VR.canvas(W, H), g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.scale(W / 64, H / 36);
     if (kind === 'car') kind = 'mita';
     if (kind === 'karumbe') karumbeHD(g);
+    else if (kind === 'busindep') busIndepHD(g, pal);
+    else if (kind === 'busguai') busGuaiHD(g, pal);
     else if (kind === 'bomba') bombaHD(g, pal);
     else if (VR.CAR_MODELS[kind]) carHD(g, kind, pal, t);
     else motoHD(g, kind, pal, t);

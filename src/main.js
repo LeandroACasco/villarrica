@@ -127,7 +127,7 @@
   function enterCar(c) {
     if (c._nid !== undefined && online) online.take(c); // un auto del anfitrión: pasa a ser tuyo
     if (emer) emer.stolen(c);
-    if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : '🚗 ¡Te llevaste el auto!'); }
+    if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : '🚗 ¡Te llevaste el auto!'); }
     if (c.type === 'moto') c.rider = me();
     c.robado = true; car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
@@ -156,7 +156,7 @@
   const garD = (world.decals || []).find((d) => d.kind === 'taller'), garDoor = garD ? { x: (garD.x + garD.w / 2) * VR.TILE, y: garD.y * VR.TILE + 4 } : null;
   const muD = (world.decals || []).find((d) => d.kind === 'muni'), cineDoor = muD ? { x: (muD.bx + (muD.tx || muD.bw / 2)) * VR.TILE, y: (muD.y + muD.bh) * VR.TILE + 10 } : null;
   const garage = new VR.Garage(); let cine = null;
-  const nearGarage = () => garDoor && car && Math.hypot(car.x - garDoor.x, car.y - garDoor.y) < 44 && Math.abs(car.v) < 40 ? garDoor : null;
+  const nearGarage = () => garDoor && car && VR.TUNE_MODELS[car.model] && Math.hypot(car.x - garDoor.x, car.y - garDoor.y) < 44 && Math.abs(car.v) < 40 ? garDoor : null;
   const nearCine = () => cineDoor && !car && Math.hypot(player.x - cineDoor.x, player.y - cineDoor.y) < 40 ? cineDoor : null;
   const nearShop = () => shopDoor && !car && Math.abs(player.x - shopDoor.x) < 26 && player.y > shopDoor.y - 30 && player.y < shopDoor.y + 4 ? shopDoor : null;
   const shop = new VR.Shop({

@@ -252,8 +252,73 @@
   });
   VR.CAR_MODELS.patrulla.sideShape = { ...VR.CAR_MODELS.sedan.sideShape };
   VR.CAR_MODELS.policam.sideShape = { ...VR.CAR_MODELS.pickup.sideShape };
-  // sorteo de auto: en el tránsito, a veces un karumbe; estacionados, no
-  VR.pickCar = (rnd, parked) => {
+
+  // ---------- Colectivos (10/11/2026, pedido de Leandro con fotos) ----------
+  // Dos colectivos con la pintura de dos empresas de la zona, reconocibles por los colores y la silueta; sin logos,
+  // letras ni nombres de empresa (regla del proyecto) y con nombres de modelo inventados:
+  //   indep    colectivo urbano: blanco con franjas verde, roja y amarilla, trompa verde
+  //   guairena micro de larga distancia: blanco con franjas amarilla, naranja y azul, trompa roja, espejos rojos
+  // Desde arriba se ve el techo: la pintura va en la trompa, en el borde de los costados y en franjas en diagonal
+  // sobre el techo de atrás; el dibujo de costado completo (tarjeta) está en sidehd.js.
+  const BUS_GL = ['#1b2634', '#2c3e54', '#8fb0cc'], BUS_DARK = ['#0c1018', '#161e28', '#34404e'];
+  VR.drawBus = (c) => (pal, t = {}) => VR.vbase(c.W, c.L, (T) => {
+    const [C, D, L] = pal, g = T.g, W = c.W, Ln = c.L, x0 = 0.9, x1 = W - 0.9, bw = x1 - x0, mid = W / 2, urban = c.kind === 'urban', K = c.liv;
+    const fb = 2.8, yW0 = fb, yW1 = fb + c.ws, yR0 = yW1 + 0.3, yR1 = Ln - (urban ? 6.6 : 4.2), rl = yR1 - yR0, rf = urban ? 2.4 : 3.8;
+    for (const y of c.axles) { T.tire(-0.1, y - 3.7, 2.4, 7.4); T.tire(W - 2.3, y - 3.7, 2.4, 7.4); }       // ruedas
+    T.rr(x0, 0.3, bw, Ln - 0.6, [rf, rf, 1.6, 1.6], T.hg(x0, x1, [D, L, C, C, D]));                           // carrocería
+    g.fillStyle = K.edge; g.fillRect(x0, yW1, 0.7, Ln - yW1 - 2); g.fillRect(x1 - 0.7, yW1, 0.7, Ln - yW1 - 2); // pintura del borde del costado
+    T.rr(x0 + 0.2, 0.3, bw - 0.4, fb - 0.2, [rf, rf, 0.3, 0.3], T.hg(x0, x1, [K.front[1], K.front[0], K.front[0], K.front[1]])); // trompa de color
+    if (urban) {                                                                                               // faros y parrilla
+      T.rr(x0 + 0.7, 0.7, 2.6, 1.5, 0.6, '#fff4c0'); T.rr(x1 - 3.3, 0.7, 2.6, 1.5, 0.6, '#fff4c0');
+      T.rr(mid - 3, 0.5, 6, 1.4, 0.4, '#26262c'); T.rr(mid - 1.6, 0.9, 3.2, 0.9, 0.2, '#f2f0ea');
+    } else {
+      T.poly([[x0 + 0.8, 1.6], [x0 + 4.4, 0.7], [x0 + 4.4, 2], [x0 + 0.9, 2.5]], '#e6f2ff'); T.poly([[x1 - 0.8, 1.6], [x1 - 4.4, 0.7], [x1 - 4.4, 2], [x1 - 0.9, 2.5]], '#e6f2ff');
+      T.rr(mid - 2.8, 0.9, 5.6, 1.2, 0.4, '#2a2a30'); T.rr(mid - 1.5, 1, 3, 0.9, 0.2, '#f2f0ea');
+    }
+    T.poly([[x0 + 1.1, yW0], [x1 - 1.1, yW0], [x1 - 0.5, yW1], [x0 + 0.5, yW1]], T.vg(yW0, yW1, BUS_GL));     // parabrisas
+    T.poly([[x0 + 3, yW0 + 0.5], [x0 + 5.4, yW0 + 0.5], [x0 + 3.6, yW1 - 0.4], [x0 + 1.6, yW1 - 0.4]], 'rgba(255,255,255,.28)');
+    if (urban) T.line(mid, yW0, mid, yW1, 0.5, '#e8e6e0');
+    T.rr(mid - 3.6, yW0 + 0.35, 7.2, 1.2, 0.3, urban ? '#ffb030' : '#dff0ff');                                 // cartel de destino
+    T.rr(x0 + 1.6, yR0, bw - 3.2, rl, 1.6, T.hg(x0, x1, [D, C, L, C, D]));                                     // techo
+    for (const sx of [x0 + 0.7, x1 - 1.8]) {                                                                   // ventanillas
+      T.rr(sx, yR0 + 0.2, 1.1, rl - 0.4, 0.4, T.vg(yR0, yR1, urban ? BUS_GL : BUS_DARK));
+      g.fillStyle = C; for (let y = yR0 + c.pitch; y < yR1 - 2; y += c.pitch) g.fillRect(sx - 0.2, y, 1.5, 0.45);
+    }
+    if (urban) for (const f of [0.3, 0.62]) { T.rr(mid - 2.9, yR0 + rl * f - 0.3, 5.8, 3.8, 0.7, '#9aa0aa'); T.rr(mid - 2.6, yR0 + rl * f, 5.2, 3.2, 0.5, '#dfe3ea'); } // ventilaciones
+    else { // aire acondicionado del micro
+      const ay = yR0 + rl * 0.34; T.rr(mid - 3.6, ay, 7.2, 12.6, 2, '#8a909a'); T.rr(mid - 3.2, ay + 0.4, 6.4, 11.8, 1.6, T.hg(mid - 3.2, mid + 3.2, ['#aab0ba', '#e6eaf0', '#c4c9d2']));
+      g.fillStyle = 'rgba(0,0,0,.18)'; for (let y = ay + 2; y < ay + 11; y += 1.6) g.fillRect(mid - 2.6, y, 5.2, 0.35);
+    }
+    g.save(); g.beginPath(); g.roundRect(x0 + 1.6, yR0, bw - 3.2, rl, 1.6); g.clip();                          // franjas en diagonal sobre el techo
+    for (const [dy, h, col] of K.swoosh) T.poly([[x0 + 1.6, yR0 + rl * 0.7 + dy + 4.4], [x1 - 1.6, yR0 + rl * 0.7 + dy], [x1 - 1.6, yR0 + rl * 0.7 + dy + h], [x0 + 1.6, yR0 + rl * 0.7 + dy + 4.4 + h]], col);
+    g.restore();
+    if (urban) {                                                                                               // motor atrás, paragolpes, luces
+      T.rr(x0 + 2, yR1 + 0.5, bw - 4, 4.2, 0.6, '#c8ccd4'); g.fillStyle = 'rgba(0,0,0,.25)'; for (let y = yR1 + 1.2; y < yR1 + 4.4; y += 0.9) g.fillRect(x0 + 2.4, y, bw - 4.8, 0.3);
+      T.rr(x0 + 0.2, Ln - 2.4, bw - 0.4, 2, [0.3, 0.3, 1.6, 1.6], '#2a2a2e'); T.rr(x0 + 0.5, Ln - 5.8, 1.3, 3.6, 0.5, '#d8302a'); T.rr(x1 - 1.8, Ln - 5.8, 1.3, 3.6, 0.5, '#d8302a'); T.rr(mid - 1.8, Ln - 2, 3.6, 1, 0.2, '#f2f0ea');
+    } else {
+      T.rr(x0 + 1.8, yR1 + 0.4, bw - 3.6, 2.2, 0.6, '#10161e'); T.rr(x0 + 0.2, Ln - 2.8, bw - 0.4, 2.4, [0.3, 0.3, 1.6, 1.6], '#2a2f8c');
+      T.rr(x0 + 0.6, Ln - 2.6, 3.4, 1.2, 0.5, '#d8302a'); T.rr(x1 - 4, Ln - 2.6, 3.4, 1.2, 0.5, '#d8302a'); T.rr(mid - 1.6, Ln - 2.2, 3.2, 0.9, 0.2, '#f2f0ea');
+    }
+    for (const sx of urban ? [-0.1, W - 2.1] : [-0.1, W - 2.9]) {                                              // espejos grandes
+      if (urban) T.rr(sx, 3.4, 2.2, 3.8, 0.8, K.mirror); else { T.rr(sx, 2.6, 3, 4.2, 1.3, K.mirror); T.rr(sx + 0.4, 3, 1, 2.4, 0.5, 'rgba(255,255,255,.35)'); }
+    }
+  });
+  const BUS_INDEP = { kind: 'urban', L: 66, W: 19, ws: 4.2, axles: [14, 50], pitch: 5.6,
+    liv: { edge: '#1f8a3c', front: ['#1f8a3c', '#14662a'], swoosh: [[0, 2.6, '#1f8a3c'], [3.4, 1.8, '#d02a26'], [5.8, 1.3, '#f0c828']], mirror: '#1e1e22' } };
+  const BUS_GUAI = { kind: 'coach', L: 76, W: 20, ws: 5.4, axles: [17, 58], pitch: 6.2,
+    liv: { edge: '#f4b81c', front: ['#c4262e', '#8e1a20'], swoosh: [[0, 2.4, '#2a2f8c'], [3.2, 1.8, '#ee7a14'], [5.4, 2.6, '#f4b81c']], mirror: '#c4262e' } };
+  Object.assign(VR.CAR_MODELS, {
+    // bus: true → el tránsito los usa solo en calles anchas, giran más despacio, van un poco más lento y vienen con bocina grave
+    indep: { len: 66, wid: 19, S: 72, acc: 105, rev: 40, turn: 1.45, brake: 320, mass: 3.6, max: { road: 185, stone: 165, dirt: 150, side: 105, grass: 110 }, bus: true, aiTurn: 0.6, cruiseK: 0.85, colors: WHITE,
+      name: 'Colectivo Tape Rupi', desc: 'Colectivo urbano de franjas verde, roja y amarilla. Largo y pesado.', side: 'busindep', base: VR.drawBus(BUS_INDEP) },
+    guairena: { len: 76, wid: 20, S: 82, acc: 95, rev: 38, turn: 1.3, brake: 300, mass: 4.2, max: { road: 215, stone: 170, dirt: 140, side: 100, grass: 100 }, bus: true, aiTurn: 0.55, cruiseK: 0.9, colors: WHITE,
+      name: 'Micro Tape Guasu', desc: 'Micro de larga distancia a Asunción. Enorme, pesado y de trompa roja.', side: 'busguai', base: VR.drawBus(BUS_GUAI) },
+  });
+
+  // sorteo de auto: en el tránsito, a veces un karumbe; estacionados, no. roadW = ancho de la calle en px
+  // (los colectivos solo salen en calles de 5 baldosas o más: avenidas y calles principales)
+  VR.pickCar = (rnd, parked, roadW = 0) => {
+    if (!parked && roadW >= 5 * VR.TILE - 1) { const b = rnd(); if (b < 0.07) return rnd() < (roadW >= 6 * VR.TILE - 1 ? 0.55 : 0.3) ? 'guairena' : 'indep'; }
     const r = rnd();
     if (!parked && r < 0.025) return 'karumbe';
     if (!parked && r < 0.055) return rnd() < 0.7 ? 'policam' : 'patrulla'; // alguna patrullera recorriendo

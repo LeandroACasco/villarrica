@@ -208,6 +208,7 @@ Para agregar algo guardado: `VR.store.get('clave', porDefecto)` / `VR.store.set(
 - **Conductor de moto:** `VR.drawRiderTop(look, geo)` (car.js) lo dibuja visto desde arriba con la ropa, el peinado, la gorra/casco y la mochila del look, inclinado al manubrio, y `VR.riderTopFrames` lo gira en 64 ángulos con la moto. Se usa poniendo `car.rider = { L: look }`.
 
 ### 6.5 Vehículos (`car.js` + `autos.js` + `tune.js` + `vcard.js` + `sidehd.js`)
+- **Colectivos** (10/11/2026, pedido de Leandro): `indep` (colectivo urbano: blanco con franjas verde, roja y amarilla, 66×19) y `guairena` (micro de larga distancia: blanco con trompa roja y franjas amarilla, naranja y azul, 76×20). Pintura **solo por colores y silueta**, sin logos, letras ni nombres de empresa (regla del proyecto); nombres de modelo inventados ("Colectivo Tape Rupi", "Micro Tape Guasu"). Desde arriba: `VR.drawBus(config)` en `autos.js` (techo, ventanillas, ventilaciones o aire acondicionado, trompa de color y franjas en diagonal en el techo); de costado: `busIndepHD`/`busGuaiHD` en `sidehd.js` (`side: 'busindep'`/`'busguai'`). **Sin entrada en `VR.TUNE_MODELS`** (no se tunean, como el camión bomba): `nearGarage` ya no deja entrar al taller con un vehículo que no está ahí. Sorteo: `VR.pickCar(rnd, parked, roadW)`, 7 % de los autos en calles anchas (más micros en las de 6 baldosas), nunca estacionados.
 - `VR.Car` = un vehículo (auto o moto, del jugador, del tránsito o estacionado). Tipo `'car'` o `'moto'` y `model`.
 - **Datos del modelo** = `VR.VSPEC.car`/`VR.VSPEC.moto` (valores por defecto) **mezclado con** `VR.CAR_MODELS[model]` o `VR.MOTO_MODELS[model]` (lo hace `VR.vspec(type, model)`).
 - Campos de un modelo:
@@ -229,6 +230,7 @@ Para agregar algo guardado: `VR.store.get('clave', porDefecto)` / `VR.store.set(
 | `rider` | (motos) dónde quedan los puños y la cadera del conductor: `{ gy, gx, hip, stand }` (gy negativo = adelante; `stand: true` = va parado, patineta) |
 | `emer`, `lights` | vehículo de emergencia y colores de balizas |
 | `noLights`, `noFire` | sin faros / no se prende fuego (karumbe) |
+| `bus`, `aiTurn`, `cruiseK` | **colectivo** (10/11/2026): el tránsito lo usa solo en calles de 5 baldosas o más y prefiere avenidas al elegir el siguiente tramo; gira más despacio (`aiTurn` × la velocidad de giro), va más lento (`cruiseK` × el crucero) y frena más en las esquinas |
 
 - **Dibujo desde arriba:** `VR.vbase(W, L, (T) => {...})` da un lienzo y ayudas `T.rr` (rectángulo redondeado), `T.tire`, `T.hg` (degradé), `T.line`. Para autos comunes alcanza `VR.drawAuto({ L, W, hood, ws, roof, rg, fa, ra, box, bed, spare, rails… })` (zonas a lo largo: capó, parabrisas, techo, luneta; el resto es baúl o caja).
   Opciones de forma para que cada modelo se distinga: `pinch` (trompa y cola redondeadas y más angostas, 0–2,5), `hl` faros (`'slant'` rasgados, `'quad'` cuatro redondos, `'round'` redondos, sin nada = rectangulares), `tl` luces traseras (`'bar'` de lado a lado, `'round'` redondas, `'vertical'` altas en las esquinas), `flares` (guardabarros anchos), `scoop` (`true` o `'rally'`: toma de aire grande), `wing` (alerón alto de fábrica), `lip` (colita de pato), `box`, `bed`, `rollbar`, `spare`, `rails`, `doors3`. En `sideShape` también valen `wing`, `scoop` y `lip`.
@@ -307,6 +309,7 @@ Escena aparte (no usa el mapa): `VR.Teatro` con su propio piso, butacas (`seats`
 ## 7. RECETAS (paso a paso)
 
 ### 7.1 Agregar un AUTO nuevo
+*(Para un vehículo largo tipo colectivo, copiá `indep`/`guairena` en `autos.js`: `bus: true` lo manda a las calles anchas; el costado va aparte en `sidehd.js` y se engancha en `VR.drawSideHD` y en `vcard.js`.)*
 1. **`src/game/autos.js`**, dentro de `VR.CAR_MODELS = { ... }` agregá una entrada con clave corta (ej. `combi`):
    ```js
    combi: { len: 44, wid: 18, S: 50, acc: 140, rev: 60, turn: 2.0, brake: 360, mass: 1.8,
