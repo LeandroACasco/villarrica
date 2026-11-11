@@ -298,9 +298,9 @@ Escena aparte (no usa el mapa): `VR.Teatro` con su propio piso, butacas (`seats`
 - **Canasto equipado** (`vida.s.equipo = 'canasto'`): G o el botón 🧺 lo pone en la mano (se dibuja en `Player.draw`); el botón ACCIÓN pasa a 🥐 VENDER y vende al lado de la gente sin empezar la changa. `changas.start('chipa')` en Historia solo lo equipa.
 - **Robar en Historia** (`noRobar` en `main.js`): al tránsito, solo con un arma (hoy las de desarrollador); los estacionados, con herramientas (`vida.s.herr`, llegan en J6). Siempre se puede con los tuyos (`c.mio`), uno que ya te llevaste (`c.robado`) o el último que manejaste. Libre igual que antes.
 - **Globos que no se enciman:** `Player.prototype.drawBubble` sube el globo si choca con otro del mismo cuadro (`VR._bubs`, se vacía en `render`).
-- **Celular** (Historia; botón 📱, tecla C o Pausa → Celular; `celDlg` en `main.js`): apps Jaha, Billetera, Mochila, Ropero (la tienda en modo `shop.ropero`: solo lo que ya tenés), Changas, Misiones, Metas y Mapa. Sin saldo, Jaha y Changas no andan.
+- **Celular** (Historia; botón 📱, tecla C o Pausa → Celular; `celDlg` en `main.js`): apps Mbohasa, Billetera, Mochila, Ropero (la tienda en modo `shop.ropero`: solo lo que ya tenés), Changas, Misiones, Metas y Mapa. Sin saldo, Mbohasa y Changas no andan.
 - **Dos platas:** efectivo (`VR.Wallet`, `plata`) y billetera electrónica (`vida.s.banco`; `vida.banco(n, why)`, `pagaBanco`). Efectivo: chipa, despensa, Doña Chela, Ña Ramona, premios. Electrónica: Jaha, changas de la app (`changas.pay(n, why, efectivo)`), Ao Porã. Hospital y multas: efectivo, después la cuenta, después deuda. **Cajeros** (`VR.PUNTOS.cajero`, frente al banco de la esquina noroeste de la plaza; `cajero2`, cerca de tu pieza): depositar y sacar.
-- **Jaha** (viajes, nombre inventado): con un destino en el GPS, moto 10.000 + 3.000/km o auto 15.000 + 5.000/km (distancia en línea recta × 1,3). Llega en 8–18 s, subís y aparecés en el destino (`teleport(x, y, name, true)`), pasa la hora del viaje y se emite `jaha`.
+- **Mbohasa** (viajes, nombre inventado; internamente `jaha`): con un destino en el GPS, moto 10.000 + 3.000/km o auto 15.000 + 5.000/km (distancia en línea recta × 1,3). Llega en 8–18 s, subís y aparecés en el destino (`teleport(x, y, name, true)`), pasa la hora del viaje y se emite `jaha`.
 - **Menú:** Pausa → 📌 Misiones (en curso con objetivo, marcar en el GPS, reintentar, dejar; para empezar; cumplidas; barrios). Configuración → Desarrollador (solo Historia): saltar el paso, abrir todos los barrios.
 
 ### 6.11 Tienda (`shop.js` + diálogo en `shell.html`)
@@ -406,3 +406,8 @@ Bajar de nuevo el área (export de openstreetmap.org u Overpass, mismo recuadro)
 > Devolveme solo los cambios (qué buscar y qué reemplazar), sin reescribir archivos enteros, y explicame cómo probarlo.
 
 Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos son grandes; `world.js` y el convertidor tienen más de 1000 líneas). Si el cambio es en una función, pegale esa función y unas líneas alrededor.
+
+
+### Celular roto, préstamos y barrios (11/11/2026)
+
+`vida.js`: `s.celu` ('roto'/'ok'), `celuRoto()`, `arreglaCelu()`, `compraCelu()`, `VR.PREST` (banco/financiera), `pidePrestamo`, `pagaPrestamo`, `cobraCuotas` (sábado mediodía). `misiones.js`: lugares `financiera` y `celulares`, `VR.prestamoMenu`, `VR.celularesMenu`. `shell.html`: `#celRoto` (SVG), `.celNav`; el aviso (`#toast`) baja con `body:has(#vcard.show)`. `main.js`: `paintCel`, `buildMap` (tinte y límites por `world.barrio`).
