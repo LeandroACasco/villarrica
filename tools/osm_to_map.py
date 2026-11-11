@@ -1249,7 +1249,8 @@ def main(src, out, preview=None):
                 # calle de 4 baldosas (8 m): de un solo lado por tramo, para que quede lugar para dos filas de tránsito
                 if wd == 4 and ((h_ >> 9) & 1) != (side & 1):
                     continue
-                if h_ % 100 < 60:
+                # un lado de la calle para autos (sur/este) y el opuesto para motos (norte/oeste), como en la calle real
+                if side in (1, 3):
                     assign[(y, x)] = 5 + side; n_bay += 1
                 else:
                     assign[(y, x)] = 9 + side; n_car += 1

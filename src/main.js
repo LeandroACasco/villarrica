@@ -58,6 +58,27 @@
   const cars = parked.cars;
   let car = null; // auto que estás manejando
   const WALK_BASE = 270, DRIVE_BASE = 420; // Leandro prefirió la cámara de antes (04/11/2026)
+  // Zoom del juego (rueda, pellizco con dos dedos, teclas + y −): multiplica la base de cámara; se recuerda.
+  let zoomK = 1; try { zoomK = Math.min(1.8, Math.max(0.55, parseFloat(localStorage.getItem('vr_zoom')) || 1)); } catch (e) {}
+  const baseOf = (b) => Math.round(b / zoomK);
+  function setZoom(k) {
+    k = Math.min(1.8, Math.max(0.55, k)); if (Math.abs(k - zoomK) < 0.001) return; zoomK = k;
+    try { localStorage.setItem('vr_zoom', String(k)); } catch (e) {}
+    VR.screen.setBase(baseOf(car ? DRIVE_BASE : WALK_BASE));
+  }
+  addEventListener('wheel', (e) => { if (mapOpen || mode !== 'game' || e.target.closest && e.target.closest('#mapView')) return; setZoom(zoomK * Math.exp(-e.deltaY * 0.0012)); }, { passive: true });
+  addEventListener('keydown', (e) => {
+    if (mapOpen || mode !== 'game') return;
+    if (e.code === 'Equal' || e.code === 'NumpadAdd') setZoom(zoomK * 1.2);
+    else if (e.code === 'Minus' || e.code === 'NumpadSubtract') setZoom(zoomK / 1.2);
+  });
+  { let pd = 0;
+    addEventListener('touchmove', (e) => {
+      if (mapOpen || mode !== 'game' || e.touches.length !== 2) { pd = 0; return; }
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      if (pd) setZoom(zoomK * d / pd); pd = d;
+    }, { passive: true });
+    addEventListener('touchend', () => { pd = 0; }, { passive: true }); }
   const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
   const night = VR.night = new VR.Night(world);
@@ -79,7 +100,7 @@
   }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg) {
-    if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); }
+    if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; VR.screen.setBase(baseOf(WALK_BASE)); driveLabels(false); }
     player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y;
     if (emer) emer.clear();
     toast(msg);
@@ -91,7 +112,7 @@
     if (!c || c.type !== (sc.type || 'car') || (sc.model && c.model !== sc.model)) { c = new VR.Car(world, sc.x, sc.y, sc.a, sc.color || 0, sc.type || 'car', sc.model, sc.tune || null); cars.push(c); }
     world.removeBox(c); c.x = c.px = sc.x; c.y = c.py = sc.y; c.a = c.pa = sc.a; world.addBox(c);
     if (sc.in && c.type === 'moto') c.rider = me();
-    if (sc.in) { car = c; c.driven = true; player.x = player.px = c.x; player.y = player.py = c.y; VR.screen.setBase(DRIVE_BASE); setTimeout(() => driveLabels(true)); }
+    if (sc.in) { car = c; c.driven = true; player.x = player.px = c.x; player.y = player.py = c.y; VR.screen.setBase(baseOf(DRIVE_BASE)); setTimeout(() => driveLabels(true)); }
   }
   const LABELS = { action: [['✋', 'ACCIÓN'], ['📯', 'BOCINA']], run: [['»', 'CORRER'], ['⏹', 'FRENO']], car: [['🚗', 'AUTO'], ['🚪', 'BAJAR']] };
   function driveLabels(on) {
@@ -129,7 +150,7 @@
     if (emer) emer.stolen(c);
     if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : /^cam/.test(c.model) ? '🚚 ¡Te llevaste el camión!' : '🚗 ¡Te llevaste el auto!'); }
     if (c.type === 'moto') c.rider = me();
-    c.robado = true; car = c; c.driven = true; player.moving = false; VR.screen.setBase(DRIVE_BASE); VR.showVehicleCard(c);
+    c.robado = true; car = c; c.driven = true; player.moving = false; VR.screen.setBase(baseOf(DRIVE_BASE)); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
     if (VR.mis) VR.mis.emit('subir', c);
   }
@@ -144,7 +165,7 @@
       const x = c.x + dx, y = c.y + dy + 4;
       if (!world.hits(x - player.HW, y - player.HH, x + player.HW, y)) {
         player.x = player.px = x; player.y = player.py = y;
-        c.driven = false; c.v = 0; c.rider = null; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); return true;
+        c.driven = false; c.v = 0; c.rider = null; car = null; VR.screen.setBase(baseOf(WALK_BASE)); driveLabels(false); return true;
       }
     }
     toast('No hay lugar para bajar acá'); return false;
@@ -613,7 +634,7 @@
     paintArma(); menu.addEventListener('close', () => { paintArma(); }); 
     $('weapon').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); weapons.next(); paintArma(); });
   }
-  $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(WALK_BASE); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
+  $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; VR.screen.setBase(baseOf(WALK_BASE)); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
 
   // ---------- mapa de la ciudad ----------
   let mapOpen = false, mapBuilt = false;
@@ -945,7 +966,7 @@
     setTimeout(() => {
       mode = 'game'; document.body.classList.remove('title'); titleEl.hidden = true;
       const sw0 = cisnes.list[0]; if (sw0) sw0.auto = false; // el cisne vuelve solo al muelle
-      VR.screen.setBase(car ? DRIVE_BASE : WALK_BASE);
+      VR.screen.setBase(baseOf(car ? DRIVE_BASE : WALK_BASE));
       const f = car || player; cam.x = cam.px = f.x; cam.y = cam.py = f.y - (car ? 0 : 10); cam.lx = cam.ly = 0; hint = '';
       resume(); applyTouch(); fadeEl.style.opacity = 0; tGoing = false;
       if (then) then();
