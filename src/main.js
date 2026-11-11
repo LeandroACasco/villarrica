@@ -93,6 +93,8 @@
   const night = VR.night = new VR.Night(world);
   const cisnes = VR.cisnes = new VR.Cisnes(world, night); cisnes.onMsg = (m) => toast(m);
   const perros = VR.perros = peds ? new VR.Perros(world, peds) : { update() {}, collect() {}, pet() { return false; } }; VR.toast = (m) => toast(m);   // perros callejeros (perros.js)
+  const caidas = VR.caidas = traffic ? new VR.Caidas(world, traffic, peds) : null;   // caídas de motos y choques del tránsito (caidas.js)
+  if (traffic) VR.traffic = traffic;
   const calle = VR.calle = peds ? new VR.Calle(world, peds, { toast: (m) => toast(m), heal: (n) => VR.heal && VR.heal(n), hambre: (n) => { if (vida && vida.s) vida.s.hambre = Math.min(100, vida.s.hambre + n); } }) : { update() {}, collect() {}, near() { return null; }, act() { return false; } };   // vendedores y gente de la calle (calle.js)
   const fauna = VR.fauna = new VR.Fauna(world); // carpinchos, patos, peces y palomas (fauna.js)
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
@@ -157,6 +159,7 @@
     if (t !== eqTxt) { eqTxt = t; const [i, n] = t.split('|'); btnA.innerHTML = '<span class="ico">' + i + '</span>' + n; }
   }
   function enterCar(c) {
+    if (c.fallen) { c.fallen = null; if (c.ai) c.ai.stun = 0; if (VR.caidas) VR.caidas.riders = VR.caidas.riders.filter((r) => r.c !== c); toast('💪 Levantaste la moto'); }
     if (c._nid !== undefined && online) online.take(c); // un auto del anfitrión: pasa a ser tuyo
     if (emer) emer.stolen(c);
     if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : /^cam/.test(c.model) ? '🚚 ¡Te llevaste el camión!' : '🚗 ¡Te llevaste el auto!'); }
@@ -189,7 +192,7 @@
       if (sp < 35) continue;
       if (!VR.obbIn(VR.obb(o.x + vx * 0.03, o.y + vy * 0.03, o.a, o.spec.len / 2 + 1, o.spec.wid / 2 + 3), player.x, player.y - 4)) continue;
       player.knock(vx * 0.9, vy * 0.9, sp / 160); VR.audio.ouch(player.x, player.y); toast('💥 ¡Te atropellaron!'); hurtPlayer(12 + sp / 5);
-      if (o.vx !== undefined) { o.vx *= 0.85; o.vy *= 0.85; } o.hit = 0.15;
+      if (o.vx !== undefined) { o.vx *= 0.85; o.vy *= 0.85; } o.hit = 0.15; if (VR.caidas) VR.caidas.aiHit(o, player, sp);
       if (VR.input.buzz) VR.input.buzz(40);
       return;
     }
@@ -201,6 +204,7 @@
     if (VR.mis) VR.mis.emit('bajar', c);
     c.driven = false; c.rider = null; car = null; zoomPoke(); driveLabels(false);
     player.x = player.px = c.x + fx * 9; player.y = player.py = c.y + fy * 9 + 4;
+    c.fallen = { t: 0, side: Math.random() < 0.5 ? -1 : 1 }; world.wake(c, imp);   // la moto queda tirada de costado
     player.knock(vx * 1.0 + fx * 25, vy * 1.0 + fy * 25, Math.min(1, imp / 260)); toast('🏍💥 ¡Te caíste de la moto!'); hurtPlayer(8 + imp / 10);
     c.vx *= 0.5; c.vy *= 0.5;
   };
@@ -365,6 +369,7 @@
       if (peds) for (const q of peds.list) if (near(q)) th.push({ x: q.x, y: q.y, sp: 0, r: 12 });
       fauna.update(dt, cam, th);
       if (mode === 'game') zoomTick(dt);
+      if (caidas && !online.mirror) caidas.update(dt, player);
       if (!online.mirror) { perros.update(dt, car || player, car); calle.update(dt, car || player); }
     }
     if (weapons) weapons.update(dt, player, car, VR.input);
@@ -395,7 +400,7 @@
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
-    perros.collect(cx, cy, sw, sh, a, tall); calle.collect(cx, cy, sw, sh, a, tall);
+    perros.collect(cx, cy, sw, sh, a, tall); calle.collect(cx, cy, sw, sh, a, tall); if (caidas) caidas.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);
     const vis = world.carsIn(cx - 100, cy - 100, cx + sw + 100, cy + sh + 100, []);
     for (const c of vis) tall.push({ sy: c.y + 10, draw: (ctx) => c.draw(ctx, cx, cy, a) });

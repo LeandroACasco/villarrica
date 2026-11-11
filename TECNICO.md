@@ -440,3 +440,9 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - `VR.screen.setLive(base)` (escala continua, sin cambiar la resolución del lienzo) y `settle(base)` (vuelve a la escala de reposo nítida); `snapBase(base)` da la base de reposo más cercana.
 - main.js: `zoomTick(dt)` acerca `baseCur` de a poco (ease exponencial) a `wantBase()` = (WALK/DRIVE_BASE) / zoomK; 0,3 s después del último gesto el objetivo pasa a la base de reposo, así no hay salto al terminar. Subir o bajar de un vehículo también se recorre suave (antes era una transición CSS).
 - (ragdoll más vivo, 12/11/2026) En el aire mueve brazos y piernas (cuadros de correr); chispas del golpe, polvo al rebotar y al caer, temblor al quedar en el piso y `rise()` (se endereza en 0,5 s). El jugador puede levantarse antes moviendo el joystick (a partir de 0,9 s en el piso). `VR.shake(t, amp)` sacude la cámara solo con golpes al jugador (`rag.shakes`).
+
+## Caídas y choques (12/11/2026)
+- `src/game/caidas.js` (`VR.caidas`): `motoDown(c, imp)` (la moto del tránsito queda tirada, el conductor sale despedido con `VR.Ragdoll`, se levanta, te reta; si no fue grave —`hp > 45` e impacto < 230— levanta la moto y sigue, si no se va caminando y la moto se retira del tránsito a los 6 s); `aiHit(o, víctima, sp)` (auto del tránsito que atropella: frena 1,6 s, bocina, el conductor protesta; moto rápida: 50 % se cae).
+- Disparadores: car.js (`impact > 110` en una moto del tránsito), peds.js (`carHit` de un vehículo que no es el tuyo) y `runOverCheck` de main.js.
+- Moto caída (`c.fallen = {t, side}`): se dibuja girada ~65°; al subirte con F la levantás (`enterCar`). Tu propia moto queda caída cuando te tira (`VR.onEject`).
+- Abolladuras: `VR.addDent` / `VR.drawDents` (hasta 10 por vehículo, en el punto del contacto). Con hp bajo siguen el humo y el fuego de emerg.js.
