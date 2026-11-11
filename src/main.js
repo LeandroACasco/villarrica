@@ -168,6 +168,7 @@
   // vida del jugador (11/11/2026): los golpes de vehículos la bajan, se recupera sola; en 0 te llevan al hospital
   let hp = 100, hpQuiet = 0; const hpEl = $('hpBar');
   function hpShow() { hpEl.hidden = hp >= 99.5; hpEl.textContent = '❤ ' + Math.max(0, Math.round(hp)) + '%'; }
+  VR.shake = (t, amp) => { VR.shakeT = Math.max(VR.shakeT || 0, t); VR.shakeA = amp; };
   VR.heal = (n) => { hp = Math.min(100, hp + n); hpShow(); };
   function hurtPlayer(dmg) {
     hp -= dmg; hpQuiet = 6; hpShow();
@@ -377,7 +378,8 @@
     if (mode === 'title') { renderTitle(a, dt); return; }
     const ctx = VR.screen.ctx, sw = VR.screen.w, sh = VR.screen.h;
     if (teatro.on) { teatro.draw(ctx, sw, sh); return; }
-    const [cx, cy] = camView(a);
+    let [cx, cy] = camView(a);
+    if (VR.shakeT > 0) { VR.shakeT -= dt; const k = VR.shakeA * Math.min(1, VR.shakeT * 4); cx += (Math.random() - 0.5) * k; cy += (Math.random() - 0.5) * k; }   // sacudón del golpe
     ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
     world.draw(ctx, cx, cy, sw, sh);
     world.warm(cx, cy, sw, sh);

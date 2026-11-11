@@ -439,3 +439,4 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 ## Zoom suave (12/11/2026)
 - `VR.screen.setLive(base)` (escala continua, sin cambiar la resolución del lienzo) y `settle(base)` (vuelve a la escala de reposo nítida); `snapBase(base)` da la base de reposo más cercana.
 - main.js: `zoomTick(dt)` acerca `baseCur` de a poco (ease exponencial) a `wantBase()` = (WALK/DRIVE_BASE) / zoomK; 0,3 s después del último gesto el objetivo pasa a la base de reposo, así no hay salto al terminar. Subir o bajar de un vehículo también se recorre suave (antes era una transición CSS).
+- (ragdoll más vivo, 12/11/2026) En el aire mueve brazos y piernas (cuadros de correr); chispas del golpe, polvo al rebotar y al caer, temblor al quedar en el piso y `rise()` (se endereza en 0,5 s). El jugador puede levantarse antes moviendo el joystick (a partir de 0,9 s en el piso). `VR.shake(t, amp)` sacude la cámara solo con golpes al jugador (`rag.shakes`).

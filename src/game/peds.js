@@ -115,7 +115,8 @@ VR.Peds = class {
         p.t -= dt;
         if (p.injured && p.t > 0) continue;
         p.injured = false;
-        if (p.t <= 0 && (!p.rag || p.rag.landed)) { p.rag = null; p.mode = 'flee'; p.t = 1.4; this.talk(p, 'hit'); if (!this.free(p.x, p.y)) this.toWalkable(p); this.awayFrom(p, car || focus); }
+        if (p.rag && p.t <= 0 && p.rag.landed) p.rag.rise();
+        if (p.t <= 0 && (!p.rag || p.rag.done)) { p.rag = null; p.mode = 'flee'; p.t = 1.4; this.talk(p, 'hit'); if (!this.free(p.x, p.y)) this.toWalkable(p); this.awayFrom(p, car || focus); }
         continue;
       }
       // ¿le venís encima?
@@ -184,7 +185,7 @@ VR.Peds = class {
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
         ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
-        if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal].get(p.rag.dir, 'idle', 0), x, y);
+        if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal], x, y);
         else if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
         else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);

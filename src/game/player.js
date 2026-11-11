@@ -106,14 +106,17 @@ VR.Player = class {
   // golpe de un vehículo: sale despedido (ragdoll) y no controlás hasta que se levanta
   knock(vx, vy, power) {
     if (this.rag) return;
-    this.rag = new VR.Ragdoll(vx, vy, power, this.dir); this.downT = 1.3 + power * 1.3; this.moving = false; this.anim = 0;
+    this.rag = new VR.Ragdoll(vx, vy, power, this.dir); this.rag.shakes = true; if (VR.shake) VR.shake(0.3 + power * 0.3, 3 + power * 5); this.downT = 1.3 + power * 1.3; this.moving = false; this.anim = 0;
   }
   update(dt, input) {
     this.px = this.x; this.py = this.y;
     if (this.rag) {
       this.rag.step(dt, this, this.world); this.downT -= dt; this.moving = false;
       if (this.bubble) { this.bubble.t -= dt; if (this.bubble.t <= 0) this.bubble = null; }
-      if (this.downT <= 0 && this.rag.landed) this.rag = null;
+      // si ya te recuperaste del golpe, mover el joystick te levanta antes
+      if (this.rag.landed && this.rag.t > 0.9 && Math.hypot(input.ax, input.ay) > 0.3) this.downT = Math.min(this.downT, 0);
+      if (this.downT <= 0 && this.rag.landed) this.rag.rise();
+      if (this.rag.done) this.rag = null;
       return;
     }
     const ax = input.ax, ay = input.ay, mag = Math.min(1, Math.hypot(ax, ay));
@@ -147,7 +150,7 @@ VR.Player = class {
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
-    if (this.rag) { this.rag.draw(ctx, this.sprites.get(this.rag.dir, 'idle', 0), x, y); return; }
+    if (this.rag) { this.rag.draw(ctx, this.sprites, x, y); return; }
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6 * VR.PS, 2.5 * VR.PS, 0, 0, Math.PI * 2); ctx.fill();
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
     const PS = VR.PS; ctx.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);
