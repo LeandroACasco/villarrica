@@ -711,19 +711,27 @@ VR.parkCars = (world, n, near) => {
   // con cordón a lo largo de ~8 baldosas (lejos de las esquinas) y sin otro vehículo enfrente, así siempre
   // queda lugar para que pasen dos autos.
   const across = (x, y, dx, dy) => { let n = 0; while (n < 14 && road(x + dx * n, y + dy * n)) n++; return n; };
+  // Cajones pintados en el Centro (11/11/2026, ver osm_to_map.py y VR.drawBay): `line` 5-8 auto, 9-12 moto; el cordón
+  // (0 sur, 1 norte, 2 este, 3 oeste) tiene que coincidir con el lado donde se estaciona. Rayas viales de verdad
+  // (amarilla, cebra) son `line` 1-4 y bloquean el lugar.
+  const bayOf = (x, y, side) => { const v = world.line[y * world.w + x]; return v >= 5 && v <= 12 && ((v - 5) & 3) === side ? ((v - 5) >> 2 ? 'moto' : 'auto') : null; };
+  const lineBlock = (x, y) => { const v = world.line[y * world.w + x]; return v && v < 5; };
+  const snap = (u, pitch) => Math.round((u - pitch / 2) / pitch) * pitch + pitch / 2;   // centro del cajón más cercano
   const spot = (x, y) => {
     if (!road(x, y)) return null;
     for (const dy of [-1, 1]) {
-      if (!curb(x, y + dy) || across(x, y, 0, -dy) < 5) continue;
+      const bay = bayOf(x, y, dy > 0 ? 0 : 1);
+      if (!curb(x, y + dy) || across(x, y, 0, -dy) < (bay ? 4 : 5)) continue;
       let ok = true;
-      for (let i = -3; i <= 4 && ok; i++) ok = road(x + i, y) && road(x + i, y - dy) && curb(x + i, y + dy) && !world.line[y * world.w + x + i];
-      if (ok) { const w = across(x, y, 0, -dy); return [x * S + 16, y * S + 8 - dy, rnd() < 0.5 ? Math.PI / 2 : -Math.PI / 2, dy, 0, [x * S - 24, Math.min(y, y - dy * (w - 1)) * S, x * S + 56, (Math.max(y, y - dy * (w - 1)) + 1) * S]]; }
+      for (let i = -3; i <= 4 && ok; i++) ok = road(x + i, y) && road(x + i, y - dy) && curb(x + i, y + dy) && !lineBlock(x + i, y);
+      if (ok) { const w = across(x, y, 0, -dy); const cx = bay ? snap(x * S + 16, bay === 'moto' ? VR.BAY.motoPitch : VR.BAY.carPitch) : x * S + 16; return [cx, y * S + 8 - dy, rnd() < 0.5 ? Math.PI / 2 : -Math.PI / 2, dy, 0, [cx - 40, Math.min(y, y - dy * (w - 1)) * S, cx + 40, (Math.max(y, y - dy * (w - 1)) + 1) * S], bay]; }
     }
     for (const dx of [-1, 1]) {
-      if (!curb(x + dx, y) || across(x, y, -dx, 0) < 5) continue;
+      const bay = bayOf(x, y, dx > 0 ? 2 : 3);
+      if (!curb(x + dx, y) || across(x, y, -dx, 0) < (bay ? 4 : 5)) continue;
       let ok = true;
-      for (let i = -3; i <= 4 && ok; i++) ok = road(x, y + i) && road(x - dx, y + i) && curb(x + dx, y + i) && !world.line[(y + i) * world.w + x];
-      if (ok) { const w = across(x, y, -dx, 0); return [x * S + 8 - dx, y * S + 16, rnd() < 0.5 ? 0 : Math.PI, 0, dx, [Math.min(x, x - dx * (w - 1)) * S, y * S - 24, (Math.max(x, x - dx * (w - 1)) + 1) * S, y * S + 56]]; }
+      for (let i = -3; i <= 4 && ok; i++) ok = road(x, y + i) && road(x - dx, y + i) && curb(x + dx, y + i) && !lineBlock(x, y + i);
+      if (ok) { const w = across(x, y, -dx, 0); const cy = bay ? snap(y * S + 16, bay === 'moto' ? VR.BAY.motoPitch : VR.BAY.carPitch) : y * S + 16; return [x * S + 8 - dx, cy, rnd() < 0.5 ? 0 : Math.PI, 0, dx, [Math.min(x, x - dx * (w - 1)) * S, cy - 40, (Math.max(x, x - dx * (w - 1)) + 1) * S, cy + 40], bay]; }
     }
     return null;
   };
@@ -735,7 +743,7 @@ VR.parkCars = (world, n, near) => {
     const s = spot(x, y);
     if (!s || inDemo(s[0], s[1])) continue;
     const band = s[5]; if (world.boxOverlap(band[0], band[1], band[2], band[3])) continue; // nada enfrente ni pegado
-    if (rnd() < 0.25) { // 2 o 3 motos en batería contra el cordón
+    if (s[6] === 'moto' || (!s[6] && rnd() < 0.25)) { // 2 o 3 motos en batería contra el cordón (en los cajones de moto, siempre motos)
       const [cx, cy, , dy, dx] = s, k = 2 + ((rnd() * 2) | 0);
       for (let i = 0; i < k; i++) {
         const mx = dy ? cx - 14 + i * 14 : cx + dx * 5, my = dy ? cy + dy * 5 : cy - 14 + i * 14;

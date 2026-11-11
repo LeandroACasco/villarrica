@@ -167,7 +167,9 @@ Cada chunk de 16×16 baldosas se pinta **una vez** en un canvas fuera de pantall
 1. **piso** — cada baldosa con su textura (`VR.tileset.draw`), con variante para que no se repita.
 2. **`VR.decor[kind](g, d)`** — decoraciones **a ras del piso** (sendas, canchas, piso del cuartel, base del monumento…).
 3. **cordones** de vereda, de plazas y canteros; tapas y rejillas.
-4. **cebras**, líneas de calle, **macetas** (`VR.drawPot`).
+4. **cebras**, líneas de calle, **cajones de estacionamiento** (`VR.drawBay`), **macetas** (`VR.drawPot`).
+
+   **Valores de `line`** (una por baldosa, `Uint8`): 1 línea amarilla E-O, 2 línea amarilla N-S, 3 cebra de barras verticales (calle N-S), 4 cebra horizontal (calle E-O), **5-8 cajón de auto, fila pegada al cordón, 9-12 cajón de moto en batería, 13-16 cajón de auto, fila de al lado** (11/11/2026). En 5-16, `(l-5)>>2` es el tipo (0, 1, 2) y `(l-5)&3` dónde está el cordón (0 sur, 1 norte, 2 este, 3 oeste). Las pinta `tools/osm_to_map.py` (después de las cebras) solo en el Centro, sobre asfalto, en calles de 4 baldosas o más (en las de 4, de un solo lado por tramo), rectas, a 4 baldosas o más de un cruce y lejos de las cuadras de la plaza y de los estacionados puestos a mano (esos tienen `parkingDemo`/`fila`). Medidas en `VR.BAY` (`world.js`): raya de auto cada 54 unidades, de moto cada 14, línea de borde del auto a 22 unidades del cordón. `VR.parkCars` (`car.js`, función `spot`) lee estos valores: en un cajón de moto solo pone motos, en uno de auto solo autos, y los centra en el cajón (`snap`); en las calles de 4 baldosas solo estaciona dentro de un cajón pintado. **Cebras:** se pintan con `GAP = 1` baldosa (2 m) de calle lisa entre el cruce y la cebra (11/11/2026: antes quedaban pegadas a la esquina).
 5. **diagonales** — `VR.drawDiagonals` pinta lisas las calles inclinadas (ver §5.1).
 6. **sombras**, **troncos** de árboles.
 7. **edificios** — `VR.drawBuildingColumn` (fachada, techo, ventanas, colores de `VR.BPAL`).
