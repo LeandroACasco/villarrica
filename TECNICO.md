@@ -468,3 +468,9 @@ Consejo: pasale a la IA **solo los archivos que dice la receta** (los archivos s
 - `game/retrato.js`: `VR.retrato(look, id, exp, open, color)` dibuja el avatar a k = 16 con una cara propia (ojos con iris y brillo, cejas, nariz, boca, arrugas en los mayores, barba y lentes redibujados) y fondo con el color del personaje (variante D del mockup). Expresiones: `neutral`, `feliz`, `enojado`, `triste`, `sorpresa`, `duda`; `open` = boca abierta (se alterna mientras se escribe el texto). ~70 ms por cara, con caché.
 - Ganchos en `avatar2.js` (`L._face` antes del pelo: mejillas, nariz, boca, barba; `L._face2` después: ojos, cejas, lentes). Sin esas marcas el avatar se dibuja igual que siempre: **la tienda y el juego no cambian**.
 - En los diálogos, una línea puede llevar `exp: 'enojado'` (etc.); si no, `!` → feliz, `?` → duda, otro → neutral.
+
+## Interior de la pieza (11/11/2026)
+- `game/pieza.js`: `VR.Pieza` (en Historia: `VR.pieza`). Escena aparte de 256×224 (`#piezaView`) con su propio bucle; el juego queda en pausa (`VR.loop.paused`). Entrás con ACCIÓN en la puerta de tu pieza (lugar `pieza`, menú "Entrar a la pieza"); salís por la puerta o con 🚪 Salir.
+- Adentro: cama (dormir → `vida.dormir()`), ropero (abre la tienda en modo ropero), radio, ventana, anafe (mate cocido +6 hambre), conservadora/heladera, manchas para limpiar (6; con 3 limpias aparece el gato Mbarakaja, con 6 Ña Ramona da 20.000 Gs. una vez), cucaracha (chinelazo), vecinos que se oyen por la pared, y los muebles comprados: colchón, ventilador, heladera, tele, sillón, cortinas, alfombra y lengua de suegra.
+- Estado en `vida.s.pieza`: `items`, `manchas` (máscara de 6 bits), `gato`, `premio`, `heladDia`. Al dormir vuelve una mancha y mejor pieza = menos hambre al despertar (+2 por mueble, máx. 8); el colchón nuevo cura toda la vida (si no, 40).
+- App **🛒 Mercadito** del celular (`VR.PIEZA_ITEMS`): se paga con la billetera electrónica y el mueble aparece adentro.

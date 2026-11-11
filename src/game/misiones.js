@@ -519,8 +519,8 @@ VR.PUNTOS = {
   pieza: { lugar: 'pieza', nombre: 'Tu pieza', ico: '🏠', mini: '⌂',
     menu: (M) => { const V = M.vida, P = V.s.pieza;
       if (P.fuera) return [['ramona', 'Ndaikatúi reike, mitã. Primero pagame lo que me debés: ' + VR.fmtGs(P.saldo) + '.']];
-      return [{ quien: 'sis', titulo: '🏠 Tu pieza', txt: V.diaSemana + ' ' + V.hhmm + '. ' + (V.puedeDormir() ? 'Ya se puede dormir hasta las 6:00 (se guarda la partida).' : 'Dormir se puede desde las 18:00.'), op: [
-        ['😴 Dormir hasta las 6:00', () => { V.dormir(); return false; }], ['Salir', () => false]] }]; },
+      return [{ quien: 'sis', titulo: '🏠 Tu pieza', txt: V.diaSemana + ' ' + V.hhmm + '. Tu pieza: cama, ropero, anafe y vecinos con mucho que opinar.', op: [
+        ['🚪 Entrar a la pieza', () => { if (VR.pieza) VR.pieza.entrar(); else V.dormir(); return false; }], ['Salir', () => false]] }]; },
     draw: (g, x, y) => { // felpudo y cartelito con el número de la pieza
       g.fillStyle = '#8a3a2a'; g.fillRect(x - 6, y - 4, 12, 5); g.fillStyle = '#b05a3a'; g.fillRect(x - 5, y - 3, 10, 3);
       VR.gfx.text(g, '🏠', x, y - 10, '#fff', { center: true, size: 7 });

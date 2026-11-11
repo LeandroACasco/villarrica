@@ -35,7 +35,7 @@ VR.DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 VR.Vida = class {
   constructor() {
-    const d = { min: 7 * 60, hambre: 80, saldo: 0, debe: 0, banco: 0, canasto: false, stock: 0, fiado: 0, pieza: { saldo: 0, vence: 5 * 1440 + 12 * 60, fuera: false }, mov: [], metas: [], aviso: 0, celu: 'roto', prestamos: [] };
+    const d = { min: 7 * 60, hambre: 80, saldo: 0, debe: 0, banco: 0, canasto: false, stock: 0, fiado: 0, pieza: { saldo: 0, vence: 5 * 1440 + 12 * 60, fuera: false, items: {}, manchas: 0, gato: false, premio: false, heladDia: -1 }, mov: [], metas: [], aviso: 0, celu: 'roto', prestamos: [] };
     const s = VR.store.get('vida', null);
     this.s = Object.assign(d, s || {}); this.s.pieza = Object.assign(d.pieza, (s && s.pieza) || {});
     this.nueva = !s; this.onMsg = null; this.onDesmayo = null; this._hud = ''; this._acc = 0; this._save = 0;
@@ -110,7 +110,7 @@ VR.Vida = class {
     const s = this.s; if (s.pieza.fuera) { this.msg('🏠 Ña Ramona te sacó las cosas: pagale lo que debés para volver'); return false; }
     if (!this.puedeDormir()) { this.msg('😴 Todavía es temprano para dormir (desde las 18:00)'); return false; }
     const d0 = Math.floor(s.min / 1440) + (this.hora >= 18 ? 1 : 0), dm = d0 * 1440 + 6 * 60 - s.min;
-    const h = s.hambre; s.hambre = 100; this.tick(dm / 0.8); s.hambre = Math.max(5, h - 15); // dormido no te desmayás: la noche baja solo un poco el hambre (antes te podías desmayar durmiendo y pagabas el hospital) this.sync(); this.save(); this.msg('😴 Dormiste en la pieza · ' + this.diaSemana + ' 6:00 · partida guardada'); return true;
+    const h = s.hambre; s.hambre = 100; this.tick(dm / 0.8); { const P = s.pieza, mej = Object.keys(P.items || {}).length; s.hambre = Math.max(5, h - 15 + Math.min(8, mej * 2)); if (VR.heal) VR.heal(P.items && P.items.colchon ? 100 : 40); P.manchas = (P.manchas | 0) & ~(1 << ((Math.random() * 6) | 0)); } // mejor pieza = mejor descanso; la mugre vuelve de a poco // dormido no te desmayás: la noche baja solo un poco el hambre (antes te podías desmayar durmiendo y pagabas el hospital) this.sync(); this.save(); this.msg('😴 Dormiste en la pieza · ' + this.diaSemana + ' 6:00 · partida guardada'); return true;
   }
   // comprarle chipa a Doña Chela para el canasto (se paga con lo que hay y el resto queda fiado)
   llenaCanasto(n, fiar) {

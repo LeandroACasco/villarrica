@@ -238,9 +238,10 @@
   const nearCine = () => cineDoor && !car && Math.hypot(player.x - cineDoor.x, player.y - cineDoor.y) < 40 ? cineDoor : null;
   const nearShop = () => shopDoor && !car && Math.abs(player.x - shopDoor.x) < 26 && player.y > shopDoor.y - 30 && player.y < shopDoor.y + 4 ? shopDoor : null;
   const shop = new VR.Shop({
-    onClose: () => { shop.ropero = false; VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = false; },
+    onClose: () => { shop.ropero = false; VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = !!(VR.pieza && VR.pieza.on); },
     onBuy: (L, tot) => { settings.pj = 'propio'; VR.store.set('pj', 'propio'); player.setLook('propio'); if (car && car.rider) car.rider = me(); paintPj(); toast(tot ? '🛍 ¡Aguyje! Pagaste ' + VR.fmtGs(tot) : '👕 Listo, te cambiaste'); },
   });
+  if (vida) VR.pieza = new VR.Pieza({ vida, player, busy: () => !!(shop.el && shop.el.open), ropero: () => { shop.ropero = true; openShop(); } }); // interior de la pieza (11/11/2026)
   function openShop() { VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; shop.open(player.lookData); }
   VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()); };
   VR.Wallet.onChange();
@@ -565,7 +566,7 @@
     if (celApp === 'home') {
       const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['metas', '📝', 'Notas', '#ffe27a', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
-        ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
+        ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
       h = '<h3>🛵 Mbohasa</h3>';
@@ -593,6 +594,10 @@
       h = '<h3>📋 Changas</h3><p>Trabajos para ganar plata. Los 🔒 se abren con las misiones.</p>' + Object.keys(changas.lbl).filter((k) => k !== 'x').map((k) => '<button class="cbtn' + (k === 'no' ? ' sec' : '') + '" data-ch="' + k + '">' + (k !== 'no' && mis && !mis.changaOk(k) ? '🔒 ' : '') + changas.lbl[k] + '</button>').join('');
     } else if (celApp === 'mis' || celApp === 'mapa') {
       h = '';
+    } else if (celApp === 'merc') {
+      const items = s.pieza.items || {};
+      h = '<h3>🛒 Mercadito</h3><p>Muebles para tu pieza. Se pagan con la billetera electrónica (tenés ' + gs(s.banco) + ') y te los dejan adentro.</p>' + (s.pieza.fuera ? '<p>🏠 Ña Ramona te sacó las cosas: pagale lo que debés para volver.</p>' : '') +
+        VR.PIEZA_ITEMS.map((it) => '<div class="row2"><span>' + it.ico + ' ' + it.n + '<br><small style="color:#9ab;font-weight:500">' + it.d + '</small></span>' + (items[it.k] ? '<b style="color:#7fe08a">✔ tuyo</b>' : '<button class="cbtn" style="width:auto;margin:0;padding:8px 10px" data-buy="' + it.k + '"' + (s.banco < it.p || s.pieza.fuera ? ' disabled' : '') + '>' + gs(it.p) + '</button>') + '</div>').join('');
     } else if (celApp === 'galeria') {
       const L = VR.Fotos.list(); h = '<h3>🖼 Galería</h3>' + (L.length ? '<div class="gal">' + L.map((f, i) => '<img data-f="' + i + '" src="' + f.u + '">').join('') + '</div><p>Tocá una foto para verla. Se guardan las últimas 14.</p>' : '<p>Todavía no sacaste fotos. Abrí la 📷 Cámara y recorré la ciudad.</p>');
     } else if (typeof celApp === 'string' && celApp.startsWith('foto')) {
@@ -611,6 +616,7 @@
     if (celApp === 'mis' && mis) paintMis(celBody, true);
     if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
     if (celApp === 'culebra') celStop = VR.Culebra(celBody);
+    celBody.querySelectorAll('[data-buy]').forEach((b) => b.onclick = () => { const it = VR.PIEZA_ITEMS.find((q) => q.k === b.dataset.buy); if (!it || !vida.pagaBanco(it.p, 'Mercadito: ' + it.n)) { paintCel(); return; } vida.s.pieza.items = vida.s.pieza.items || {}; vida.s.pieza.items[it.k] = 1; vida.save(); toast('📦 ' + it.n + ': te lo dejan en la pieza'); paintCel(); });
     celBody.querySelectorAll('[data-f]').forEach((im) => im.onclick = () => { celApp = 'foto' + im.dataset.f; paintCel(); });
     celBody.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { VR.Fotos.del(+b.dataset.del); celApp = 'galeria'; paintCel(); });
     celBody.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => { const a = b.dataset.a;
