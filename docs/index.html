@@ -400,7 +400,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 1ee8adaf · 2026-11-11</div>
+  <div class="tVer">Versión 97d720b4 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -492,7 +492,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 1ee8adaf · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 97d720b4 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -11527,7 +11527,11 @@ VR.Titulo = class {
     mapInner.style.setProperty('--ik', 1 / mv.k);
     // nombres chicos solo cuando hay zoom suficiente
     $('mapLabels').classList.toggle('far', mv.k < fk * 1.8);
+    // 11/11/2026: los iconos de misión/amigos/entradas están en pantalla (no dentro del mapa que se escala): se reubican en cada zoom o arrastre
+    // (antes solo cada 500 ms y "bailaban"). Un solo redibujado por cuadro.
+    if (mapOpen && !mapFr) mapFr = requestAnimationFrame(() => { mapFr = 0; if (mapOpen) drawMapFriends(); });
   }
+  let mapFr = 0;
   function mapZoom(f, cx = mw() / 2, cy = mh() / 2) {
     const k0 = mv.k, k1 = VR.clamp(k0 * f, fitK() * 0.9, 14);
     mv.ox = cx - (cx - mv.ox) * k1 / k0; mv.oy = cy - (cy - mv.oy) * k1 / k0; mv.k = k1; mapApply();

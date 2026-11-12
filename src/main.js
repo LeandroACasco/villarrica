@@ -829,7 +829,11 @@
     mapInner.style.setProperty('--ik', 1 / mv.k);
     // nombres chicos solo cuando hay zoom suficiente
     $('mapLabels').classList.toggle('far', mv.k < fk * 1.8);
+    // 11/11/2026: los iconos de misión/amigos/entradas están en pantalla (no dentro del mapa que se escala): se reubican en cada zoom o arrastre
+    // (antes solo cada 500 ms y "bailaban"). Un solo redibujado por cuadro.
+    if (mapOpen && !mapFr) mapFr = requestAnimationFrame(() => { mapFr = 0; if (mapOpen) drawMapFriends(); });
   }
+  let mapFr = 0;
   function mapZoom(f, cx = mw() / 2, cy = mh() / 2) {
     const k0 = mv.k, k1 = VR.clamp(k0 * f, fitK() * 0.9, 14);
     mv.ox = cx - (cx - mv.ox) * k1 / k0; mv.oy = cy - (cy - mv.oy) * k1 / k0; mv.k = k1; mapApply();
