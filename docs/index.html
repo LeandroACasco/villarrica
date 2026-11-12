@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 114cf42b · 2026-11-12</div>
+  <div class="tVer">Versión 349bc11f · 2026-11-12</div>
 </div>
 <div id="fade"></div>
 
@@ -505,7 +505,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 114cf42b · 2026-11-12</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 349bc11f · 2026-11-12</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -994,6 +994,7 @@ VR.audio = {
   blip() { this.tone(880 + Math.random() * 120, 0.04, { type: 'square', vol: 0.025 }); }, // cada línea de diálogo (J2)
   coin() { this.tone(988, 0.07, { type: 'square', vol: 0.05 }); this.tone(1319, 0.16, { type: 'square', vol: 0.05, at: 0.07 }); }, // cobro o paso cumplido
   bark(x, y, yelp) { const v = this.near(x, y, 420) * 0.07; if (v <= 0) return; if (yelp) { this.tone(900, 0.12, { type: 'triangle', vol: v, f2: 1500 }); this.tone(1200, 0.1, { type: 'triangle', vol: v, f2: 700, at: 0.14 }); return; } const f = 190 + Math.random() * 60; this.tone(f, 0.09, { type: 'sawtooth', vol: v, f2: f * 0.6 }); this.tone(f * 1.05, 0.09, { type: 'sawtooth', vol: v * 0.8, f2: f * 0.6, at: 0.15 }); },
+  muu(x, y) { const v = this.near(x, y, 420) * 0.08; if (v <= 0) return; const f = 110 + Math.random() * 25; this.tone(f, 0.9, { type: 'sawtooth', vol: v, f2: f * 0.8, lp: 700 }); this.tone(f * 2, 0.8, { type: 'triangle', vol: v * 0.4, f2: f * 1.6, lp: 900, at: 0.05 }); }, // mugido de las vacas
   ouch(x, y) { const v = this.near(x, y, 300) * 0.05; if (v <= 0) return; const f = 300 + Math.random() * 180; this.tone(f, 0.18, { type: 'triangle', vol: v, f2: f * 0.6 }); },
   shot(x, y) { const v = this.near(x, y, 600) * 0.32; if (v <= 0.01) return; this.noise(0.16, { vol: v, lp: 3200, hp: 300 }); this.tone(160, 0.08, { type: 'square', vol: v * 0.5, f2: 60 }); },
   // ---- sonidos continuos: motor, agua y lanzallamas ----
@@ -9131,6 +9132,7 @@ VR.Cisnes = class {
 // - Pececitos: cardúmenes oscuros bajo el agua turbia, alguno anaranjado; de vez en cuando uno salta.
 // - Palomas: bandadas en la laguna, la Plaza de los Héroes y las demás plazas; si te acercás salen volando y bajan
 //   más lejos. También vuelan con tiros, explosiones y gente que se dispersa (peds.scatter).
+// - Vacas (12/11/2026, pedido de Leandro): manadas que pastan en el pasto abierto de Santa Lucía y San Miguel (`VR.Vacas`, al final).
 // Todo es local de cada jugador (no viaja online) y solo se mueve lo que está cerca de la cámara.
 'use strict';
 (() => {
@@ -9267,7 +9269,7 @@ VR.Cisnes = class {
     constructor(world) {
       this.world = world; this.ready = false; this.t = 0;
       this.herds = []; this.ducks = []; this.fish = []; this.flocks = []; this.rip = []; this.herons = [];
-      this.scares = [];
+      this.scares = []; this.vacas = new VR.Vacas(world);
     }
     tile(x, y) { return this.world.get(Math.floor(x / S), Math.floor(y / S)); }
     water(x, y) { return this.tile(x, y) === T.LAGUNA; }
@@ -9345,6 +9347,7 @@ VR.Cisnes = class {
       if (VR.audio && VR.audio.lago) { const dx = Math.max(L ? L.x0 - cam.x : 1e4, 0, L ? cam.x - L.x1 : 0), dy = Math.max(L ? L.y0 - cam.y : 1e4, 0, L ? cam.y - L.y1 : 0); VR.audio.lago(L ? Math.max(0, 1 - Math.hypot(dx, dy) / 260) : 0); } // sonido de la laguna: se oye cerca de la orilla
       if (this.netOn) this.netStep(dt);
       else for (const f of this.flocks) if (Math.abs(f.hx - cam.x) < 1100 && Math.abs(f.hy - cam.y) < 900) this.updFlock(f, dt, threats, cam);
+      this.vacas.update(dt, cam, threats, this.scares);
       this.scares.length = 0;
     }
 
@@ -9657,6 +9660,7 @@ VR.Cisnes = class {
     // lo que tiene altura (en tierra o volando): se ordena con la gente; lo que vuela, arriba de todo
     collect(cx, cy, sw, sh, tall) {
       if (!this.ready) return;
+      this.vacas.collect(cx, cy, sw, sh, tall);
       const inV = (x, y) => x - cx > -40 && x - cx < sw + 40 && y - cy > -60 && y - cy < sh + 60;
       for (const h of this.herds) for (const c of h.list) {
         if (c.swim || !inV(c.x, c.y)) continue;
@@ -9678,6 +9682,126 @@ VR.Cisnes = class {
         if (!inV(b.x, b.y - b.alt)) continue;
         if (b.alt > 0.5 || (b.flying && b.delay <= 0)) { const img = pigFlyImg(b.ci, Math.floor(b.anim) & 1); tall.push({ sy: 1e7 + b.y, draw: (g) => g.drawImage(img, Math.round(b.x - cx - 4.5), Math.round(b.y - cy - b.alt - 6), 9, 6) }); }
         else { const img = pigImg(b.ci, b.dir, b.peck > 0 && Math.sin(b.anim * 2) > 0, b.walk > 0 ? Math.floor(b.anim) & 1 : 0); tall.push({ sy: b.y, draw: (g) => g.drawImage(img, Math.round(b.x - cx - 3.5), Math.round(b.y - cy - 6), 7, 6) }); }
+      }
+    }
+  };
+
+  // ---------- vacas ----------
+  // seis pelajes: 0 holando, 1 holando con más negro, 2 marrón y blanca, 3 criolla marrón, 4 negra, 5 crema
+  const COWS = [
+    { b: '#f1eee6', s: '#cfc9bb', p: '#26262b', pt: [[12, 9, 6, 4], [24, 14, 7, 4.5], [30, 8, 3.5, 3], [8, 15, 3, 3]] },
+    { b: '#ece8de', s: '#c6c0b0', p: '#2a2a2f', pt: [[10, 10, 8, 5], [22, 8, 6, 4], [28, 15, 6, 4], [16, 16, 4, 3], [33, 10, 3.5, 3.5]] },
+    { b: '#efe9dc', s: '#c9c0aa', p: '#8e5a34', pt: [[13, 10, 7, 4.5], [25, 15, 6, 4], [31, 9, 4, 3.5]] },
+    { b: '#9a6a40', s: '#6f4a2a', p: '#b27d4e', pt: [[16, 9, 9, 3], [27, 14, 5, 3]] },
+    { b: '#34343a', s: '#1f1f24', p: '#44444b', pt: [[16, 9, 9, 3], [25, 13, 5, 3]] },
+    { b: '#e6d5b4', s: '#bba98a', p: '#d2bd96', pt: [[15, 9, 8, 3.5], [26, 14, 5, 3]] },
+  ];
+  const COW_O = '#2b1c14', COW_PINK = '#e6a39a', COW_HORN = '#e9e1c8';
+  function cowSide(v, s, f, graze) {
+    const C = COWS[v], W = Math.ceil(46 * s), H = Math.ceil(30 * s), q = (x) => x * s;
+    return sprite(W, H, (px, ell) => {
+      const leg = (x, up, back) => { px(q(x), q(up ? 18 : 19), Math.max(2, q(3.4)), Math.max(3, q(up ? 6 : 7)), back ? C.s : C.b); px(q(x), q(up ? 23 : 25), Math.max(2, q(3.4)), Math.max(1, q(1.6)), '#3b2a1c'); };
+      leg(10, f === 1, true); leg(14, f === 0, true); leg(28, f === 0, false); leg(32, f === 1, false);
+      px(q(2), q(9), Math.max(1, q(1.6)), q(11), C.p === '#26262b' || C.p === '#2a2a2f' ? C.p : C.s); px(q(1), q(19), Math.max(2, q(3)), Math.max(2, q(3)), C.p === '#44444b' ? C.s : '#2a2a2f'); // cola con mechón
+      ell(q(21), q(14), q(15), q(7.6), C.b);
+      ell(q(21), q(18), q(13.5), q(3.4), C.s);
+      for (const [cx, cy, rx, ry] of C.pt) ell(q(cx + 6), q(cy + 2), q(rx), q(ry), C.p);
+      px(q(18), q(19), q(5), Math.max(2, q(3)), COW_PINK); // ubre
+      const hy = graze ? 8 : 0;
+      ell(q(33), q(10 + hy * 0.6), q(5.6), q(5.6), C.b); // pescuezo
+      ell(q(39), q(11 + hy), q(5), q(4.2), C.b); // cabeza
+      px(q(41.5), q(12 + hy), q(4), q(4), COW_PINK); // hocico
+      px(q(44), q(13 + hy), Math.max(1, q(1)), Math.max(1, q(1.5)), '#8a4b46');
+      if (C.p !== C.b) ell(q(37), q(9.5 + hy), q(3), q(2.6), C.p === '#8e5a34' || C.p === '#b27d4e' || C.p === '#d2bd96' ? C.p : C.p);
+      px(q(38), q(9 + hy), 1, 1, '#14100c'); // ojo
+      px(q(35.2), q(6.5 + hy), Math.max(2, q(3)), Math.max(1, q(1.5)), C.s); // oreja
+      px(q(37), q(5.5 + hy), Math.max(1, q(1.4)), Math.max(1, q(2)), COW_HORN); // cuerno
+    }, COW_O);
+  }
+  function cowFront(v, s, f, back) {
+    const C = COWS[v], W = Math.ceil(28 * s), H = Math.ceil(32 * s), q = (x) => x * s;
+    return sprite(W, H, (px, ell) => {
+      px(q(6), q(back ? 22 : 23) - (f ? 1 : 0), Math.max(3, q(4)), Math.max(3, q(7)), C.s); px(q(18), q(back ? 22 : 23) - (f ? 0 : 1), Math.max(3, q(4)), Math.max(3, q(7)), C.s);
+      ell(q(14), q(14), q(10), q(10.5), C.b);
+      for (const [cx, cy, rx, ry] of C.pt) ell(q(cx * 0.55 + 4), q(cy + 4), q(rx * 0.8), q(ry * 0.8), C.p);
+      if (back) { px(q(13), q(8), Math.max(1, q(1.6)), q(13), C.s); px(q(12), q(21), Math.max(2, q(3)), Math.max(2, q(3)), '#2a2a2f'); ell(q(14), q(5), q(4), q(3), C.b); px(q(8), q(3), Math.max(2, q(3)), Math.max(1, q(1.5)), C.s); px(q(19), q(3), Math.max(2, q(3)), Math.max(1, q(1.5)), C.s); }
+      else {
+        ell(q(14), q(21), q(5.2), q(5.6), C.b); px(q(10.5), q(22), q(7), q(5), COW_PINK); px(q(11.5), q(24), 1, 1, '#8a4b46'); px(q(15.5), q(24), 1, 1, '#8a4b46');
+        px(q(10), q(17.5), 1, 1, '#14100c'); px(q(17), q(17.5), 1, 1, '#14100c');
+        px(q(5), q(15.5), Math.max(3, q(4)), Math.max(1, q(1.6)), C.s); px(q(19), q(15.5), Math.max(3, q(4)), Math.max(1, q(1.6)), C.s);
+        px(q(7), q(13.5), Math.max(1, q(1.4)), Math.max(1, q(2)), COW_HORN); px(q(20), q(13.5), Math.max(1, q(1.4)), Math.max(1, q(2)), COW_HORN);
+      }
+    }, COW_O);
+  }
+  function cowImg(v, s, dir, f, graze) {
+    return get('v' + v + s + dir + f + (graze ? 'g' : ''), () => dir === 'r' ? cowSide(v, s, f, graze) : dir === 'l' ? flip(cowImg(v, s, 'r', f, graze)) : cowFront(v, s, f, dir === 'u'));
+  }
+
+  VR.Vacas = class {
+    constructor(world) { this.world = world; this.ready = false; this.herds = []; this.t = 0; this.mu = 5; }
+    tile(x, y) { return this.world.get(Math.floor(x / S), Math.floor(y / S)); }
+    ok(x, y) { const t = this.tile(x, y); return (t === T.GRASS || t === T.DIRT) && !this.world.hits(x - 5, y - 3, x + 5, y + 2); }
+    init() {
+      this.ready = true;
+      const W = this.world, w = W.w, h = W.h, tiles = W.tiles, names = W.barrios || [], OK = new Uint8Array(16); OK[T.GRASS] = 1; OK[T.DIRT] = 1;
+      if (!W.barrio) return;
+      const want = new Map(); names.forEach((n, i) => { if (/santa luc[ií]a/i.test(n)) want.set(i + 1, 9); else if (/san miguel/i.test(n)) want.set(i + 1, 7); });
+      const cand = new Map(); for (const b of want.keys()) cand.set(b, []);
+      for (let y = 8; y < h - 8; y += 3) for (let x = 8; x < w - 8; x += 3) {
+        const b = W.barrio[y * w + x]; if (!want.has(b)) continue;
+        let good = true; for (let dy = -4; dy <= 4 && good; dy += 2) for (let dx = -4; dx <= 4; dx += 2) if (!OK[tiles[(y + dy) * w + x + dx]]) { good = false; break; }
+        if (good) cand.get(b).push([x * S + 8, y * S + 8]);
+      }
+      for (const [b, L] of cand) {
+        let n = want.get(b), tries = 0; const mine = [];
+        while (n > 0 && L.length && tries++ < 400) {
+          const [hx, hy] = pick(L);
+          if (mine.some((m) => Math.hypot(m[0] - hx, m[1] - hy) < 340)) continue;
+          mine.push([hx, hy]); n--;
+          const k = 3 + ((Math.random() * 4) | 0), vv = pick([0, 0, 1, 2, 3, 3, 4, 5]), list = [];
+          for (let i = 0; i < k; i++) {
+            let x = hx, y = hy; for (let j = 0; j < 14; j++) { const a = rnd(0, 6.28), r = rnd(6, 44), qx = hx + Math.cos(a) * r, qy = hy + Math.sin(a) * r; if (this.ok(qx, qy) && list.every((c) => Math.hypot(c.x - qx, c.y - qy) > 15)) { x = qx; y = qy; break; } }
+            list.push({ x, y, v: Math.random() < 0.7 ? vv : pick([0, 1, 2, 3, 4, 5]), s: i === k - 1 && k > 3 ? 0.68 : rnd(1.08, 1.2), dir: pick(['l', 'r', 'd']), anim: Math.random() * 3, mode: 'graze', wt: rnd(2, 9), tx: x, ty: y, flee: 0 });
+          }
+          this.herds.push({ hx, hy, list });
+        }
+      }
+    }
+    update(dt, cam, th, scares) {
+      if (!this.ready) this.init();
+      this.t += dt; this.mu -= dt;
+      for (const hd of this.herds) {
+        if (Math.abs(hd.hx - cam.x) > 800 || Math.abs(hd.hy - cam.y) > 640) continue;
+        for (const c of hd.list) {
+          c.anim += dt * (c.mode === 'graze' ? 1.4 : c.flee > 0 ? 7 : 3.4);
+          let fx = 0, fy = 0, run = 0;
+          for (const t of th) { if (t.r) continue; const dx = c.x - t.x, dy = c.y - t.y, d = Math.hypot(dx, dy) || 1, lim = t.sp > 70 ? 110 : t.sp > 0 ? 48 : 20; if (d < lim) { fx += dx / d; fy += dy / d; run = Math.max(run, t.sp > 70 ? 2 : 1); } }
+          for (const s of scares) { const dx = c.x - s.x, dy = c.y - s.y, d = Math.hypot(dx, dy) || 1; if (d < s.r) { fx += dx / d; fy += dy / d; run = 2; } }
+          if (fx || fy) { const m = Math.hypot(fx, fy) || 1; c.flee = 1.2; c.fx = fx / m; c.fy = fy / m; c.run = run; c.mode = 'walk'; }
+          if (c.flee > 0) {
+            c.flee -= dt; const sp = c.run === 2 ? 34 : 17, nx = c.x + c.fx * sp * dt, ny = c.y + c.fy * sp * dt;
+            if (this.ok(nx, ny)) { c.x = nx; c.y = ny; c.dir = Math.abs(c.fx) > Math.abs(c.fy) ? (c.fx > 0 ? 'r' : 'l') : (c.fy > 0 ? 'd' : 'u'); } else c.flee = 0;
+            if (c.flee <= 0) { c.mode = 'graze'; c.wt = rnd(3, 7); c.tx = c.x; c.ty = c.y; }
+            continue;
+          }
+          c.wt -= dt;
+          if (c.mode === 'graze') { if (c.wt <= 0) { for (let j = 0; j < 8; j++) { const a = rnd(0, 6.28), r = rnd(10, 30), qx = c.x + Math.cos(a) * r, qy = c.y + Math.sin(a) * r; if (Math.hypot(qx - hd.hx, qy - hd.hy) < 80 && this.ok(qx, qy)) { c.tx = qx; c.ty = qy; c.mode = 'walk'; break; } } c.wt = rnd(2, 6); } }
+          else {
+            const dx = c.tx - c.x, dy = c.ty - c.y, d = Math.hypot(dx, dy);
+            if (d < 2 || c.wt < -8) { c.mode = 'graze'; c.wt = rnd(5, 13); }
+            else { const nx = c.x + dx / d * 7 * dt, ny = c.y + dy / d * 7 * dt; if (this.ok(nx, ny)) { c.x = nx; c.y = ny; c.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'r' : 'l') : (dy > 0 ? 'd' : 'u'); } else { c.mode = 'graze'; c.wt = rnd(3, 6); } }
+          }
+        }
+        if (this.mu <= 0 && VR.audio && VR.audio.muu) { const c = hd.list[(Math.random() * hd.list.length) | 0]; VR.audio.muu(c.x, c.y); this.mu = rnd(7, 16); }
+      }
+    }
+    collect(cx, cy, sw, sh, tall) {
+      if (!this.ready) return;
+      for (const hd of this.herds) for (const c of hd.list) {
+        if (c.x - cx < -40 || c.x - cx > sw + 40 || c.y - cy < -50 || c.y - cy > sh + 50) continue;
+        const moving = c.mode === 'walk' || c.flee > 0, f = moving ? (Math.floor(c.anim) & 1) : 0, gz = c.mode === 'graze' && (c.dir === 'l' || c.dir === 'r');
+        const img = cowImg(c.v, c.s, c.dir, f, gz), w = img.width / P, hh = img.height / P;
+        tall.push({ sy: c.y, draw: (g) => { g.fillStyle = 'rgba(0,0,0,0.22)'; g.beginPath(); g.ellipse(c.x - cx, c.y - cy - 1, w * 0.42, 3, 0, 0, 6.283); g.fill(); g.drawImage(img, Math.round(c.x - cx - w / 2), Math.round(c.y - cy - hh + 2), w, hh); } });
       }
     }
   };

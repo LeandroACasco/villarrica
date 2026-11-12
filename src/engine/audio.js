@@ -46,6 +46,7 @@ VR.audio = {
   blip() { this.tone(880 + Math.random() * 120, 0.04, { type: 'square', vol: 0.025 }); }, // cada línea de diálogo (J2)
   coin() { this.tone(988, 0.07, { type: 'square', vol: 0.05 }); this.tone(1319, 0.16, { type: 'square', vol: 0.05, at: 0.07 }); }, // cobro o paso cumplido
   bark(x, y, yelp) { const v = this.near(x, y, 420) * 0.07; if (v <= 0) return; if (yelp) { this.tone(900, 0.12, { type: 'triangle', vol: v, f2: 1500 }); this.tone(1200, 0.1, { type: 'triangle', vol: v, f2: 700, at: 0.14 }); return; } const f = 190 + Math.random() * 60; this.tone(f, 0.09, { type: 'sawtooth', vol: v, f2: f * 0.6 }); this.tone(f * 1.05, 0.09, { type: 'sawtooth', vol: v * 0.8, f2: f * 0.6, at: 0.15 }); },
+  muu(x, y) { const v = this.near(x, y, 420) * 0.08; if (v <= 0) return; const f = 110 + Math.random() * 25; this.tone(f, 0.9, { type: 'sawtooth', vol: v, f2: f * 0.8, lp: 700 }); this.tone(f * 2, 0.8, { type: 'triangle', vol: v * 0.4, f2: f * 1.6, lp: 900, at: 0.05 }); }, // mugido de las vacas
   ouch(x, y) { const v = this.near(x, y, 300) * 0.05; if (v <= 0) return; const f = 300 + Math.random() * 180; this.tone(f, 0.18, { type: 'triangle', vol: v, f2: f * 0.6 }); },
   shot(x, y) { const v = this.near(x, y, 600) * 0.32; if (v <= 0.01) return; this.noise(0.16, { vol: v, lp: 3200, hp: 300 }); this.tone(160, 0.08, { type: 'square', vol: v * 0.5, f2: 60 }); },
   // ---- sonidos continuos: motor, agua y lanzallamas ----
