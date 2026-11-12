@@ -1,16 +1,21 @@
 // Apps extra del celular (11/11/2026): Cámara + Galería (fotos del juego) y Culebra (el clásico de los celulares viejos).
-// Todo original. Las fotos se guardan chicas (JPEG) en localStorage, hasta 14.
+// Todo original. Las fotos se guardan (JPEG nítido) en localStorage, hasta 12 (si no hay lugar, se borran las más viejas).
 (function () {
-  const KEY = 'vr_fotos', MAX = 14;
+  const KEY = 'vr_fotos', MAX = 12;
   VR.Fotos = {
     list() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } },
     save(l) { while (l.length) { try { localStorage.setItem(KEY, JSON.stringify(l)); return true; } catch (e) { l.pop(); } } return false; },
     // saca la foto del canvas del juego, con un marquito y el lugar / hora abajo
     snap(cv, caption) {
-      const W = 640, H = Math.round(W * cv.height / cv.width), o = document.createElement('canvas'); o.width = W; o.height = H + 26;
-      const g = o.getContext('2d'); g.imageSmoothingEnabled = false; g.fillStyle = '#f4efe4'; g.fillRect(0, 0, W, H + 26); g.drawImage(cv, 0, 0, W, H);
-      g.fillStyle = '#3a3226'; g.font = '700 13px system-ui'; g.textBaseline = 'middle'; g.fillText(caption, 10, H + 14);
-      const url = o.toDataURL('image/jpeg', 0.72), l = this.list(); l.unshift({ t: Date.now(), c: caption, u: url }); this.save(l.slice(0, MAX)); return url;
+      // 11/11/2026: nítida. Antes se achicaba a 640 px de ancho (en un teléfono el cuadro tiene más de 1000 px: salía borrosa) con JPEG 0,72.
+      // Ahora se guarda al tamaño real del cuadro (si es chico, se agranda por un entero con píxeles marcados; si es enorme, se achica suave a 1600 px)
+      // y el JPEG sale a calidad 0,9.
+      const M = Math.max(cv.width, cv.height); let k = M < 1100 ? Math.max(1, Math.round(1100 / M)) : 1, W = cv.width * k, H = cv.height * k, suave = false;
+      if (M > 1600) { const f = 1600 / M; W = Math.round(cv.width * f); H = Math.round(cv.height * f); suave = true; }
+      const B = Math.round(Math.max(30, Math.min(W, H) * 0.06)), o = document.createElement('canvas'); o.width = W; o.height = H + B;
+      const g = o.getContext('2d'); g.imageSmoothingEnabled = suave; g.imageSmoothingQuality = 'high'; g.fillStyle = '#f4efe4'; g.fillRect(0, 0, W, H + B); g.drawImage(cv, 0, 0, W, H);
+      g.fillStyle = '#3a3226'; g.font = '700 ' + Math.round(B * 0.45) + 'px system-ui'; g.textBaseline = 'middle'; g.fillText(caption, B * 0.4, H + B / 2);
+      const url = o.toDataURL('image/jpeg', 0.9), l = this.list(); l.unshift({ t: Date.now(), c: caption, u: url }); this.save(l.slice(0, MAX)); return url;
     },
     del(i) { const l = this.list(); l.splice(i, 1); this.save(l); },
   };
