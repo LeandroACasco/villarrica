@@ -32,6 +32,21 @@ VR.GPS = class {
     }
     return best;
   }
+  // punto de calle más cercano a (x, y) (a menos de r px): {a, b: nodos del tramo, px, py: punto proyectado, d: distancia} o null.
+  // Lo usa el Mbohasa para frenar junto a donde estás (los nodos pueden quedar a 200 px de distancia unos de otros).
+  nearEdge(x, y, r) {
+    let best = null, bd = r * r;
+    for (let i = 0; i < this.N; i++) {
+      const A = this.adj[i], ax = this.nx[i], ay = this.ny[i];
+      for (let k = 0; k < A.length; k += 3) {
+        if (A[k + 2]) continue; // mano contraria: ese sentido no va (el otro sentido del mismo tramo sí)
+        const m = A[k], dx = this.nx[m] - ax, dy = this.ny[m] - ay, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2));
+        const px = ax + dx * t, py = ay + dy * t, d2 = (px - x) ** 2 + (py - y) ** 2;
+        if (d2 < bd) { bd = d2; best = { a: i, b: m, px, py, d: Math.sqrt(d2) }; }
+      }
+    }
+    return best;
+  }
   // devuelve [x0, y0, x1, y1, ...] en px del mapa, desde (fx, fy) hasta (tx, ty), o null
   route(fx, fy, tx, ty, oneway) {
     if (!this.ok) return null;

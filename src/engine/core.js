@@ -44,7 +44,7 @@ VR.screen = {
     const s = this.live ? Math.max(0.7, raw) : raw >= 3 ? Math.round(raw) : Math.max(1, Math.round(raw * 2) / 2);
     this.scale = s;
     this.w = Math.ceil(dw / s); this.h = Math.ceil(dh / s);
-    const R = this.R = VR.RES = this.live ? (this.R || 1) : Math.min(2, s);
+    const R = this.R = VR.RES = this.live ? (this.R || 1) : Math.min(VR.hq ? 3 : 2, s); // VR.hq: calidad alta (Configuración)
     const cw = Math.round(this.w * R), ch = Math.round(this.h * R);
     if (this.canvas.width !== cw || this.canvas.height !== ch) { this.canvas.width = cw; this.canvas.height = ch; }
     this.canvas.style.width = (this.w * s / dpr) + 'px';

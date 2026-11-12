@@ -599,8 +599,12 @@ VR.Car = class {
     ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
     ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
     if (this.dents && this.dents.length && !this.wreck) VR.drawDents(ctx, this, x + shake, y, ak);
+    if (this.pasajero && this.pasajero.L) { // pasajero atrás del conductor (Mbohasa en moto)
+      const R = VR.riderTopFrames(this.pasajero.L, this.spec.rider), rh = R.S >> 1, ro = (this.spec.riderOff || 0) - 5;
+      ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - Math.round(Math.cos(a) * ro), R.S, R.S);
+    }
     if (this.rider && this.rider.L) { // el personaje de verdad (avatar 2) visto desde arriba, girando con la moto
-      const R = VR.riderTopFrames(this.rider.L, this.spec.rider), rh = R.S >> 1, ro = this.spec.riderOff || 0;
+      const R = VR.riderTopFrames(this.rider.L, this.spec.rider), rh = R.S >> 1, ro = (this.spec.riderOff || 0) + (this.pasajero ? 2 : 0);
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - Math.round(Math.cos(a) * ro), R.S, R.S);
     } else if (this.rider) {
       const R = VR.riderFrames(this.rider.shirt, this.rider.head, this.rider.o), rh = R.S >> 1;

@@ -11,7 +11,8 @@
   VR.store.ns = VR.modo === 'historia' ? 'h:' : '';
   document.body.classList.toggle('historia', VR.modo === 'historia');
   const vida = VR.vida = VR.modo === 'historia' ? new VR.Vida() : null;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque') };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque'), calidad: VR.store.get('calidad', 'normal') };
+  VR.hq = settings.calidad === 'alta'; // calidad de dibujo (12/11/2026): alta = 3 px de lienzo por unidad del mundo en vez de 2 (core.js, VR.screen.fit)
   VR.drive = settings.manejo;
 
   VR.screen.init($('game'));
@@ -137,7 +138,7 @@
   const nearCar = () => {
     let best = null, bd = 30;
     for (const c of world.carsIn(player.x - 40, player.y - 40, player.x + 40, player.y + 40, [])) {
-      if (c.wreck || c.burning) continue;
+      if (c.wreck || c.burning || c.mbh) continue;
       const d = Math.hypot(c.x - player.x, c.y - (player.y - 4));
       if (d < bd) { bd = d; best = c; }
     }
@@ -305,6 +306,10 @@
       player.px = player.x; player.py = player.y; player.x = s.x; player.y = s.y + 4; player.moving = false;
       hint = VR.input.source === 'touch' ? '🦢 Bajar: botón AUTO' : VR.input.source === 'pad' ? '🦢 X: bajar' : '🦢 F: bajar'; hintCar = null;
       if (VR.input.pressed('car')) { if (cisnes.exit(player)) { driveLabels(false); toast('Bajaste del cisne'); } else toast('Acercate a la orilla o al muelle para bajar'); }
+    } else if (mbh.riding) { // de pasajero en el Mbohasa (12/11/2026): el jugador va pegado al vehículo, que maneja solo
+      const v = mbh.v; player.px = player.x; player.py = player.y; player.x = v.x; player.y = v.y; player.moving = false;
+      hint = '🛵 Viaje a ' + ((mbh.r && mbh.r.dest.name) || 'tu destino') + (VR.input.source === 'touch' ? ' · botón AUTO: bajar' : VR.input.source === 'pad' ? ' · X: bajar' : ' · F: bajar'); hintCar = null;
+      if (VR.input.pressed('car')) mbh.rideTick();
     } else if (car) {
       car.update(dt, VR.input);
       player.px = player.x; player.py = player.y; player.x = car.x; player.y = car.y;
@@ -351,9 +356,9 @@
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
     if (mis) mis.update(dt, player, car);
-    syncEq(); if (vida) updateMbohasa(dt);
+    syncEq(); mbh.update(dt);
     world.updateDynamic(dt);
-    VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car, dt);
+    VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
     updateCamera(dt);
     updateGps(dt);
     if (traffic) {
@@ -398,11 +403,11 @@
     if (mis) mis.drawGround(ctx, cx, cy);
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
-    VR.reveal = car || (online.ride ? null : player);
+    VR.reveal = car || (mbh.riding ? mbh.v : online.ride ? null : player);
     world.collectTall(cx, cy, sw, sh, tall);
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
-    if (!car && !online.ride && !cisnes.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && !player.rag && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && !player.rag && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
+    if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && !player.rag && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && !player.rag && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
@@ -550,7 +555,7 @@
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
   // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
-  const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', jaha = null, celStop = null;
+  const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', celStop = null;
   const JAHA = { moto: { n: 'Moto', ico: '🏍', base: 10000, km: 3000, kmh: 28 }, auto: { n: 'Auto', ico: '🚗', base: 15000, km: 5000, kmh: 32 } };
   if (vida) $('btnCel').hidden = false;
   $('btnCel').onclick = () => openCel();
@@ -575,10 +580,10 @@
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
       h = '<h3>🛵 Mbohasa</h3>';
-      if (jaha) h += '<p>' + JAHA[jaha.tipo].ico + ' Tu ' + JAHA[jaha.tipo].n.toLowerCase() + ' llega en ' + Math.ceil(jaha.t) + ' s.</p><button class="cbtn sec" data-j="x">Cancelar</button>';
+      if (mbh.activo) h += '<p>' + esc(mbh.texto()) + '</p>' + (mbh.r.st === 'viene' || mbh.r.st === 'espera' ? '<button class="cbtn sec" data-j="x">Cancelar</button>' : '');
       else if (!dest) h += '<p>Marcá a dónde vas en el 🗺 Mapa y volvé a abrir Mbohasa.</p><button class="cbtn" data-a="mapa">🗺 Abrir el mapa</button>';
       else { const km = Math.hypot(dest.x - player.x, dest.y - player.y) / 8000 * 1.3;
-        h += '<p>A: <b>' + esc(dest.name || 'destino') + '</b> · ' + km.toFixed(1).replace('.', ',') + ' km</p><p>Se paga con la billetera electrónica (tenés ' + gs(s.banco) + ').</p>';
+        h += '<p>A: <b>' + esc(dest.name || 'destino') + '</b> · ' + km.toFixed(1).replace('.', ',') + ' km</p><p>Se paga con la billetera electrónica al subirte (tenés ' + gs(s.banco) + '). Viene un conductor de verdad: esperalo cerca de la calle.</p>';
         for (const t in JAHA) { const J = JAHA[t], pr = Math.round((J.base + J.km * km) / 1000) * 1000; h += '<button class="cbtn" data-j="' + t + '" data-p="' + pr + '"' + (s.banco < pr || car ? ' disabled' : '') + '>' + J.ico + ' ' + J.n + ' · ' + gs(pr) + '</button>'; }
         if (car) h += '<p>Bajate del vehículo para pedir.</p>'; }
     } else if (celApp === 'bill') {
@@ -633,9 +638,9 @@
       celApp = a; paintCel(); });
     celBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { celGo(() => toggleEq()); });
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
-      if (b.dataset.j === 'x') { jaha = null; toast('Cancelaste el Mbohasa'); paintCel(); return; }
+      if (b.dataset.j === 'x') { mbh.cancelar(); paintCel(); return; }
       if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }
-      jaha = { tipo: b.dataset.j, precio: +b.dataset.p, t: 8 + Math.random() * 10, dest: { ...dest } }; celDlg.close(); toast(JAHA[jaha.tipo].ico + ' Pediste un Mbohasa: llega en ' + Math.ceil(jaha.t) + ' s'); });
+      if (mbh.pedir(b.dataset.j, +b.dataset.p, { ...dest })) { celDlg.close(); toast(JAHA[b.dataset.j].ico + ' Pediste un Mbohasa: ya viene por la calle. Esperalo cerca de la calle.'); } else paintCel(); });
   }
   // Cámara (11/11/2026): app dentro del celular, con el visor en vivo a resolución nativa del juego (nítido) y el obturador grande abajo.
   // El juego sigue andando detrás pero sin control (para encuadrar distinto, salí del celular, caminá y volvé a abrirla). También en la pieza.
@@ -651,17 +656,6 @@
     const key = (e) => { if (e.code === 'KeyF' && !e.repeat) { e.preventDefault(); shot(); } };
     addEventListener('keydown', key);
     return () => { alive = false; cancelAnimationFrame(raf); removeEventListener('keydown', key); if (celDlg.open && !(VR.pieza && VR.pieza.on)) VR.loop.paused = true; };
-  }
-  // el Mbohasa llega: subís y en un ratito estás (pasa la hora del viaje y se cobra de la billetera electrónica)
-  function updateMbohasa(dt) {
-    if (!jaha) return; jaha.t -= dt; if (jaha.t > 0) return;
-    const J = jaha, T = JAHA[J.tipo]; jaha = null;
-    if (car) { toast('Tu Mbohasa te esperó y se fue: estabas manejando'); return; }
-    mis.dialogo([{ quien: 'sis', titulo: '🛵 Mbohasa', txt: T.ico + ' Llegó tu ' + T.n.toLowerCase() + '. Viaje a ' + (J.dest.name || 'tu destino') + ' por ' + VR.fmtGs(J.precio) + '.', op: [['Subir', () => true], ['Cancelar', () => false]] }], () => {
-      if (!vida.pagaBanco(J.precio, 'Mbohasa (' + T.n.toLowerCase() + ')')) return;
-      const f = $('celFade'), km = Math.hypot(J.dest.x - player.x, J.dest.y - player.y) / 8000 * 1.3; f.textContent = T.ico + ' En viaje…'; f.classList.add('on');
-      setTimeout(() => { teleport(J.dest.x, J.dest.y, J.dest.name, true); vida.s.min += km / T.kmh * 60; vida.sync(); if (mis) mis.emit('jaha', J); setTimeout(() => f.classList.remove('on'), 300); }, 900);
-    });
   }
   $('pMis').onclick = () => pauseThen(() => openVida('mis'));
   $('btnSaltar').onclick = () => { if (!mis || !mis.s.act) { toast('No hay misión en curso'); return; } menu.close(); mis.saltar(); toast('⏭ Paso saltado'); };
@@ -699,12 +693,25 @@
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
   seg('segFondo', 'fondo', () => title.setMode(settings.fondo));
+  seg('segCalidad', 'calidad', () => { toast('🖼 Calidad ' + settings.calidad + ': reiniciando el dibujo…'); try { savePos(); } catch (e) {} setTimeout(() => location.reload(), 600); }); // la resolución se fija al arrancar
   // ---- online ----
   const changas = new VR.Changas({ world, peds, setDest, toast, getCar: () => car, player, enterCar, exitCar, cars }); $('btnJobs').onclick = () => changas.open();
   // ---- misiones de la Historia (J2) ----
   VR.myLook = () => player.lookData;
   const showBanner = (chico, grande, sub) => { const bn = $('banner'); bn.innerHTML = '<small>' + chico + '</small>' + grande + (sub ? '<small class="sub">' + sub + '</small>' : ''); bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2800); };
   const mis = VR.mis = vida ? new VR.Misiones({ world, player, toast, setDest, getCar: () => car, vida, changas, banner: showBanner }) : null;
+  // Mbohasa de verdad (12/11/2026): viene un conductor en moto o auto, te subís y te lleva por las calles (src/game/mbohasa.js)
+  function mbhBajar(c) {
+    const a = c.a, rx = Math.cos(a), ry = Math.sin(a), fx = Math.sin(a), fy = -Math.cos(a), tries = [], w0 = c.WID / 2 + 6, l0 = c.LEN / 2 + 8;
+    for (const d of [w0, w0 + 4, w0 + 8, w0 + 12]) tries.push([rx * d, ry * d], [-rx * d, -ry * d]);
+    for (const d of [l0, l0 + 6]) tries.push([-fx * d, -fy * d], [fx * d, fy * d]);
+    for (const [dx, dy] of tries) { const x = c.x + dx, y = c.y + dy + 4; if (!world.hits(x - player.HW, y - player.HH, x + player.HW, y)) { player.x = player.px = x; player.y = player.py = y; player.moving = false; return true; } }
+    return false;
+  }
+  const mbh = vida && gpsNet ? new VR.Mbohasa({ world, gps: gpsNet, player, toast, dialogo: (l, f) => mis.dialogo(l, f), pagar: (p, t) => vida.pagaBanco(p, t), yo: me, manejando: () => !!car, bajar: mbhBajar,
+    fin: (r) => { if (mis) mis.emit('jaha', r); },
+    llevar: (d) => { const f = $('celFade'); f.textContent = '🛵 En viaje…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); if (mis) mis.emit('jaha', { dest: d }); setTimeout(() => f.classList.remove('on'), 300); }, 900); } })
+    : { riding: false, activo: false, r: null, v: null, update() {}, rideTick() {}, cancelar() {}, pedir() { return false; }, texto() { return ''; } };
   if (mis) VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => mis.dialogo(VR.despensaCompra(mis)) }); // despensa Ñande Róga por dentro
   let puestoL = null; // en Libre no hay misiones, pero la despensa sí está (puesto en la vereda al sudeste de la plaza + el interior)
   if (!mis) {
@@ -1217,5 +1224,5 @@
   if (mis) { if (mis.s.act) mis.entrar(mis.s.act.paso, true); else mis.auto(); } // retomar la misión guardada (o arrancar la primera)
   VR.loop.start(update, render);
   if (directo) { maybeIntro(); try { if (sessionStorage.getItem('villarrica:onl')) { sessionStorage.removeItem('villarrica:onl'); VR.input.releaseAll(); $('onDlg').showModal(); } } catch (e) {} }
-  window.__vr = { get mode() { return mode; }, title, startGame, toTitle, enterTitle, get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
+  window.__vr = { get mbh() { return mbh; }, get mode() { return mode; }, title, startGame, toTitle, enterTitle, get online() { return online; }, get teatro() { return teatro; }, get changas() { return changas; }, get teatroT() { return teatro.t; }, garage, garDoor, cineDoor, world, player, shop, shopDoor, openShop, teleport, setDest, cam, settings, cars, traffic, peds, emer, weapons, get car() { return car; }, enterCar, exitCar };
 })();
