@@ -122,7 +122,8 @@
     if (emer) emer.clear();
     toast(msg);
   }
-  const me = () => Object.assign(VR.av2Rider(player.lookData), { L: player.lookData }); // así se ve el jugador arriba de la moto: su personaje (05/11/2026)
+  // así se ve el jugador arriba de la moto: su personaje (05/11/2026); casco = true se pone un casco (12/11/2026, Mbohasa)
+  const me = (casco) => { const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];
@@ -556,7 +557,13 @@
   $('pCel').onclick = () => pauseThen(() => openCel());
   // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
   const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', celStop = null;
-  const JAHA = { moto: { n: 'Moto', ico: '🏍', base: 10000, km: 3000, kmh: 28 }, auto: { n: 'Auto', ico: '🚗', base: 15000, km: 5000, kmh: 32 } };
+  // Opciones de viaje (12/11/2026): tipo de vehículo, modelo, ritmo (kv × velocidad de crucero), precio y velocidad estimada (px/s) para mostrar el tiempo
+  const JAHA = {
+    moto: { n: 'Moto', ico: '🏍', tipo: 'moto', modelo: 'cub', base: 10000, km: 3000, kv: 1, v: 140, d: 'La más rápida entre el tránsito. Vas atrás: ¡agarrate!' },
+    autoT: { n: 'Auto tranquilo', ico: '🚙', tipo: 'auto', modelo: 'mono', base: 12000, km: 4000, kv: 0.6, v: 80, d: 'Maneja despacio y con cuidado. Más barato.' },
+    auto: { n: 'Auto', ico: '🚗', tipo: 'auto', modelo: 'sedan', base: 15000, km: 5000, kv: 0.95, v: 125, d: 'Ritmo normal, cómodo y seguro.' },
+    autoR: { n: 'Auto rápido', ico: '🏎', tipo: 'auto', modelo: 'coupe', base: 20000, km: 7000, kv: 1.3, v: 165, d: 'Llegás antes... si no te mareás. Más caro.' },
+  };
   if (vida) $('btnCel').hidden = false;
   $('btnCel').onclick = () => openCel();
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
@@ -581,11 +588,16 @@
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
       h = '<h3>🛵 Mbohasa</h3>';
-      if (mbh.activo) h += '<p>' + esc(mbh.texto()) + '</p>' + (mbh.r.st === 'viene' || mbh.r.st === 'espera' ? '<button class="cbtn sec" data-j="x">Cancelar</button>' : '');
+      if (mbh.activo) { // como en Bolt: mapita con el conductor en vivo, su tarjeta y el estado
+        const r = mbh.r, c = r.cond || { n: 'Conductor', placa: '', nota: '' }, J = JAHA[r.key] || JAHA[r.tipo], mn = (mbh.v && mbh.v.spec.name) || '';
+        h += '<canvas id="mbhMap" class="mbhMap"></canvas><div class="mbhCard"><div class="mbhAv">' + J.ico + '</div><div><b>' + esc(c.n) + '</b> · ⭐ ' + c.nota + '<br><small>' + esc(mn) + ' · ' + esc(c.placa) + (r.tipo === 'moto' ? (r.casco ? ' · 🪖 con casco' : ' · sin casco') : '') + '</small></div></div>' +
+          '<p id="mbhTxt">' + esc(mbh.texto()) + '</p>' + (r.st === 'viene' || r.st === 'espera' ? '<button class="cbtn sec" data-j="x">Cancelar</button>' : '');
+      }
       else if (!dest) h += '<p>Marcá a dónde vas en el 🗺 Mapa y volvé a abrir Mbohasa.</p><button class="cbtn" data-a="mapa">🗺 Abrir el mapa</button>';
       else { const km = Math.hypot(dest.x - player.x, dest.y - player.y) / 8000 * 1.3;
         h += '<p>A: <b>' + esc(dest.name || 'destino') + '</b> · ' + km.toFixed(1).replace('.', ',') + ' km</p><p>Se paga con la billetera electrónica al subirte (tenés ' + gs(s.banco) + '). Viene un conductor de verdad: esperalo cerca de la calle.</p>';
-        for (const t in JAHA) { const J = JAHA[t], pr = Math.round((J.base + J.km * km) / 1000) * 1000; h += '<button class="cbtn" data-j="' + t + '" data-p="' + pr + '"' + (s.banco < pr || car ? ' disabled' : '') + '>' + J.ico + ' ' + J.n + ' · ' + gs(pr) + '</button>'; }
+        for (const t in JAHA) { const J = JAHA[t], pr = Math.round((J.base + J.km * km) / 1000) * 1000, sg = Math.max(5, Math.round(km * 8000 / J.v));
+          h += '<button class="cbtn opc" data-j="' + t + '" data-p="' + pr + '"' + (s.banco < pr || car ? ' disabled' : '') + '><span class="oi">' + J.ico + '</span><span class="ot"><b>' + J.n + '</b><small>' + J.d + '</small></span><span class="op">' + gs(pr) + '<small>' + VR.Mbohasa.fmt(sg) + '</small></span></button>'; }
         if (car) h += '<p>Bajate del vehículo para pedir.</p>'; }
     } else if (celApp === 'bill') {
       h = '<h3>🏦 Billetera</h3><div class="row2"><span>💵 Efectivo</span><b>' + gs(VR.Wallet.get()) + '</b></div><div class="row2"><span>🏦 Electrónica</span><b>' + gs(s.banco) + '</b></div>' +
@@ -630,6 +642,7 @@
     if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
     if (celApp === 'culebra') celStop = VR.Culebra(celBody);
     if (celApp === 'camara') celStop = camStart();
+    if (celApp === 'jaha' && mbh.activo) celStop = mbhLive();
     celBody.querySelectorAll('[data-buy]').forEach((b) => b.onclick = () => { const it = VR.PIEZA_ITEMS.find((q) => q.k === b.dataset.buy); if (!it || !vida.pagaBanco(it.p, 'Mercadito: ' + it.n)) { paintCel(); return; } vida.s.pieza.items = vida.s.pieza.items || {}; vida.s.pieza.items[it.k] = 1; vida.save(); toast('📦 ' + it.n + ': te lo dejan en la pieza'); paintCel(); });
     celBody.querySelectorAll('[data-f]').forEach((im) => im.onclick = () => { celApp = 'foto' + im.dataset.f; paintCel(); });
     celBody.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { VR.Fotos.del(+b.dataset.del); celApp = 'galeria'; paintCel(); });
@@ -641,7 +654,50 @@
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
       if (b.dataset.j === 'x') { mbh.cancelar(); paintCel(); return; }
       if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }
-      if (mbh.pedir(b.dataset.j, +b.dataset.p, { ...dest })) { celDlg.close(); toast(JAHA[b.dataset.j].ico + ' Pediste un Mbohasa: ya viene por la calle. Esperalo cerca de la calle.'); } else paintCel(); });
+      const J = JAHA[b.dataset.j];
+      if (mbh.pedir(J.tipo, +b.dataset.p, { ...dest }, { kv: J.kv, modelo: J.modelo, key: b.dataset.j })) { celApp = 'jaha'; paintCel(); toast(J.ico + ' Pediste un Mbohasa: ya viene por la calle. Mirá el mapita para verlo venir.'); } else paintCel(); });
+  }
+  // Mapita en vivo del Mbohasa (12/11/2026, estilo Bolt): recorte del mapa con el camino, el conductor (🏍/🚗), vos y el destino. Mientras está abierto el
+  // mundo sigue andando (como con la cámara) para ver llegar al conductor; cuando llega, el celular se cierra y aparece el diálogo para subir.
+  function drawMbhMap(cv) {
+    const r = mbh.r, v = mbh.v; if (!r || !v) return;
+    if (!mapBuilt) buildMap();
+    const dpr = Math.min(2.5, window.devicePixelRatio || 1), W = Math.round(cv.clientWidth * dpr) || 300, H = Math.round(cv.clientHeight * dpr) || 190;
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    const g = cv.getContext('2d'), f = car || player, T = VR.TILE, me = [f.x, f.y], pts = [[v.x, v.y], me];
+    if (r.st === 'viaje') pts.push([r.dest.x, r.dest.y]);
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    const sx = Math.max(40, x1 - x0) / T + 14, sy = Math.max(40, y1 - y0) / T + 14, k = VR.clamp(Math.min(W / sx, H / sy), 2 * dpr, 9 * dpr);
+    const tx = (x0 + x1) / 2 / T - W / k / 2, ty = (y0 + y1) / 2 / T - H / k / 2, X = (x) => (x / T - tx) * k, Y = (y) => (y / T - ty) * k, u = dpr;
+    g.save(); g.fillStyle = '#2b3a22'; g.fillRect(0, 0, W, H); g.imageSmoothingEnabled = false; g.drawImage($('mapCanvas'), tx, ty, W / k, H / k, 0, 0, W, H); g.fillStyle = 'rgba(0,0,0,.1)'; g.fillRect(0, 0, W, H);
+    if (r.P && r.P.length > 3) { // camino del conductor (hasta vos, o hasta el destino)
+      g.lineJoin = g.lineCap = 'round'; g.beginPath(); for (let i = 0; i < r.P.length; i += 2) i ? g.lineTo(X(r.P[i]), Y(r.P[i + 1])) : g.moveTo(X(r.P[i]), Y(r.P[i + 1]));
+      g.strokeStyle = '#0b2a36'; g.lineWidth = 6 * u; g.stroke(); g.strokeStyle = '#ffd84a'; g.lineWidth = 3.2 * u; g.stroke();
+    }
+    g.font = Math.round(15 * u) + 'px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if (r.st === 'viaje') g.fillText('🏁', X(r.dest.x), Y(r.dest.y) - 8 * u);
+    if (r.st !== 'viaje') { // vos: punto azul con aro blanco
+      const px = X(me[0]), py = Y(me[1]); g.fillStyle = 'rgba(63,211,255,.28)'; g.beginPath(); g.arc(px, py, 13 * u, 0, 7); g.fill();
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(px, py, 6.5 * u, 0, 7); g.fill(); g.fillStyle = '#2a8ef0'; g.beginPath(); g.arc(px, py, 4.8 * u, 0, 7); g.fill();
+    }
+    { const px = X(v.x), py = Y(v.y), pul = 1 + 0.12 * Math.sin(performance.now() / 220); // conductor: círculo amarillo con el vehículo, que late
+      g.fillStyle = 'rgba(255,216,74,.3)'; g.beginPath(); g.arc(px, py, 15 * u * pul, 0, 7); g.fill(); g.fillStyle = '#1a1a1e'; g.beginPath(); g.arc(px, py, 11 * u, 0, 7); g.fill(); g.fillStyle = '#ffd84a'; g.beginPath(); g.arc(px, py, 9.5 * u, 0, 7); g.fill();
+      g.fillStyle = '#1a1a1e'; g.fillText(r.tipo === 'moto' ? '🏍' : '🚗', px, py + 0.5 * u); }
+    g.restore();
+  }
+  function mbhLive() {
+    let alive = true, raf = 0, last = mbh.r ? mbh.r.st : '', tt = 0;
+    VR.loop.paused = false; // el mundo sigue andando mientras mirás el mapa (el control sigue apagado)
+    const tick = () => {
+      if (!alive) return;
+      const r = mbh.r; if (!r) { paintCel(); return; } // cancelado o se fue: se vuelve a la lista
+      const cv = $('mbhMap'); if (cv) drawMbhMap(cv);
+      if (r.st !== last) { last = r.st; if (r.st === 'espera') { celDlg.close(); return; } paintCel(); return; } // llegó: se cierra el celular y aparece el diálogo para subir
+      if (performance.now() - tt > 500) { tt = performance.now(); const t = $('mbhTxt'); if (t) t.textContent = mbh.texto(); }
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => { alive = false; cancelAnimationFrame(raf); if (celDlg.open) VR.loop.paused = true; };
   }
   // Cámara (11/11/2026): app dentro del celular, con el visor en vivo a resolución nativa del juego (nítido) y el obturador grande abajo.
   // El juego sigue andando detrás pero sin control (para encuadrar distinto, salí del celular, caminá y volvé a abrirla). También en la pieza.
@@ -709,7 +765,7 @@
     for (const [dx, dy] of tries) { const x = c.x + dx, y = c.y + dy + 4; if (!world.hits(x - player.HW, y - player.HH, x + player.HW, y)) { player.x = player.px = x; player.y = player.py = y; player.moving = false; return true; } }
     return false;
   }
-  const mbh = vida && gpsNet ? new VR.Mbohasa({ world, gps: gpsNet, player, toast, dialogo: (l, f) => mis.dialogo(l, f), pagar: (p, t) => vida.pagaBanco(p, t), yo: me, manejando: () => !!car, bajar: mbhBajar,
+  const mbh = vida && gpsNet ? new VR.Mbohasa({ world, gps: gpsNet, player, toast, dialogo: (l, f) => mis.dialogo(l, f), pagar: (p, t) => vida.pagaBanco(p, t), yo: (c) => me(c), tengoCasco: () => !!vida.s.casco, manejando: () => !!car, bajar: mbhBajar,
     fin: (r) => { if (mis) mis.emit('jaha', r); },
     llevar: (d) => { const f = $('celFade'); f.textContent = '🛵 En viaje…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); if (mis) mis.emit('jaha', { dest: d }); setTimeout(() => f.classList.remove('on'), 300); }, 900); } })
     : { riding: false, activo: false, r: null, v: null, saltear() {}, update() {}, rideTick() {}, cancelar() {}, pedir() { return false; }, texto() { return ''; } };
@@ -730,6 +786,7 @@
     if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro' });
     const C = { despensa: '#9fe0a0', pieza: '#ffd84a', cajero: '#7fd8ff', cajero2: '#7fd8ff', financiera: '#ffb36b', celulares: '#c9a0ff' };
     if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
+    if (mbh.activo && mbh.v && !mbh.riding) o.push({ x: mbh.v.x, y: mbh.v.y, ico: mbh.r.tipo === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: 'Tu Mbohasa' }); // el conductor, siempre visible en el minimapa y el mapa grande (12/11/2026)
     const ks = mis ? Object.keys(VR.PUNTOS) : ['despensa'];
     for (const k of ks) { const D = VR.PUNTOS[k], p = D && lugE.get(D.lugar); if (p) o.push({ x: p.x, y: p.y - (k === 'despensa' ? 4 : 0), ico: D.ico, c: C[k] || '#9fe0a0', name: D.nombre }); }
     return o; };

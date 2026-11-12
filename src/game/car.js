@@ -173,7 +173,8 @@ VR.drawRiderBase = (shirt, head, o = {}) => VR.vbase(10, 20, (T) => {
 VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
   const C = VR.AV2_CAT, L = Object.assign({}, VR.AV2_DEFAULT, L0), SH = VR.shadeHex, g = T.g;
   const cx = 7, cy = 12, X = (d) => cx + d, Y = (d) => cy + d;
-  const gy = geo.gy ?? -5.8, gx = geo.gx ?? 4.3, stand = !!geo.stand, hip = stand ? 1.2 : (geo.hip ?? 3);
+  // geo.pas (12/11/2026): pasajero de atrás: derecho, con las manos en la cintura del conductor (no en el manubrio) y las rodillas bien abiertas
+  const gy = geo.gy ?? -5.8, gx = geo.gx ?? 4.3, stand = !!geo.stand, hip = stand ? 1.2 : (geo.hip ?? 3), pas = !!geo.pas;
   const f = L.gender === 'f', bw = { flaco: 5.2, normal: 5.8, fornido: 6.6, panza: 6.2 }[L.build] || 5.8, sw = bw * (f ? 0.88 : 1);
   const skin = C.skin[L.skin], skD = SH(skin, 0.8), hairC = C.hairColor[L.hairColor];
   const topC = L.top === 'top' ? skin : C.cloth[L.topColor], top2 = C.cloth[L.topColor2 ?? 1];
@@ -189,7 +190,7 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
     for (const [dx, dy] of [[-0.9, 0.6], [0.9, 2.4]]) { T.ell(X(dx), Y(dy), 0.9, 1.5, shoe); T.ell(X(dx), Y(dy - 0.9), 0.5, 0.35, SH(shoe, 1.3)); }
     seg(-0.9, 0.4, -0.7, 0, 1.6, shortLeg || skirt ? skin : pants); seg(0.9, 2, 0.7, 1, 1.6, shortLeg || skirt ? skin : pants);
   } else {
-    const kx = Math.min(gx * 0.66, 3.2), ky = sh + 0.9, fx = kx + 0.3, fy = ky + 2.2, hx = sw * 0.3;
+    const kx = geo.kx ?? Math.min(gx * 0.66, 3.2), ky = sh + 0.9, fx = kx + 0.3, fy = ky + 2.2, hx = sw * 0.3;
     for (const s of [-1, 1]) {
       T.ell(X(s * fx), Y(fy), 0.85, 1.35, shoe); T.ell(X(s * fx), Y(fy - 0.8), 0.5, 0.35, SH(shoe, 1.35)); // pie en el posapié
       seg(s * fx, fy - 0.4, s * kx, ky, lw * 0.9, shortLeg || skirt ? skin : SH(pants, 0.85));          // pantorrilla
@@ -203,7 +204,7 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
   // brazos (hombro → codo → mano en el puño)
   const shx = sw / 2 - 0.5, arm = L.top === 'puffer' ? 1.55 : 1.25;
   for (const s of [-1, 1]) {
-    const ex = (shx + gx) / 2 + 0.6, ey = (sh + gy) / 2 + 0.3;
+    const ex = (shx + gx) / 2 + (pas ? 0.9 : 1.1), ey = (sh + gy) / 2 + 0.3; // codos un poco abiertos: brazos flexionados, no "manos arriba"
     const up = sleeve > 0 ? topC : skin, lo = sleeve >= 1 ? topC : skin;
     seg(s * shx, sh + 0.3, s * ex, ey, arm, SH(up, 0.88)); seg(s * ex, ey, s * gx, gy + 0.2, arm * 0.9, SH(lo, 0.88));
     if (sleeve > 0 && sleeve < 1) seg(s * shx, sh + 0.3, s * (shx + (ex - shx) * 0.6), sh + (ey - sh) * 0.6, arm + 0.2, SH(topC, 0.95));
@@ -230,10 +231,12 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
   if (L.hair === 'colitaLado' && hat !== 'casco') T.ell(X(1.9), Y(head + 1.6), 0.7, 1.2, hairC);
   T.ell(X(-hr + 0.1), Y(head + 0.1), 0.45, 0.6, skD); T.ell(X(hr - 0.1), Y(head + 0.1), 0.45, 0.6, skD); // orejas
   T.ell(X(0), Y(head), hr, hr * 1.05, skin);
-  if (hat === 'casco') {
-    T.ell(X(0), Y(head), 2.25, 2.4, T.hg(X(-2.2), X(2.2), [SH(hatC, 1.45), hatC, SH(hatC, 0.65)]));
-    T.rr(X(-1.6), Y(head - 2.35), 3.2, 1.1, [1, 1, 0.3, 0.3], '#1a1e26'); T.ell(X(-0.6), Y(head - 1.9), 0.6, 0.2, 'rgba(160,190,230,.6)'); // visera
-    T.line(X(0), Y(head - 1.1), X(0), Y(head + 2.2), 0.45, 'rgba(255,255,255,.45)'); T.ell(X(-0.9), Y(head - 0.4), 0.7, 0.5, 'rgba(255,255,255,.45)');
+  if (hat === 'casco') { // casco integral visto desde arriba: sombra sobre los hombros, cáscara con brillo, franja central, visor oscuro con reflejo y tirita
+    T.ell(X(0.3), Y(head + 0.5), 2.75, 2.9, 'rgba(0,0,0,.2)');
+    T.ell(X(0), Y(head), 2.3, 2.5, T.hg(X(-2.3), X(2.3), [SH(hatC, 1.5), hatC, SH(hatC, 0.62)]));
+    T.line(X(0), Y(head - 0.9), X(0), Y(head + 2.3), 0.5, SH(hatC, 0.6)); T.line(X(-0.05), Y(head - 0.9), X(-0.05), Y(head + 2.2), 0.18, 'rgba(255,255,255,.5)'); // franja
+    T.rr(X(-1.75), Y(head - 2.5), 3.5, 1.25, [1.1, 1.1, 0.35, 0.35], '#141820'); T.ell(X(-0.7), Y(head - 2.05), 0.75, 0.22, 'rgba(170,200,240,.7)'); T.ell(X(0.9), Y(head - 1.8), 0.3, 0.14, 'rgba(170,200,240,.35)'); // visor
+    T.ell(X(-1.0), Y(head + 0.1), 0.85, 0.6, 'rgba(255,255,255,.5)'); T.ell(X(1.4), Y(head + 0.9), 0.5, 0.9, 'rgba(0,0,0,.18)');
   } else if (hat === 'piri') {
     T.ell(X(0), Y(head), 3.3, 3.2, T.hg(X(-3.3), X(3.3), ['#ecd49a', '#d8b870', '#b0904e'])); for (let r = 1.4; r < 3.2; r += 0.6) { g.strokeStyle = 'rgba(120,90,40,.35)'; g.lineWidth = 0.15; g.beginPath(); g.ellipse(X(0), Y(head), r, r, 0, 0, 7); g.stroke(); }
     T.ell(X(0), Y(head), 1.6, 1.6, '#c8a860'); T.ell(X(0), Y(head), 1.65, 1.65, 'rgba(0,0,0,0)'); g.strokeStyle = '#2a1e14'; g.lineWidth = 0.35; g.beginPath(); g.arc(X(0), Y(head), 1.6, 0, 7); g.stroke();
@@ -254,6 +257,8 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
     if (L.hair !== 'rapado') T.ell(X(0), Y(head - hr + 0.35), 1.1, 0.35, skin); // frente
   } else T.ell(X(-0.5), Y(head - 0.4), 0.7, 0.5, 'rgba(255,255,255,.3)');
 });
+// geometría del pasajero según la del conductor de esa moto (cub: puños en gy -5.8): manos a la cintura de quien maneja, rodillas abiertas
+VR.pasGeo = (g = {}) => ({ pas: true, gy: -3.7, gx: 3.1, hip: 3.4, kx: 3.6 });
 VR.riderTopFrames = (() => {
   const cache = new Map();
   return (L, geo) => {
@@ -600,12 +605,12 @@ VR.Car = class {
     ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
     ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
     if (this.dents && this.dents.length && !this.wreck) VR.drawDents(ctx, this, x + shake, y, ak);
-    if (this.pasajero && this.pasajero.L) { // pasajero atrás del conductor (Mbohasa en moto)
-      const R = VR.riderTopFrames(this.pasajero.L, this.spec.rider), rh = R.S >> 1, ro = (this.spec.riderOff || 0) - 5;
+    if (this.pasajero && this.pasajero.L) { // pasajero atrás del conductor (Mbohasa en moto): se dibuja primero, así el conductor le tapa las manos en su cintura
+      const R = VR.riderTopFrames(this.pasajero.L, VR.pasGeo(this.spec.rider)), rh = R.S >> 1, ro = (this.spec.riderOff || 0) - 6;
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - Math.round(Math.cos(a) * ro), R.S, R.S);
     }
     if (this.rider && this.rider.L) { // el personaje de verdad (avatar 2) visto desde arriba, girando con la moto
-      const R = VR.riderTopFrames(this.rider.L, this.spec.rider), rh = R.S >> 1, ro = (this.spec.riderOff || 0) + (this.pasajero ? 2 : 0);
+      const R = VR.riderTopFrames(this.rider.L, this.spec.rider), rh = R.S >> 1, ro = (this.spec.riderOff || 0) + (this.pasajero ? 2.5 : 0);
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - Math.round(Math.cos(a) * ro), R.S, R.S);
     } else if (this.rider) {
       const R = VR.riderFrames(this.rider.shirt, this.rider.head, this.rider.o), rh = R.S >> 1;

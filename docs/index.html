@@ -86,6 +86,13 @@
   #celBody .cbtn { display: block; width: 100%; margin: 8px 0; padding: 12px; border-radius: 12px; border: 0; font: 700 14px system-ui; cursor: pointer; background: #ffd84a; color: #111; }
   #celBody .cbtn.sec { background: #3a4658; color: #fff; }
   #celBody .cbtn:disabled { opacity: .45; cursor: default; }
+  /* Mbohasa (12/11/2026): opciones de viaje y mapita en vivo con la tarjeta del conductor, estilo Bolt */
+  #celBody .cbtn.opc { display: flex; align-items: center; gap: 10px; text-align: left; padding: 9px 12px; background: #2d3b52; color: #fff; }
+  #celBody .cbtn.opc .oi { font-size: 26px; } #celBody .cbtn.opc .ot { flex: 1; display: flex; flex-direction: column; } #celBody .cbtn.opc .ot b { font: 800 14px system-ui; }
+  #celBody .cbtn.opc small { font: 500 11px/1.25 system-ui; color: #b9c6da; } #celBody .cbtn.opc .op { display: flex; flex-direction: column; align-items: flex-end; font: 800 13px system-ui; color: #ffd84a; }
+  #celBody .mbhMap { display: block; width: 100%; height: 190px; border-radius: 12px; background: #2b3a22; border: 2px solid #0d0d10; }
+  #celBody .mbhCard { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; padding: 8px 10px; border-radius: 12px; background: #2d3b52; font: 600 13px/1.3 system-ui; }
+  #celBody .mbhCard small { font: 500 11px system-ui; color: #b9c6da; } #celBody .mbhAv { width: 38px; height: 38px; border-radius: 50%; background: #ffd84a; display: grid; place-items: center; font-size: 22px; }
   #celBody .row2 { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ffffff1a; font: 600 13px system-ui; }
   #celFade { position: fixed; inset: 0; background: #000; z-index: 60; opacity: 0; pointer-events: none; transition: opacity .5s; display: grid; place-items: center; color: #fff; font: 700 18px system-ui; }
   #btnSaltaViaje { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 20; padding: 10px 18px; border-radius: 22px; border: 1px solid rgba(255,255,255,.25); background: rgba(15,15,18,.78); color: #fff; font: 700 14px system-ui; cursor: pointer; }
@@ -403,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 14cb5887 · 2026-11-11</div>
+  <div class="tVer">Versión 114cf42b · 2026-11-12</div>
 </div>
 <div id="fade"></div>
 
@@ -498,7 +505,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 14cb5887 · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 114cf42b · 2026-11-12</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -4352,7 +4359,8 @@ VR.drawRiderBase = (shirt, head, o = {}) => VR.vbase(10, 20, (T) => {
 VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
   const C = VR.AV2_CAT, L = Object.assign({}, VR.AV2_DEFAULT, L0), SH = VR.shadeHex, g = T.g;
   const cx = 7, cy = 12, X = (d) => cx + d, Y = (d) => cy + d;
-  const gy = geo.gy ?? -5.8, gx = geo.gx ?? 4.3, stand = !!geo.stand, hip = stand ? 1.2 : (geo.hip ?? 3);
+  // geo.pas (12/11/2026): pasajero de atrás: derecho, con las manos en la cintura del conductor (no en el manubrio) y las rodillas bien abiertas
+  const gy = geo.gy ?? -5.8, gx = geo.gx ?? 4.3, stand = !!geo.stand, hip = stand ? 1.2 : (geo.hip ?? 3), pas = !!geo.pas;
   const f = L.gender === 'f', bw = { flaco: 5.2, normal: 5.8, fornido: 6.6, panza: 6.2 }[L.build] || 5.8, sw = bw * (f ? 0.88 : 1);
   const skin = C.skin[L.skin], skD = SH(skin, 0.8), hairC = C.hairColor[L.hairColor];
   const topC = L.top === 'top' ? skin : C.cloth[L.topColor], top2 = C.cloth[L.topColor2 ?? 1];
@@ -4368,7 +4376,7 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
     for (const [dx, dy] of [[-0.9, 0.6], [0.9, 2.4]]) { T.ell(X(dx), Y(dy), 0.9, 1.5, shoe); T.ell(X(dx), Y(dy - 0.9), 0.5, 0.35, SH(shoe, 1.3)); }
     seg(-0.9, 0.4, -0.7, 0, 1.6, shortLeg || skirt ? skin : pants); seg(0.9, 2, 0.7, 1, 1.6, shortLeg || skirt ? skin : pants);
   } else {
-    const kx = Math.min(gx * 0.66, 3.2), ky = sh + 0.9, fx = kx + 0.3, fy = ky + 2.2, hx = sw * 0.3;
+    const kx = geo.kx ?? Math.min(gx * 0.66, 3.2), ky = sh + 0.9, fx = kx + 0.3, fy = ky + 2.2, hx = sw * 0.3;
     for (const s of [-1, 1]) {
       T.ell(X(s * fx), Y(fy), 0.85, 1.35, shoe); T.ell(X(s * fx), Y(fy - 0.8), 0.5, 0.35, SH(shoe, 1.35)); // pie en el posapié
       seg(s * fx, fy - 0.4, s * kx, ky, lw * 0.9, shortLeg || skirt ? skin : SH(pants, 0.85));          // pantorrilla
@@ -4382,7 +4390,7 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
   // brazos (hombro → codo → mano en el puño)
   const shx = sw / 2 - 0.5, arm = L.top === 'puffer' ? 1.55 : 1.25;
   for (const s of [-1, 1]) {
-    const ex = (shx + gx) / 2 + 0.6, ey = (sh + gy) / 2 + 0.3;
+    const ex = (shx + gx) / 2 + (pas ? 0.9 : 1.1), ey = (sh + gy) / 2 + 0.3; // codos un poco abiertos: brazos flexionados, no "manos arriba"
     const up = sleeve > 0 ? topC : skin, lo = sleeve >= 1 ? topC : skin;
     seg(s * shx, sh + 0.3, s * ex, ey, arm, SH(up, 0.88)); seg(s * ex, ey, s * gx, gy + 0.2, arm * 0.9, SH(lo, 0.88));
     if (sleeve > 0 && sleeve < 1) seg(s * shx, sh + 0.3, s * (shx + (ex - shx) * 0.6), sh + (ey - sh) * 0.6, arm + 0.2, SH(topC, 0.95));
@@ -4409,10 +4417,12 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
   if (L.hair === 'colitaLado' && hat !== 'casco') T.ell(X(1.9), Y(head + 1.6), 0.7, 1.2, hairC);
   T.ell(X(-hr + 0.1), Y(head + 0.1), 0.45, 0.6, skD); T.ell(X(hr - 0.1), Y(head + 0.1), 0.45, 0.6, skD); // orejas
   T.ell(X(0), Y(head), hr, hr * 1.05, skin);
-  if (hat === 'casco') {
-    T.ell(X(0), Y(head), 2.25, 2.4, T.hg(X(-2.2), X(2.2), [SH(hatC, 1.45), hatC, SH(hatC, 0.65)]));
-    T.rr(X(-1.6), Y(head - 2.35), 3.2, 1.1, [1, 1, 0.3, 0.3], '#1a1e26'); T.ell(X(-0.6), Y(head - 1.9), 0.6, 0.2, 'rgba(160,190,230,.6)'); // visera
-    T.line(X(0), Y(head - 1.1), X(0), Y(head + 2.2), 0.45, 'rgba(255,255,255,.45)'); T.ell(X(-0.9), Y(head - 0.4), 0.7, 0.5, 'rgba(255,255,255,.45)');
+  if (hat === 'casco') { // casco integral visto desde arriba: sombra sobre los hombros, cáscara con brillo, franja central, visor oscuro con reflejo y tirita
+    T.ell(X(0.3), Y(head + 0.5), 2.75, 2.9, 'rgba(0,0,0,.2)');
+    T.ell(X(0), Y(head), 2.3, 2.5, T.hg(X(-2.3), X(2.3), [SH(hatC, 1.5), hatC, SH(hatC, 0.62)]));
+    T.line(X(0), Y(head - 0.9), X(0), Y(head + 2.3), 0.5, SH(hatC, 0.6)); T.line(X(-0.05), Y(head - 0.9), X(-0.05), Y(head + 2.2), 0.18, 'rgba(255,255,255,.5)'); // franja
+    T.rr(X(-1.75), Y(head - 2.5), 3.5, 1.25, [1.1, 1.1, 0.35, 0.35], '#141820'); T.ell(X(-0.7), Y(head - 2.05), 0.75, 0.22, 'rgba(170,200,240,.7)'); T.ell(X(0.9), Y(head - 1.8), 0.3, 0.14, 'rgba(170,200,240,.35)'); // visor
+    T.ell(X(-1.0), Y(head + 0.1), 0.85, 0.6, 'rgba(255,255,255,.5)'); T.ell(X(1.4), Y(head + 0.9), 0.5, 0.9, 'rgba(0,0,0,.18)');
   } else if (hat === 'piri') {
     T.ell(X(0), Y(head), 3.3, 3.2, T.hg(X(-3.3), X(3.3), ['#ecd49a', '#d8b870', '#b0904e'])); for (let r = 1.4; r < 3.2; r += 0.6) { g.strokeStyle = 'rgba(120,90,40,.35)'; g.lineWidth = 0.15; g.beginPath(); g.ellipse(X(0), Y(head), r, r, 0, 0, 7); g.stroke(); }
     T.ell(X(0), Y(head), 1.6, 1.6, '#c8a860'); T.ell(X(0), Y(head), 1.65, 1.65, 'rgba(0,0,0,0)'); g.strokeStyle = '#2a1e14'; g.lineWidth = 0.35; g.beginPath(); g.arc(X(0), Y(head), 1.6, 0, 7); g.stroke();
@@ -4433,6 +4443,8 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
     if (L.hair !== 'rapado') T.ell(X(0), Y(head - hr + 0.35), 1.1, 0.35, skin); // frente
   } else T.ell(X(-0.5), Y(head - 0.4), 0.7, 0.5, 'rgba(255,255,255,.3)');
 });
+// geometría del pasajero según la del conductor de esa moto (cub: puños en gy -5.8): manos a la cintura de quien maneja, rodillas abiertas
+VR.pasGeo = (g = {}) => ({ pas: true, gy: -3.7, gx: 3.1, hip: 3.4, kx: 3.6 });
 VR.riderTopFrames = (() => {
   const cache = new Map();
   return (L, geo) => {
@@ -4779,12 +4791,12 @@ VR.Car = class {
     ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
     ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
     if (this.dents && this.dents.length && !this.wreck) VR.drawDents(ctx, this, x + shake, y, ak);
-    if (this.pasajero && this.pasajero.L) { // pasajero atrás del conductor (Mbohasa en moto)
-      const R = VR.riderTopFrames(this.pasajero.L, this.spec.rider), rh = R.S >> 1, ro = (this.spec.riderOff || 0) - 5;
+    if (this.pasajero && this.pasajero.L) { // pasajero atrás del conductor (Mbohasa en moto): se dibuja primero, así el conductor le tapa las manos en su cintura
+      const R = VR.riderTopFrames(this.pasajero.L, VR.pasGeo(this.spec.rider)), rh = R.S >> 1, ro = (this.spec.riderOff || 0) - 6;
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - Math.round(Math.cos(a) * ro), R.S, R.S);
     }
     if (this.rider && this.rider.L) { // el personaje de verdad (avatar 2) visto desde arriba, girando con la moto
-      const R = VR.riderTopFrames(this.rider.L, this.spec.rider), rh = R.S >> 1, ro = (this.spec.riderOff || 0) + (this.pasajero ? 2 : 0);
+      const R = VR.riderTopFrames(this.rider.L, this.spec.rider), rh = R.S >> 1, ro = (this.spec.riderOff || 0) + (this.pasajero ? 2.5 : 0);
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - Math.round(Math.cos(a) * ro), R.S, R.S);
     } else if (this.rider) {
       const R = VR.riderFrames(this.rider.shirt, this.rider.head, this.rider.o), rh = R.S >> 1;
@@ -10614,21 +10626,36 @@ VR.Cisnes = class {
 // para a tu lado, te subís atrás (moto) o adentro (auto) y te lleva por el camino del GPS hasta el destino, donde te bajás.
 // Antes era un teletransporte con precio. Conduce solo, siguiendo la ruta de VR.GPS (persecución pura + freno en curvas y ante
 // obstáculos); si se tranca mucho tiempo, hace el viaje igual con un fundido (llevar). Todo original.
+// 12/11/2026 (tarde): se elige moto / auto tranquilo / auto / auto rápido (cada uno con su velocidad y su precio), el conductor tiene
+// nombre, placa y casco (o no), y ante un vehículo parado o lento ESQUIVA DE VERDAD por el costado (entra al otro carril si hay lugar).
 'use strict';
+VR.MBH_NOMBRES = {
+  m: ['Néstor', 'Derlis', 'Aldo', 'Ramón', 'Fabio', 'Cristian', 'Lucas', 'Hugo', 'Rubén', 'Edgar', 'Osvaldo', 'Tito'],
+  f: ['Gladys', 'Marlene', 'Liz', 'Noelia', 'Fátima', 'Rocío', 'Analía', 'Dahiana', 'Mirta', 'Belén'],
+};
 VR.Mbohasa = class {
   // o: { world, gps, player, toast, dialogo(lineas), pagar(precio, txt) → bool, bajar(v) → bool (deja al jugador al lado),
-  //      yo() → pasajero (cómo se ve el jugador arriba de la moto), llevar(dest) (teletransporte de emergencia), manejando() → bool, fin(r) }
+  //      yo(casco) → pasajero (cómo se ve el jugador arriba de la moto, con casco o sin), tengoCasco() → bool, llevar(dest) (teletransporte
+  //      de emergencia), manejando() → bool, fin(r) }
   constructor(o) { Object.assign(this, o); this.r = null; this.v = null; this.riding = false; }
   static vial(t) { const T = VR.T; return t === T.ROAD || t === T.STONE || t === T.DIRTROAD; }
   get activo() { return !!this.r; }
   nombre(tipo) { return tipo === 'moto' ? 'moto' : 'auto'; }
-  // cuánto falta para llegar (s, aproximado) o texto del estado para el celular
+  // segundos que faltan para llegar (aproximado)
+  eta() {
+    const r = this.r, v = this.v; if (!r || !v) return 0;
+    const vest = Math.max(40, Math.min(v.topSpeed()[0] * 0.9, (v.type === 'moto' ? 180 : 165) * (r.kv || 1)) * 0.78);
+    return Math.max(1, Math.ceil(VR.polyLen(r.P, VR.polyNear(r.P, v.x, v.y)[1]) / vest));
+  }
+  static fmt(s) { return s < 90 ? '~' + s + ' s' : '~' + Math.round(s / 60) + ' min'; }
+  // texto del estado para el celular
   texto() {
     const r = this.r; if (!r) return '';
-    const N = this.nombre(r.tipo), seg = Math.max(1, Math.ceil(VR.polyLen(r.P, VR.polyNear(r.P, this.v.x, this.v.y)[1]) / 100));
-    if (r.st === 'viene') return 'Tu ' + N + ' viene en camino: ~' + seg + ' s. Esperalo en la vereda, cerca de la calle.';
-    if (r.st === 'espera') return 'Tu ' + N + ' ya llegó: acercate.';
-    return 'Viaje a ' + (r.dest.name || 'tu destino') + ' en curso.';
+    const N = this.nombre(r.tipo), c = r.cond ? r.cond.n : 'Tu conductor';
+    if (r.st === 'viene') return c + ' viene en camino: ' + VR.Mbohasa.fmt(this.eta()) + '. Esperalo en la vereda, cerca de la calle.';
+    if (r.st === 'espera') return c + ' ya llegó con la ' + N + ': acercate.';
+    if (r.st === 'viaje') return 'Viaje a ' + (r.dest.name || 'tu destino') + ' en curso: faltan ' + VR.Mbohasa.fmt(this.eta()) + '.';
+    return 'Viaje terminado.';
   }
   // camino de vehículo desde (fx, fy) hasta el punto de calle más cercano a (tx, ty): por el nodo de cualquiera de las dos puntas del tramo, el más corto
   ruta(fx, fy, tx, ty) {
@@ -10649,20 +10676,26 @@ VR.Mbohasa = class {
     }
     return Q;
   }
-  crear(tipo, x, y, a) {
+  // op: { modelo, conCasco }
+  crear(tipo, x, y, a, op = {}) {
     const w = this.world; let v;
-    if (tipo === 'moto') v = new VR.Car(w, x, y, a, (Math.random() * 6) | 0, 'moto', 'cub');
-    else v = new VR.Car(w, x, y, a, 3, 'car', 'sedan', { ...VR.tuneDefault('sedan'), color: 3 });
+    if (tipo === 'moto') v = new VR.Car(w, x, y, a, (Math.random() * 6) | 0, 'moto', op.modelo || 'cub');
+    else { const m = op.modelo || 'sedan'; v = new VR.Car(w, x, y, a, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); }
     if (v.contacts(x, y, a)) return null;
     v.mbh = true; v.v = 0; v.ghost = 0;
-    if (tipo === 'moto') { const L = VR.av2Random(); v.rider = Object.assign(VR.av2Rider(L), { L }); } else v.taxi = true; // el auto lleva el cartelito amarillo
+    if (tipo === 'moto') {
+      const L = VR.av2Random(); L.mochila = false;
+      if (op.conCasco) { L.hat = 'casco'; L.hatColor = (Math.random() * VR.AV2_CAT.cloth.length) | 0; } else if (L.hat === 'casco') L.hat = 'ninguno';
+      v.rider = Object.assign(VR.av2Rider(L), { L });
+    } else v.taxi = true; // el auto lleva el cartelito amarillo
     w.addBox(v); return v;
   }
   quitar() { if (this.v) { this.world.removeBox(this.v); this.v = null; } this.riding = false; this.r = null; }
-  // pedir: busca una esquina de calle a 330–700 px (fuera de pantalla) con camino hasta vos y hace aparecer al conductor ahí
-  pedir(tipo, precio, dest) {
+  // pedir: busca una esquina de calle a 330–700 px (fuera de pantalla) con camino hasta vos y hace aparecer al conductor ahí.
+  // op: { kv (ritmo: 1 = normal), modelo, key }
+  pedir(tipo, precio, dest, op = {}) {
     if (this.r || !this.gps || !this.gps.ok) return false;
-    const f = this.player, G = this.gps;
+    const f = this.player, G = this.gps, conCasco = tipo === 'moto' && Math.random() < 0.65;
     for (const [d0, d1] of [[330, 700], [250, 1000]]) { // esquinas de calle en el anillo (primero fuera de pantalla; si no hay, más cerca)
       const cand = [];
       for (let i = 0; i < G.N; i++) {
@@ -10674,8 +10707,10 @@ VR.Mbohasa = class {
       for (const i of cand.slice(0, 25)) {
         const x = G.nx[i], y = G.ny[i], Q = this.ruta(x, y, f.x, f.y); if (!Q || Q.length < 6 || VR.polyLen(Q) > 1400) continue;
         let k = 2; while (k + 1 < Q.length && Math.hypot(Q[k] - x, Q[k + 1] - y) < 2) k += 2;
-        const v = this.crear(tipo, x, y, Math.atan2(Q[k] - x, -(Q[k + 1] - y))); if (!v) continue;
-        this.v = v; this.r = { tipo, precio, dest, st: 'viene', P: Q, t: 0, rec: 2.5, fx: f.x, fy: f.y, wait: 0, blk: 0, atras: 0 };
+        const v = this.crear(tipo, x, y, Math.atan2(Q[k] - x, -(Q[k + 1] - y)), { modelo: op.modelo, conCasco }); if (!v) continue;
+        const gen = (v.rider && v.rider.L.gender) || (Math.random() < 0.75 ? 'm' : 'f'), N = VR.MBH_NOMBRES[gen === 'f' ? 'f' : 'm'], A = 'ABCDEFGHJKLMNPRSTUVXYZ', ch = () => A[(Math.random() * A.length) | 0];
+        const cond = { n: N[(Math.random() * N.length) | 0], placa: ch() + ch() + ch() + ch() + ' ' + (100 + ((Math.random() * 900) | 0)), nota: (4.5 + Math.random() * 0.5).toFixed(1).replace('.', ',') };
+        this.v = v; this.r = { tipo, precio, dest, st: 'viene', P: Q, t: 0, rec: 2.5, fx: f.x, fy: f.y, wait: 0, blk: 0, atras: 0, kv: op.kv || 1, key: op.key || tipo, cond, casco: conCasco, cascoP: false };
         return true;
       }
     }
@@ -10690,52 +10725,115 @@ VR.Mbohasa = class {
     for (; k + 3 < P.length; k += 2) { const nx = P[k + 2], ny = P[k + 3], s = Math.hypot(nx - cx, ny - cy); if (s >= rem) { const q = rem / (s || 1); return [cx + (nx - cx) * q, cy + (ny - cy) * q]; } rem -= s; cx = nx; cy = ny; }
     return [cx, cy];
   }
+  // cuánto está el punto (x, y) corrido del carril de la ruta P (+ = a la derecha), medido contra la ruta (no contra el rumbo de un vehículo, que va girando)
+  latRuta(P, x, y) {
+    const [, k] = VR.polyNear(P, x, y), [qx, qy] = this.adelante(P, k, x, y, 0), [q2x, q2y] = this.adelante(P, k, x, y, 6), dx = q2x - qx, dy = q2y - qy, m = Math.hypot(dx, dy) || 1;
+    return (x - qx) * (-dy / m) + (y - qy) * (dx / m);
+  }
+  // ¿qué hay en el punto (lat, f) de la vista del vehículo v? lat: + a la derecha, f: + adelante. Un vehículo, 'pared' (muro o algo que no es calle) o null
+  ocupa(v, lat, f) {
+    const w = this.world, px = v.x + Math.sin(v.a) * f + Math.cos(v.a) * lat, py = v.y - Math.cos(v.a) * f + Math.sin(v.a) * lat;
+    const o = w.boxAt(px, py, v); if (o) return o;
+    const tx = Math.floor(px / 16), ty = Math.floor(py / 16);
+    return w.solid(tx, ty) || !VR.Mbohasa.vial(w.get(tx, ty)) ? 'pared' : null;
+  }
+  // Esquivar de verdad (12/11/2026): corre la trayectoria al costado (primero por la izquierda, o sea por el otro carril; si no, por la derecha)
+  // lo justo para pasar al vehículo o, parado o lento, y solo si el lugar está libre. Devuelve true si empezó a esquivar.
+  esquiva(v, o) {
+    const r = this.r, sp = v.spec, os = o.spec || { wid: 18, len: 30 }, need = (sp.wid + os.wid) / 2 + 8 + (r.reint || 0);
+    const lo = this.latRuta(r.P, o.x, o.y);  // dónde está el otro respecto del carril de la ruta
+    const largo = sp.len / 2 + os.len / 2 + 30 + Math.abs(o.v || 0) * 0.3;
+    for (const lado of [-1, 1]) {
+      const tgt = VR.clamp(lo + lado * need, -40, 40), lat = tgt - (r.dev || 0); let ok = Math.abs(tgt - lo) >= need - 3;
+      for (let f = -4; f <= largo + (lado < 0 ? 40 : 0) && ok; f += 8) for (const dl of [-sp.wid * 0.5, 0, sp.wid * 0.5]) { const b = this.ocupa(v, lat + dl, f); if (b && b !== o) { ok = false; break; } }
+      if (ok) { r.lado = lado; r.offT = tgt; r.esq = 1; r.dur = 0; r.paso = o; r.need = need; r.loF = lo; return true; }
+    }
+    return false;
+  }
   // maneja el vehículo v siguiendo la ruta P un cuadro; devuelve true cuando llegó al final y ya casi frenó
   seguir(dt, P, v, kv) {
     const w = this.world, sp = v.spec, moto = v.type === 'moto', r = this.r;
     const [, i] = VR.polyNear(P, v.x, v.y), rest = VR.polyLen(P, i), ex = P[P.length - 2], ey = P[P.length - 1];
-    const L = 22 + Math.max(0, v.v) * 0.22, [tx, ty] = this.adelante(P, i, v.x, v.y, L), [t2x, t2y] = this.adelante(P, i, v.x, v.y, L * 2.6);
+    const fx = Math.sin(v.a), fy = -Math.cos(v.a), rx = Math.cos(v.a), ry = Math.sin(v.a);
+    if (r.off === undefined) { r.off = 0; r.offT = 0; r.esq = 0; r.nodo = 0; r.dur = 0; }
+    r.off += VR.clamp(r.offT - r.off, -48 * dt, 48 * dt); // el corrimiento lateral va llegando de a poco
+    r.dev = this.latRuta(P, v.x, v.y); // cuánto está el vehículo corrido (a la derecha +) del carril de la ruta, medido de verdad (no el ideal r.off: el vehículo tarda en llegar)
+    if (r.nodo > 0) r.nodo -= dt;
+    const L = 22 + Math.max(0, v.v) * 0.3; // mirada: más larga a alta velocidad (si no, zigzaguea)
+    const adel = (len) => { const [x0, y0] = this.adelante(P, i, v.x, v.y, len), [x1, y1] = this.adelante(P, i, v.x, v.y, len + 5); const dx = x1 - x0, dy = y1 - y0, m = Math.hypot(dx, dy) || 1; return [x0 - dy / m * r.off, y0 + dx / m * r.off]; };
+    const [tx, ty] = adel(L), [t2x, t2y] = adel(L * 2.6);
     const ang = (x, y) => Math.atan2(x - v.x, -(y - v.y)), wrap = (d) => Math.atan2(Math.sin(d), Math.cos(d));
     const d1 = wrap(ang(tx, ty) - v.a), d2 = Math.abs(wrap(ang(t2x, t2y) - v.a));
     const fin = rest < 12 || Math.hypot(ex - v.x, ey - v.y) < 16;
     let vt = (moto ? 180 : 165) * kv * (1 - Math.min(0.6, d2 * 0.5)); vt = Math.min(vt, v.topSpeed()[0] * 0.9);
+    vt *= 1 - VR.clamp((Math.abs(r.dev) - 6) / 40, 0, 0.55); // muy corrido de la ruta: primero se acomoda y después acelera
     if (rest < 80) vt = Math.min(vt, 18 + rest * 1.6);
-    if (v.ghost > 0) v.ghost -= dt;
-    // obstáculos adelante (otros vehículos o paredes): frena; si lleva mucho trabado, retrocede un poquito
-    const fx = Math.sin(v.a), fy = -Math.cos(v.a), rx = Math.cos(v.a), ry = Math.sin(v.a), dist = sp.len / 2 + 8 + Math.max(0, v.v) * 0.4;
-    let bloq = false, pared = false, otro = null;
+    if (rest < 55) { r.esq = 0; r.offT = 0; r.paso = null; } // cerca del destino no esquiva: se vuelve al carril
+    // obstáculos: cerca (frena) y un poco más lejos (para esquivar con tiempo)
+    const dist = sp.len / 2 + 8 + Math.max(0, v.v) * 0.4, dist2 = sp.len / 2 + 34 + Math.max(0, v.v) * 0.6;
+    let bloq = false, pared = false, otro = null, lejos = null;
     for (const s of [0, -sp.wid * 0.4, sp.wid * 0.4]) {
       const px = v.x + fx * dist + rx * s, py = v.y + fy * dist + ry * s, o = w.boxAt(px, py, v);
-      if (o && !(o.ghost > 0)) { bloq = true; otro = o; } else if (w.solid(Math.floor(px / 16), Math.floor(py / 16))) { bloq = true; pared = true; }
+      if (o) { bloq = true; otro = otro || o; } else if (w.solid(Math.floor(px / 16), Math.floor(py / 16))) { bloq = true; pared = true; }
+      if (!lejos) lejos = w.boxAt(v.x + fx * dist2 + rx * s, v.y + fy * dist2 + ry * s, v);
     }
-    // atrás de un auto que anda: lo sigue a su velocidad en vez de clavar el freno; si queda frenado, lo pasa por encima un ratito (adelanta)
+    if (!lejos && r.esq <= 0) { // también sobre la ruta misma (el vehículo puede ir zigzagueando: lo que está en el carril de la ruta es lo que va a encontrar)
+      for (let d = sp.len / 2 + 16; d <= dist2 + 40 && !lejos; d += 12) { const [qx, qy] = adel(d); for (const s of [0, -sp.wid * 0.35, sp.wid * 0.35]) { const o = w.boxAt(qx + (-(adel(d + 4)[1] - qy)) / 4 * s, qy + (adel(d + 4)[0] - qx) / 4 * s, v); if (o) { lejos = o; break; } } }
+    }
+    // atrás de un auto que anda: lo sigue a su velocidad en vez de clavar el freno; si es lento más de 1,2 s, lo esquiva
     let sigue = false; const vt0 = vt;
-    if (bloq && !pared && otro && otro.ai && otro.v > 25 && v.ghost <= 0) { sigue = true; vt = Math.min(vt, Math.max(30, otro.v * 0.95)); if (Math.hypot(otro.x - v.x, otro.y - v.y) > sp.len / 2 + otro.spec.len / 2 + 10) bloq = false; }
-    // detrás de uno lento más de 1,5 s: lo pasa (por encima, un ratito) en vez de arrastrarse atrás
+    if (bloq && !pared && otro && otro.ai && otro.v > 25) { sigue = true; vt = Math.min(vt, Math.max(30, otro.v * 0.95)); if (Math.hypot(otro.x - v.x, otro.y - v.y) > sp.len / 2 + otro.spec.len / 2 + 10) bloq = false; }
     r.lento = sigue && otro.v < vt0 * 0.7 ? (r.lento || 0) + dt : 0;
-    if (r.lento > 1.5) { v.ghost = 2.6; r.lento = 0; }
+    if (r.esq > 0) { // esquivando: mientras haya un vehículo en el carril de la ruta (al lado o un poco adelante) se sigue por afuera
+      r.esq -= dt; r.dur += dt;
+      const adL = sp.len * 0.5 + 18 + Math.max(0, v.v) * 0.25;
+      for (let f = -sp.len * 0.8; f <= adL; f += 8) { const b = this.ocupa(v, -r.dev, f); if (b && b !== 'pared') { r.esq = Math.max(r.esq, 0.3); r.paso = b; break; } }
+      if (r.esq > 0 && r.paso && r.paso.spec) { // el margen se recalcula cada cuadro contra el que está pasando (si se mueve, se adapta)
+        const o = r.paso, lo = this.latRuta(P, o.x, o.y);
+        r.loF = (r.loF === undefined ? lo : r.loF + (lo - r.loF) * Math.min(1, dt * 5));  // filtrado: no se mueve con cada cabeceo
+        r.offT = VR.clamp(r.loF + r.lado * ((sp.wid + o.spec.wid) / 2 + 8 + (r.reint || 0)), -40, 40);
+      }
+      if (r.esq <= 0 || r.dur > 7) { r.esq = 0; r.offT = 0; r.paso = null; r.dur = 0; }
+    } else if (!pared && r.nodo <= 0 && r.atras <= 0) {
+      const o = otro || lejos;
+      if (o && (!(Math.abs(o.v || 0) > 25) || r.lento > 1.2 || r.blk > 0.9) && this.esquiva(v, o)) r.lento = 0;
+    }
+    if (r.esq > 0 && !pared && (!otro || otro === r.paso)) { // al que está pasando no le clava el freno: la velocidad sale del espacio libre que queda y de si ya está al costado de verdad
+      bloq = false;
+      const o = r.paso, os = o && o.spec;
+      if (o && os) {
+        const fo = (o.x - v.x) * fx + (o.y - v.y) * fy, lo = (o.x - v.x) * rx + (o.y - v.y) * ry, medio = (sp.len + os.len) / 2, gap = fo - medio;
+        const medioW = (sp.wid + os.wid) / 2;
+        if (Math.abs(lo) < medioW + 2 && fo > -medio) { // todavía en su carril (o rozándolo): freno según el espacio que queda; si de verdad se superponen y no hay lugar, frena del todo
+          vt = Math.min(vt, 14 + Math.max(0, gap) * 1.7); if (gap < 3 && Math.abs(lo) < medioW - 1) bloq = true;
+        } else vt = Math.min(vt, 90); // ya está al costado: lo pasa a velocidad moderada
+      } else vt = Math.min(vt, 60);
+    }
     r.blk = bloq ? r.blk + dt : 0;
-    if (bloq && !pared && v.ghost <= 0 && r.blk > 1.1) { v.ghost = 1.8; r.blk = 0; }
-    if (r.blk > 3 && pared) { r.atras = 0.9; r.blk = 0; }
-    if (v.ghost > 0) bloq = pared;
+    if (r.blk > 1.6 && r.esq > 0) { r.esq = 0; r.offT = 0; r.paso = null; r.nodo = 3; } // esquivando y trancado por otro (de frente, por ejemplo): vuelve al carril y espera
+    if (r.blk > 3) { r.atras = 0.9; r.blk = 0; if (!pared) r.reint = Math.min(8, (r.reint || 0) + 3); } // sigue trancado: marcha atrás un poco y vuelve a probar, con más margen
     if (r.atras > 0) { r.atras -= dt; v.st = 0; v.physics(dt, -1, 0, false); return false; }
     let th = 0, st = 0, br = false;
     if (Math.abs(d1) > 2.2 && v.v < 40) { th = -0.9; st = VR.clamp(-d1 * 2, -1, 1); } // hay que dar la vuelta: marcha atrás girando
     else { st = VR.clamp(d1 * 3, -1, 1); th = v.v < vt ? VR.clamp((vt - v.v) / 35, 0.25, 1) * (Math.abs(d1) > 0.5 ? 0.7 : 1) : 0; br = v.v > vt + 12; }
     if (bloq) { th = 0; br = true; }
     if (fin) { th = 0; br = true; }
+    // quiere avanzar y no se mueve (pegado a algo que no vio, o un vehículo que quedó de costado): marcha atrás y reintenta con más margen
+    r.parado = !fin && th > 0.15 && !br && Math.abs(v.v) < 12 ? (r.parado || 0) + dt : 0;
+    if (r.parado > 1.6) { r.parado = 0; r.atras = 0.8; r.esq = 0; r.offT = 0; r.paso = null; r.nodo = 0; r.reint = Math.min(12, (r.reint || 0) + 3); }
     v.st = (v.st || 0) + (st - (v.st || 0)) * Math.min(1, dt * 11);
     v.physics(dt, th, v.st * (1 - Math.min(0.2, Math.abs(v.v) / 1000)), br);
     return fin && Math.abs(v.v) < 22;
   }
-  subir() {
+  // casco: true = el pasajero va con casco (el suyo, o el de repuesto del conductor)
+  subir(casco) {
     const r = this.r, v = this.v; if (!r || !v || r.st !== 'espera') return;
     const P = this.ruta(v.x, v.y, r.dest.x, r.dest.y);
     if (!P || P.length < 6) { this.toast('No hay camino hasta ' + (r.dest.name || 'ahí')); this.cancelar(); return; }
     if (!this.pagar(r.precio, 'Mbohasa (' + this.nombre(r.tipo) + ')')) { this.cancelar(); return; }
-    r.P = P; r.st = 'viaje'; r.t = 0; r.blk = 0; r.atras = 0; r.lim = VR.polyLen(r.P) / 50 + 45;
-    this.riding = true; if (v.type === 'moto') v.pasajero = this.yo();
-    this.toast((r.tipo === 'moto' ? '🏍 ¡Agarrate bien! ' : '🚗 ') + 'Vamos a ' + (r.dest.name || 'tu destino'));
+    r.P = P; r.st = 'viaje'; r.t = 0; r.blk = 0; r.atras = 0; r.off = 0; r.offT = 0; r.esq = 0; r.paso = null; r.reint = 0; r.lim = VR.polyLen(r.P) / 50 + 45;
+    this.riding = true; if (v.type === 'moto') { r.cascoP = !!casco; v.pasajero = this.yo(!!casco); }
+    this.toast((r.tipo === 'moto' ? (casco ? '🏍🪖 ' : '🏍 ') + '¡Agarrate bien! ' : '🚗 ') + 'Vamos a ' + (r.dest.name || 'tu destino'));
   }
   // el jugador baja (en el destino, o antes si el vehículo está casi parado) y el conductor se va
   bajarYSalir(llegada) {
@@ -10749,7 +10847,7 @@ VR.Mbohasa = class {
       const d = Math.hypot(this.gps.nx[i] - f.x, this.gps.ny[i] - f.y); if (d < 300 || d > 650) continue;
       const P = this.gps.route(f.x, f.y, this.gps.nx[i], this.gps.ny[i], true); if (P && P.length >= 6) far.push(P);
     }
-    r.st = 'sale'; r.t = 0; r.P = far.length ? far[0] : [v.x, v.y, v.x, v.y - 1]; r.blk = 0; r.atras = 0;
+    r.st = 'sale'; r.t = 0; r.P = far.length ? far[0] : [v.x, v.y, v.x, v.y - 1]; r.blk = 0; r.atras = 0; r.off = 0; r.offT = 0; r.esq = 0; r.paso = null;
     this.toast(llegada ? '🏁 ¡Llegamos! Aguyje, buen viaje.' : 'Bajaste del Mbohasa');
     return true;
   }
@@ -10767,25 +10865,30 @@ VR.Mbohasa = class {
     if (!v) { this.r = null; this.riding = false; return; }
     r.t += dt;
     if ((r.st === 'viene' || r.st === 'espera') && this.manejando()) { this.quitar(); this.toast('Tu Mbohasa se fue: te subiste a otro vehículo'); return; }
+    const kv = r.kv || 1;
     if (r.st === 'viene') {
       r.rec -= dt;
       if (r.rec <= 0) { // si te moviste, se vuelve a calcular el camino hasta donde estás ahora
         r.rec = 2.5; const f = this.player;
         if (Math.hypot(f.x - r.fx, f.y - r.fy) > 50) { const Q = this.ruta(v.x, v.y, f.x, f.y); if (Q && Q.length >= 6) { r.P = Q; r.fx = f.x; r.fy = f.y; } }
       }
-      if (this.seguir(dt, r.P, v, 1)) { r.st = 'espera'; r.wait = 0; r.dlg = false; this.toast('🛵 ¡Llegó tu Mbohasa!'); }
+      if (this.seguir(dt, r.P, v, kv)) { r.st = 'espera'; r.wait = 0; r.dlg = false; this.toast('🛵 ¡Llegó tu Mbohasa!'); }
       else if (r.t > 90) { this.quitar(); this.toast('Tu Mbohasa no pudo llegar. No se te cobró nada.'); }
     } else if (r.st === 'espera') {
       v.physics(dt, 0, 0, true, true); r.wait += dt;
       const f = this.player, d = Math.hypot(f.x - v.x, f.y - v.y);
       if (d < 110 && !r.dlg && !VR.Dialogo.abierto) {
         r.dlg = true;
-        this.dialogo([{ quien: 'sis', titulo: '🛵 Mbohasa', txt: (r.tipo === 'moto' ? '🏍' : '🚗') + ' Tu ' + this.nombre(r.tipo) + ' está acá. Viaje a ' + (r.dest.name || 'tu destino') + ' por ' + VR.fmtGs(r.precio) + '.',
-          op: [['Subir', () => { this.subir(); return true; }], ['Cancelar', () => { this.cancelar(); return false; }]] }]);
+        const moto = r.tipo === 'moto', propio = !!(this.tengoCasco && this.tengoCasco()), prest = moto && r.casco, c = r.cond || { n: 'Conductor', placa: '' };
+        const op = [];
+        if (moto && (propio || prest)) op.push([propio ? '🪖 Subir con mi casco' : '🪖 Subir con el casco del conductor', () => { this.subir(true); return true; }], ['Subir sin casco', () => { this.subir(false); return true; }]);
+        else op.push([moto ? 'Subir (sin casco)' : 'Subir', () => { this.subir(false); return true; }]);
+        op.push(['Cancelar', () => { this.cancelar(); return false; }]);
+        this.dialogo([{ quien: 'sis', titulo: '🛵 Mbohasa · ' + c.n, txt: (moto ? '🏍' : '🚗') + ' ' + c.n + ' (' + c.placa + ') está acá' + (moto ? (r.casco ? ', con casco' : ', sin casco') : '') + '. Viaje a ' + (r.dest.name || 'tu destino') + ' por ' + VR.fmtGs(r.precio) + '.', op }]);
       } else if (d > 140 && r.dlg && !VR.Dialogo.abierto) r.dlg = false; // te alejaste: avisa de nuevo al volver
       if (r.wait > 100) { this.quitar(); this.toast('Tu Mbohasa se cansó de esperar y se fue.'); }
     } else if (r.st === 'viaje') {
-      if (this.seguir(dt, r.P, v, 1)) { if (!this.bajarYSalir(true) && (r.wait = (r.wait || 0) + dt) > 3) { this.quitar(); this.llevar(r.dest); } }
+      if (this.seguir(dt, r.P, v, kv)) { if (!this.bajarYSalir(true) && (r.wait = (r.wait || 0) + dt) > 3) { this.quitar(); this.llevar(r.dest); } }
       else if (r.t > r.lim) { const d = r.dest; this.quitar(); this.llevar(d); } // trancado: el viaje se hace igual, con fundido
     } else if (r.st === 'sale') {
       this.seguir(dt, r.P, v, 0.9);
@@ -11036,7 +11139,8 @@ VR.Titulo = class {
     if (emer) emer.clear();
     toast(msg);
   }
-  const me = () => Object.assign(VR.av2Rider(player.lookData), { L: player.lookData }); // así se ve el jugador arriba de la moto: su personaje (05/11/2026)
+  // así se ve el jugador arriba de la moto: su personaje (05/11/2026); casco = true se pone un casco (12/11/2026, Mbohasa)
+  const me = (casco) => { const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];
@@ -11470,7 +11574,13 @@ VR.Titulo = class {
   $('pCel').onclick = () => pauseThen(() => openCel());
   // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
   const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', celStop = null;
-  const JAHA = { moto: { n: 'Moto', ico: '🏍', base: 10000, km: 3000, kmh: 28 }, auto: { n: 'Auto', ico: '🚗', base: 15000, km: 5000, kmh: 32 } };
+  // Opciones de viaje (12/11/2026): tipo de vehículo, modelo, ritmo (kv × velocidad de crucero), precio y velocidad estimada (px/s) para mostrar el tiempo
+  const JAHA = {
+    moto: { n: 'Moto', ico: '🏍', tipo: 'moto', modelo: 'cub', base: 10000, km: 3000, kv: 1, v: 140, d: 'La más rápida entre el tránsito. Vas atrás: ¡agarrate!' },
+    autoT: { n: 'Auto tranquilo', ico: '🚙', tipo: 'auto', modelo: 'mono', base: 12000, km: 4000, kv: 0.6, v: 80, d: 'Maneja despacio y con cuidado. Más barato.' },
+    auto: { n: 'Auto', ico: '🚗', tipo: 'auto', modelo: 'sedan', base: 15000, km: 5000, kv: 0.95, v: 125, d: 'Ritmo normal, cómodo y seguro.' },
+    autoR: { n: 'Auto rápido', ico: '🏎', tipo: 'auto', modelo: 'coupe', base: 20000, km: 7000, kv: 1.3, v: 165, d: 'Llegás antes... si no te mareás. Más caro.' },
+  };
   if (vida) $('btnCel').hidden = false;
   $('btnCel').onclick = () => openCel();
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
@@ -11495,11 +11605,16 @@ VR.Titulo = class {
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
       h = '<h3>🛵 Mbohasa</h3>';
-      if (mbh.activo) h += '<p>' + esc(mbh.texto()) + '</p>' + (mbh.r.st === 'viene' || mbh.r.st === 'espera' ? '<button class="cbtn sec" data-j="x">Cancelar</button>' : '');
+      if (mbh.activo) { // como en Bolt: mapita con el conductor en vivo, su tarjeta y el estado
+        const r = mbh.r, c = r.cond || { n: 'Conductor', placa: '', nota: '' }, J = JAHA[r.key] || JAHA[r.tipo], mn = (mbh.v && mbh.v.spec.name) || '';
+        h += '<canvas id="mbhMap" class="mbhMap"></canvas><div class="mbhCard"><div class="mbhAv">' + J.ico + '</div><div><b>' + esc(c.n) + '</b> · ⭐ ' + c.nota + '<br><small>' + esc(mn) + ' · ' + esc(c.placa) + (r.tipo === 'moto' ? (r.casco ? ' · 🪖 con casco' : ' · sin casco') : '') + '</small></div></div>' +
+          '<p id="mbhTxt">' + esc(mbh.texto()) + '</p>' + (r.st === 'viene' || r.st === 'espera' ? '<button class="cbtn sec" data-j="x">Cancelar</button>' : '');
+      }
       else if (!dest) h += '<p>Marcá a dónde vas en el 🗺 Mapa y volvé a abrir Mbohasa.</p><button class="cbtn" data-a="mapa">🗺 Abrir el mapa</button>';
       else { const km = Math.hypot(dest.x - player.x, dest.y - player.y) / 8000 * 1.3;
         h += '<p>A: <b>' + esc(dest.name || 'destino') + '</b> · ' + km.toFixed(1).replace('.', ',') + ' km</p><p>Se paga con la billetera electrónica al subirte (tenés ' + gs(s.banco) + '). Viene un conductor de verdad: esperalo cerca de la calle.</p>';
-        for (const t in JAHA) { const J = JAHA[t], pr = Math.round((J.base + J.km * km) / 1000) * 1000; h += '<button class="cbtn" data-j="' + t + '" data-p="' + pr + '"' + (s.banco < pr || car ? ' disabled' : '') + '>' + J.ico + ' ' + J.n + ' · ' + gs(pr) + '</button>'; }
+        for (const t in JAHA) { const J = JAHA[t], pr = Math.round((J.base + J.km * km) / 1000) * 1000, sg = Math.max(5, Math.round(km * 8000 / J.v));
+          h += '<button class="cbtn opc" data-j="' + t + '" data-p="' + pr + '"' + (s.banco < pr || car ? ' disabled' : '') + '><span class="oi">' + J.ico + '</span><span class="ot"><b>' + J.n + '</b><small>' + J.d + '</small></span><span class="op">' + gs(pr) + '<small>' + VR.Mbohasa.fmt(sg) + '</small></span></button>'; }
         if (car) h += '<p>Bajate del vehículo para pedir.</p>'; }
     } else if (celApp === 'bill') {
       h = '<h3>🏦 Billetera</h3><div class="row2"><span>💵 Efectivo</span><b>' + gs(VR.Wallet.get()) + '</b></div><div class="row2"><span>🏦 Electrónica</span><b>' + gs(s.banco) + '</b></div>' +
@@ -11544,6 +11659,7 @@ VR.Titulo = class {
     if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
     if (celApp === 'culebra') celStop = VR.Culebra(celBody);
     if (celApp === 'camara') celStop = camStart();
+    if (celApp === 'jaha' && mbh.activo) celStop = mbhLive();
     celBody.querySelectorAll('[data-buy]').forEach((b) => b.onclick = () => { const it = VR.PIEZA_ITEMS.find((q) => q.k === b.dataset.buy); if (!it || !vida.pagaBanco(it.p, 'Mercadito: ' + it.n)) { paintCel(); return; } vida.s.pieza.items = vida.s.pieza.items || {}; vida.s.pieza.items[it.k] = 1; vida.save(); toast('📦 ' + it.n + ': te lo dejan en la pieza'); paintCel(); });
     celBody.querySelectorAll('[data-f]').forEach((im) => im.onclick = () => { celApp = 'foto' + im.dataset.f; paintCel(); });
     celBody.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { VR.Fotos.del(+b.dataset.del); celApp = 'galeria'; paintCel(); });
@@ -11555,7 +11671,50 @@ VR.Titulo = class {
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
       if (b.dataset.j === 'x') { mbh.cancelar(); paintCel(); return; }
       if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }
-      if (mbh.pedir(b.dataset.j, +b.dataset.p, { ...dest })) { celDlg.close(); toast(JAHA[b.dataset.j].ico + ' Pediste un Mbohasa: ya viene por la calle. Esperalo cerca de la calle.'); } else paintCel(); });
+      const J = JAHA[b.dataset.j];
+      if (mbh.pedir(J.tipo, +b.dataset.p, { ...dest }, { kv: J.kv, modelo: J.modelo, key: b.dataset.j })) { celApp = 'jaha'; paintCel(); toast(J.ico + ' Pediste un Mbohasa: ya viene por la calle. Mirá el mapita para verlo venir.'); } else paintCel(); });
+  }
+  // Mapita en vivo del Mbohasa (12/11/2026, estilo Bolt): recorte del mapa con el camino, el conductor (🏍/🚗), vos y el destino. Mientras está abierto el
+  // mundo sigue andando (como con la cámara) para ver llegar al conductor; cuando llega, el celular se cierra y aparece el diálogo para subir.
+  function drawMbhMap(cv) {
+    const r = mbh.r, v = mbh.v; if (!r || !v) return;
+    if (!mapBuilt) buildMap();
+    const dpr = Math.min(2.5, window.devicePixelRatio || 1), W = Math.round(cv.clientWidth * dpr) || 300, H = Math.round(cv.clientHeight * dpr) || 190;
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    const g = cv.getContext('2d'), f = car || player, T = VR.TILE, me = [f.x, f.y], pts = [[v.x, v.y], me];
+    if (r.st === 'viaje') pts.push([r.dest.x, r.dest.y]);
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    const sx = Math.max(40, x1 - x0) / T + 14, sy = Math.max(40, y1 - y0) / T + 14, k = VR.clamp(Math.min(W / sx, H / sy), 2 * dpr, 9 * dpr);
+    const tx = (x0 + x1) / 2 / T - W / k / 2, ty = (y0 + y1) / 2 / T - H / k / 2, X = (x) => (x / T - tx) * k, Y = (y) => (y / T - ty) * k, u = dpr;
+    g.save(); g.fillStyle = '#2b3a22'; g.fillRect(0, 0, W, H); g.imageSmoothingEnabled = false; g.drawImage($('mapCanvas'), tx, ty, W / k, H / k, 0, 0, W, H); g.fillStyle = 'rgba(0,0,0,.1)'; g.fillRect(0, 0, W, H);
+    if (r.P && r.P.length > 3) { // camino del conductor (hasta vos, o hasta el destino)
+      g.lineJoin = g.lineCap = 'round'; g.beginPath(); for (let i = 0; i < r.P.length; i += 2) i ? g.lineTo(X(r.P[i]), Y(r.P[i + 1])) : g.moveTo(X(r.P[i]), Y(r.P[i + 1]));
+      g.strokeStyle = '#0b2a36'; g.lineWidth = 6 * u; g.stroke(); g.strokeStyle = '#ffd84a'; g.lineWidth = 3.2 * u; g.stroke();
+    }
+    g.font = Math.round(15 * u) + 'px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if (r.st === 'viaje') g.fillText('🏁', X(r.dest.x), Y(r.dest.y) - 8 * u);
+    if (r.st !== 'viaje') { // vos: punto azul con aro blanco
+      const px = X(me[0]), py = Y(me[1]); g.fillStyle = 'rgba(63,211,255,.28)'; g.beginPath(); g.arc(px, py, 13 * u, 0, 7); g.fill();
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(px, py, 6.5 * u, 0, 7); g.fill(); g.fillStyle = '#2a8ef0'; g.beginPath(); g.arc(px, py, 4.8 * u, 0, 7); g.fill();
+    }
+    { const px = X(v.x), py = Y(v.y), pul = 1 + 0.12 * Math.sin(performance.now() / 220); // conductor: círculo amarillo con el vehículo, que late
+      g.fillStyle = 'rgba(255,216,74,.3)'; g.beginPath(); g.arc(px, py, 15 * u * pul, 0, 7); g.fill(); g.fillStyle = '#1a1a1e'; g.beginPath(); g.arc(px, py, 11 * u, 0, 7); g.fill(); g.fillStyle = '#ffd84a'; g.beginPath(); g.arc(px, py, 9.5 * u, 0, 7); g.fill();
+      g.fillStyle = '#1a1a1e'; g.fillText(r.tipo === 'moto' ? '🏍' : '🚗', px, py + 0.5 * u); }
+    g.restore();
+  }
+  function mbhLive() {
+    let alive = true, raf = 0, last = mbh.r ? mbh.r.st : '', tt = 0;
+    VR.loop.paused = false; // el mundo sigue andando mientras mirás el mapa (el control sigue apagado)
+    const tick = () => {
+      if (!alive) return;
+      const r = mbh.r; if (!r) { paintCel(); return; } // cancelado o se fue: se vuelve a la lista
+      const cv = $('mbhMap'); if (cv) drawMbhMap(cv);
+      if (r.st !== last) { last = r.st; if (r.st === 'espera') { celDlg.close(); return; } paintCel(); return; } // llegó: se cierra el celular y aparece el diálogo para subir
+      if (performance.now() - tt > 500) { tt = performance.now(); const t = $('mbhTxt'); if (t) t.textContent = mbh.texto(); }
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => { alive = false; cancelAnimationFrame(raf); if (celDlg.open) VR.loop.paused = true; };
   }
   // Cámara (11/11/2026): app dentro del celular, con el visor en vivo a resolución nativa del juego (nítido) y el obturador grande abajo.
   // El juego sigue andando detrás pero sin control (para encuadrar distinto, salí del celular, caminá y volvé a abrirla). También en la pieza.
@@ -11623,7 +11782,7 @@ VR.Titulo = class {
     for (const [dx, dy] of tries) { const x = c.x + dx, y = c.y + dy + 4; if (!world.hits(x - player.HW, y - player.HH, x + player.HW, y)) { player.x = player.px = x; player.y = player.py = y; player.moving = false; return true; } }
     return false;
   }
-  const mbh = vida && gpsNet ? new VR.Mbohasa({ world, gps: gpsNet, player, toast, dialogo: (l, f) => mis.dialogo(l, f), pagar: (p, t) => vida.pagaBanco(p, t), yo: me, manejando: () => !!car, bajar: mbhBajar,
+  const mbh = vida && gpsNet ? new VR.Mbohasa({ world, gps: gpsNet, player, toast, dialogo: (l, f) => mis.dialogo(l, f), pagar: (p, t) => vida.pagaBanco(p, t), yo: (c) => me(c), tengoCasco: () => !!vida.s.casco, manejando: () => !!car, bajar: mbhBajar,
     fin: (r) => { if (mis) mis.emit('jaha', r); },
     llevar: (d) => { const f = $('celFade'); f.textContent = '🛵 En viaje…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); if (mis) mis.emit('jaha', { dest: d }); setTimeout(() => f.classList.remove('on'), 300); }, 900); } })
     : { riding: false, activo: false, r: null, v: null, saltear() {}, update() {}, rideTick() {}, cancelar() {}, pedir() { return false; }, texto() { return ''; } };
@@ -11644,6 +11803,7 @@ VR.Titulo = class {
     if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro' });
     const C = { despensa: '#9fe0a0', pieza: '#ffd84a', cajero: '#7fd8ff', cajero2: '#7fd8ff', financiera: '#ffb36b', celulares: '#c9a0ff' };
     if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
+    if (mbh.activo && mbh.v && !mbh.riding) o.push({ x: mbh.v.x, y: mbh.v.y, ico: mbh.r.tipo === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: 'Tu Mbohasa' }); // el conductor, siempre visible en el minimapa y el mapa grande (12/11/2026)
     const ks = mis ? Object.keys(VR.PUNTOS) : ['despensa'];
     for (const k of ks) { const D = VR.PUNTOS[k], p = D && lugE.get(D.lugar); if (p) o.push({ x: p.x, y: p.y - (k === 'despensa' ? 4 : 0), ico: D.ico, c: C[k] || '#9fe0a0', name: D.nombre }); }
     return o; };
