@@ -293,9 +293,11 @@ VR.Misiones = class {
     if (P.dlg && !a.dlgOk) { this._dlgPend = () => this.dialogo(P.dlg, () => { if (!this.s.act || this.s.act.paso !== i) return; a.dlgOk = true; this.save(); if (soloDlg) this.siguiente(); }); }
     else if (soloDlg) this.siguiente();
   }
-  marcar() { // GPS al objetivo del paso
-    const P = this.paso; if (!P) return;
-    const t = this.objetivo(); if (t) this.setDest({ x: t.x, y: t.y, name: t.name, mis: 1 }, true);
+  marcar(aviso) { // GPS al objetivo del paso (aviso: lo pidió el jugador a mano, así que se le dice qué pasó)
+    const P = this.paso; if (!P) { if (aviso) this.toast('No tenés una misión en curso'); return; }
+    const t = this.objetivo();
+    if (t && Number.isFinite(t.x) && Number.isFinite(t.y)) { this.setDest({ x: t.x, y: t.y, name: t.name, mis: 1 }, true); if (aviso) this.toast('🧭 GPS marcado: ' + (t.name || 'el objetivo')); }
+    else if (aviso) this.toast('🧭 Este paso no tiene un lugar para marcar (mirá el objetivo arriba)');
   }
   objetivo() { const P = this.paso; if (!P) return null; if (P.ir) return this.lug.get(P.ir); if (P.hablar) { const p = this.dondeEsta(P.hablar); return p && { ...p, name: VR.PERSONAJES[P.hablar].nombre }; } return null; }
   siguiente() {

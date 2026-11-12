@@ -539,13 +539,13 @@
     h += '<h3>Barrios</h3><p>' + world.barrios.map((b) => (VR.Barrios.abierto(b) ? '🟢 ' : '🔒 ') + esc(b)).join(' · ') + '</p><p>En un barrio 🔒 todavía no conocés a nadie: no hay changas ni misiones y el GPS no marca destinos.</p>';
     if (!enCel) h += '<div class="row"><button class="btn" data-v="bill">💵 Billetera</button><button class="btn primary" data-v="x">Cerrar</button></div>';
     host.innerHTML = enCel ? '<div class="nota">' + h + '</div>' : h;
-    const cerrar = enCel ? (f) => celGo(f) : (f) => { vDlg._intro = true; vDlg.close(); f(); };
-    host.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { const v = b.dataset.m; if (v === 'gps') cerrar(() => mis.marcar()); else if (v === 're') cerrar(() => mis.reintentar()); else { mis.abandonar(); paintMis(host, enCel); } });
+    const cerrar = enCel ? (f) => celGo(f) : (f) => { vDlg._intro = true; vDlg.close(); resume(); try { f(); } catch (e) { console.error(e); toast('⚠ No se pudo hacer eso (' + (e && e.message || e) + ')'); VR.loop.paused = false; VR.input.enabled = true; } };
+    host.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { const v = b.dataset.m; if (v === 'gps') cerrar(() => mis.marcar(true)); else if (v === 're') cerrar(() => mis.reintentar()); else { mis.abandonar(); paintMis(host, enCel); } });
     host.querySelectorAll('[data-o]').forEach((b) => b.onclick = () => cerrar(() => { mis.marcarOferta(b.dataset.o); }));
     host.querySelectorAll('[data-s]').forEach((b) => b.onclick = () => cerrar(() => mis.empezar(b.dataset.s)));
     host.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { if (b.dataset.v === 'x') vDlg.close(); else { vTab = b.dataset.v; paintVida(); } });
   }
-  vDlg.addEventListener('close', () => { if (mode === 'game' && !vDlg._intro) { VR.loop.paused = true; VR.input.enabled = false; pause.showModal(); } else { vDlg._intro = false; resume(); } });
+  vDlg.addEventListener('close', () => { if (mode === 'game' && !vDlg._intro) { VR.loop.paused = true; VR.input.enabled = false; pause.showModal(); } else { vDlg._intro = false; if (!VR.Dialogo.abierto) resume(); } }); // si f abrió un diálogo de misión, no destrabar el juego por atrás
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
@@ -560,7 +560,10 @@
   celDlg.addEventListener('close', () => { unmapCel(); if (celStop) { celStop(); celStop = null; } if (!celDlg._keep) { VR.loop.paused = false; VR.input.enabled = true; } celDlg._keep = false; });
   function openCel(app) { if (!vida || mode !== 'game') return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; celApp = app || 'home'; paintCel(); if (!celDlg.open) celDlg.showModal(); }
   function unmapCel() { if ($('mapView').classList.contains('enCel')) { closeMap(); $('mapView').classList.remove('enCel'); document.body.append($('mapView')); } celBody.classList.remove('mapa'); }
-  const celGo = (f) => { celDlg._keep = true; celDlg.close(); f(); };
+  // Cierra el celular y hace f(). El juego se reanuda ANTES de f(): si f abre un diálogo (misión), este guarda "no estaba en pausa" y al cerrarse
+  // devuelve el juego andando; si f solo marca algo (GPS), el juego queda andando. (Antes quedaba todo en pausa: se "colgaba" al marcar la misión.)
+  // Si f falla, no se deja el juego congelado: se avisa y se sigue.
+  const celGo = (f) => { celDlg._keep = true; celDlg.close(); resume(); try { f(); } catch (e) { console.error(e); toast('⚠ No se pudo hacer eso (' + (e && e.message || e) + ')'); VR.loop.paused = false; VR.input.enabled = true; } };
   function paintCel() {
     const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0; celDlg.classList.toggle('roto', vida.celuRoto());
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
@@ -886,16 +889,20 @@
     closeMap(); toast('✨ Apareciste en ' + (name || world.placeName(spot[0], spot[1]) || 'el lugar marcado'));
   }
   for (const id of ['mzClose', 'mzIn', 'mzOut', 'mzMe', 'mzClear', 'mzGo']) $(id).addEventListener('pointerdown', (e) => e.stopPropagation());
+  // 11/11/2026: el mapa también vive adentro del celular (GPS / Mbohasa), donde el recuadro NO está en la esquina de la pantalla.
+  // Todas las cuentas del mapa (ox, oy, zoom, toque) son relativas al recuadro, así que los puntos de la pantalla se pasan a "locales" del recuadro.
+  const boxXY = (cx, cy) => { const r = mapBox.getBoundingClientRect(), sx = mapBox.clientWidth / (r.width || 1), sy = mapBox.clientHeight / (r.height || 1); return [(cx - r.left - mapBox.clientLeft) * sx, (cy - r.top - mapBox.clientTop) * sy]; };
   const ptrs = new Map(); let pinch = null, dragMoved = 0;
   mapBox.addEventListener('pointerdown', (e) => {
     e.preventDefault(); try { mapBox.setPointerCapture(e.pointerId); } catch (x) {}
-    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const [lx, ly] = boxXY(e.clientX, e.clientY);
+    ptrs.set(e.pointerId, { x: lx, y: ly });
     if (ptrs.size === 1) dragMoved = 0;
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; dragMoved = 99; }
   });
   mapBox.addEventListener('pointermove', (e) => {
     const p = ptrs.get(e.pointerId); if (!p) return;
-    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    const [lx, ly] = boxXY(e.clientX, e.clientY), dx = lx - p.x, dy = ly - p.y; p.x = lx; p.y = ly;
     if (ptrs.size === 1) { dragMoved += Math.abs(dx) + Math.abs(dy); mv.ox += dx; mv.oy += dy; mapApply(); }
     else if (ptrs.size === 2 && pinch) {
       const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
@@ -906,10 +913,10 @@
     if (!ptrs.has(e.pointerId)) return;
     ptrs.delete(e.pointerId);
     if (ptrs.size < 2) pinch = null;
-    if (ptrs.size === 0 && dragMoved < 8 && e.type === 'pointerup') mapTap(e.clientX, e.clientY);
+    if (ptrs.size === 0 && dragMoved < 8 && e.type === 'pointerup') { const [lx, ly] = boxXY(e.clientX, e.clientY); mapTap(lx, ly); }
   };
   mapBox.addEventListener('pointerup', ptrUp); mapBox.addEventListener('pointercancel', ptrUp);
-  mapBox.addEventListener('wheel', (e) => { e.preventDefault(); mapZoom(Math.exp(-e.deltaY * 0.0016), e.clientX, e.clientY); }, { passive: false });
+  mapBox.addEventListener('wheel', (e) => { e.preventDefault(); const [lx, ly] = boxXY(e.clientX, e.clientY); mapZoom(Math.exp(-e.deltaY * 0.0016), lx, ly); }, { passive: false });
   addEventListener('keydown', (e) => {
     if (!mapOpen) return;
     if (e.code === 'Equal' || e.code === 'NumpadAdd') mapZoom(1.4);
