@@ -23,14 +23,26 @@ VR.Mbohasa = class {
     const G = this.gps, e = G.nearEdge(tx, ty, 500); if (!e) return null;
     let best = null, bl = Infinity;
     for (const n of [e.a, e.b]) { const P = G.route(fx, fy, G.nx[n], G.ny[n], true); if (!P || P.length < 4) continue; const Q = P.concat([e.px, e.py]), l = VR.polyLen(Q); if (l < bl) { bl = l; best = Q; } }
-    return best;
+    return best && this.carril(best, 8);
+  }
+  // corre la ruta unos px hacia la derecha (mano derecha, como el tránsito) para no chocar de frente con los que vienen; en las puntas vuelve al eje
+  carril(P, off) {
+    const n = P.length / 2; if (n < 3) return P;
+    const L = [0]; for (let i = 1; i < n; i++) L.push(L[i - 1] + Math.hypot(P[i * 2] - P[i * 2 - 2], P[i * 2 + 1] - P[i * 2 - 1]));
+    const tot = L[n - 1], Q = [];
+    for (let i = 0; i < n; i++) {
+      const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1); let dx = P[b * 2] - P[a * 2], dy = P[b * 2 + 1] - P[a * 2 + 1]; const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m;
+      const k = off * VR.clamp(Math.min(L[i], tot - L[i]) / 40, 0, 1);
+      Q.push(P[i * 2] - dy * k, P[i * 2 + 1] + dx * k);
+    }
+    return Q;
   }
   crear(tipo, x, y, a) {
     const w = this.world; let v;
     if (tipo === 'moto') v = new VR.Car(w, x, y, a, (Math.random() * 6) | 0, 'moto', 'cub');
     else v = new VR.Car(w, x, y, a, 3, 'car', 'sedan', { ...VR.tuneDefault('sedan'), color: 3 });
     if (v.contacts(x, y, a)) return null;
-    v.mbh = true; v.v = 0;
+    v.mbh = true; v.v = 0; v.ghost = 0;
     if (tipo === 'moto') { const L = VR.av2Random(); v.rider = Object.assign(VR.av2Rider(L), { L }); } else v.taxi = true; // el auto lleva el cartelito amarillo
     w.addBox(v); return v;
   }
@@ -70,18 +82,30 @@ VR.Mbohasa = class {
   seguir(dt, P, v, kv) {
     const w = this.world, sp = v.spec, moto = v.type === 'moto', r = this.r;
     const [, i] = VR.polyNear(P, v.x, v.y), rest = VR.polyLen(P, i), ex = P[P.length - 2], ey = P[P.length - 1];
-    const L = 26 + Math.max(0, v.v) * 0.25, [tx, ty] = this.adelante(P, i, v.x, v.y, L), [t2x, t2y] = this.adelante(P, i, v.x, v.y, L * 2.6);
+    const L = 22 + Math.max(0, v.v) * 0.22, [tx, ty] = this.adelante(P, i, v.x, v.y, L), [t2x, t2y] = this.adelante(P, i, v.x, v.y, L * 2.6);
     const ang = (x, y) => Math.atan2(x - v.x, -(y - v.y)), wrap = (d) => Math.atan2(Math.sin(d), Math.cos(d));
     const d1 = wrap(ang(tx, ty) - v.a), d2 = Math.abs(wrap(ang(t2x, t2y) - v.a));
     const fin = rest < 12 || Math.hypot(ex - v.x, ey - v.y) < 16;
-    let vt = (moto ? 135 : 118) * kv * (1 - Math.min(0.62, d2 * 0.55)); vt = Math.min(vt, v.topSpeed()[0] * 0.78);
-    if (rest < 70) vt = Math.min(vt, 18 + rest * 1.3);
+    let vt = (moto ? 180 : 165) * kv * (1 - Math.min(0.6, d2 * 0.5)); vt = Math.min(vt, v.topSpeed()[0] * 0.9);
+    if (rest < 80) vt = Math.min(vt, 18 + rest * 1.6);
+    if (v.ghost > 0) v.ghost -= dt;
     // obstáculos adelante (otros vehículos o paredes): frena; si lleva mucho trabado, retrocede un poquito
     const fx = Math.sin(v.a), fy = -Math.cos(v.a), rx = Math.cos(v.a), ry = Math.sin(v.a), dist = sp.len / 2 + 8 + Math.max(0, v.v) * 0.4;
-    let bloq = false;
-    for (const s of [0, -sp.wid * 0.4, sp.wid * 0.4]) { const px = v.x + fx * dist + rx * s, py = v.y + fy * dist + ry * s; if (w.boxAt(px, py, v) || w.solid(Math.floor(px / 16), Math.floor(py / 16))) { bloq = true; break; } }
+    let bloq = false, pared = false, otro = null;
+    for (const s of [0, -sp.wid * 0.4, sp.wid * 0.4]) {
+      const px = v.x + fx * dist + rx * s, py = v.y + fy * dist + ry * s, o = w.boxAt(px, py, v);
+      if (o && !(o.ghost > 0)) { bloq = true; otro = o; } else if (w.solid(Math.floor(px / 16), Math.floor(py / 16))) { bloq = true; pared = true; }
+    }
+    // atrás de un auto que anda: lo sigue a su velocidad en vez de clavar el freno; si queda frenado, lo pasa por encima un ratito (adelanta)
+    let sigue = false; const vt0 = vt;
+    if (bloq && !pared && otro && otro.ai && otro.v > 25 && v.ghost <= 0) { sigue = true; vt = Math.min(vt, Math.max(30, otro.v * 0.95)); if (Math.hypot(otro.x - v.x, otro.y - v.y) > sp.len / 2 + otro.spec.len / 2 + 10) bloq = false; }
+    // detrás de uno lento más de 1,5 s: lo pasa (por encima, un ratito) en vez de arrastrarse atrás
+    r.lento = sigue && otro.v < vt0 * 0.7 ? (r.lento || 0) + dt : 0;
+    if (r.lento > 1.5) { v.ghost = 2.6; r.lento = 0; }
     r.blk = bloq ? r.blk + dt : 0;
-    if (r.blk > 4) { r.atras = 0.9; r.blk = 0; }
+    if (bloq && !pared && v.ghost <= 0 && r.blk > 1.1) { v.ghost = 1.8; r.blk = 0; }
+    if (r.blk > 3 && pared) { r.atras = 0.9; r.blk = 0; }
+    if (v.ghost > 0) bloq = pared;
     if (r.atras > 0) { r.atras -= dt; v.st = 0; v.physics(dt, -1, 0, false); return false; }
     let th = 0, st = 0, br = false;
     if (Math.abs(d1) > 2.2 && v.v < 40) { th = -0.9; st = VR.clamp(-d1 * 2, -1, 1); } // hay que dar la vuelta: marcha atrás girando
@@ -116,6 +140,11 @@ VR.Mbohasa = class {
     r.st = 'sale'; r.t = 0; r.P = far.length ? far[0] : [v.x, v.y, v.x, v.y - 1]; r.blk = 0; r.atras = 0;
     this.toast(llegada ? '🏁 ¡Llegamos! Aguyje, buen viaje.' : 'Bajaste del Mbohasa');
     return true;
+  }
+  // botón "saltear viaje": fundido y listo, en el destino
+  saltear() {
+    const r = this.r; if (!r || r.st !== 'viaje' || !this.riding) return false;
+    const d = r.dest; this.v.pasajero = null; this.quitar(); this.llevar(d); return true;
   }
   rideTick() { // el jugador toca "bajar" mientras anda
     const v = this.v; if (!this.riding || !v) return;

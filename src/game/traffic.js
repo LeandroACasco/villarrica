@@ -196,7 +196,7 @@ VR.Traffic = class {
         const qx = v.x + fx * k, qy = v.y + fy * k;
         const rx = Math.cos(v.a) * (v.WID / 2 - 1), ry = Math.sin(v.a) * (v.WID / 2 - 1);
         const o = W.boxAt(qx, qy, v) || W.boxAt(qx + rx, qy + ry, v) || W.boxAt(qx - rx, qy - ry, v);
-        if (o) blockedBy = o;
+        if (o && !(o.ghost > 0)) blockedBy = o;
         else if (playerBody && Math.abs(qx - playerBody.x) < 9 && Math.abs(qy - playerBody.y) < 9) blockedBy = playerBody;
       }
       if (ai.yield > 0) target = Math.min(target, 18);
@@ -209,12 +209,12 @@ VR.Traffic = class {
       // trabado: primero intenta pasar por el costado, después retrocede un poco, y si sigue trabado fuera de
       // la pantalla, desaparece (para que no se armen tapones eternos)
       if (blockedBy && blockedBy !== playerBody && !blockedBy.driven) {
-        const parked = !blockedBy.ai || blockedBy.ai.wait > 1.5;
-        if (ai.wait > 1.6 && parked && !(ai.dodge > 0)) ai.dodge = 2.2;
-        if (ai.wait > 4.5 && !ai.triedBack) { ai.triedBack = true; ai.back = 0.9; ai.dodge = 2.6; }
+        const parked = (!blockedBy.ai && !blockedBy.mbh) || (blockedBy.ai && blockedBy.ai.wait > 1.5);
+        if (ai.wait > 1.2 && parked && !(ai.dodge > 0)) ai.dodge = 2.2;
+        if (ai.wait > 3.5 && !ai.triedBack) { ai.triedBack = true; ai.back = 0.9; ai.dodge = 2.6; }
         if (ai.wait > 6) target = 30;
         const off = v.x < view.x0 - 50 || v.x > view.x1 + 50 || v.y < view.y0 - 50 || v.y > view.y1 + 50;
-        if (ai.wait > 9 && off) { this.remove(v); break; }
+        if (ai.wait > 7 && off) { this.remove(v); break; }
       } else if (!blockedBy) ai.triedBack = false;
       if (v.v < target) v.v = Math.min(target, v.v + (v.type === 'moto' ? 160 : 120) * dt);
       else v.v = Math.max(target, v.v - 380 * dt);

@@ -88,6 +88,8 @@
   #celBody .cbtn:disabled { opacity: .45; cursor: default; }
   #celBody .row2 { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ffffff1a; font: 600 13px system-ui; }
   #celFade { position: fixed; inset: 0; background: #000; z-index: 60; opacity: 0; pointer-events: none; transition: opacity .5s; display: grid; place-items: center; color: #fff; font: 700 18px system-ui; }
+  #btnSaltaViaje { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 20; padding: 10px 18px; border-radius: 22px; border: 1px solid rgba(255,255,255,.25); background: rgba(15,15,18,.78); color: #fff; font: 700 14px system-ui; cursor: pointer; }
+  #btnSaltaViaje:hover { background: rgba(60,60,72,.9); }
   #celFade.on { opacity: 1; pointer-events: auto; }
   /* misiones (J2): objetivo arriba, caja de diálogo con carita abajo */
   #misHud { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 58px); background: rgba(20,20,26,.84); color: #fff; font: 600 13px system-ui; padding: 5px 12px; border-radius: 10px; border: 1px solid #ff5fa2; z-index: 5; pointer-events: none; max-width: min(80vw, 560px); text-align: center; }
@@ -362,6 +364,7 @@
 <div id="chatLog"></div>
 <form id="chatBox" hidden><input id="chatIn" maxlength="80" placeholder="Escribí y apretá Enter" autocomplete="off"></form>
 <div id="gearBtns" hidden><button id="gearUp">▲</button><button id="gearDn">▼</button></div>
+<button id="btnSaltaViaje" hidden>⏩ Saltear viaje</button>
 <div id="topbar">
   <button class="icon-btn" id="btnJobs" title="Changas">📋</button>
   <button class="icon-btn" id="btnOnline" title="Online">🌐</button>
@@ -400,7 +403,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 1bcd2ce9 · 2026-11-11</div>
+  <div class="tVer">Versión 14cb5887 · 2026-11-11</div>
 </div>
 <div id="fade"></div>
 
@@ -495,7 +498,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 1bcd2ce9 · 2026-11-11</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 14cb5887 · 2026-11-11</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -4684,9 +4687,10 @@ VR.Car = class {
     const W = this.world, S = VR.TILE, pts = [];
     for (const [px, py] of this.points(x, y, a)) if (W.solid(Math.floor(px / S), Math.floor(py / S))) pts.push(px, py);
     let other = null;
+    if (this.ghost > 0) return pts.length ? { pts, other } : null; // Mbohasa adelantando: pasa por encima de otros vehículos un ratito
     const A = VR.obb(x, y, a, this.spec.len / 2, this.spec.wid / 2), r = A.ex + 2;
     for (const o of W.carsIn(x - r - 30, y - r - 30, x + r + 30, y + r + 30, VR._near || (VR._near = []))) {
-      if (o === this) continue;
+      if (o === this || o.ghost > 0) continue;
       const B = VR.obb(o.x, o.y, o.a, o.spec.len / 2, o.spec.wid / 2);
       if (!VR.obbHit(A, B)) continue;
       other = other || o;
@@ -5722,7 +5726,7 @@ VR.Traffic = class {
         const qx = v.x + fx * k, qy = v.y + fy * k;
         const rx = Math.cos(v.a) * (v.WID / 2 - 1), ry = Math.sin(v.a) * (v.WID / 2 - 1);
         const o = W.boxAt(qx, qy, v) || W.boxAt(qx + rx, qy + ry, v) || W.boxAt(qx - rx, qy - ry, v);
-        if (o) blockedBy = o;
+        if (o && !(o.ghost > 0)) blockedBy = o;
         else if (playerBody && Math.abs(qx - playerBody.x) < 9 && Math.abs(qy - playerBody.y) < 9) blockedBy = playerBody;
       }
       if (ai.yield > 0) target = Math.min(target, 18);
@@ -5735,12 +5739,12 @@ VR.Traffic = class {
       // trabado: primero intenta pasar por el costado, después retrocede un poco, y si sigue trabado fuera de
       // la pantalla, desaparece (para que no se armen tapones eternos)
       if (blockedBy && blockedBy !== playerBody && !blockedBy.driven) {
-        const parked = !blockedBy.ai || blockedBy.ai.wait > 1.5;
-        if (ai.wait > 1.6 && parked && !(ai.dodge > 0)) ai.dodge = 2.2;
-        if (ai.wait > 4.5 && !ai.triedBack) { ai.triedBack = true; ai.back = 0.9; ai.dodge = 2.6; }
+        const parked = (!blockedBy.ai && !blockedBy.mbh) || (blockedBy.ai && blockedBy.ai.wait > 1.5);
+        if (ai.wait > 1.2 && parked && !(ai.dodge > 0)) ai.dodge = 2.2;
+        if (ai.wait > 3.5 && !ai.triedBack) { ai.triedBack = true; ai.back = 0.9; ai.dodge = 2.6; }
         if (ai.wait > 6) target = 30;
         const off = v.x < view.x0 - 50 || v.x > view.x1 + 50 || v.y < view.y0 - 50 || v.y > view.y1 + 50;
-        if (ai.wait > 9 && off) { this.remove(v); break; }
+        if (ai.wait > 7 && off) { this.remove(v); break; }
       } else if (!blockedBy) ai.triedBack = false;
       if (v.v < target) v.v = Math.min(target, v.v + (v.type === 'moto' ? 160 : 120) * dt);
       else v.v = Math.max(target, v.v - 380 * dt);
@@ -10631,14 +10635,26 @@ VR.Mbohasa = class {
     const G = this.gps, e = G.nearEdge(tx, ty, 500); if (!e) return null;
     let best = null, bl = Infinity;
     for (const n of [e.a, e.b]) { const P = G.route(fx, fy, G.nx[n], G.ny[n], true); if (!P || P.length < 4) continue; const Q = P.concat([e.px, e.py]), l = VR.polyLen(Q); if (l < bl) { bl = l; best = Q; } }
-    return best;
+    return best && this.carril(best, 8);
+  }
+  // corre la ruta unos px hacia la derecha (mano derecha, como el tránsito) para no chocar de frente con los que vienen; en las puntas vuelve al eje
+  carril(P, off) {
+    const n = P.length / 2; if (n < 3) return P;
+    const L = [0]; for (let i = 1; i < n; i++) L.push(L[i - 1] + Math.hypot(P[i * 2] - P[i * 2 - 2], P[i * 2 + 1] - P[i * 2 - 1]));
+    const tot = L[n - 1], Q = [];
+    for (let i = 0; i < n; i++) {
+      const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1); let dx = P[b * 2] - P[a * 2], dy = P[b * 2 + 1] - P[a * 2 + 1]; const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m;
+      const k = off * VR.clamp(Math.min(L[i], tot - L[i]) / 40, 0, 1);
+      Q.push(P[i * 2] - dy * k, P[i * 2 + 1] + dx * k);
+    }
+    return Q;
   }
   crear(tipo, x, y, a) {
     const w = this.world; let v;
     if (tipo === 'moto') v = new VR.Car(w, x, y, a, (Math.random() * 6) | 0, 'moto', 'cub');
     else v = new VR.Car(w, x, y, a, 3, 'car', 'sedan', { ...VR.tuneDefault('sedan'), color: 3 });
     if (v.contacts(x, y, a)) return null;
-    v.mbh = true; v.v = 0;
+    v.mbh = true; v.v = 0; v.ghost = 0;
     if (tipo === 'moto') { const L = VR.av2Random(); v.rider = Object.assign(VR.av2Rider(L), { L }); } else v.taxi = true; // el auto lleva el cartelito amarillo
     w.addBox(v); return v;
   }
@@ -10678,18 +10694,30 @@ VR.Mbohasa = class {
   seguir(dt, P, v, kv) {
     const w = this.world, sp = v.spec, moto = v.type === 'moto', r = this.r;
     const [, i] = VR.polyNear(P, v.x, v.y), rest = VR.polyLen(P, i), ex = P[P.length - 2], ey = P[P.length - 1];
-    const L = 26 + Math.max(0, v.v) * 0.25, [tx, ty] = this.adelante(P, i, v.x, v.y, L), [t2x, t2y] = this.adelante(P, i, v.x, v.y, L * 2.6);
+    const L = 22 + Math.max(0, v.v) * 0.22, [tx, ty] = this.adelante(P, i, v.x, v.y, L), [t2x, t2y] = this.adelante(P, i, v.x, v.y, L * 2.6);
     const ang = (x, y) => Math.atan2(x - v.x, -(y - v.y)), wrap = (d) => Math.atan2(Math.sin(d), Math.cos(d));
     const d1 = wrap(ang(tx, ty) - v.a), d2 = Math.abs(wrap(ang(t2x, t2y) - v.a));
     const fin = rest < 12 || Math.hypot(ex - v.x, ey - v.y) < 16;
-    let vt = (moto ? 135 : 118) * kv * (1 - Math.min(0.62, d2 * 0.55)); vt = Math.min(vt, v.topSpeed()[0] * 0.78);
-    if (rest < 70) vt = Math.min(vt, 18 + rest * 1.3);
+    let vt = (moto ? 180 : 165) * kv * (1 - Math.min(0.6, d2 * 0.5)); vt = Math.min(vt, v.topSpeed()[0] * 0.9);
+    if (rest < 80) vt = Math.min(vt, 18 + rest * 1.6);
+    if (v.ghost > 0) v.ghost -= dt;
     // obstáculos adelante (otros vehículos o paredes): frena; si lleva mucho trabado, retrocede un poquito
     const fx = Math.sin(v.a), fy = -Math.cos(v.a), rx = Math.cos(v.a), ry = Math.sin(v.a), dist = sp.len / 2 + 8 + Math.max(0, v.v) * 0.4;
-    let bloq = false;
-    for (const s of [0, -sp.wid * 0.4, sp.wid * 0.4]) { const px = v.x + fx * dist + rx * s, py = v.y + fy * dist + ry * s; if (w.boxAt(px, py, v) || w.solid(Math.floor(px / 16), Math.floor(py / 16))) { bloq = true; break; } }
+    let bloq = false, pared = false, otro = null;
+    for (const s of [0, -sp.wid * 0.4, sp.wid * 0.4]) {
+      const px = v.x + fx * dist + rx * s, py = v.y + fy * dist + ry * s, o = w.boxAt(px, py, v);
+      if (o && !(o.ghost > 0)) { bloq = true; otro = o; } else if (w.solid(Math.floor(px / 16), Math.floor(py / 16))) { bloq = true; pared = true; }
+    }
+    // atrás de un auto que anda: lo sigue a su velocidad en vez de clavar el freno; si queda frenado, lo pasa por encima un ratito (adelanta)
+    let sigue = false; const vt0 = vt;
+    if (bloq && !pared && otro && otro.ai && otro.v > 25 && v.ghost <= 0) { sigue = true; vt = Math.min(vt, Math.max(30, otro.v * 0.95)); if (Math.hypot(otro.x - v.x, otro.y - v.y) > sp.len / 2 + otro.spec.len / 2 + 10) bloq = false; }
+    // detrás de uno lento más de 1,5 s: lo pasa (por encima, un ratito) en vez de arrastrarse atrás
+    r.lento = sigue && otro.v < vt0 * 0.7 ? (r.lento || 0) + dt : 0;
+    if (r.lento > 1.5) { v.ghost = 2.6; r.lento = 0; }
     r.blk = bloq ? r.blk + dt : 0;
-    if (r.blk > 4) { r.atras = 0.9; r.blk = 0; }
+    if (bloq && !pared && v.ghost <= 0 && r.blk > 1.1) { v.ghost = 1.8; r.blk = 0; }
+    if (r.blk > 3 && pared) { r.atras = 0.9; r.blk = 0; }
+    if (v.ghost > 0) bloq = pared;
     if (r.atras > 0) { r.atras -= dt; v.st = 0; v.physics(dt, -1, 0, false); return false; }
     let th = 0, st = 0, br = false;
     if (Math.abs(d1) > 2.2 && v.v < 40) { th = -0.9; st = VR.clamp(-d1 * 2, -1, 1); } // hay que dar la vuelta: marcha atrás girando
@@ -10724,6 +10752,11 @@ VR.Mbohasa = class {
     r.st = 'sale'; r.t = 0; r.P = far.length ? far[0] : [v.x, v.y, v.x, v.y - 1]; r.blk = 0; r.atras = 0;
     this.toast(llegada ? '🏁 ¡Llegamos! Aguyje, buen viaje.' : 'Bajaste del Mbohasa');
     return true;
+  }
+  // botón "saltear viaje": fundido y listo, en el destino
+  saltear() {
+    const r = this.r; if (!r || r.st !== 'viaje' || !this.riding) return false;
+    const d = r.dest; this.v.pasajero = null; this.quitar(); this.llevar(d); return true;
   }
   rideTick() { // el jugador toca "bajar" mientras anda
     const v = this.v; if (!this.riding || !v) return;
@@ -11237,7 +11270,7 @@ VR.Titulo = class {
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
     if (mis) mis.update(dt, player, car);
-    syncEq(); mbh.update(dt);
+    syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
     updateCamera(dt);
@@ -11440,6 +11473,7 @@ VR.Titulo = class {
   const JAHA = { moto: { n: 'Moto', ico: '🏍', base: 10000, km: 3000, kmh: 28 }, auto: { n: 'Auto', ico: '🚗', base: 15000, km: 5000, kmh: 32 } };
   if (vida) $('btnCel').hidden = false;
   $('btnCel').onclick = () => openCel();
+  $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
   $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
   $('celClose').onclick = () => celDlg.close();
@@ -11592,7 +11626,7 @@ VR.Titulo = class {
   const mbh = vida && gpsNet ? new VR.Mbohasa({ world, gps: gpsNet, player, toast, dialogo: (l, f) => mis.dialogo(l, f), pagar: (p, t) => vida.pagaBanco(p, t), yo: me, manejando: () => !!car, bajar: mbhBajar,
     fin: (r) => { if (mis) mis.emit('jaha', r); },
     llevar: (d) => { const f = $('celFade'); f.textContent = '🛵 En viaje…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); if (mis) mis.emit('jaha', { dest: d }); setTimeout(() => f.classList.remove('on'), 300); }, 900); } })
-    : { riding: false, activo: false, r: null, v: null, update() {}, rideTick() {}, cancelar() {}, pedir() { return false; }, texto() { return ''; } };
+    : { riding: false, activo: false, r: null, v: null, saltear() {}, update() {}, rideTick() {}, cancelar() {}, pedir() { return false; }, texto() { return ''; } };
   if (mis) VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => mis.dialogo(VR.despensaCompra(mis)) }); // despensa Ñande Róga por dentro
   let puestoL = null; // en Libre no hay misiones, pero la despensa sí está (puesto en la vereda al sudeste de la plaza + el interior)
   if (!mis) {

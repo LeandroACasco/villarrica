@@ -508,9 +508,10 @@ VR.Car = class {
     const W = this.world, S = VR.TILE, pts = [];
     for (const [px, py] of this.points(x, y, a)) if (W.solid(Math.floor(px / S), Math.floor(py / S))) pts.push(px, py);
     let other = null;
+    if (this.ghost > 0) return pts.length ? { pts, other } : null; // Mbohasa adelantando: pasa por encima de otros vehículos un ratito
     const A = VR.obb(x, y, a, this.spec.len / 2, this.spec.wid / 2), r = A.ex + 2;
     for (const o of W.carsIn(x - r - 30, y - r - 30, x + r + 30, y + r + 30, VR._near || (VR._near = []))) {
-      if (o === this) continue;
+      if (o === this || o.ghost > 0) continue;
       const B = VR.obb(o.x, o.y, o.a, o.spec.len / 2, o.spec.wid / 2);
       if (!VR.obbHit(A, B)) continue;
       other = other || o;
