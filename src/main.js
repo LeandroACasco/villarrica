@@ -92,6 +92,7 @@
     addEventListener('touchend', () => { pd = 0; }, { passive: true }); }
   const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
+  const estvida = VR.estvida = prueba ? null : new VR.EstVida(world);   // playeros y vehículos que cargan en las estaciones (estvida.js)
   const night = VR.night = new VR.Night(world);
   const cisnes = VR.cisnes = new VR.Cisnes(world, night); cisnes.onMsg = (m) => toast(m);
   const perros = VR.perros = peds ? new VR.Perros(world, peds) : { update() {}, collect() {}, pet() { return false; } }; VR.toast = (m) => toast(m);   // perros callejeros (perros.js)
@@ -375,6 +376,7 @@
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
     if (peds && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
+    if (estvida && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; estvida.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car ? null : { x: player.x, y: player.y - 4 }, car); }
     { // fauna: lo que la asusta (vos, tu vehículo o tu cisne, el tránsito, la gente y los cisnes que andan)
       const th = [];
       if (cisnes.riding) th.push({ x: cisnes.s.x, y: cisnes.s.y, sp: 0, water: true });
@@ -417,6 +419,7 @@
     if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { player.draw(c, cx, cy, a); if (weapons && !player.rag) weapons.drawHeld(c, player, cx, cy, a); } });
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
+    if (estvida) estvida.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
     perros.collect(cx, cy, sw, sh, a, tall); calle.collect(cx, cy, sw, sh, a, tall); if (caidas) caidas.collect(cx, cy, sw, sh, a, tall);
     if (emer) emer.collect(cx, cy, sw, sh, a, tall);

@@ -88,7 +88,7 @@
     // techo (translúcido si el jugador o su vehículo está abajo)
     out.push({ sy: cy + ch + 1, draw(g) {
       const rv = VR.reveal, under = rv && rv.x > cx - 6 && rv.x < cx + cw + 6 && rv.y > cy - 4 && rv.y < cy + ch + 14;
-      const a0 = d._a === undefined ? 0.72 : d._a; d._a = a0 + ((under ? 0.22 : 0.72) - a0) * 0.18;
+      const a0 = d._a === undefined ? 0.58 : d._a; d._a = a0 + ((under ? 0.22 : 0.72) - a0) * 0.18;
       const y0 = cy - HC, y1 = cy + ch - HC, fh = 7;
       g.save();
       g.globalAlpha = d._a; R(g, st.curva ? 'rgba(0,0,0,0)' : '#e4e3dd', cx, y0, cw, ch);                  // cara superior
