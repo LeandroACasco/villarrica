@@ -47,6 +47,21 @@ VR.audio = {
   coin() { this.tone(988, 0.07, { type: 'square', vol: 0.05 }); this.tone(1319, 0.16, { type: 'square', vol: 0.05, at: 0.07 }); }, // cobro o paso cumplido
   bark(x, y, yelp) { const v = this.near(x, y, 420) * 0.07; if (v <= 0) return; if (yelp) { this.tone(900, 0.12, { type: 'triangle', vol: v, f2: 1500 }); this.tone(1200, 0.1, { type: 'triangle', vol: v, f2: 700, at: 0.14 }); return; } const f = 190 + Math.random() * 60; this.tone(f, 0.09, { type: 'sawtooth', vol: v, f2: f * 0.6 }); this.tone(f * 1.05, 0.09, { type: 'sawtooth', vol: v * 0.8, f2: f * 0.6, at: 0.15 }); },
   muu(x, y) { const v = this.near(x, y, 420) * 0.08; if (v <= 0) return; const f = 110 + Math.random() * 25; this.tone(f, 0.9, { type: 'sawtooth', vol: v, f2: f * 0.8, lp: 700 }); this.tone(f * 2, 0.8, { type: 'triangle', vol: v * 0.4, f2: f * 1.6, lp: 900, at: 0.05 }); }, // mugido de las vacas
+  // animales (13/11/2026): cada especie con su sonido sintetizado
+  animal(k, x, y) {
+    const v = this.near(x, y, 420) * 0.075; if (v <= 0.004) return; const r = Math.random();
+    const T = (f, d, o) => this.tone(f, d, o);
+    if (k === 'caballo') { T(420, 0.55, { type: 'sawtooth', vol: v, f2: 820, lp: 1600 }); T(800, 0.3, { type: 'sawtooth', vol: v * 0.8, f2: 330, lp: 1500, at: 0.5 }); T(360, 0.25, { type: 'sawtooth', vol: v * 0.6, f2: 520, lp: 1200, at: 0.75 }); }
+    else if (k === 'cerdo') { for (let i = 0; i < 2; i++) T(150 + r * 30, 0.16, { type: 'sawtooth', vol: v, f2: 95, lp: 700, at: i * 0.22 }); }
+    else if (k === 'cabra') { const f = 360 + r * 60; T(f, 0.55, { type: 'sawtooth', vol: v * 0.9, f2: f * 0.85, lp: 1400 }); T(f * 1.04, 0.5, { type: 'square', vol: v * 0.3, f2: f * 0.85, lp: 1000, at: 0.03 }); }
+    else if (k === 'oveja') { const f = 260 + r * 40; T(f, 0.6, { type: 'sawtooth', vol: v * 0.9, f2: f * 0.9, lp: 1100 }); }
+    else if (k === 'gallo') { T(620, 0.14, { type: 'sawtooth', vol: v, f2: 900, lp: 2400 }); T(900, 0.12, { type: 'sawtooth', vol: v, f2: 760, lp: 2400, at: 0.17 }); T(780, 0.14, { type: 'sawtooth', vol: v, f2: 1050, lp: 2400, at: 0.32 }); T(1050, 0.5, { type: 'sawtooth', vol: v, f2: 520, lp: 2400, at: 0.5 }); }
+    else if (k === 'gallina') { for (let i = 0; i < 3; i++) T(560 + r * 80, 0.07, { type: 'square', vol: v * 0.8, f2: 420, lp: 1800, at: i * 0.11 }); }
+    else if (k === 'tero') { for (let i = 0; i < 4; i++) T(1700, 0.06, { type: 'triangle', vol: v, f2: 2150, lp: 3600, at: i * 0.1 }); }
+    else if (k === 'gato') { T(560, 0.14, { type: 'triangle', vol: v * 0.9, f2: 900, lp: 2400 }); T(900, 0.35, { type: 'triangle', vol: v * 0.9, f2: 520, lp: 2400, at: 0.14 }); }
+    else if (k === 'loro') { for (let i = 0; i < 3; i++) T(1700, 0.11, { type: 'square', vol: v * 0.7, f2: 2500, lp: 4000, at: i * 0.14 }); }
+    else if (k === 'sapo') { for (let i = 0; i < 4; i++) T(190, 0.06, { type: 'square', vol: v * 0.7, f2: 250, lp: 600, at: i * 0.09 }); }
+  },
   ouch(x, y) { const v = this.near(x, y, 300) * 0.05; if (v <= 0) return; const f = 300 + Math.random() * 180; this.tone(f, 0.18, { type: 'triangle', vol: v, f2: f * 0.6 }); },
   shot(x, y) { const v = this.near(x, y, 600) * 0.32; if (v <= 0.01) return; this.noise(0.16, { vol: v, lp: 3200, hp: 300 }); this.tone(160, 0.08, { type: 'square', vol: v * 0.5, f2: 60 }); },
   // ---- sonidos continuos: motor, agua y lanzallamas ----
@@ -61,6 +76,10 @@ VR.audio = {
       const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 520;
       const m = ac.createGain(); m.gain.value = 0.6; const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 0.17; lg.gain.value = 0.4; lfo.connect(lg); lg.connect(m.gain); lfo.start();
       s.connect(f); f.connect(m); m.connect(g); s.start(); L = { g };
+    }
+    else if (name === 'grillos') { // grillos de noche: dos agudos que se prenden y apagan rápido, con pausas largas
+      const mk = (f, rate, depth) => { const o = ac.createOscillator(), m = ac.createGain(), l = ac.createOscillator(), lg = ac.createGain(); o.frequency.value = f; l.type = 'square'; l.frequency.value = rate; lg.gain.value = depth; m.gain.value = depth; l.connect(lg); lg.connect(m.gain); o.connect(m); m.connect(g); o.start(); l.start(); };
+      mk(4300, 13, 0.5); mk(5100, 17, 0.35); L = { g };
     }
     else if (name === 'water') { const s = ac.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.6; s.connect(f); f.connect(g); s.start(); L = { g }; }
     else { // motor: diente de sierra + sub, por un pasabajos; la frecuencia sigue a las vueltas
@@ -82,6 +101,7 @@ VR.audio = {
     L.g.gain.setTargetAtTime(0.035 + rpm * 0.03, t, 0.06);
   },
   flame(on) { const L = this.loop('flame'); if (L) L.g.gain.setTargetAtTime(on && this.on ? 0.14 : 0, this.ac.currentTime, 0.06); },
+  grillos(v) { if (!this.noiseBuf) { this.ctx(); } const L = this.loop('grillos'); if (L && this.on) L.g.gain.setTargetAtTime(Math.max(0, v) * 0.011, this.ac.currentTime, 0.8); else if (L) L.g.gain.setTargetAtTime(0, this.ac.currentTime, 0.1); },
   lago(v) { if (!this.noiseBuf) { this.ctx(); } const L = this.loop('lago'); if (L && this.on) L.g.gain.setTargetAtTime(Math.max(0, v) * 0.045, this.ac.currentTime, 0.3); else if (L) L.g.gain.setTargetAtTime(0, this.ac.currentTime, 0.1); },
   water(on) { const L = this.loop('water'); if (L) L.g.gain.setTargetAtTime(on && this.on ? 0.05 : 0, this.ac.currentTime, 0.05); },
 };

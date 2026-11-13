@@ -143,7 +143,7 @@
     constructor(world) {
       this.world = world; this.ready = false; this.t = 0;
       this.herds = []; this.ducks = []; this.fish = []; this.flocks = []; this.rip = []; this.herons = [];
-      this.scares = []; this.vacas = new VR.Vacas(world);
+      this.scares = []; this.vacas = new VR.Vacas(world); this.granja = new VR.Granja(world, this);
     }
     tile(x, y) { return this.world.get(Math.floor(x / S), Math.floor(y / S)); }
     water(x, y) { return this.tile(x, y) === T.LAGUNA; }
@@ -221,7 +221,7 @@
       if (VR.audio && VR.audio.lago) { const dx = Math.max(L ? L.x0 - cam.x : 1e4, 0, L ? cam.x - L.x1 : 0), dy = Math.max(L ? L.y0 - cam.y : 1e4, 0, L ? cam.y - L.y1 : 0); VR.audio.lago(L ? Math.max(0, 1 - Math.hypot(dx, dy) / 260) : 0); } // sonido de la laguna: se oye cerca de la orilla
       if (this.netOn) this.netStep(dt);
       else for (const f of this.flocks) if (Math.abs(f.hx - cam.x) < 1100 && Math.abs(f.hy - cam.y) < 900) this.updFlock(f, dt, threats, cam);
-      this.vacas.update(dt, cam, threats, this.scares);
+      this.vacas.update(dt, cam, threats, this.scares); this.granja.update(dt, cam, threats, this.scares);
       this.scares.length = 0;
     }
 
@@ -534,7 +534,7 @@
     // lo que tiene altura (en tierra o volando): se ordena con la gente; lo que vuela, arriba de todo
     collect(cx, cy, sw, sh, tall) {
       if (!this.ready) return;
-      this.vacas.collect(cx, cy, sw, sh, tall);
+      this.vacas.collect(cx, cy, sw, sh, tall); this.granja.collect(cx, cy, sw, sh, tall);
       const inV = (x, y) => x - cx > -40 && x - cx < sw + 40 && y - cy > -60 && y - cy < sh + 60;
       for (const h of this.herds) for (const c of h.list) {
         if (c.swim || !inV(c.x, c.y)) continue;
