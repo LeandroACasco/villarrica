@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión aa0a3009 · 2026-11-13</div>
+  <div class="tVer">Versión 583dc495 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión aa0a3009 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 583dc495 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -6072,6 +6072,12 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
       for (let i = 0; i < N; i++) { const i2 = (i + 1) % N; this.face([ra[i], ra[i2], rb[i2], rb[i]], col, m); }
       this.face(ra, col, b); this.face(rb, col, a);
     }
+    // prisma: perfil lateral [y,z] extruido entre u0 y u1 (chapas finas: guardapiernas, etc.)
+    prism(prof, u0, u1, col) {
+      const n = prof.length, c = [(u0 + u1) / 2, prof.reduce((a, q) => a + q[0], 0) / n, prof.reduce((a, q) => a + q[1], 0) / n];
+      this.face(prof.map(([y, z]) => [u0, y, z]), col, c); this.face(prof.map(([y, z]) => [u1, y, z]), col, c);
+      for (let i = 0; i < n; i++) { const a = prof[i], b = prof[(i + 1) % n]; this.face([[u0, a[0], a[1]], [u1, a[0], a[1]], [u1, b[0], b[1]], [u0, b[0], b[1]]], col, c); }
+    }
     // rueda: neumático (cilindro), costados, llanta con rayos, cubo
     wheel(wy, r, rim, hw = 0.62) {
       const N = 22, c0 = [0, wy, r], ring = (u, rr) => { const o = []; for (let i = 0; i < N; i++) { const t = i / N * 6.2832; o.push([u, wy + Math.cos(t) * rr, r + Math.sin(t) * rr]); } return o; };
@@ -6101,7 +6107,10 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     M.loft(0.9, 5.5, 0.4, (y) => ({ w: pl([[0.9, 1.0], [3.2, 1.6], [5.5, 1.5]], y), zb: fz(y) - 0.45, zt: fz(y) }), C, 10);
     // horquilla (dos botellas) y manubrio
     for (const sg of [-1, 1]) M.tube([sg * 1.0, 3.2, 3.1], [sg * 1.0, 6.9, 11.0], 0.24, CH);
-    M.loft(5.6, 10.4, 0.35, (y) => { const zt = pl([[5.6, 8.2], [6.4, 9.2], [7.2, 9.7], [7.9, 9.2], [8.6, 8.2], [9.4, 7], [10.4, 6.3]], y), zb = pl([[5.6, 5.4], [9, 4.2], [10.4, 4]], y); return { w: pl([[5.6, 1.9], [6.8, 2.4], [8.5, 2.3], [10.4, 1.5]], y), zb, zt }; }, C, 14, 2.6); // escudo
+    // escudo tipo underbone: pared delantera finita + dos guardapiernas en chapa; el medio queda abierto (el tanque va debajo del asiento)
+    M.loft(5.6, 6.5, 0.3, (y) => ({ w: pl([[5.6, 1.7], [6.5, 2.0]], y), zb: pl([[5.6, 5.4], [6.5, 5.3]], y), zt: pl([[5.6, 8.3], [6.5, 9.4]], y) }), C, 14, 2.6);
+    for (const sg of [-1, 1]) M.prism([[6.0, 5.4], [6.1, 8.8], [7.1, 9.3], [8.4, 8.2], [9.9, 6.5], [10.6, 5.4]], sg > 0 ? 1.65 : -2.25, sg > 0 ? 2.25 : -1.65, C);
+    M.tube([0, 7.6, 9.3], [0, 10.2, 4.5], 0.55, '#2e2f35', 8);                                                                      // columna del chasis (se ve entre las piernas)
     // cabeza (tapa del manubrio) en cuña, como la Fusion: angosta adelante, con el faro trapezoidal inclinado
     M.loft(6.0, 8.3, 0.3, (y) => ({ w: pl([[6.0, 1.25], [6.9, 1.75], [8.3, 1.9]], y), zb: pl([[6.0, 9.4], [8.3, 9.7]], y), zt: pl([[6.0, 10.5], [7.0, 11.3], [8.3, 11.0]], y) }), C, 14, 2.4);
     const lamp = M.face([[-1.05, 5.97, 10.45], [1.05, 5.97, 10.45], [0.62, 5.97, 9.55], [-0.62, 5.97, 9.55]], '#c9d6e6', [0, 7.1, 10.2]);   // marco plateado del faro
