@@ -574,3 +574,7 @@ El vehículo se "apila": para cada altura se dibuja la silueta girada y corrida 
 ## Sol y sombras según la hora (13/11/2026)
 
 `src/game/sol.js` (`VR.sun`): dirección, largo y fuerza de las sombras y tinte según la hora (reloj real, hora de Historia, o `?sol=HORA` para probar; `?sinsol` apaga todo). `World.renderShade` (world.js) arma una capa de sombras por chunk (`ch.shade`, se rehace cuando cambia `VR.sun.key`, máx. 2 por cuadro) en vez de las sombras fijas dibujadas en el piso. Autos (`Car.draw`), personas, perros y bomberos usan `VR.sun.off`/`VR.sun.blob`. `night.update` llama a `VR.sun.update`; `main.js` dibuja el tinte antes de la noche. Ver `claude/sol-sombras-estado.md`.
+
+## Clima (13/11/2026)
+
+`src/game/clima.js` (`VR.clima`): lee el clima de Open-Meteo (`init`, `fetch`, caché de 30 min en `climaCache`), lo convierte en factores `f = { calor, frio, nube, lluvia }` (0..1) o usa un preset (`setMode`), y dibuja el tinte (`drawGrade`) y la lluvia (`drawRain`) en `main.js` antes de la noche. `sol.js` usa `f.nube` para aflojar las sombras y la salida/puesta reales (`VR.clima.rise/set`); `night.js` también. Configuración: sección Clima (`segClima`, clave `clima`). `?clima=` fuerza uno. Ver `claude/clima-estado.md`.

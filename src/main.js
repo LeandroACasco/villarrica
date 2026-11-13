@@ -11,7 +11,7 @@
   VR.store.ns = VR.modo === 'historia' ? 'h:' : '';
   document.body.classList.toggle('historia', VR.modo === 'historia');
   const vida = VR.vida = VR.modo === 'historia' ? new VR.Vida() : null;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque'), calidad: VR.store.get('calidad', 'normal') };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), clima: VR.store.get('clima', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque'), calidad: VR.store.get('calidad', 'normal') };
   VR.hq = settings.calidad === 'alta'; // calidad de dibujo (12/11/2026): alta = 3 px de lienzo por unidad del mundo en vez de 2 (core.js, VR.screen.fit)
   VR.drive = settings.manejo;
 
@@ -422,7 +422,7 @@
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);
-    VR.sun.drawTint(ctx, sw, sh);
+    VR.sun.drawTint(ctx, sw, sh); VR.clima.drawGrade(ctx, sw, sh); VR.clima.drawRain(ctx, sw, sh, Math.min(0.1, dt || 0.016));
     night.render(ctx, cx, cy, sw, sh, vis);
     if (emer) emer.drawFlash(ctx, sw, sh);
     for (const l of world.labels) {
@@ -750,6 +750,8 @@
   };
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
+  VR.clima.init(settings.clima); const climaInfo = () => { const e = $('climaInfo'); if (e) e.textContent = VR.clima.label; }; climaInfo(); setInterval(climaInfo, 4000);
+  seg('segClima', 'clima', () => { VR.clima.setMode(settings.clima); climaInfo(); });
   seg('segFondo', 'fondo', () => title.setMode(settings.fondo));
   seg('segCalidad', 'calidad', () => { toast('🖼 Calidad ' + settings.calidad + ': reiniciando el dibujo…'); try { savePos(); } catch (e) {} setTimeout(() => location.reload(), 600); }); // la resolución se fija al arrancar
   // ---- online ----
@@ -1273,7 +1275,7 @@
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
     night.update(Math.min(0.1, dt || 0.016), settings.hora);
-    VR.sun.drawTint(ctx, sw, sh);
+    VR.sun.drawTint(ctx, sw, sh); VR.clima.drawGrade(ctx, sw, sh); VR.clima.drawRain(ctx, sw, sh, Math.min(0.1, dt || 0.016));
     night.render(ctx, cx, cy, sw, sh, vis);
     if (tFade._f !== title.fade) { tFade._f = title.fade; tFade.style.opacity = title.fade; }
   }

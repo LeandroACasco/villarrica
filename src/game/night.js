@@ -100,9 +100,10 @@ VR.Night = class {
     if (mode === 'noche') return 1;
     if (mode === 'dia') return 0;
     const d = new Date(), h = mode === 'juego' ? (VR.gameHour || 12) : d.getHours() + d.getMinutes() / 60; // 'juego' = hora de Historia
-    if (h >= 20 || h < 5) return 1;
-    if (h >= 18.5) return (h - 18.5) / 1.5;
-    if (h < 6.5) return 1 - (h - 5) / 1.5;
+    const R = VR.sun ? VR.sun.RISE : 5.5, S = VR.sun ? VR.sun.SET : 18.5;   // con clima real, la salida y puesta del sol de hoy
+    if (h >= S + 1.5 || h < R - 0.5) return 1;
+    if (h >= S) return (h - S) / 1.5;
+    if (h < R + 1) return 1 - (h - (R - 0.5)) / 1.5;
     return 0;
   }
   update(dt, mode) {

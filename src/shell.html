@@ -439,8 +439,8 @@
   <div class="dlg">
     <h2>Créditos</h2>
     <p><b style="color:var(--text)">Villarrica</b> · un juego de Kiut Studio.</p>
-    <p>Dirección, referencias y pruebas: Leandro Casco · Ideas: Deisy · Programación y dibujo: Claude (Anthropic).</p>
-    <p>Mapa de la ciudad: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay.</p>
+    <p>Dirección, referencias y pruebas: Leandro Casco · Ideas: Deisy · Colaboración: Cinthia · Programación y dibujo: Claude (Anthropic).</p>
+    <p>Mapa de la ciudad: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Clima: datos de <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit">Open-Meteo.com</a> (CC BY 4.0).</p>
     <p>Inspirado en el estilo de los juegos de celular Java de mediados de los 2000. Todo el arte, el sonido y el código del juego son originales.</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="credClose">Cerrar</button></div>
   </div>
@@ -464,6 +464,9 @@
     <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB o ▲ sube, Q/LB o ▼ baja; parado en 1ª, bajar pone la reversa; en el teléfono el joystick es volante y pedal).</p>
     <h3 class="soloLibre">Hora del día</h3>
     <div class="seg soloLibre" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
+    <h3>Clima</h3>
+    <div class="seg" id="segClima"><button data-v="real">Real</button><button data-v="templado">Templado</button><button data-v="calor">Calor</button><button data-v="frio">Frío</button><button data-v="nublado">Nublado</button><button data-v="lluvia">Lluvia</button></div>
+    <p class="hint" id="climaInfo" style="font-size:12px;opacity:.75;margin:4px 0 0"></p>
     <h3>Fondo del menú principal</h3>
     <div class="seg" id="segFondo"><button data-v="parque">Parque Ykua Pytã</button><button data-v="recorrido">Recorrido</button></div>
     <h3>Calidad de dibujo</h3>

@@ -16,15 +16,16 @@ VR.sun = {
     return mode === 'dia' ? (h >= 7 && h <= 17.5 ? h : 15) : h;
   },
   update(mode) {
+    const cm = VR.clima; if (cm && this.force == null && cm.mode === 'real' && cm.rise != null && cm.set != null) { this.RISE = cm.rise; this.SET = cm.set; } else { this.RISE = 5.5; this.SET = 18.5; }   // salida y puesta reales de hoy
     const h = this.h = this.hourOf(mode), t = (h - this.RISE) / (this.SET - this.RISE);
     const bump = (c, w) => Math.max(0, 1 - Math.abs(h - c) / w);
-    this.tint = Math.max(bump(6.1, 1.2), bump(18.0, 1.3));
+    this.tint = Math.max(bump(this.RISE + 0.6, 1.2), bump(this.SET - 0.5, 1.3)) * (VR.clima ? 1 - 0.6 * VR.clima.f.nube : 1);
     if (t <= 0 || t >= 1) { this.str = 0; this.len = 0; this.key = 'n'; return; }
     const th = Math.PI * t, elev = Math.max(0.1, 1.45 * Math.sin(th));
     const vx = -Math.cos(th), vy = 0.12 + Math.sin(th) * 0.88, n = Math.hypot(vx, vy) || 1;   // la sombra apunta al lado contrario del sol
     this.dx = vx / n; this.dy = vy / n;
     this.len = Math.min(3, 1 / Math.tan(elev));
-    this.str = Math.min(1, Math.sin(th) * 7);                                                   // se desvanece al ras del horizonte
+    this.str = Math.min(1, Math.sin(th) * 7) * (cm ? 1 - 0.78 * cm.f.nube : 1);                 // se desvanece al ras del horizonte y con las nubes
     this.key = Math.round(this.dx * 12) + ',' + Math.round(this.dy * 12) + ',' + Math.round(this.len * 6);
   },
   // corrimiento (px) de la sombra de algo de altura h

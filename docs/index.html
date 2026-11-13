@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 047e1919 · 2026-11-13</div>
+  <div class="tVer">Versión 7ab58aae · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -442,8 +442,8 @@
   <div class="dlg">
     <h2>Créditos</h2>
     <p><b style="color:var(--text)">Villarrica</b> · un juego de Kiut Studio.</p>
-    <p>Dirección, referencias y pruebas: Leandro Casco · Ideas: Deisy · Programación y dibujo: Claude (Anthropic).</p>
-    <p>Mapa de la ciudad: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay.</p>
+    <p>Dirección, referencias y pruebas: Leandro Casco · Ideas: Deisy · Colaboración: Cinthia · Programación y dibujo: Claude (Anthropic).</p>
+    <p>Mapa de la ciudad: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Clima: datos de <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit">Open-Meteo.com</a> (CC BY 4.0).</p>
     <p>Inspirado en el estilo de los juegos de celular Java de mediados de los 2000. Todo el arte, el sonido y el código del juego son originales.</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="credClose">Cerrar</button></div>
   </div>
@@ -467,6 +467,9 @@
     <p class="hint" style="font-size:12px;opacity:.75;margin:4px 0 0">Fácil: apuntás hacia dónde ir. Clásico: los costados giran. Manual: con cambios (E/RB o ▲ sube, Q/LB o ▼ baja; parado en 1ª, bajar pone la reversa; en el teléfono el joystick es volante y pedal).</p>
     <h3 class="soloLibre">Hora del día</h3>
     <div class="seg soloLibre" id="segHora"><button data-v="real">Hora real</button><button data-v="dia">Día</button><button data-v="noche">Noche</button></div>
+    <h3>Clima</h3>
+    <div class="seg" id="segClima"><button data-v="real">Real</button><button data-v="templado">Templado</button><button data-v="calor">Calor</button><button data-v="frio">Frío</button><button data-v="nublado">Nublado</button><button data-v="lluvia">Lluvia</button></div>
+    <p class="hint" id="climaInfo" style="font-size:12px;opacity:.75;margin:4px 0 0"></p>
     <h3>Fondo del menú principal</h3>
     <div class="seg" id="segFondo"><button data-v="parque">Parque Ykua Pytã</button><button data-v="recorrido">Recorrido</button></div>
     <h3>Calidad de dibujo</h3>
@@ -505,7 +508,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 047e1919 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 7ab58aae · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -6487,6 +6490,75 @@ VR.Peds = class {
   }
 };
 
+// ===== game/clima.js =====
+// Clima de Villarrica (13/11/2026, pedido de Leandro): calor, templado, frío, nublado y lluvia. Con "clima real" se lee de
+// Open-Meteo (API gratuita sin clave, CC BY 4.0: va en los créditos) desde el navegador de quien juega; el dato se guarda
+// 30 minutos y, si no hay internet, se usa un clima típico de la época. También se puede fijar a mano en la configuración.
+// Efectos: tinte de la luz del día (amarillo y duro con calor, azulado con frío, gris con nubes y lluvia), sombras más
+// tenues con nubes (VR.sun.str), gotas de lluvia, y salida y puesta del sol reales (VR.sun.RISE/SET). Con ?clima=lluvia
+// (o calor, templado, frio, nublado, real) en la dirección se prueba sin tocar la configuración.
+VR.clima = {
+  mode: 'real', f: { calor: 0, frio: 0, nube: 0.15, lluvia: 0 }, data: null, label: '', rise: null, set: null, drops: [],
+  URL: 'https://api.open-meteo.com/v1/forecast?latitude=-25.75&longitude=-56.43&current=temperature_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m&daily=sunrise,sunset&timezone=America%2FAsuncion&forecast_days=1',
+  PRESET: { calor: { calor: 1, frio: 0, nube: 0.1, lluvia: 0 }, templado: { calor: 0, frio: 0, nube: 0.2, lluvia: 0 }, frio: { calor: 0, frio: 1, nube: 0.45, lluvia: 0 },
+    nublado: { calor: 0, frio: 0.1, nube: 0.95, lluvia: 0 }, lluvia: { calor: 0, frio: 0.2, nube: 1, lluvia: 1 } },
+  NAME: { calor: 'calor', templado: 'templado', frio: 'frío', nublado: 'nublado', lluvia: 'lluvia' },
+  init(mode) {
+    const u = /[?&]clima=(\w+)/.exec(location.search); this.mode = u ? u[1] : mode || 'real';
+    try { const c = JSON.parse(VR.store.get('climaCache', 'null')); if (c && c.d) { this.data = c.d; this.t = c.t; } } catch (e) {}
+    this.apply();
+    if (this.mode === 'real' && (!this.t || Date.now() - this.t > 30 * 60e3)) this.fetch();
+    setInterval(() => { if (this.mode === 'real') this.fetch(); }, 30 * 60e3);
+  },
+  setMode(m) { this.mode = m; this.apply(); if (m === 'real' && (!this.t || Date.now() - this.t > 30 * 60e3)) this.fetch(); },
+  fetch() {
+    try {
+      fetch(this.URL).then((r) => r.ok ? r.json() : Promise.reject(r.status)).then((j) => {
+        const c = j.current || {}, d = j.daily || {};
+        this.data = { temp: c.temperature_2m, app: c.apparent_temperature, nube: c.cloud_cover, lluvia: c.precipitation, code: c.weather_code, viento: c.wind_speed_10m,
+          rise: d.sunrise && d.sunrise[0], set: d.sunset && d.sunset[0] };
+        this.t = Date.now(); VR.store.set('climaCache', JSON.stringify({ t: this.t, d: this.data })); this.apply();
+      }).catch(() => {});
+    } catch (e) {}
+  },
+  hm(s) { const m = /T(\d+):(\d+)/.exec(s || ''); return m ? +m[1] + m[2] / 60 : null; },
+  // de los datos (o del preset) a los cuatro factores 0..1
+  apply() {
+    const cl = (v, a, b) => Math.max(0, Math.min(1, (v - a) / (b - a)));
+    if (this.PRESET[this.mode]) { this.f = Object.assign({}, this.PRESET[this.mode]); this.label = 'Clima fijo: ' + this.NAME[this.mode]; this.rise = this.set = null; return; }
+    const d = this.data;
+    if (d && typeof d.temp === 'number') {
+      const app = typeof d.app === 'number' ? d.app : d.temp, rain = (d.lluvia || 0) > 0.05 || [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(d.code);
+      this.f = { calor: cl(app, 28, 36), frio: cl(app, 18, 8), nube: cl(d.nube || 0, 0, 100), lluvia: rain ? Math.min(1, 0.45 + (d.lluvia || 0) / 2) : 0 };
+      if (this.f.lluvia) this.f.nube = Math.max(this.f.nube, 0.85);
+      this.rise = this.hm(d.rise); this.set = this.hm(d.set);
+      this.label = 'Clima real: ' + Math.round(d.temp) + ' °C (sensación ' + Math.round(app) + ') · nubes ' + Math.round(d.nube || 0) + ' %' + (this.f.lluvia ? ' · llueve' : '');
+    } else { // sin datos todavía: clima típico de la época
+      const m = new Date().getMonth(); this.f = { calor: m >= 11 || m <= 1 ? 0.7 : m === 2 || m === 10 ? 0.35 : 0, frio: m >= 5 && m <= 7 ? 0.6 : 0, nube: 0.2, lluvia: 0 };
+      this.rise = this.set = null; this.label = 'Clima real: sin datos todavía (se usa uno típico de la época)';
+    }
+  },
+  // tinte de la luz del día: se multiplica sobre el cuadro; menos de noche (la noche ya oscurece)
+  drawGrade(ctx, sw, sh) {
+    const f = this.f, day = 1 - (VR.night ? VR.night.level : 0); if (day < 0.02) return;
+    const fill = (rgb, a) => { if (a < 0.01) return; ctx.fillStyle = 'rgba(' + rgb + ',' + a.toFixed(3) + ')'; ctx.fillRect(0, 0, sw, sh); };
+    ctx.save(); ctx.globalCompositeOperation = 'multiply';
+    fill('255,224,160', 0.24 * f.calor * day); fill('170,200,255', 0.22 * f.frio * day); fill('196,204,214', 0.30 * f.nube * (1 - 0.3 * f.lluvia) * day); fill('96,112,140', 0.34 * f.lluvia * day);
+    ctx.restore();
+    if (f.calor > 0.5 && day > 0.5) { ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = 'rgba(255,214,120,' + (0.07 * (f.calor - 0.5) * 2 * day).toFixed(3) + ')'; ctx.fillRect(0, 0, sw, sh); ctx.restore(); } // resplandor
+  },
+  drawRain(ctx, sw, sh, dt) {
+    const k = this.f.lluvia; if (k < 0.05) { this.drops.length = 0; return; }
+    const want = Math.round(sw * sh / 1100 * k), D = this.drops;
+    while (D.length < want) D.push({ x: Math.random() * (sw + 120), y: Math.random() * sh, v: 520 + Math.random() * 260, l: 6 + Math.random() * 7 });
+    D.length = Math.min(D.length, want);
+    ctx.save(); ctx.strokeStyle = 'rgba(200,216,236,.55)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (const d of D) { d.y += d.v * dt; d.x -= d.v * dt * 0.22; if (d.y > sh + 10 || d.x < -20) { d.y = -10 - Math.random() * 30; d.x = Math.random() * (sw + 120); }
+      ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + d.l * 0.22, d.y - d.l); }
+    ctx.stroke(); ctx.restore();
+  },
+};
+
 // ===== game/sol.js =====
 // Sol y sombras según la hora (13/11/2026, pedido de Leandro). Este y oeste están fijos en el mapa (norte arriba):
 // el sol sale por el este (las sombras caen hacia el oeste y son largas), al mediodía está casi arriba (Villarrica está
@@ -6506,15 +6578,16 @@ VR.sun = {
     return mode === 'dia' ? (h >= 7 && h <= 17.5 ? h : 15) : h;
   },
   update(mode) {
+    const cm = VR.clima; if (cm && this.force == null && cm.mode === 'real' && cm.rise != null && cm.set != null) { this.RISE = cm.rise; this.SET = cm.set; } else { this.RISE = 5.5; this.SET = 18.5; }   // salida y puesta reales de hoy
     const h = this.h = this.hourOf(mode), t = (h - this.RISE) / (this.SET - this.RISE);
     const bump = (c, w) => Math.max(0, 1 - Math.abs(h - c) / w);
-    this.tint = Math.max(bump(6.1, 1.2), bump(18.0, 1.3));
+    this.tint = Math.max(bump(this.RISE + 0.6, 1.2), bump(this.SET - 0.5, 1.3)) * (VR.clima ? 1 - 0.6 * VR.clima.f.nube : 1);
     if (t <= 0 || t >= 1) { this.str = 0; this.len = 0; this.key = 'n'; return; }
     const th = Math.PI * t, elev = Math.max(0.1, 1.45 * Math.sin(th));
     const vx = -Math.cos(th), vy = 0.12 + Math.sin(th) * 0.88, n = Math.hypot(vx, vy) || 1;   // la sombra apunta al lado contrario del sol
     this.dx = vx / n; this.dy = vy / n;
     this.len = Math.min(3, 1 / Math.tan(elev));
-    this.str = Math.min(1, Math.sin(th) * 7);                                                   // se desvanece al ras del horizonte
+    this.str = Math.min(1, Math.sin(th) * 7) * (cm ? 1 - 0.78 * cm.f.nube : 1);                 // se desvanece al ras del horizonte y con las nubes
     this.key = Math.round(this.dx * 12) + ',' + Math.round(this.dy * 12) + ',' + Math.round(this.len * 6);
   },
   // corrimiento (px) de la sombra de algo de altura h
@@ -6637,9 +6710,10 @@ VR.Night = class {
     if (mode === 'noche') return 1;
     if (mode === 'dia') return 0;
     const d = new Date(), h = mode === 'juego' ? (VR.gameHour || 12) : d.getHours() + d.getMinutes() / 60; // 'juego' = hora de Historia
-    if (h >= 20 || h < 5) return 1;
-    if (h >= 18.5) return (h - 18.5) / 1.5;
-    if (h < 6.5) return 1 - (h - 5) / 1.5;
+    const R = VR.sun ? VR.sun.RISE : 5.5, S = VR.sun ? VR.sun.SET : 18.5;   // con clima real, la salida y puesta del sol de hoy
+    if (h >= S + 1.5 || h < R - 0.5) return 1;
+    if (h >= S) return (h - S) / 1.5;
+    if (h < R + 1) return 1 - (h - (R - 0.5)) / 1.5;
     return 0;
   }
   update(dt, mode) {
@@ -12059,7 +12133,7 @@ VR.Titulo = class {
   VR.store.ns = VR.modo === 'historia' ? 'h:' : '';
   document.body.classList.toggle('historia', VR.modo === 'historia');
   const vida = VR.vida = VR.modo === 'historia' ? new VR.Vida() : null;
-  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque'), calidad: VR.store.get('calidad', 'normal') };
+  const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), clima: VR.store.get('clima', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque'), calidad: VR.store.get('calidad', 'normal') };
   VR.hq = settings.calidad === 'alta'; // calidad de dibujo (12/11/2026): alta = 3 px de lienzo por unidad del mundo en vez de 2 (core.js, VR.screen.fit)
   VR.drive = settings.manejo;
 
@@ -12470,7 +12544,7 @@ VR.Titulo = class {
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);
-    VR.sun.drawTint(ctx, sw, sh);
+    VR.sun.drawTint(ctx, sw, sh); VR.clima.drawGrade(ctx, sw, sh); VR.clima.drawRain(ctx, sw, sh, Math.min(0.1, dt || 0.016));
     night.render(ctx, cx, cy, sw, sh, vis);
     if (emer) emer.drawFlash(ctx, sw, sh);
     for (const l of world.labels) {
@@ -12798,6 +12872,8 @@ VR.Titulo = class {
   };
   seg('segTouch', 'touch', applyTouch);
   seg('segHora', 'hora', () => {});
+  VR.clima.init(settings.clima); const climaInfo = () => { const e = $('climaInfo'); if (e) e.textContent = VR.clima.label; }; climaInfo(); setInterval(climaInfo, 4000);
+  seg('segClima', 'clima', () => { VR.clima.setMode(settings.clima); climaInfo(); });
   seg('segFondo', 'fondo', () => title.setMode(settings.fondo));
   seg('segCalidad', 'calidad', () => { toast('🖼 Calidad ' + settings.calidad + ': reiniciando el dibujo…'); try { savePos(); } catch (e) {} setTimeout(() => location.reload(), 600); }); // la resolución se fija al arrancar
   // ---- online ----
@@ -13321,7 +13397,7 @@ VR.Titulo = class {
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
     night.update(Math.min(0.1, dt || 0.016), settings.hora);
-    VR.sun.drawTint(ctx, sw, sh);
+    VR.sun.drawTint(ctx, sw, sh); VR.clima.drawGrade(ctx, sw, sh); VR.clima.drawRain(ctx, sw, sh, Math.min(0.1, dt || 0.016));
     night.render(ctx, cx, cy, sw, sh, vis);
     if (tFade._f !== title.fade) { tFade._f = title.fade; tFade.style.opacity = title.fade; }
   }
