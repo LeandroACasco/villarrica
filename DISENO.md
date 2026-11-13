@@ -1,6 +1,6 @@
 # Villarrica: documento de diseño
 
-*Proyecto de Leandro. Versión 1.57, 13/11/2026. Documento vivo: se actualiza al terminar cada etapa.*
+*Proyecto de Leandro. Versión 1.58, 13/11/2026. Documento vivo: se actualiza al terminar cada etapa.*
 
 ## 1. Visión
 
@@ -79,6 +79,7 @@ La sensación que buscamos: abrir el juego y pensar "esto es Villarrica, pero co
 
 ## 3. Pendiente de decidir (preguntar a Leandro)
 
+- **Más datos del INE (13/11/2026):** ya se usan los barrios y el nivel socioeconómico. Quedan, sin usar: la **red vial 2022** (traería el tipo de superficie de cada calle, para completar las que OSM no marca; falta ver qué campos trae para Villarrica), la **iluminación nocturna** (ráster solo por WMS: dónde hay alumbrado de noche) y las **localidades** y la capa rural de Guairá (para los alrededores). Nada de eso es urgente; el nivel socioeconómico ya se puede exagerar más en `src/game/nivel.js` si no se nota lo suficiente.
 - **Vista oblicua de los vehículos:** ¿la altura nueva (0,46) quedó bien? ¿Los conductores de moto se ven bien? **Karumbe:** ¿colores y forma como los de verdad? ¿Lleva pasajeros (changa de karumbe, subir de pasajero)?
 - **Taller en el juego:** dónde queda, si los vehículos tuneados se guardan en un garaje.
 - **Tienda de ropa:** ¿hay una tienda de ropa real en esa esquina (o cerca) para tomarla de referencia? ¿Los precios están bien? ¿Cambiarse también fuera de la tienda (casa, ropero)? ¿Crear tu personaje (cuerpo, piel, hombre o mujer) en algún lado?
