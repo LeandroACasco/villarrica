@@ -484,3 +484,5 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 - Fotos de camiones de Leandro (10/11/2026: liviano de cabina adelantada, tractor granelero, volcadores), solo como referencia de categoría, colores y silueta (no se copian marcas ni logos)
 - Video de Leandro de la calle al oeste de la esquina noroeste de la plaza, de día (04/11/2026)
 - Hojas de personajes de Leandro, Sofía y Deisy generadas con Meta AI (04/11/2026), solo como referencia de ropa y peinados; dibujos de Sofía de Dina Run y Dina Beat (Cinthia, Nora) como referencia de look
+
+- 13/11/2026 (v1.58): Taller inmersivo: interior vectorial con el vehículo grande y fijo (sin girar), cambios en vivo y lista con iconos dibujados por categoría. Ver TECNICO.md.
