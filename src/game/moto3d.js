@@ -231,6 +231,22 @@
     return out;
   };
 
+
+  // vista de costado (tarjeta del vehículo al subirte): la misma malla, proyectada de lado, con la trompa a la derecha
+  O.meshes = MESH;
+  VR.motoSide = (kind, pal, t, W, H) => {
+    const F = MESH[kind](pal, t || {}), c = VR.canvas(W, H), g = c.getContext('2d'); g.lineJoin = 'round';
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const f of F) for (const q of f.p) { x0 = Math.min(x0, -q[1]); x1 = Math.max(x1, -q[1]); y0 = Math.min(y0, -q[2]); y1 = Math.max(y1, -q[2]); }
+    const sc = Math.min(W * 0.92 / (x1 - x0), H * 0.88 / (y1 - y0)), ox = (W - (x1 - x0) * sc) / 2 - x0 * sc, oy = H * 0.93 - y1 * sc, pt = (q) => [ox - q[1] * sc, oy - q[2] * sc];
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(W / 2, H * 0.93, (x1 - x0) * sc * 0.42, H * 0.025, 0, 0, 7); g.fill();
+    const Ld = norm([0.55, 0.3, 0.8]), vis = F.filter((f) => f.n[0] > -0.05).sort((a, b) => a.m[0] - b.m[0]);
+    g.strokeStyle = 'rgba(12,12,16,.95)'; g.lineWidth = Math.max(1.6, sc * 0.2);
+    for (const f of vis) { g.beginPath(); f.p.forEach((q, i) => { const r = pt(q); i ? g.lineTo(r[0], r[1]) : g.moveTo(r[0], r[1]); }); g.closePath(); g.stroke(); }
+    const paint = (p, col, sh) => { const sty = `rgb(${Math.min(255, col[0] * sh) | 0},${Math.min(255, col[1] * sh) | 0},${Math.min(255, col[2] * sh) | 0})`; g.fillStyle = sty; g.strokeStyle = sty; g.lineWidth = 0.6; g.beginPath(); p.forEach((q, i) => { const r = pt(q); i ? g.lineTo(r[0], r[1]) : g.moveTo(r[0], r[1]); }); g.closePath(); g.fill(); g.stroke(); };
+    for (const f of vis) { const sh = 0.5 + 0.6 * Math.max(0, f.n[0] * Ld[0] + f.n[1] * Ld[1] + f.n[2] * Ld[2]); paint(f.p, f.c, sh); for (const d of f.d) paint(d.p, d.c, sh); }
+    return c;
+  };
+
   const r0 = O.render;
   O.render = (base, a, B) => (base.prof && base.prof.mesh ? meshRender(base, a, B, base.prof.mesh) : r0(base, a, B));
   const m0 = O.moto;

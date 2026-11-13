@@ -446,6 +446,7 @@
   };
 
   VR.drawSideHD = (kind, pal, t = {}, W = 320, H = 180) => {
+    if (VR.motoSide && VR.OBL && VR.OBL.meshes && VR.OBL.meshes[kind]) return VR.motoSide(kind, pal, t, W, H); // motos con malla 3D: la tarjeta usa el mismo modelo de costado
     const c = VR.canvas(W, H), g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.scale(W / 64, H / 36);
     if (kind === 'car') kind = 'mita';
     if (kind === 'karumbe') karumbeHD(g, pal);
