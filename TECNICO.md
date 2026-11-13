@@ -610,3 +610,6 @@ Don Chicho (taller.js): retrato con `VR.retrato(CHICHO,'chicho',exp,open)` (EDAD
 
 ## Galería de vehículos (13/11/2026)
 `python3 tools/galeria_vehiculos.py [salida.html]` arma una página con el código REAL del juego (core, gfx, car, autos, camiones, oblicuo, tune) y la UI: pestaña "Todos" (los 26 vehículos girando, ✓ si se dibujan sin errores, "Escala real") y "Detalle" (grande, arrastrable, 8 ángulos, cámara 30°/45°/65°/85°, color y tuneo). Es el artefacto privado "Galería de vehículos de Villarrica" (antes "Taller de Villarrica"). Para actualizarlo: correr el script y republicar el HTML.
+
+## Moto en malla 3D (`src/game/moto3d.js`, 13/11/2026)
+La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de piezas (ruedas, tubos, carenados por secciones, cajas) que `OBL.render` dibuja con proyección oblicua (ordenada por profundidad, sombreado Lambert, sin caras traseras). `O.moto` agrega `prof.mesh` si hay `MESH[modelo]`; `O.render` usa `meshRender` cuando existe. Ejes: u lateral (+ derecha del piloto), y desde la trompa, z altura. Tuning (llantas, franja, escape, xenón) se aplica en `MESH.cub`. Las otras motos (mini, calle, carga, pati) siguen con el sistema viejo hasta tener su `MESH`. La galería incluye `moto3d.js`.

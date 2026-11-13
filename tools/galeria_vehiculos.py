@@ -6,7 +6,7 @@ Muestra los 26 vehículos del juego (autos, camionetas, camiones, colectivos, em
 baja del taller, con colores y tuneo, para revisar que estén todos bien. Sirve como artefacto de Claude o abierta en el navegador."""
 import pathlib, sys
 root = pathlib.Path(__file__).resolve().parent.parent
-FILES = ['engine/core.js', 'engine/gfx.js', 'game/car.js', 'game/autos.js', 'game/camiones.js', 'game/oblicuo.js', 'game/tune.js']
+FILES = ['engine/core.js', 'engine/gfx.js', 'game/car.js', 'game/autos.js', 'game/camiones.js', 'game/oblicuo.js', 'game/moto3d.js', 'game/tune.js']
 CSS = r'''
 :root{--bg:#121620;--panel:#1b2130;--panel2:#232b3d;--line:#323c54;--ink:#f3ecd8;--mute:#a8a596;--accent:#ffd75e;--ok:#7ad08a;--bad:#e8604a;color-scheme:dark}
 *{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif;padding:14px max(14px,env(safe-area-inset-left)) 40px}
