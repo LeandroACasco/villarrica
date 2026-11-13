@@ -139,10 +139,10 @@ VR.Weapons = class {
     const hnd = player._img && player._img.hand; // la mano sale del propio sprite (brazo levantado), así el arma siempre sale de SU brazo
     const [hx, hy] = hnd ? [px0 - 8 * PS + hnd[0] * PS, py0 - 31 * PS + hnd[1] * PS] : this.hand(px0, py0, a);
     const wpn = () => {
-      ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); // el largo hacia arriba o abajo se ve acortado (vista 3/4)
+      ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); const fs = this.cur === 'pistola' ? 0.82 : 0.8; ctx.scale(fs, fs); // el largo hacia arriba o abajo se ve acortado (vista 3/4)
       if (this.cur === 'pistola') { // Taurus 9 mm de ~19 cm: unos 5,5 px de largo (el personaje mide 31)
         ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.25, -6, 2.5, 7.6);                                       // contorno
-        ctx.fillStyle = '#34343c'; ctx.fillRect(-0.8, -5.6, 1.6, 3.6); ctx.fillStyle = '#80808c'; ctx.fillRect(-0.8, -5.6, 0.45, 3.4); // corredera con brillo
+        ctx.fillStyle = '#5a5a68'; ctx.fillRect(-0.8, -5.6, 1.6, 3.6); ctx.fillStyle = '#c4c4d2'; ctx.fillRect(-0.8, -5.6, 0.55, 3.4); ctx.fillStyle = '#e4e4ee'; ctx.fillRect(-0.8, -5.6, 1.6, 0.4); // corredera con brillo
         ctx.fillStyle = '#9a9aa6'; ctx.fillRect(-0.2, -6.1, 0.4, 0.6);                                       // mira
         ctx.fillStyle = '#22222a'; ctx.fillRect(-0.8, -2, 1.6, 1.2);                                          // armazón
         ctx.fillStyle = '#1c1c22'; ctx.fillRect(-0.8, -0.8, 1.6, 2.2); ctx.fillStyle = '#3a3a44'; ctx.fillRect(-0.8, -0.8, 0.45, 2.1); // empuñadura

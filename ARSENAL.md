@@ -10,14 +10,14 @@ Las armas están apagadas por defecto: se activan en Menú → Desarrollador. Co
 |---|---|
 | Modelo de referencia | Taurus PT 917 / G2C, 9 mm (marca brasileña, la más común en Paraguay) |
 | Tipo | Semiautomática, un tiro por apretada |
-| Largo real / en el juego | ~19 cm → ~5,5 px de largo (el personaje mide 31 px, o sea ~170 cm) |
+| Largo real / en el juego | ~19 cm → ~4,5 px de largo (el personaje mide 31 px, o sea ~170 cm) |
 | Cadencia | 0,28 s entre tiros |
 | Velocidad de la bala | 560 px/s |
 | Alcance | 280 px |
 | Daño a vehículos | 14 por bala |
 | Estrellas de búsqueda | 1 |
 | Efectos | Fogonazo con luz de noche; la gente cercana huye y dice "¡Oñembokapu!", "¡Jadipara!", etc. |
-| Dibujo en el juego | corredera con brillo, mira, armazón, empuñadura y guardamonte, con contorno oscuro |
+| Dibujo en el juego | corredera clara con brillo (para que se note), mira, armazón, empuñadura y guardamonte, con contorno oscuro |
 
 ## 2. Lanzallamas de mano
 
@@ -25,7 +25,7 @@ Las armas están apagadas por defecto: se activan en Menú → Desarrollador. Co
 |---|---|
 | Modelo de referencia | Ninguno real: arma ficticia al estilo Gangstar (tanque rojo "FUEGO" con manguera y boquilla con piloto) |
 | Tipo | Llama continua mientras se mantiene el disparo |
-| Largo en el juego | ~10,5 px (~70 cm) más el tanque |
+| Largo en el juego | ~8,5 px (~70 cm) más el tanque |
 | Alcance | 78 px, cono de 0,42 rad |
 | Daño a vehículos | 55 (prende fuego) |
 | Estrellas de búsqueda | 1 |
@@ -39,6 +39,5 @@ Las armas están apagadas por defecto: se activan en Menú → Desarrollador. Co
 
 ## Pendiente
 
-- La pistola de frente o de espaldas se lee poco (es chica y oscura): se puede agregar contraste.
 - Más armas (escopeta, bate, etc.) no están definidas todavía; si se agregan, cada una necesita ficha, modelo de referencia y su ilustración.
 - Probar en el teléfono.
