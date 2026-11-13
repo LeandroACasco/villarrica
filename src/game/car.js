@@ -363,7 +363,7 @@ VR.MOTO_MODELS = {
     name: 'Tatu 110', desc: 'Mini moto de ruedas gordas: chiquita, divertida y dobla en un pañuelo.', side: 'mini' },
   calle: { rider: { gy: -5.6, gx: 4.6, hip: 2.6 }, len: 21, wid: 7, S: 26, base: VR.drawMotoCalle, acc: 265, turn: 3.2, max: { road: 290, stone: 240, dirt: 215, side: 160, grass: 140 },
     name: 'Yvytu GT 150', desc: 'Moto de calle con tanque grande y escape cromado: la más rápida.', side: 'calle' },
-  carga: { rider: { gy: -3.7, gx: 5.2, hip: 2.2 }, len: 32, wid: 16, S: 40, base: VR.drawMotoCarga, acc: 135, rev: 40, turn: 2.3, brake: 380, mass: 0.8,
+  carga: { rider: { gy: -3.7, gx: 5.2, hip: 2.2, zoff: 0.7 }, len: 33, wid: 12, S: 40, base: VR.drawMotoCarga, acc: 135, rev: 40, turn: 2.3, brake: 380, mass: 0.8,
     max: { road: 185, stone: 165, dirt: 160, side: 120, grass: 105 },
     name: 'Kárga Guasu 200', desc: 'Motocarga de tres ruedas: lenta, pesada y aguanta de todo atrás.', side: 'carga', riderOff: 8 },
   pati: { rider: { gy: -4.6, gx: 2.6, stand: true }, len: 12, wid: 6, S: 16, base: VR.drawPati, colors: VR.PATI_COLORS, acc: 150, rev: 15, turn: 4.4, brake: 420, mass: 0.15,

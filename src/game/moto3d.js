@@ -47,15 +47,15 @@
     }
     // rueda: neumático (cilindro), costados, llanta con rayos, cubo
     wheel(wy, r, rim, hw = 0.62, opt = {}) {
-      const N = 22, c0 = [0, wy, r], ring = (u, rr) => { const o = []; for (let i = 0; i < N; i++) { const t = i / N * 6.2832; o.push([u, wy + Math.cos(t) * rr, r + Math.sin(t) * rr]); } return o; };
+      const ou = opt.u || 0, N = 22, c0 = [ou, wy, r], ring = (u, rr) => { const o = []; for (let i = 0; i < N; i++) { const t = i / N * 6.2832; o.push([u + ou, wy + Math.cos(t) * rr, r + Math.sin(t) * rr]); } return o; };
       const a = ring(-hw, r), b = ring(hw, r), a2 = ring(-hw, r * 0.96), b2 = ring(hw, r * 0.96);
       for (let i = 0; i < N; i++) { const i2 = (i + 1) % N; this.face([a[i], a[i2], b[i2], b[i]], '#17171a', c0); }
       for (const sg of [-1, 1]) {
         const u = sg * hw, dec = [], q = (rr, col, dz = 0) => ({ p: ring(u + sg * 0.01 * (1 + dz), rr), c: rgb(col) });
         dec.push(q(r * 0.8, opt.acc || '#2a2a30', 1), q(r * 0.74, rim, 2));
-        const ns = opt.nsp || 7; for (let k = 0; k < ns; k++) { const t = k / ns * 6.2832 + 0.3, w = opt.nsp ? 0.13 : 0.22, P = (tt, rr) => [u + sg * 0.04, wy + Math.cos(tt) * rr, r + Math.sin(tt) * rr]; dec.push({ p: [P(t - 0.2, r * 0.2), P(t - w, r * 0.7), P(t + w, r * 0.7), P(t + 0.2, r * 0.2)], c: rgb(opt.spoke || '#26262a') }); }
+        const ns = opt.nsp === 0 ? 0 : (opt.nsp || 7); for (let k = 0; k < ns; k++) { const t = k / ns * 6.2832 + 0.3, w = opt.nsp ? 0.13 : 0.22, P = (tt, rr) => [u + ou + sg * 0.04, wy + Math.cos(tt) * rr, r + Math.sin(tt) * rr]; dec.push({ p: [P(t - 0.2, r * 0.2), P(t - w, r * 0.7), P(t + w, r * 0.7), P(t + 0.2, r * 0.2)], c: rgb(opt.spoke || '#26262a') }); }
         dec.push({ p: ring(u + sg * 0.05, r * 0.2), c: rgb('#3a3a40') }, { p: ring(u + sg * 0.06, r * 0.09), c: rgb('#d8dce4') });
-        this.face(sg < 0 ? a : b, '#17171a', [0, wy, r], dec);
+        this.face(sg < 0 ? a : b, '#17171a', [ou, wy, r], dec);
       }
     }
   }
@@ -204,6 +204,54 @@
     const mu = (sg) => { M.tube([sg * 1.4, 10.6, 2.6], [sg * 1.8, 11.6, 2.4], 0.3, CH, 5); M.tube([sg * 1.9, 11.4, 2.4], [sg * 2.0, 15.6, 3.9], 0.56, t.escape === 'deportivo' ? '#d8dce4' : '#2a2b30', 8); };
     mu(1); if (t.escape === 'deportivo') mu(-1);
     if (S2) for (const sg of [-1, 1]) M.box(sg > 0 ? 1.6 : -1.8, sg > 0 ? 1.8 : -1.6, 7.0, 10.4, 6.9, 7.4, S2);
+    return M.F;
+  };
+
+  // ---------- Kárga Guasu 200 (motocarga de tres ruedas tipo Transporter 180: moto adelante, caja con barandas atrás) ----------
+  MESH.carga = (pal, t = {}) => {
+    const C = pal[0], M = new Mesh(), BLK = '#1d1e22', CH = '#b8bcc4', RED = '#c83a3a', BD = VR.shadeHex ? VR.shadeHex(C, 0.78) : C, BD2 = VR.shadeHex ? VR.shadeHex(C, 0.62) : C;
+    const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#d4d8de', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
+    const FW = 2.5, RW = 23.8, R = 2.5, RR = 2.6, circ = (u, y, z, r, n = 18, plane = 'y') => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push(plane === 'y' ? [u + Math.cos(a) * r, y, z + Math.sin(a) * r] : [u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
+    // ruedas macizas de camino (llanta de chapa), una adelante y dos atrás
+    M.wheel(FW, R, rim, 0.62, { nsp: 0 }); for (const sg of [-1, 1]) M.wheel(RW, RR, rim, 0.55, { nsp: 0, u: sg * 3.4 });
+    // guardabarros cromado y barrero delantero
+    const fz = (y) => R + Math.sqrt(Math.max(0, 3.1 * 3.1 - (y - FW) * (y - FW)));
+    M.loft(0.6, 4.8, 0.35, (y) => ({ w: pl([[0.6, 0.7], [2.5, 1.0], [4.8, 0.9]], y), zb: fz(y) - 0.25, zt: fz(y) }), '#d0d4da', 10);
+    M.prism([[5.3, 3.4], [5.4, 1.3], [5.9, 1.3], [5.8, 3.4]], -0.45, 0.45, BLK);
+    // horquilla con resortes rojos, faro redondo cromado, luces de giro y manubrio
+    for (const sg of [-1, 1]) { M.tube([sg * 1.15, FW, R], [sg * 1.15, 6.2, 8.8], 0.34, '#c8ccd4'); M.tube([sg * 1.15, 3.9, 5.2], [sg * 1.15, 5.5, 7.4], 0.55, RED, 8); }
+    M.box(-1.7, 1.7, 5.6, 6.5, 8.5, 9.1, '#202226');
+    M.loft(3.9, 5.5, 0.3, () => ({ w: 0.95, zb: 8.3, zt: 10.2 }), '#c8ccd4', 16, 2);
+    const lamp = M.face(circ(0, 3.88, 9.25, 0.95, 20), '#dfe6ee', [0, 4.8, 9.2]); lamp.d.push({ p: circ(0, 3.86, 9.25, 0.72, 20), c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: circ(0, 3.84, 9.25, 0.25, 12), c: rgb('#8a8e96') });
+    for (const sg of [-1, 1]) M.box(sg > 0 ? 1.2 : -1.8, sg > 0 ? 1.8 : -1.2, 5.0, 5.7, 8.7, 9.2, '#f0a020');
+    M.box(-0.95, 0.95, 6.4, 7.6, 9.8, 10.7, '#26272b');                                                                          // relojes
+    M.tube([-2.6, 8.7, 10.3], [-1.0, 7.0, 9.9], 0.2, CH, 5); M.tube([-1.0, 7.0, 9.9], [1.0, 7.0, 9.9], 0.2, CH, 5); M.tube([1.0, 7.0, 9.9], [2.6, 8.7, 10.3], 0.2, CH, 5);
+    for (const sg of [-1, 1]) {
+      M.tube([sg * 2.2, 8.9, 10.4], [sg * 3.2, 9.2, 10.5], 0.32, '#101012'); M.tube([sg * 2.7, 8.9, 10.5], [sg * 3.0, 8.6, 12.8], 0.1, '#2a2a2e', 4);
+      const mir = M.box(sg > 0 ? 2.4 : -3.6, sg > 0 ? 3.6 : -2.4, 8.4, 8.7, 12.7, 14.0, '#1a1a1e'); mir[3].d.push({ p: [[sg * 2.55, 8.72, 12.85], [sg * 3.45, 8.72, 12.85], [sg * 3.45, 8.72, 13.85], [sg * 2.55, 8.72, 13.85]], c: rgb('#6a727c') });
+    }
+    // tanque, motor, paneles y asiento de la cabina
+    M.loft(6.0, 10.8, 0.4, (y) => ({ w: pl([[6.0, 1.0], [7.5, 1.4], [10.8, 1.3]], y), zb: 6.3, zt: pl([[6.0, 8.9], [8, 9.1], [10.8, 8.5]], y) }), C, 14, 2.6);
+    M.box(-1.0, 1.0, 7.8, 11.4, 3.0, 6.4, '#8a8e96'); M.box(-0.9, 0.9, 8.2, 10.2, 6.2, 7.0, '#7a6a48');                           // motor con cilindro dorado
+    for (const sg of [-1, 1]) M.prism([[11.2, 7.3], [14.4, 7.2], [14.5, 3.6], [10.6, 3.3], [9.4, 4.4]], sg > 0 ? 1.15 : -1.45, sg > 0 ? 1.45 : -1.15, BD);
+    M.loft(10.0, 14.3, 0.4, (y) => ({ w: pl([[10, 0.9], [12, 1.3], [14.3, 1.5]], y), zb: 6.6, zt: 7.9 }), '#1c1c20', 12, 2.6);
+    // chasis negro y eje trasero
+    for (const sg of [-1, 1]) { M.tube([sg * 1.0, 7.0, 2.6], [sg * 1.0, 24.0, 3.6], 0.42, BLK); M.tube([sg * 0.95, 6.3, 9.0], [sg * 1.0, 8.0, 3.0], 0.34, BLK, 6); }
+    M.tube([-3.4, RW, RR], [3.4, RW, RR], 0.5, BLK); M.box(-0.8, 0.8, RW - 0.9, RW + 0.9, 2.0, 3.2, '#2a2b30');
+    // caja de carga con barandas y mampara de la cabina
+    M.box(-5.0, 5.0, 14.8, 33.0, 4.3, 5.0, BLK);
+    M.box(-5.4, 5.4, 14.8, 33.2, 5.0, 5.7, BD2);                                                                                  // piso
+    for (const sg of [-1, 1]) M.box(sg > 0 ? 5.05 : -5.4, sg > 0 ? 5.4 : -5.05, 14.8, 33.2, 5.4, 8.6, BD);                          // costados
+    M.box(-5.4, 5.4, 32.85, 33.25, 5.4, 8.6, BD);                                                                                 // compuerta trasera
+    for (const sg of [-1, 1]) { M.tube([sg * 5.2, 14.9, 10.1], [sg * 5.2, 33.0, 10.1], 0.14, BD2, 5); for (let y = 16.6; y < 33; y += 3.1) M.tube([sg * 5.2, y, 8.6], [sg * 5.2, y, 10.1], 0.12, BD2, 4); }
+    M.tube([-5.2, 33.0, 10.1], [5.2, 33.0, 10.1], 0.14, BD2, 5);
+    for (const sg of [-1, 1]) M.tube([sg * 4.3, 14.6, 8.6], [sg * 4.3, 14.6, 12.9], 0.2, BD2, 5); M.tube([-4.3, 14.6, 12.9], [4.3, 14.6, 12.9], 0.2, BD2, 5); M.tube([-4.3, 14.6, 10.7], [4.3, 14.6, 10.7], 0.14, BD2, 5);
+    const guard = M.box(-1.3, 1.3, 14.2, 14.9, 8.6, 12.4, '#1f2024'); guard[3].d.push({ p: [[-0.7, 14.92, 10.2], [0.7, 14.92, 10.2], [0.7, 14.92, 11.4], [-0.7, 14.92, 11.4]], c: rgb('#c8ccd4') });
+    // luces traseras, patente, barrero y defensa
+    for (const sg of [-1, 1]) { const lt = M.box(sg > 0 ? 2.3 : -5.0, sg > 0 ? 5.0 : -2.3, 33.0, 33.5, 3.4, 4.5, '#d8dce4'); lt[3].d.push({ p: [[sg * 3.0, 33.52, 3.7], [sg * 4.2, 33.52, 3.7], [sg * 4.2, 33.52, 4.2], [sg * 3.0, 33.52, 4.2]], c: rgb('#c42a2a') }); M.prism([[27.5, 4.2], [27.3, 1.4], [27.8, 1.4], [27.9, 4.2]], sg > 0 ? 2.9 : -4.0, sg > 0 ? 4.0 : -2.9, BLK); }
+    M.box(-1.3, 1.3, 33.0, 33.4, 3.0, 4.2, '#c8ccd4');
+    M.tube([-2.3, 33.3, 3.0], [2.3, 33.3, 3.0], 0.2, '#7a7e88', 5);
+    if (S2) for (const sg of [-1, 1]) M.box(sg > 0 ? 5.38 : -5.5, sg > 0 ? 5.5 : -5.38, 16.0, 31.5, 6.4, 7.0, S2);
     return M.F;
   };
 
