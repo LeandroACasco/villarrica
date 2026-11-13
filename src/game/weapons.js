@@ -135,26 +135,24 @@ VR.Weapons = class {
   drawHeld(ctx, player, cx, cy, al) {
     if (!this.enabled) return;
     const firing = VR.input.down('fire'), a = firing ? this.aim : ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
-    if (player.dir === 'up' && !firing) return; // de espaldas no se ve
     const px0 = VR.lerp(player.px, player.x, al) - cx, py0 = VR.lerp(player.py, player.y, al) - cy, PS = VR.PS || 1;
     const hnd = player._img && player._img.hand; // la mano sale del propio sprite (brazo levantado), así el arma siempre sale de SU brazo
     const [hx, hy] = hnd ? [px0 - 8 * PS + hnd[0] * PS, py0 - 31 * PS + hnd[1] * PS] : this.hand(px0, py0, a);
     const wpn = () => {
       ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); // el largo hacia arriba o abajo se ve acortado (vista 3/4)
-      if (this.cur === 'pistola') {
-        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.5, -8, 3, 9.5);                                          // contorno
-        ctx.fillStyle = '#34343c'; ctx.fillRect(-1, -7.5, 2, 5.5); ctx.fillStyle = '#7a7a86'; ctx.fillRect(-1, -7.5, 0.6, 5); // corredera con brillo
-        ctx.fillStyle = '#9a9aa6'; ctx.fillRect(-0.3, -8.2, 0.6, 0.9);                                       // mira
-        ctx.fillStyle = '#22222a'; ctx.fillRect(-1, -2, 2, 1.2);                                              // cuerpo
-        ctx.fillStyle = '#4a3020'; ctx.fillRect(-1, -0.8, 2, 2.6); ctx.fillStyle = '#6a4630'; ctx.fillRect(-1, -0.8, 0.6, 2.4); // cacha de madera
-        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.6, -1.2, 0.6, 1.6);                                       // guardamonte
-      } else {
-        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-2, -13, 4, 14.5);
-        ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1.5, -12.5, 3, 12.5); ctx.fillStyle = '#6a6a74'; ctx.fillRect(-1.5, -12.5, 0.9, 11.5);
-        ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-1.2, -13, 2.4, 1.6); ctx.fillStyle = '#e8a030'; ctx.fillRect(-0.5, -13.4, 1, 0.8); // boquilla y piloto
-        ctx.fillStyle = '#15151a'; ctx.fillRect(-1.5, -7, 3, 0.7); ctx.fillRect(-1.5, -4.5, 3, 0.7);        // abrazaderas
-        ctx.fillStyle = '#7a1a12'; ctx.fillRect(-3, -1.5, 6, 4.2); ctx.fillStyle = '#c23a28'; ctx.fillRect(-2.5, -1, 5, 3.2); ctx.fillStyle = '#e8584a'; ctx.fillRect(-2.5, -1, 1.5, 3.2); // tanque
-        ctx.fillStyle = '#2a2a30'; ctx.fillRect(-0.6, -2.4, 1.2, 1);                                         // válvula
+      if (this.cur === 'pistola') { // Taurus 9 mm de ~19 cm: unos 5,5 px de largo (el personaje mide 31)
+        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.25, -6, 2.5, 7.6);                                       // contorno
+        ctx.fillStyle = '#34343c'; ctx.fillRect(-0.8, -5.6, 1.6, 3.6); ctx.fillStyle = '#80808c'; ctx.fillRect(-0.8, -5.6, 0.45, 3.4); // corredera con brillo
+        ctx.fillStyle = '#9a9aa6'; ctx.fillRect(-0.2, -6.1, 0.4, 0.6);                                       // mira
+        ctx.fillStyle = '#22222a'; ctx.fillRect(-0.8, -2, 1.6, 1.2);                                          // armazón
+        ctx.fillStyle = '#1c1c22'; ctx.fillRect(-0.8, -0.8, 1.6, 2.2); ctx.fillStyle = '#3a3a44'; ctx.fillRect(-0.8, -0.8, 0.45, 2.1); // empuñadura
+        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.3, -1, 0.5, 1.2);                                         // guardamonte
+      } else { // lanzallamas de mano (ficticio) de ~70 cm
+        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.6, -10.5, 3.2, 12);
+        ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1.1, -10, 2.2, 10); ctx.fillStyle = '#6a6a74'; ctx.fillRect(-1.1, -10, 0.65, 9.2);
+        ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-0.9, -10.5, 1.8, 1.2); ctx.fillStyle = '#e8a030'; ctx.fillRect(-0.4, -10.9, 0.8, 0.6); // boquilla y piloto
+        ctx.fillStyle = '#15151a'; ctx.fillRect(-1.1, -6, 2.2, 0.5); ctx.fillRect(-1.1, -3.8, 2.2, 0.5);     // abrazaderas
+        ctx.fillStyle = '#7a1a12'; ctx.fillRect(-2.3, -1.2, 4.6, 3.4); ctx.fillStyle = '#c23a28'; ctx.fillRect(-1.9, -0.8, 3.8, 2.6); ctx.fillStyle = '#e8584a'; ctx.fillRect(-1.9, -0.8, 1.1, 2.6); // tanque
       }
       ctx.restore();
     };

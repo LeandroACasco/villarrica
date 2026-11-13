@@ -342,7 +342,7 @@
         }
             };
       // de espaldas, el brazo que va hacia adelante queda detrás del cuerpo (la mano no debe verse por la espalda)
-      const behind = back ? [S.angs[0] > 4, S.angs[1] > 4] : [false, false];
+      const behind = back && !S.aim ? [S.angs[0] > 4, S.angs[1] > 4] : [false, false];
       if (back) { if (behind[0]) armPaint(sL, eL, wL, false); if (behind[1]) armPaint(sR, eR, wR, true); }
       if (L.top === 'top') topMask = paint((g) => poly(g, [[8 - 2.7 * sw, 8.6 + S.bob], [8 + 2.7 * sw, 8.6 + S.bob], [8 + 2.5 * sw, 12 + S.bob], [8 - 2.5 * sw, 12 + S.bob]]), topC);
       else if (L.top === 'musculosa') topMask = paint((g) => { poly(g, torsoPts(0).map(([x, y], i) => i < 2 ? [8 + (x - 8) * 0.72, y + 0.3] : [x, y])); }, topC);

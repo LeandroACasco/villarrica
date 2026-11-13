@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 7153cfb9 · 2026-11-13</div>
+  <div class="tVer">Versión ebf2071b · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -508,7 +508,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 7153cfb9 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión ebf2071b · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -3660,7 +3660,7 @@ VR.makeTestMap = () => {
         }
             };
       // de espaldas, el brazo que va hacia adelante queda detrás del cuerpo (la mano no debe verse por la espalda)
-      const behind = back ? [S.angs[0] > 4, S.angs[1] > 4] : [false, false];
+      const behind = back && !S.aim ? [S.angs[0] > 4, S.angs[1] > 4] : [false, false];
       if (back) { if (behind[0]) armPaint(sL, eL, wL, false); if (behind[1]) armPaint(sR, eR, wR, true); }
       if (L.top === 'top') topMask = paint((g) => poly(g, [[8 - 2.7 * sw, 8.6 + S.bob], [8 + 2.7 * sw, 8.6 + S.bob], [8 + 2.5 * sw, 12 + S.bob], [8 - 2.5 * sw, 12 + S.bob]]), topC);
       else if (L.top === 'musculosa') topMask = paint((g) => { poly(g, torsoPts(0).map(([x, y], i) => i < 2 ? [8 + (x - 8) * 0.72, y + 0.3] : [x, y])); }, topC);
@@ -4175,7 +4175,7 @@ VR.Player = class {
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
     if (this.rag) { this.rag.draw(ctx, this.sprites, x, y); return; }
-    const aim = this.holding && (this.dir !== 'up' || VR.input.down('fire')) ? '+aim' : '';
+    const aim = this.holding ? '+aim' : '';
     const img = this._img = this.moving ? this.sprites.get(this.dir, (this.run ? 'run' : 'walk') + aim, Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle' + aim, 0);
     VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.26); VR.sun.cast(ctx, img, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.3);
     const PS = VR.PS; ctx.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);
@@ -7385,26 +7385,24 @@ VR.Weapons = class {
   drawHeld(ctx, player, cx, cy, al) {
     if (!this.enabled) return;
     const firing = VR.input.down('fire'), a = firing ? this.aim : ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
-    if (player.dir === 'up' && !firing) return; // de espaldas no se ve
     const px0 = VR.lerp(player.px, player.x, al) - cx, py0 = VR.lerp(player.py, player.y, al) - cy, PS = VR.PS || 1;
     const hnd = player._img && player._img.hand; // la mano sale del propio sprite (brazo levantado), así el arma siempre sale de SU brazo
     const [hx, hy] = hnd ? [px0 - 8 * PS + hnd[0] * PS, py0 - 31 * PS + hnd[1] * PS] : this.hand(px0, py0, a);
     const wpn = () => {
       ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); // el largo hacia arriba o abajo se ve acortado (vista 3/4)
-      if (this.cur === 'pistola') {
-        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.5, -8, 3, 9.5);                                          // contorno
-        ctx.fillStyle = '#34343c'; ctx.fillRect(-1, -7.5, 2, 5.5); ctx.fillStyle = '#7a7a86'; ctx.fillRect(-1, -7.5, 0.6, 5); // corredera con brillo
-        ctx.fillStyle = '#9a9aa6'; ctx.fillRect(-0.3, -8.2, 0.6, 0.9);                                       // mira
-        ctx.fillStyle = '#22222a'; ctx.fillRect(-1, -2, 2, 1.2);                                              // cuerpo
-        ctx.fillStyle = '#4a3020'; ctx.fillRect(-1, -0.8, 2, 2.6); ctx.fillStyle = '#6a4630'; ctx.fillRect(-1, -0.8, 0.6, 2.4); // cacha de madera
-        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.6, -1.2, 0.6, 1.6);                                       // guardamonte
-      } else {
-        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-2, -13, 4, 14.5);
-        ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1.5, -12.5, 3, 12.5); ctx.fillStyle = '#6a6a74'; ctx.fillRect(-1.5, -12.5, 0.9, 11.5);
-        ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-1.2, -13, 2.4, 1.6); ctx.fillStyle = '#e8a030'; ctx.fillRect(-0.5, -13.4, 1, 0.8); // boquilla y piloto
-        ctx.fillStyle = '#15151a'; ctx.fillRect(-1.5, -7, 3, 0.7); ctx.fillRect(-1.5, -4.5, 3, 0.7);        // abrazaderas
-        ctx.fillStyle = '#7a1a12'; ctx.fillRect(-3, -1.5, 6, 4.2); ctx.fillStyle = '#c23a28'; ctx.fillRect(-2.5, -1, 5, 3.2); ctx.fillStyle = '#e8584a'; ctx.fillRect(-2.5, -1, 1.5, 3.2); // tanque
-        ctx.fillStyle = '#2a2a30'; ctx.fillRect(-0.6, -2.4, 1.2, 1);                                         // válvula
+      if (this.cur === 'pistola') { // Taurus 9 mm de ~19 cm: unos 5,5 px de largo (el personaje mide 31)
+        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.25, -6, 2.5, 7.6);                                       // contorno
+        ctx.fillStyle = '#34343c'; ctx.fillRect(-0.8, -5.6, 1.6, 3.6); ctx.fillStyle = '#80808c'; ctx.fillRect(-0.8, -5.6, 0.45, 3.4); // corredera con brillo
+        ctx.fillStyle = '#9a9aa6'; ctx.fillRect(-0.2, -6.1, 0.4, 0.6);                                       // mira
+        ctx.fillStyle = '#22222a'; ctx.fillRect(-0.8, -2, 1.6, 1.2);                                          // armazón
+        ctx.fillStyle = '#1c1c22'; ctx.fillRect(-0.8, -0.8, 1.6, 2.2); ctx.fillStyle = '#3a3a44'; ctx.fillRect(-0.8, -0.8, 0.45, 2.1); // empuñadura
+        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.3, -1, 0.5, 1.2);                                         // guardamonte
+      } else { // lanzallamas de mano (ficticio) de ~70 cm
+        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.6, -10.5, 3.2, 12);
+        ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1.1, -10, 2.2, 10); ctx.fillStyle = '#6a6a74'; ctx.fillRect(-1.1, -10, 0.65, 9.2);
+        ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-0.9, -10.5, 1.8, 1.2); ctx.fillStyle = '#e8a030'; ctx.fillRect(-0.4, -10.9, 0.8, 0.6); // boquilla y piloto
+        ctx.fillStyle = '#15151a'; ctx.fillRect(-1.1, -6, 2.2, 0.5); ctx.fillRect(-1.1, -3.8, 2.2, 0.5);     // abrazaderas
+        ctx.fillStyle = '#7a1a12'; ctx.fillRect(-2.3, -1.2, 4.6, 3.4); ctx.fillStyle = '#c23a28'; ctx.fillRect(-1.9, -0.8, 3.8, 2.6); ctx.fillStyle = '#e8584a'; ctx.fillRect(-1.9, -0.8, 1.1, 2.6); // tanque
       }
       ctx.restore();
     };
@@ -12578,7 +12576,7 @@ VR.Titulo = class {
     world.collectTall(cx, cy, sw, sh, tall);
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
-    if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { if (weapons && !player.rag && player.dir === 'up') weapons.drawHeld(c, player, cx, cy, a); player.draw(c, cx, cy, a); if (weapons && !player.rag && player.dir !== 'up') weapons.drawHeld(c, player, cx, cy, a); } });
+    if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { player.draw(c, cx, cy, a); if (weapons && !player.rag) weapons.drawHeld(c, player, cx, cy, a); } });
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
