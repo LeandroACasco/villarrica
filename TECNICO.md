@@ -51,6 +51,7 @@ villarrica/
 │     ├─ avatar.js          avatar viejo (ya no se carga en el build; queda de referencia)
 │     ├─ player.js          VR.Player: caminar, correr, chocar, sprites del jugador
 │     ├─ car.js             VR.Car (física y dibujo de vehículos), motos, rotación de sprites, autos estacionados
+│     ├─ oblicuo.js         VISTA OBLICUA: volumen de los vehículos (perfil de alturas + costado), cola de dibujos
 │     ├─ autos.js           MODELOS DE AUTOS (VR.CAR_MODELS), dibujo desde arriba y sorteo (VR.pickCar)
 │     ├─ tune.js            TALLER: colores, piezas, precios (VR.TUNE_*)
 │     ├─ vcard.js           tarjeta del vehículo (dibujo de costado chico) al subirte
@@ -507,3 +508,61 @@ En Libre no existen `mis` ni `VR.PUNTOS`, así que `main.js` crea `VR.despensa` 
 - `python3 tools/textos_extraer.py` saca ~520 textos visibles del código (diálogos, avisos, carteles) a `tools/textos.json`. `build.py` lo hace solo y arma `docs/textos.html`, la página donde el equipo marca cada texto: ✔ se queda / ✖ se va / ✎ cambiar (con el texto nuevo). Guarda en el navegador y exporta `textos-revisados.json`.
 - `python3 tools/textos_aplicar.py textos-revisados.json [--probar]` aplica los cambios al código (por archivo + texto + nº de aparición, no por línea), chequea la sintaxis y vuelve a armar `docs/`. "Se va" solo se quita solo si es un elemento de una lista de frases; si no, lo lista para resolverlo a mano.
 - Se saltan avatar, catálogos y archivos de motor; los pedazos de frases armadas con `+` no aparecen.
+
+## Vehículos en vista oblicua (13/11/2026, `src/game/oblicuo.js`)
+
+Pedido de Leandro: en Gangstar los autos no se ven planos desde arriba, se ven también un poco de costado (techo + puerta, ventanillas y ruedas del lado que mira a la cámara), igual que el personaje. Los nuestros eran planos. Ahora **todos los vehículos tienen volumen**, en los 64 ángulos.
+
+Referencia usada: los cuadros de autos de la carpeta de assets de Gangstar (paquetes `k_00`…`k_04`), **solo para mirar la perspectiva**. No se copió nada: los dibujos siguen siendo los nuestros, hechos por código.
+
+### Qué cambió
+
+- **Autos, camionetas, todoterrenos, deportivos, patrulleras, ambulancia:** se ve el costado con zócalo, puertas, manijas, pasarruedas y ruedas con llanta, las ventanillas de la cabina, y de frente o de atrás los faros, la parrilla y las luces. El parabrisas y la luneta quedan inclinados.
+- **Colectivos y micro:** costado con la fila de ventanillas, parantes, puertas y las franjas de la empresa (solo colores).
+- **Camiones:** cabina con puerta y ventanilla, y la carga con su altura (chata, baranda con carpa, furgón, volcador con costillas, granelero con lona). **Camión de bomberos** con persianas.
+- **Motos:** ruedas, escudo, tanque, asiento, manubrio y escape con altura; el **conductor y el pasajero** van sentados encima (piernas, torso y cabeza en tres alturas).
+- **Karumbe:** caballo, carro y carrero con altura (más simple: usa el mismo dibujo oscurecido como costado).
+- La **sombra** ahora es la silueta apoyada en el piso (antes era la del sprite entero).
+- El cartel del taxi, las luces de la sirena y las abolladuras se dibujan a la altura del techo o del costado.
+- La física, los choques, el tamaño en la calle y el estacionamiento **no cambian**: el vehículo ocupa lo mismo en el piso y el volumen crece hacia arriba en pantalla, como los edificios.
+
+### Cómo está hecho (`src/game/oblicuo.js`)
+
+Cada vehículo sigue teniendo su dibujo desde arriba (`VR.vbase`) y ahora, además, un **perfil** (4.º parámetro de `VR.vbase`, una función que devuelve el perfil):
+
+| campo | qué es |
+| --- | --- |
+| `L`, `H` | largo del dibujo y altura máxima (unidades: 8 = 1 m) |
+| `top`, `bot` | altura del techo de cada franja a lo largo del vehículo (lista `[[y, altura], …]` o función) y desde dónde empieza (0 = llega al piso) |
+| `side(g, H)` | pinta el costado en coordenadas (y a lo largo, v de altura): `H.R(u0, v0, u1, v1, color)`, `H.wheel(u, radio, llanta)`, `H.disc(…)`; o `'self'` para usar el dibujo de arriba oscurecido |
+| `ins(y, v)`, `tin(y, v)` | cuánto se angosta la pared y la tapa a esa altura (negativo = solo los bordes, para ruedas a los costados) |
+| `caps` | franjas del dibujo de arriba que se copian en la trompa y la cola (faros y luces) |
+| `layers` | alternativa por capas: `[{ img, z0, z1 }]` (así va el conductor: piernas, torso, cabeza) |
+| `lift` | altura a la que van el cartel de taxi y las luces de la sirena |
+
+El vehículo se "apila": para cada altura se dibuja la silueta girada y corrida hacia arriba, pintada con la fila del costado que le toca, y encima la franja del dibujo de arriba que queda a esa altura.
+
+- Perfiles: `VR.OBL.car(config)` (todo lo de `VR.drawAuto`; alturas `hz: [capó, techo]` por modelo), `VR.OBL.bus`, `VR.OBL.truck`, `VR.OBL.bomba`, `VR.OBL.karumbe`, `VR.OBL.moto(modelo)` (tabla `MOTO`) y `VR.OBL.parts` (conductor).
+- `VR.OBL.kz` (0,68): cuántos píxeles sube cada unidad de altura. Más = vehículos más altos.
+- `VR.rotFrames` suma lugar arriba y abajo al cuadro (sigue centrado), guarda `F.lift` y hace la sombra con la silueta plana.
+- **Rendimiento:** armar un ángulo con volumen cuesta más que girar un dibujo plano (auto ~9 ms en la PC, colectivo ~40 ms), así que **no se hace de golpe**: va a una cola (`VR.OBL.enqueue`) que trabaja ~2 ms por cuadro. Mientras tanto se muestra el ángulo ya hecho más parecido, y un modelo o color que aparece por primera vez tarda unos cuadros en verse. Medido en la PC manejando por el centro: mediana 16,7 ms, 4 cuadros de más de 25 ms en 860 (con los dibujos planos de antes, 2).
+- Para probar: `?plano` en la dirección muestra los vehículos como antes, `?kz=0.8` cambia la altura, `?sinc` arma los ángulos en el momento (sin cola).
+
+### Receta: vehículo nuevo
+
+- Si usa `VR.drawAuto`, `VR.drawBus` o `VR.drawTruck`, **ya sale con volumen**. Para un auto, ajustar `hz: [altura del capó, altura del techo]` en su configuración si es más alto o más bajo que lo normal (auto 7,2 y 11,4; todoterreno 8,8 y 14).
+- Si tiene dibujo propio (`VR.vbase(w, h, fn)`), agregar el perfil como 4.º parámetro; sin perfil se ve plano, como antes.
+- Moto nueva: una entrada en la tabla `MOTO` de `oblicuo.js` (ruedas y tramos con sus alturas).
+
+### Probado
+
+- PC: hoja de prueba de todos los modelos en 10 ángulos, y el juego manejando una moto y un auto, de día y de noche, con un auto en llamas, taxi y sirena: 0 errores.
+- **Sin probar en el teléfono** (lo más importante a mirar ahí: que no haya tirones cuando aparece tránsito nuevo).
+
+### Conocido / para ajustar
+
+- El costado de las ventanillas de los autos comunes es finito (la cabina mide ~3 px de alto en pantalla); si Leandro los quiere más "altos", subir `VR.OBL.kz`.
+- El karumbe es el más simple (bloques oscuros como costado): se puede dibujar mejor.
+- Espejos, guardabarros anchos, alerón alto y rueda de auxilio no tienen altura propia (van pegados a la carrocería).
+- La tarjeta del vehículo y el taller siguen usando el dibujo de costado en alta (`sidehd.js`), sin cambios.
+- Los vehículos quemados usan el mismo volumen oscurecido.

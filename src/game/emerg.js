@@ -428,5 +428,7 @@ VR.burntFrames = (F) => {
     g.drawImage(src, 0, 0); if (!sh) { g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(24,20,18,.82)'; g.fillRect(0, 0, o.width, o.height); g.fillStyle = 'rgba(120,60,20,.35)'; for (let i = 0; i < 5; i++) g.fillRect((k * 7 + i * 11) % o.width, (k * 5 + i * 13) % o.height, 2, 2); }
     return o;
   };
-  return { S: F.S, get: (k) => c.get(k) || (c.set(k, make(k)), c.get(k)), getShadow: (k) => c.get('s' + k) || (c.set('s' + k, make(k, true)), c.get('s' + k)) };
+  // solo se guarda cuando ese ángulo ya está hecho de verdad (en vista oblicua se arman de a poco: ver VR.rotFrames)
+  const got = (key, k, sh) => { let o = c.get(key); if (!o) { o = make(k, sh); if (!F.has || F.has(k)) c.set(key, o); } return o; };
+  return { S: F.S, lift: F.lift || 0, get: (k) => got(k, k, false), getShadow: (k) => got('s' + k, k, true) };
 };

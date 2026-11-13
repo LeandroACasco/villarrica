@@ -92,7 +92,7 @@
       T.rr(x0 + 0.4, tail - 2.7, bw - 0.8, 1, 0.4, 'rgba(0,0,0,.4)'); T.rr(x0 - 0.5, tail - 4.9, bw + 1, 2.4, 0.7, VR.shadeHex(D, 0.6));
       T.rr(x0 - 0.2, tail - 4.6, bw + 0.4, 1.8, 0.6, T.hg(x0, x1, [D, L, C, D])); T.rr(x0 + 0.4, tail - 4.2, bw - 0.8, 0.35, 0.2, 'rgba(255,255,255,.35)'); }
     if (pf) { T.rr(-0.7 + x0, yH + 0.6, 1.4, 1.2, 0.4, D); T.rr(x1 - 0.7, yH + 0.6, 1.4, 1.2, 0.4, D); } // espejos (fuera del recorte)
-  });
+  }, () => VR.OBL.car(c, pal, t));
 
   // Karumbe: caballo adelante, varas, carro de madera con dos ruedas grandes y el carrero sentado
   VR.drawKarumbe = (pal) => VR.vbase(14, 40, (T) => {
@@ -116,7 +116,7 @@
     T.line(5.4, 12.6, 6.6, 9, 0.18, '#3a2a1c'); T.line(8.6, 12.6, 7.4, 9, 0.18, '#3a2a1c');
     T.rr(3.6, 16, 6.8, 3.6, 1.6, T.hg(3.6, 10.4, ['#f0ece2', '#d8d2c0', '#a8a294']));
     T.ell(7, 17.4, 2.6, 2.4, T.hg(4.4, 9.6, ['#f0dca0', '#d8be78', '#a88c50'])); T.ell(7, 17.4, 1.2, 1.1, '#c8ac68');
-  });
+  }, () => VR.OBL.karumbe());
 
   // Costado de los autos (64×36, frente a la derecha): perfil por puntos, ventanillas, ruedas y detalles
   VR.drawSideAuto = (m, pal, t = {}, P, g, wheel, HL, S2) => {
@@ -173,7 +173,7 @@
         win: [[[22, 9], [31, 8], [31, 15], [16, 15]], [[33, 8], [38, 8], [45, 15], [33, 15]]], pillars: [32], yr: 7, rx0: 22, rx1: 38, belt: 15, sill: 27, doors: [32, 44], tailx: 3, tailTop: 16, nose: 61, hood: [47, 15], wheels: [15, 48], wr: 5 }) },
     mono: { len: 31, wid: 16, S: 36, acc: 160, turn: 2.8, max: { road: 225, stone: 198, dirt: 165, side: 145, grass: 110 },
       name: "Ka'i 1.3", desc: 'Monovolumen chico de techo alto: entra todo y se estaciona en cualquier lado.', side: 'mono',
-      base: VR.drawAuto({ L: 31, W: 16, hood: 5.6, ws: 5.4, roof: 13.4, rg: 2.6, fa: 0.19, ra: 0.79, tl: 'vertical', pinch: 1.6 }),
+      base: VR.drawAuto({ hz: [7.8, 12.8], L: 31, W: 16, hood: 5.6, ws: 5.4, roof: 13.4, rg: 2.6, fa: 0.19, ra: 0.79, tl: 'vertical', pinch: 1.6 }),
       sideShape: side({ body: [[4, 27], [4, 9], [8, 5], [36, 4], [48, 13], [59, 16], [60, 26], [54, 27], [52, 23], [42, 23], [40, 27], [21, 27], [19, 23], [9, 23], [7, 27]],
         win: [[[6, 7], [8, 6], [20, 6], [20, 14], [6, 14]], [[22, 6], [32, 6], [32, 14], [22, 14]], [[34, 5], [36, 5], [45, 14], [34, 14]]], pillars: [21, 33], yr: 4, rx0: 8, rx1: 36, belt: 14, sill: 27, doors: [21, 33], tailx: 4, tailTop: 12, nose: 60, hood: [48, 13], wheels: [14, 47], wr: 5 }) },
     pickup: { len: 41, wid: 18, S: 46, acc: 165, rev: 70, turn: 2.2, brake: 380, mass: 1.5, max: { road: 230, stone: 212, dirt: 205, side: 140, grass: 165 },
@@ -193,7 +193,7 @@
         win: [[[7, 7], [18, 7], [18, 13], [6, 13]], [[20, 7], [29, 7], [29, 13], [20, 13]], [[31, 7], [38, 7], [43, 13], [31, 13]]], pillars: [19, 30], yr: 5, rx0: 7, rx1: 39, belt: 13, sill: 27, doors: [30, 43], tailx: 4, tailTop: 9, nose: 61, hood: [45, 13], spare: 18, wheels: [13, 48], wr: 6 }) },
     suvchico: { len: 28, wid: 16, S: 34, acc: 168, rev: 70, turn: 2.9, brake: 420, mass: 1.1, max: { road: 215, stone: 198, dirt: 195, side: 145, grass: 160 },
       name: 'Jaguarete Mirĩ', desc: 'Todoterreno chico de 3 puertas: corto, alto y guapo en la tierra.', side: 'suvchico',
-      base: VR.drawAuto({ L: 28, W: 16, hood: 7.2, ws: 3.4, roof: 11.6, rg: 1.6, fa: 0.21, ra: 0.75, box: true, spare: true, doors3: true, tireL: 5.6, rails: true, hl: 'round', flares: true }),
+      base: VR.drawAuto({ hz: [8.4, 13.4], L: 28, W: 16, hood: 7.2, ws: 3.4, roof: 11.6, rg: 1.6, fa: 0.21, ra: 0.75, box: true, spare: true, doors3: true, tireL: 5.6, rails: true, hl: 'round', flares: true }),
       sideShape: side({ body: [[8, 27], [8, 7], [10, 5], [36, 5], [42, 13], [56, 14], [57, 26], [51, 27], [49, 22], [39, 22], [37, 27], [24, 27], [22, 22], [12, 22], [10, 27]],
         win: [[[10, 7], [20, 7], [20, 13], [10, 13]], [[22, 7], [35, 7], [40, 13], [22, 13]]], pillars: [21], yr: 5, rx0: 10, rx1: 36, belt: 13, sill: 27, doors: [21, 40], tailx: 8, tailTop: 9, nose: 57, hood: [42, 13], rails: true, spare: 18, wheels: [17, 44], wr: 6 }) },
     // Deportivos (Leandro, 05/11/2026, pidió un sedán de rally turbo y un coupé deportivo de los 90-2000 que se ven
@@ -207,7 +207,7 @@
     coupe: { len: 34, wid: 17, S: 40, acc: 205, rev: 70, turn: 3.0, brake: 440, mass: 0.95, max: { road: 270, stone: 215, dirt: 170, side: 150, grass: 120 },
       colors: [['#d0302a', '#8e1f1a', '#f06a5c'], ['#e8c02a', '#a8820e', '#f8dc6a'], ['#26262c', '#141418', '#4a4a54'], ['#eceae4', '#a8a59e', '#ffffff'], ['#a8acb4', '#70747c', '#d4d8e0']],
       name: 'Panambi GT', desc: 'Coupé deportivo de dos puertas, bajito, con cuatro faros redondos y luneta larga: dobla como pocos.', side: 'coupe',
-      base: VR.drawAuto({ L: 34, W: 17, hood: 10.5, ws: 4.6, roof: 6.4, rg: 7, fa: 0.21, ra: 0.76, hl: 'quad', tl: 'bar', pinch: 2.4, lip: true, doors3: true }),
+      base: VR.drawAuto({ hz: [6.6, 10.2], L: 34, W: 17, hood: 10.5, ws: 4.6, roof: 6.4, rg: 7, fa: 0.21, ra: 0.76, hl: 'quad', tl: 'bar', pinch: 2.4, lip: true, doors3: true }),
       sideShape: side({ body: [[3, 26], [3, 19], [8, 17], [14, 15], [27, 9], [37, 8], [46, 15], [60, 18], [61, 25], [55, 26], [53, 22], [43, 22], [41, 26], [22, 26], [20, 22], [10, 22], [8, 26]],
         win: [[[20, 13], [27, 10.5], [33, 10.5], [33, 15], [18, 15]], [[35, 9.5], [37, 9.5], [44, 15], [35, 15]]], pillars: [34], yr: 8, rx0: 27, rx1: 37, belt: 15, sill: 26, doors: [24, 45], tailx: 3, tailTop: 17, nose: 61, hood: [46, 15], wheels: [15, 48], wr: 5, lip: true }) },
     karumbe: { len: 40, wid: 14, S: 46, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, noFire: true, colors: [['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
@@ -231,7 +231,7 @@
     T.ell(mid, 26, 4, 3.2, '#2a2a30'); T.ell(mid, 26, 3.2, 2.5, '#c8322a'); T.ell(mid, 26, 1, 0.8, AL[1]);   // devanadera de manguera
     T.rr(mid - 1, 15.4, 2, 3.4, 0.6, AL[1]); T.ell(mid, 15.6, 1.2, 1.2, AL[0]);                              // monitor (cañón de agua)
     T.rr(1, 56.4, 4, 1.2, 0.4, '#d8302a'); T.rr(W - 5, 56.4, 4, 1.2, 0.4, '#d8302a');
-  });
+  }, () => VR.OBL.bomba(pal));
 
   // Unidades de emergencia: no salen al azar en el tránsito común (las manda la central) salvo alguna patrullera
   const WHITE = [['#f2f0ea', '#b9b6ae', '#ffffff']], ORANGE = [['#f0a018', '#b06e08', '#ffc850']], YELLOW = [['#f2c21a', '#b08a08', '#ffe06a']];
@@ -244,7 +244,7 @@
       base: VR.drawAuto({ L: 41, W: 18, hood: 9.6, ws: 3.6, roof: 9.6, rg: 1.4, fa: 0.19, ra: 0.77, box: true, bed: true, rollbar: true, tireL: 6.4, grille: '#3a3a40', bar: ['#d8302a', '#2a5ad8'], stripe: '#1e3a8a' }) },
     ambulancia: { len: 39, wid: 17, S: 44, acc: 170, rev: 60, turn: 2.4, brake: 400, mass: 1.4, max: { road: 235, stone: 205, dirt: 180, side: 140, grass: 140 }, colors: ORANGE, emer: 'ambulancia', lights: ['60,255,120', '255,40,40'],
       name: 'Ambulancia', desc: 'Furgón de los bomberos voluntarios. Con la sirena te abren paso.', side: 'ambulancia',
-      base: VR.drawAuto({ L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#c8241a', tireL: 6 }),
+      base: VR.drawAuto({ hz: [9, 17], L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#c8241a', tireL: 6 }),
       sideShape: { body: [[3, 27], [3, 6], [5, 4], [44, 4], [52, 12], [60, 15], [61, 26], [55, 27], [53, 22], [43, 22], [41, 27], [20, 27], [18, 22], [8, 22], [6, 27]],
         win: [[[45, 6], [47, 6], [51, 12.5], [45, 12.5]], [[34, 6], [42, 6], [42, 12.5], [34, 12.5]]], pillars: [43], yr: 4, rx0: 5, rx1: 44, belt: 12.5, sill: 27, doors: [43, 33], tailx: 3, tailTop: 7, nose: 61, hood: [52, 12], wheels: [13, 48], wr: 5 } },
     bomba: { len: 58, wid: 21, S: 64, acc: 120, rev: 45, turn: 1.7, brake: 330, mass: 3.2, max: { road: 200, stone: 180, dirt: 165, side: 110, grass: 120 }, colors: YELLOW, emer: 'bomberos', lights: ['255,40,40', '255,255,255'],
@@ -302,7 +302,7 @@
     for (const sx of urban ? [-0.1, W - 2.1] : [-0.1, W - 2.9]) {                                              // espejos grandes
       if (urban) T.rr(sx, 3.4, 2.2, 3.8, 0.8, K.mirror); else { T.rr(sx, 2.6, 3, 4.2, 1.3, K.mirror); T.rr(sx + 0.4, 3, 1, 2.4, 0.5, 'rgba(255,255,255,.35)'); }
     }
-  });
+  }, () => VR.OBL.bus(c, pal));
   const BUS_INDEP = { kind: 'urban', L: 66, W: 19, ws: 4.2, axles: [14, 50], pitch: 5.6,
     liv: { edge: '#1f8a3c', front: ['#1f8a3c', '#14662a'], swoosh: [[0, 2.6, '#1f8a3c'], [3.4, 1.8, '#d02a26'], [5.8, 1.3, '#f0c828']], mirror: '#1e1e22' } };
   const BUS_GUAI = { kind: 'coach', L: 76, W: 20, ws: 5.4, axles: [17, 58], pitch: 6.2,

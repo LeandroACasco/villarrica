@@ -63,7 +63,7 @@
     else { T.rr(mid - 2.4, yW1 + 2.2, 4.8, 3, 0.8, L); }
     for (const sx of [-0.7, W - 1.7]) { T.rr(sx, 3.2, 2.4, 5, 0.9, '#1e1e22'); T.rr(sx + 0.5, 3.6, 0.8, 3, 0.4, 'rgba(255,255,255,.35)'); } // espejos grandes
     if (c.kind === 'dump') { T.rr(x0 - 0.4, cl - 2.6, bw + 0.8, 4.6, 1.2, T.hg(x0, x1, [D, C, L, C, D])); }       // visera de la caja sobre la cabina
-  });
+  }, () => VR.OBL.truck(c, pal));
 
   const L1 = { cab: 17, ws: 4.6, axles: [8, 35], W: 19, L: 48 };
   const FOUR = { max: { road: 175, stone: 155, dirt: 140, side: 100, grass: 105 } };

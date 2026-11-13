@@ -25,7 +25,7 @@ VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f 
 // vidrios, faros, espejos, llantas y costuras del asiento aunque sean chicos. Se dibujan ×1,3 respecto de la
 // ciudad (como en los juegos de la época), para que se vean y se distingan. Diseños propios, sin marcas.
 VR.VK = 1.0; VR.VSS = 5; // escala real (11/11/2026, pedido de Leandro: más realista); antes ×1,15 y, antes, ×1,3
-VR.vbase = (w, h, fn) => {
+VR.vbase = (w, h, fn, prof) => {
   const k = VR.VK * VR.VSS, c = VR.canvas(Math.round(w * k), Math.round(h * k)), g = c.getContext('2d');
   g.scale(k, k);
   const T = {
@@ -40,6 +40,7 @@ VR.vbase = (w, h, fn) => {
   };
   fn(T);
   c.ss = k / VR.VK; // cuánto más grande está dibujado respecto del sprite final
+  if (prof && VR.OBL && VR.OBL.on) c.prof = prof(); // perfil para la vista oblicua (oblicuo.js)
   return c;
 };
 const GL = ['#22344a', '#3b5470', '#8fb0cc'], CHR = ['#7a7e86', '#e8ecf2', '#9aa0a8'];
@@ -83,7 +84,7 @@ VR.drawCarBase = (pal, t = {}) => VR.vbase(16, 30, (T) => {
   g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0.8, 12.6, 0.5, 9); g.fillRect(14.7, 12.6, 0.5, 9);
   if (t.aleron === 'chico') { T.rr(3, 25.4, 10, 1, 0.4, D); T.rr(3.2, 25.4, 9.6, 0.4, 0.2, L); }
   if (t.aleron === 'grande') { T.rr(5, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(10.2, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(0.8, 26.2, 14.4, 1.7, 0.5, T.hg(0.8, 15.2, [D, L, C, D])); T.rr(1, 26.3, 14, 0.5, 0.2, 'rgba(255,255,255,.25)'); }
-});
+}, () => VR.OBL.car(VR.OBL.MITA, pal, t));
 // Motos y vehículos de dos (y tres) ruedas, vistos desde arriba mirando hacia arriba. Diseños propios por
 // categoría (sin marcas ni modelos reales): moto "cub", mini moto, moto de calle 150, motocarga y patineta.
 VR.drawMotoCub = (pal, t = {}) => VR.vbase(10, 21, (T) => { // escudo delantero ancho, piso bajo, asiento largo
@@ -102,7 +103,7 @@ VR.drawMotoCub = (pal, t = {}) => VR.vbase(10, 21, (T) => { // escudo delantero 
   T.line(5, 11.2, 5, 16.6, 0.15, '#4a4a52');
   T.rr(3.2, 17, 3.6, 1.4, 0.6, C); T.rr(4, 18.1, 2, 0.6, 0.3, '#e8302a');                 // cola y luz
   T.rr(7.6, 12.6, t.escape === 'deportivo' ? 1.4 : 1, t.escape === 'deportivo' ? 7.4 : 5.8, 0.6, T.hg(7.6, 9, CHR));  // escape
-});
+}, () => VR.OBL.moto('cub', pal));
 VR.drawMotoMini = (pal, t = {}) => VR.vbase(10, 17, (T) => { // ruedas gordas, faro redondo, corta y ancha
   const [C, D, L] = pal, S2 = VR.tunePal ? VR.tunePal(t.color2 ?? 11)[0] : '#fff', HL = t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0';
   T.tire(2.9, 0, 4.2, 4.2); T.tire(2.9, 12.8, 4.2, 4.2);
@@ -113,7 +114,7 @@ VR.drawMotoMini = (pal, t = {}) => VR.vbase(10, 17, (T) => { // ruedas gordas, f
   if (t.escape === 'deportivo') { T.rr(7.4, 9.4, 1.4, 5, 0.6, T.hg(7.4, 8.8, CHR)); }
   T.rr(2.2, 8.8, 5.6, 4.6, 1.4, T.hg(2.2, 7.8, ['#3a3a40', '#26262a', '#1a1a1e'])); T.line(2.8, 10.2, 7.2, 10.2, 0.15, '#4a4a52'); T.line(2.8, 12, 7.2, 12, 0.15, '#4a4a52');
   T.rr(3.2, 13.2, 3.6, 1, 0.5, C); T.rr(4.2, 13.5, 1.6, 0.5, 0.25, '#e8302a');
-});
+}, () => VR.OBL.moto('mini', pal));
 VR.drawMotoCalle = (pal, t = {}) => VR.vbase(10, 22, (T) => { // visera, tanque grande, parrilla, escape largo cromado
   const [C, D, L] = pal, S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : L, HL = t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0';
   T.tire(4.15, 0, 1.7, 5.3); T.tire(4.1, 16.7, 1.8, 5.3);
@@ -127,7 +128,7 @@ VR.drawMotoCalle = (pal, t = {}) => VR.vbase(10, 22, (T) => { // visera, tanque 
   T.rr(4, 16.2, 2, 0.7, 0.3, '#e8302a');
   T.rr(7.7, 9, 1.1, 11.4, 0.55, T.hg(7.7, 8.8, CHR)); T.rr(8.4, 12, 1, 6.4, 0.5, T.hg(8.4, 9.4, CHR)); // escape largo
   if (t.escape === 'deportivo') T.rr(0.9, 12, 1.1, 8, 0.55, T.hg(0.9, 2, CHR));
-});
+}, () => VR.OBL.moto('calle', pal));
 VR.drawMotoCarga = (pal, t = {}) => VR.vbase(18, 34, (T) => { // moto adelante y caja de carga atrás con dos ruedas
   const [C, D, L] = pal, g = T.g, S2 = VR.tunePal ? VR.tunePal(t.color2 ?? 11)[0] : '#fff';
   T.tire(8.1, 0, 1.8, 5.2); T.rr(7.6, 0.8, 2.8, 1.3, 0.6, t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0');
@@ -141,7 +142,7 @@ VR.drawMotoCarga = (pal, t = {}) => VR.vbase(18, 34, (T) => { // moto adelante y
   for (let y = 16.8; y < 32; y += 2.4) { g.fillStyle = VR.shadeHex(C, 0.55); g.fillRect(2.6, y, 12.8, 0.3); g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(2.6, y + 0.3, 12.8, 0.3); }
   if (t.franja && t.franja !== 'no') { g.fillStyle = S2; g.fillRect(1.1, 14.4, 0.6, 19); g.fillRect(16.3, 14.4, 0.6, 19); g.fillRect(1.6, 32.6, 14.8, 0.6); }
   T.rr(1.4, 33.1, 2.2, 0.8, 0.3, '#e8302a'); T.rr(14.4, 33.1, 2.2, 0.8, 0.3, '#e8302a');
-});
+}, () => VR.OBL.moto('carga', pal));
 VR.drawPati = (pal, t = {}) => VR.vbase(6, 14, (T) => { // manubrio en T, tabla angosta
   const [C, D] = pal;
   T.tire(2, 0, 2, 3); T.tire(2, 11, 2, 3);
@@ -150,7 +151,7 @@ VR.drawPati = (pal, t = {}) => VR.vbase(6, 14, (T) => { // manubrio en T, tabla 
   T.rr(1, 4, 4, 8, 1.2, T.hg(1, 5, [C, '#2a2a30', '#2a2a30', D])); T.rr(1.7, 4.7, 2.6, 6.6, 0.8, '#3c3c44');
   for (let y = 5.2; y < 11; y += 0.9) T.line(2, y, 4, y, 0.2, '#2c2c32');
   T.rr(2.2, 12, 1.6, 0.6, 0.3, '#e8302a');
-});
+}, () => VR.OBL.moto('pati', pal));
 // Conductor visto desde arriba (10×20 unidades): casco o pelo, hombros con sombra, brazos al manubrio, rodillas.
 // o (05/11/2026): colores del personaje que maneja (piel, pantalón, pelo o gorra), así el jugador se ve como el
 // personaje que eligió o se armó en la tienda.
@@ -170,7 +171,7 @@ VR.drawRiderBase = (shirt, head, o = {}) => VR.vbase(10, 20, (T) => {
 // (cuerpo, piel, ropa con sus colores, peinado, gorra, casco, mochila…) y gira junto con la moto en los 64
 // ángulos, inclinado hacia el manubrio, con las manos en los puños, las rodillas a los costados del tanque y los
 // pies en los posapiés. geo: dónde quedan los puños (gy adelante, gx al costado), la cadera (hip) y si va parado.
-VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
+VR.drawRiderTop = (L0, geo = {}) => VR.OBL.parts(['legs', 'body', 'head'], geo, (PART) => VR.vbase(14, 24, (T) => {
   const C = VR.AV2_CAT, L = Object.assign({}, VR.AV2_DEFAULT, L0), SH = VR.shadeHex, g = T.g;
   const cx = 7, cy = 12, X = (d) => cx + d, Y = (d) => cy + d;
   // geo.pas (12/11/2026): pasajero de atrás: derecho, con las manos en la cintura del conductor (no en el manubrio) y las rodillas bien abiertas
@@ -186,6 +187,7 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
   const lw = 1.7; // grosor de las piernas
   const seg = (x0, y0, x1, y1, w, col) => T.line(X(x0), Y(y0), X(x1), Y(y1), w, col);
   // piernas
+  if (!PART || PART === 'legs') {
   if (stand) {
     for (const [dx, dy] of [[-0.9, 0.6], [0.9, 2.4]]) { T.ell(X(dx), Y(dy), 0.9, 1.5, shoe); T.ell(X(dx), Y(dy - 0.9), 0.5, 0.35, SH(shoe, 1.3)); }
     seg(-0.9, 0.4, -0.7, 0, 1.6, shortLeg || skirt ? skin : pants); seg(0.9, 2, 0.7, 1, 1.6, shortLeg || skirt ? skin : pants);
@@ -201,6 +203,8 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
     if (skirt) T.ell(X(0), Y(hip - 0.6), sw * 0.55, 1.9, T.hg(X(-sw / 2), X(sw / 2), [SH(pants, 1.2), pants, SH(pants, 0.7)]));
     else T.ell(X(0), Y(hip), sw * 0.42, 1.2, T.hg(X(-sw / 2), X(sw / 2), [SH(pants, 1.15), pants, SH(pants, 0.7)])); // cola en el asiento
   }
+  }
+  if (!PART || PART === 'body') {
   // brazos (hombro → codo → mano en el puño)
   const shx = sw / 2 - 0.5, arm = L.top === 'puffer' ? 1.55 : 1.25;
   for (const s of [-1, 1]) {
@@ -222,6 +226,8 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
   if (L.top === 'buzo' || L.top === 'hoodieAbierto') T.ell(X(0), Y(head + 2.2), 1.7, 0.9, SH(topC, 0.82)); // capucha caída en la espalda
   if (L.print && !['camiseta', 'puffer', 'top'].includes(L.top)) T.rr(X(-1), Y((ty0 + ty1) / 2), 2, 1.3, 0.3, top2);
   if (L.mochila) { const pk = C.cloth[L.packColor % C.cloth.length]; T.line(X(-1.4), Y(ty0 + 0.4), X(-1.3), Y(ty0 + 2), 0.35, SH(pk, 0.6)); T.line(X(1.4), Y(ty0 + 0.4), X(1.3), Y(ty0 + 2), 0.35, SH(pk, 0.6)); T.rr(X(-1.9), Y(ty0 + 1.5), 3.8, Math.max(2.6, ty1 - ty0 - 1.8), 1, T.hg(X(-1.9), X(1.9), [SH(pk, 1.2), pk, SH(pk, 0.7)])); T.rr(X(-1.2), Y(ty1 - 1.6), 2.4, 0.9, 0.4, SH(pk, 0.8)); }
+  }
+  if (PART && PART !== 'head') return;
   // cabeza: pelo, gorra, sombrero o casco
   const hat = L.hat, cap = hat === 'gorra' || hat === 'gorraAtras' || hat === 'gorro', hr = 1.75;
   const longH = ['largo', 'ondulado', 'onduladoFlequillo', 'medio'].includes(L.hair) && hat !== 'casco';
@@ -256,7 +262,7 @@ VR.drawRiderTop = (L0, geo = {}) => VR.vbase(14, 24, (T) => {
     T.ell(X(-0.6), Y(head - 0.5), 0.6, 0.4, 'rgba(255,255,255,.18)');
     if (L.hair !== 'rapado') T.ell(X(0), Y(head - hr + 0.35), 1.1, 0.35, skin); // frente
   } else T.ell(X(-0.5), Y(head - 0.4), 0.7, 0.5, 'rgba(255,255,255,.3)');
-});
+}));
 // geometría del pasajero según la del conductor de esa moto (cub: puños en gy -5.8): manos a la cintura de quien maneja, rodillas abiertas
 VR.pasGeo = (g = {}) => ({ pas: true, gy: -3.7, gx: 3.1, hip: 3.4, kx: 3.6 });
 VR.riderTopFrames = (() => {
@@ -271,20 +277,30 @@ VR.riderTopFrames = (() => {
 
 // Rota un sprite a 64 ángulos. Los dibujos suaves (VR.vbase) se rotan grandes con suavizado, se contornean y
 // se achican: quedan sin escalones. Los de píxel (otros) se rotan al pixel con vecino más cercano.
+// Si el dibujo trae un perfil (base.prof, ver oblicuo.js) sale con volumen, en vista oblicua: el cuadro crece hacia
+// arriba y abajo lo mismo (sigue centrado en el vehículo) y la sombra se hace con la silueta apoyada en el piso.
+VR.rotBlank = () => VR._blank || (VR._blank = VR.canvas(2, 2));
 VR.rotFrames = (base, S, outline = true) => {
+  const OB = VR.OBL && VR.OBL.on && base.prof ? VR.OBL : null;
+  if (OB) S += 2 * OB.extra(base);
   // Cada ángulo se dibuja recién cuando hace falta (y se guarda): antes se armaban los 64 de una vez cada vez
   // que aparecía un vehículo de un color nuevo, y eso trababa el juego (sobre todo en el teléfono).
-  const N = 64, f = { img: new Array(N), shadow: new Array(N), S };
+  const N = 64, f = { img: new Array(N), shadow: new Array(N), S, lift: OB ? base.prof.lift * OB.kz : 0 };
   const ss = base.ss || 1, SR = Math.round(S * (VR.RES || 1)); // tamaño en el lienzo (resolución ×2)
   let src = null;
-  const make = (k) => {
+  const makeGen = function* (k) {
     const a = k / N * Math.PI * 2;
-    let c;
+    let c, flat = null;
     if (ss > 1) {
-      const B = S * ss, big = VR.canvas(B, B), x = big.getContext('2d');
-      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
-      x.translate(B / 2, B / 2); x.rotate(a); x.drawImage(base, -base.width / 2, -base.height / 2);
-      c = VR.gfx.crisp(VR.gfx.down(outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big, SR, SR));
+      const B = S * ss, mk = () => { const big = VR.canvas(B, B), x = big.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.translate(B / 2, B / 2); x.rotate(a); x.drawImage(base, -base.width / 2, -base.height / 2); return big; };
+      const big = OB ? yield* OB.renderGen(base, a, B) : mk();
+      if (f.img[k]) return;
+      if (OB) { flat = VR.gfx.down(mk(), SR, SR); yield; }
+      const ol = outline ? VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8) : big;
+      if (OB) yield;
+      c = VR.gfx.crisp(VR.gfx.down(ol, SR, SR));
+      if (OB) yield;
+      if (f.img[k]) return;
     } else {
       const bw = base.width, bh = base.height, ca = Math.cos(a), sa = Math.sin(a);
       if (!src) src = base.getContext('2d').getImageData(0, 0, bw, bh).data;
@@ -302,11 +318,27 @@ VR.rotFrames = (base, S, outline = true) => {
       if (SR !== S) { const up = VR.canvas(SR, SR); up.getContext('2d').drawImage(c, 0, 0, SR, SR); c = up; }
     }
     const sh = VR.canvas(SR, SR), sx = sh.getContext('2d');
-    sx.drawImage(c, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(0,0,0,.32)'; sx.fillRect(0, 0, SR, SR);
-    f.img[k] = c; f.shadow[k] = sh;
+    sx.drawImage(flat || c, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(0,0,0,.32)'; sx.fillRect(0, 0, SR, SR);
+    if (flat) { const d = sx.getImageData(0, 0, SR, SR), p = d.data; for (let i = 3; i < p.length; i += 4) p[i] = p[i] > 40 ? 82 : 0; sx.putImageData(d, 0, 0); }
+    f.img[k] = c; f.shadow[k] = sh; f.n++;
   };
-  f.get = (k) => { if (!f.img[k]) make(k); return f.img[k]; };
-  f.getShadow = (k) => { if (!f.shadow[k]) make(k); return f.shadow[k]; };
+  const make = (k) => { const it = makeGen(k); while (!it.next().done); };
+  // ángulo listo para mostrar: el pedido si ya está; si no (vista oblicua), se encarga a la cola y mientras tanto va el
+  // más parecido de los que ya están (el primero de todos se hace en el momento)
+  // Un modelo o color que aparece por primera vez tarda unos cuadros en verse (va primero en la cola), en vez de trabar.
+  f.pend = new Uint8Array(N); f.n = 0;
+  const ready = (k) => {
+    if (f.img[k]) return k;
+    if (!OB || !OB.async) { make(k); return k; }
+    OB.enqueue(f, k, makeGen, true);
+    if (!f.n) return -1;
+    for (const d of [1, -1, 2, -2]) { const j = (k + d + N) % N; if (!f.img[j]) OB.enqueue(f, j, makeGen, false); } // los de al lado, por si sigue girando
+    for (let d = 1; d <= N / 2; d++) { const a = (k + d) % N, b = (k - d + N) % N; if (f.img[a]) return a; if (f.img[b]) return b; }
+    return k;
+  };
+  f.has = (k) => !!f.img[k];
+  f.get = (k) => f.img[ready(k)] || VR.rotBlank();
+  f.getShadow = (k) => f.shadow[ready(k)] || VR.rotBlank();
   return f;
 };
 
@@ -599,12 +631,12 @@ VR.Car = class {
     const x = Math.round(VR.lerp(this.px, this.x, al) - camX), y = Math.round(VR.lerp(this.py, this.y, al) - camY);
     const a = this.pa + Math.atan2(Math.sin(this.a - this.pa), Math.cos(this.a - this.pa)) * al;
     const ak = this.fallen ? a + this.fallen.side * 1.15 : a;   // moto caída: se ve tirada de costado
-    const k = this.frame(ak), F = this.frames, h = F.S >> 1;
+    const k = this.frame(ak), F = this.frames, h = F.S >> 1, lift = Math.round(F.lift || 0);
     const shake = this.hit > 0 ? ((this.hit * 60) | 0) % 2 : 0;
     if (this.tune && this.tune.neon !== 'no' && (this.driven || this.ai)) VR.drawNeon(ctx, x, y, a, this.LEN, this.WID, VR.NEON[this.tune.neon], VR.night ? 0.35 + VR.night.level * 0.65 : 0.4);
     ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
     ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
-    if (this.dents && this.dents.length && !this.wreck) VR.drawDents(ctx, this, x + shake, y, ak);
+    if (this.dents && this.dents.length && !this.wreck) VR.drawDents(ctx, this, x + shake, y - Math.round(lift * 0.55), ak);
     if (this.pasajero && this.pasajero.L) { // pasajero atrás del conductor (Mbohasa en moto): se dibuja primero, así el conductor le tapa las manos en su cintura
       const R = VR.riderTopFrames(this.pasajero.L, VR.pasGeo(this.spec.rider)), rh = R.S >> 1, ro = (this.spec.riderOff || 0) - 6;
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - Math.round(Math.cos(a) * ro), R.S, R.S);
@@ -617,10 +649,10 @@ VR.Car = class {
       const ro = this.spec.riderOff || 0;
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - 1 - Math.round(Math.cos(a) * ro), R.S, R.S);
     }
-    if (this.taxi) { ctx.save(); ctx.translate(x + shake, y); ctx.rotate(a); ctx.fillStyle = '#1a1a1e'; ctx.fillRect(-4, -2.5, 8, 5); ctx.fillStyle = '#ffd23a'; ctx.fillRect(-3.5, -2, 7, 4); ctx.fillStyle = '#1a1a1e'; for (let i = -3; i < 3; i += 2) ctx.fillRect(i, -0.5, 1, 1); ctx.restore(); }
+    if (this.taxi) { ctx.save(); ctx.translate(x + shake, y - lift); ctx.rotate(a); ctx.fillStyle = '#1a1a1e'; ctx.fillRect(-4, -2.5, 8, 5); ctx.fillStyle = '#ffd23a'; ctx.fillRect(-3.5, -2, 7, 4); ctx.fillStyle = '#1a1a1e'; for (let i = -3; i < 3; i += 2) ctx.fillRect(i, -0.5, 1, 1); ctx.restore(); }
     if (this.siren && this.spec.lights) { // barra de luces titilando
       const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : this.model === 'ambulancia' ? this.LEN * 0.22 : this.LEN * 0.1;
-      const bx = x + Math.sin(a) * f, by = y - Math.cos(a) * f, rx = Math.cos(a) * 3.5, ry = Math.sin(a) * 3.5;
+      const bx = x + Math.sin(a) * f, by = y - Math.cos(a) * f - lift, rx = Math.cos(a) * 3.5, ry = Math.sin(a) * 3.5;
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       for (const [s, col] of [[-1, L[on]], [1, L[1 - on]]]) { const gx = bx + rx * s, gy = by + ry * s, gr = ctx.createRadialGradient(gx, gy, 0, gx, gy, 9); gr.addColorStop(0, `rgba(${col},.95)`); gr.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = gr; ctx.fillRect(gx - 9, gy - 9, 18, 18); }
       ctx.restore();

@@ -8,7 +8,7 @@ root = pathlib.Path(__file__).parent
 # orden de carga de los scripts (todo queda en un solo index.html)
 SCRIPTS = ['engine/inflate.js', 'engine/core.js', 'engine/input.js', 'engine/gfx.js', 'engine/audio.js',
            'world/tiles.js', 'world/suciedad.js', 'world/world.js', 'world/parque.js', 'world/testmap.js',
-           'game/avatar2.js', 'game/retrato.js', 'game/player.js', 'game/ragdoll.js', 'game/car.js', 'game/autos.js', 'game/camiones.js', 'game/tune.js', 'game/traffic.js', 'game/gps.js', 'game/peds.js', 'game/night.js', 'game/emerg.js', 'game/weapons.js', 'game/shop.js', 'game/vida.js', 'game/online.js', 'game/taller.js', 'game/teatro.js', 'game/changas.js', 'game/misiones.js', 'game/panel.js', 'game/vcard.js', 'game/sidehd.js', 'game/cisnes.js', 'game/fauna.js', 'game/granja.js', 'game/perros.js', 'game/calle.js', 'game/caidas.js', 'game/pieza.js', 'game/salon.js', 'game/caveat.js', 'game/celapps.js', 'game/mbohasa.js', 'game/titulo.js', 'main.js']
+           'game/avatar2.js', 'game/retrato.js', 'game/player.js', 'game/ragdoll.js', 'game/car.js', 'game/autos.js', 'game/camiones.js', 'game/oblicuo.js', 'game/tune.js', 'game/traffic.js', 'game/gps.js', 'game/peds.js', 'game/night.js', 'game/emerg.js', 'game/weapons.js', 'game/shop.js', 'game/vida.js', 'game/online.js', 'game/taller.js', 'game/teatro.js', 'game/changas.js', 'game/misiones.js', 'game/panel.js', 'game/vcard.js', 'game/sidehd.js', 'game/cisnes.js', 'game/fauna.js', 'game/granja.js', 'game/perros.js', 'game/calle.js', 'game/caidas.js', 'game/pieza.js', 'game/salon.js', 'game/caveat.js', 'game/celapps.js', 'game/mbohasa.js', 'game/titulo.js', 'main.js']
 
 
 def build():
