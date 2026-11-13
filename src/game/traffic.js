@@ -93,7 +93,7 @@ VR.Traffic = class {
       const s0 = Math.min(e.len * 0.5, 20);
       const [lx, ly, dx, dy] = this.lane(e, n, s0);
       if (W.boxOverlap(lx - 24, ly - 24, lx + 24, ly + 24)) continue;
-      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car'; let model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false, e.w);
+      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', nv = W.nivelAt ? W.nivelAt(lx, ly) : 0; let model = moto ? VR.pickMoto(this.rnd, false, nv) : VR.pickCar(this.rnd, false, e.w, nv); // nv: nivel socioeconómico (INE) del lugar
       // 11/11/2026: más colectivos cerca de la Gobernación, la Municipalidad y la Terminal (y más micros en calles anchas / rutas)
       if (!moto && e.w >= 4 * VR.TILE - 1) {
         if (!this.hot) this.hot = (W.labels || []).filter((l) => /^Gobernaci|^Municipalidad|^Terminal/.test(l.text));
@@ -102,7 +102,7 @@ VR.Traffic = class {
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       if (VR.CAR_MODELS[model] && (VR.CAR_MODELS[model].bus || VR.CAR_MODELS[model].big) && W.boxOverlap(lx - Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly - Math.max(52, VR.CAR_MODELS[model].len * 0.6), lx + Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly + Math.max(52, VR.CAR_MODELS[model].len * 0.6))) continue; // colectivos y camiones grandes necesitan más lugar para aparecer
-      const tune = this.rnd() < 0.1 && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
+      const tune = this.rnd() < (VR.tuneChance ? VR.tuneChance(nv) : 0.1) && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model, tune);
       { const h = v.contacts(lx, ly, v.a); if (h && h.other) continue; } // no aparecer encima de nadie
       if (moto) { // conductores: personas del avatar 2 (algunas con casco), sentadas en la moto

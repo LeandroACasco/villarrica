@@ -4,7 +4,7 @@
 (function () {
   const S = 16, H = VR.hash;
   const GREEN = ['#5f9a3c', '#7cb850', '#4a7a30'], SAND = ['#b9895c', '#c9a878', '#a8764c'];
-  function factor(w, tx, ty) { const b = w.barrio && w.barrios ? w.barrios[w.barrio[ty * w.w + tx] - 1] : ''; return b === 'Centro' ? 0.4 : 1; }
+  function factor(w, tx, ty) { const b = w.barrio && w.barrios ? w.barrios[w.barrio[ty * w.w + tx] - 1] : ''; if (b === 'Centro') return 0.4; const n = w.nivel ? w.nivel[ty * w.w + tx] : 0; return n ? [1.5, 1.25, 1, 0.75, 0.5][n - 1] : 1; } // más gastado donde el nivel socioeconómico (INE) es más bajo
   const isCurb = (w, tx, ty) => { const n = w.get(tx, ty); return n === VR.T.SIDEWALK || n === VR.T.PAVING || n === VR.T.CHECKER; };
   // arena / tierra que baja hacia el cordón: una franja irregular con granitos
   function sand(g, x, y, side, tx, ty, depth, seed) {

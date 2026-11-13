@@ -15,6 +15,9 @@ VR.Peds = class {
     // 32 looks al azar del mismo sistema que el probador; los cuadros se dibujan a medida que se usan
     this.sprites = [];
     for (let i = 0; i < 32; i++) this.sprites.push(VR.av2Lazy(VR.av2Random(R)));
+    // 13/11/2026: dos grupos más según el nivel socioeconómico del INE (humilde y acomodado); el de arriba es el "típico"
+    this.pools = { mid: [0, 32], low: [32, 32], high: [64, 32] };
+    for (const [lv, n] of [[1, 32], [5, 32]]) for (let i = 0; i < n; i++) this.sprites.push(VR.av2Lazy(VR.av2Nivel(VR.av2Random(R), lv, R)));
     this.flat = new Map(); // sprite "acostado" (cuando lo chocás)
     // gente sentada en los bancos de las plazas (05/11/2026): quietos, algunos con el termo de tereré
     this.sitters = [];
@@ -46,13 +49,18 @@ VR.Peds = class {
     const b = this.world.barrioName(focus.x, focus.y);
     return b === 'Centro' ? 30 : b ? 16 : 6;
   }
+  // cara según el nivel socioeconómico del lugar (world.nivelAt)
+  pickPal(x, y) {
+    const pl = this.pools[VR.pedPool(this.world.nivelAt ? this.world.nivelAt(x, y) : 0, this.rnd())];
+    return pl[0] + ((this.rnd() * pl[1]) | 0);
+  }
   spawn(focus, view) {
     for (let t = 0; t < 30; t++) {
       const a = this.rnd() * Math.PI * 2, d = 260 + this.rnd() * 380;
       const x = focus.x + Math.cos(a) * d, y = focus.y + Math.sin(a) * d;
       if (x > view.x0 - 20 && x < view.x1 + 20 && y > view.y0 - 30 && y < view.y1 + 30) continue;
       if (!this.free(x, y)) continue;
-      const p = { x, y, px: x, py: y, dir: 'down', vx: 0, vy: 0, anim: 0, mode: 'walk', t: 0, sp: 26 + this.rnd() * 18, pal: (this.rnd() * this.sprites.length) | 0, say: null };
+      const p = { x, y, px: x, py: y, dir: 'down', vx: 0, vy: 0, anim: 0, mode: 'walk', t: 0, sp: 26 + this.rnd() * 18, pal: this.pickPal(x, y), say: null };
       this.newDir(p);
       this.list.push(p);
       return p;

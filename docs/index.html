@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 4469682e · 2026-11-13</div>
+  <div class="tVer">Versión acc57427 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 4469682e · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión acc57427 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -1310,7 +1310,7 @@ VR.canopy = (() => {
 (function () {
   const S = 16, H = VR.hash;
   const GREEN = ['#5f9a3c', '#7cb850', '#4a7a30'], SAND = ['#b9895c', '#c9a878', '#a8764c'];
-  function factor(w, tx, ty) { const b = w.barrio && w.barrios ? w.barrios[w.barrio[ty * w.w + tx] - 1] : ''; return b === 'Centro' ? 0.4 : 1; }
+  function factor(w, tx, ty) { const b = w.barrio && w.barrios ? w.barrios[w.barrio[ty * w.w + tx] - 1] : ''; if (b === 'Centro') return 0.4; const n = w.nivel ? w.nivel[ty * w.w + tx] : 0; return n ? [1.5, 1.25, 1, 0.75, 0.5][n - 1] : 1; } // más gastado donde el nivel socioeconómico (INE) es más bajo
   const isCurb = (w, tx, ty) => { const n = w.get(tx, ty); return n === VR.T.SIDEWALK || n === VR.T.PAVING || n === VR.T.CHECKER; };
   // arena / tierra que baja hacia el cordón: una franja irregular con granitos
   function sand(g, x, y, side, tx, ty, depth, seed) {
@@ -1440,6 +1440,7 @@ VR.World = class {
     this.street = new Uint8Array(N); // índice+1 en this.streets (calle más cercana)
     this.area = new Uint8Array(N);   // índice+1 en this.areas (plazas y parques)
     this.barrio = new Uint8Array(N); // índice+1 en this.barrios (barrios del INE)
+    this.nivel = null;               // nivel socioeconómico por baldosa (0-5), si el mapa lo trae
     this.bid = new Uint16Array(N);   // edificio de cada celda (índice+1 en this.buildings)
     this.buildings = []; this.trees = []; this.decals = []; this.labels = [];
     this.inSenda = () => false;
@@ -1532,6 +1533,13 @@ VR.World = class {
     if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return null;
     const b = this.barrio[ty * this.w + tx];
     return b ? this.barrios[b - 1] : null;
+  }
+  // nivel socioeconómico del INE en ese punto: 0 sin dato, 1 Bajo, 2 Medio bajo, 3 Medio, 4 Medio alto, 5 Alto
+  nivelAt(px, py) {
+    if (!this.nivel) return 0;
+    const tx = Math.floor(px / VR.TILE), ty = Math.floor(py / VR.TILE);
+    if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return 0;
+    return this.nivel[ty * this.w + tx];
   }
   // edificio rectangular (barrio de prueba)
   addBuilding(b) {
@@ -2689,7 +2697,7 @@ VR.decorTop = {
 VR.loadMap = async (url) => {
   const res = await fetch(url, { cache: 'no-cache' });  // que el celular no use un mapa viejo del caché HTTP
   if (!res.ok) throw new Error('No se pudo bajar el mapa (' + res.status + ')');
-  const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 52000000);
+  const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 58000000);
   const jl = raw[0] | (raw[1] << 8) | (raw[2] << 16) | (raw[3] << 24);
   const meta = JSON.parse(new TextDecoder().decode(raw.subarray(4, 4 + jl)));
   const w = new VR.World(meta.w, meta.h), N = meta.w * meta.h;
@@ -2703,6 +2711,7 @@ VR.loadMap = async (url) => {
     w.buildings.push({ x0, x1, door: (x0 + x1) >> 1, floors, rt: P.types[rt], roof: P.roofs[rt][rc], wall: P.walls[wc], shop: !!shop, awning: P.awnings[awn] });
   }
   for (let i = 0; i < meta.nt; i++) w.trees.push({ x: tr[i * 4], y: tr[i * 4 + 1], r: tr[i * 4 + 2], pal: tr[i * 4 + 3] });
+  if (meta.nivel) w.nivel = u8(); // capa de nivel socioeconómico (va al final de map.bin)
   w.sendas = (meta.decals || []).filter((d) => d.kind === 'senda');
   { const c = (meta.decals || []).find((d) => d.kind === 'cuartel'); if (c) w.firehouse = { x: (c.x + 6) * VR.TILE, y: (c.ry + 1) * VR.TILE + 2, d: c }; }
   w.inSenda = (tx, ty) => { for (const d of w.sendas) { const ux = d.bx - d.ax, uy = d.by - d.ay, L = Math.hypot(ux, uy), px = tx + 0.5 - d.ax, py = ty + 0.5 - d.ay, t = (px * ux + py * uy) / (L * L);
@@ -4949,7 +4958,7 @@ VR.parkCars = (world, n, near) => {
   const T = VR.T, rnd = VR.rng(2006), S = VR.TILE, cars = [];
   const road = (x, y) => { const t = world.get(x, y); return t === T.ROAD || t === T.STONE; };
   const curb = (x, y) => { const t = world.get(x, y); return t === T.SIDEWALK || t === T.CHECKER || t === T.PAVING; };
-  const add = (x, y, a, color, type = 'car', model) => { const m = model || (type === 'moto' ? VR.pickMoto(rnd, true) : VR.pickCar(rnd, true)); const c = new VR.Car(world, x, y, a, m === 'pati' ? color % VR.PATI_COLORS.length : color, type, m); world.addBox(c); cars.push(c); return c; };
+  const add = (x, y, a, color, type = 'car', model) => { const m = model || (type === 'moto' ? VR.pickMoto(rnd, true, world.nivelAt(x, y)) : VR.pickCar(rnd, true, 0, world.nivelAt(x, y))); const c = new VR.Car(world, x, y, a, m === 'pati' ? color % VR.PATI_COLORS.length : color, type, m); world.addBox(c); cars.push(c); return c; };
   let first = null;
   // cajones de auto de las cuadras de la plaza (los autos van puestos a mano): marca la fila pegada al cordón y la de al lado
   const CP0 = VR.BAY.carPitch;
@@ -5579,6 +5588,69 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
   };
 })();
 
+// ===== game/nivel.js =====
+// Nivel socioeconómico del INE aplicado al juego (13/11/2026). Un nivel por baldosa (world.nivelAt: 0 sin dato, 1 Bajo … 5 Alto).
+// - autos y motos: los modelos que salen (tránsito y estacionados) cambian según el nivel de la zona;
+// - peatones: ropa y accesorios (VR.av2Nivel); peds.js arma tres grupos de caras (típico, humilde, acomodado);
+// - casas: techos, colores y pisos se reparten en tools/osm_to_map.py; la suciedad de la calle en world/suciedad.js.
+// Va DESPUÉS de camiones.js en build.py (envuelve el VR.pickCar que ya tiene los camiones).
+(() => {
+  const lerp = (lo, hi, n) => lo + (hi - lo) * (n - 1) / 4;
+  const lvl = (n) => (n >= 1 && n <= 5 ? n : 2); // sin dato = afueras: se tratan como nivel humilde
+
+  // peso de aceptación (0–1) de cada modelo en nivel 1 (bajo) y 5 (alto); en el medio se interpola. Lo que no figura pesa 1.
+  const CAR_LO = { mita: 1, sedan: 0.75, mono: 1, pickup: 0.7, suv: 0.3, suvmed: 0.4, suvchico: 1, rally: 0.2, coupe: 0.15, karumbe: 1 };
+  const CAR_HI = { mita: 0.7, sedan: 1, mono: 0.85, pickup: 1, suv: 1, suvmed: 1, suvchico: 0.9, rally: 1, coupe: 1, karumbe: 0.3 };
+  const MOTO_LO = { cub: 1, calle: 0.5, mini: 1, carga: 1, pati: 0.2 };
+  const MOTO_HI = { cub: 0.8, calle: 1, mini: 0.6, carga: 0.6, pati: 1 };
+  const pick = (draw, lo, hi, rnd, n) => {
+    if (!n) n = 0; // 0 = sin dato en el llamador: no se filtra nada
+    let m = draw();
+    if (!n) return m;
+    n = lvl(n);
+    for (let i = 0; i < 8; i++) {
+      const a = lo[m] === undefined ? 1 : lerp(lo[m], hi[m], n);
+      if (rnd() < a) return m;
+      m = draw();
+    }
+    return m;
+  };
+
+  const pickCar0 = VR.pickCar;
+  VR.pickCar = (rnd, parked, roadW = 0, nivel = -1) => nivel < 0 ? pickCar0(rnd, parked, roadW) : pick(() => pickCar0(rnd, parked, roadW), CAR_LO, CAR_HI, rnd, nivel || 2);
+  const pickMoto0 = VR.pickMoto;
+  VR.pickMoto = (rnd, parked, nivel = -1) => nivel < 0 ? pickMoto0(rnd, parked) : pick(() => pickMoto0(rnd, parked), MOTO_LO, MOTO_HI, rnd, nivel || 2);
+  // probabilidad de que un auto del tránsito venga tuneado (antes 10 % en todos lados)
+  VR.tuneChance = (nivel) => (nivel >= 1 ? [0.04, 0.06, 0.09, 0.12, 0.16][nivel - 1] : 0.06);
+
+  // ---------- personas ----------
+  // Cambia el look L (de VR.av2Random) según el nivel (1 humilde … 5 acomodado). Las reglas por género son las de av2Random.
+  const CAT = () => VR.AV2_CAT;
+  VR.av2Nivel = (L, n, rnd = Math.random) => {
+    const one = (a) => a[(rnd() * a.length) | 0], rich = n >= 4;
+    if (rich) {
+      L.top = one(['camisa', 'polo', 'camisaCorta', 'remera', 'sueter', 'polo', 'camisa', 'hoodieAbierto']);
+      L.bottom = one(L.gender === 'f' ? ['jean', 'vestir', 'vestir', 'cargo', 'pollera', 'jean'] : ['jean', 'vestir', 'vestir', 'cargo', 'jean']);
+      L.shoes = one(['zapatillas', 'zapatos', 'zapatos', 'botitas', 'zapatillas']);
+      L.hat = rnd() < 0.14 ? one(['gorra', 'piri', 'gorro']) : 'ninguno';
+      L.lentes = rnd() < 0.3; L.anteojos = !L.lentes && rnd() < 0.2; L.reloj = rnd() < 0.45; L.cadenita = rnd() < 0.25; L.mochila = rnd() < 0.12; L.termo = rnd() < 0.14;
+    } else {
+      L.top = one(['remera', 'remera', 'musculosa', 'camiseta', 'buzo', 'sueter', 'camisaCorta', 'remera']);
+      L.bottom = one(L.gender === 'f' ? ['jean', 'jogging', 'short', 'calza', 'pollera', 'bermuda'] : ['jean', 'jogging', 'bermuda', 'short', 'jogging', 'cargoShort']);
+      L.shoes = one(['chinelas', 'chinelas', 'zapatillas', 'botines', 'zapatillas']);
+      L.hat = rnd() < 0.55 ? one(['gorra', 'gorraAtras', 'piri', 'gorra']) : 'ninguno';
+      L.lentes = rnd() < 0.05; L.anteojos = false; L.reloj = false; L.cadenita = rnd() < 0.05; L.mochila = rnd() < 0.14; L.termo = rnd() < 0.32;
+    }
+    if (L.gender !== 'f') { if (L.top === 'top') L.top = 'remera'; if (L.bottom === 'pollera' || L.bottom === 'calza') L.bottom = 'jean'; }
+    return L;
+  };
+  // grupo de caras para un lugar: 'mid' (los de siempre), 'low' o 'high'
+  VR.pedPool = (n, r) => {
+    if (!(n >= 1)) return r < 0.4 ? 'low' : 'mid';
+    return [r < 0.8 ? 'low' : 'mid', r < 0.6 ? 'low' : 'mid', 'mid', r < 0.1 ? 'low' : r < 0.3 ? 'high' : 'mid', r < 0.6 ? 'high' : 'mid'][n - 1];
+  };
+})();
+
 // ===== game/oblicuo.js =====
 // Vehículos en vista oblicua (13/11/2026, pedido de Leandro): como en los juegos de celular de 2006, los autos no
 // se ven "planos" desde arriba sino también un poco de costado: se les ve el techo y además la puerta, las
@@ -6084,7 +6156,7 @@ VR.Traffic = class {
       const s0 = Math.min(e.len * 0.5, 20);
       const [lx, ly, dx, dy] = this.lane(e, n, s0);
       if (W.boxOverlap(lx - 24, ly - 24, lx + 24, ly + 24)) continue;
-      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car'; let model = moto ? VR.pickMoto(this.rnd, false) : VR.pickCar(this.rnd, false, e.w);
+      const moto = this.rnd() < this.motoShare, type = moto ? 'moto' : 'car', nv = W.nivelAt ? W.nivelAt(lx, ly) : 0; let model = moto ? VR.pickMoto(this.rnd, false, nv) : VR.pickCar(this.rnd, false, e.w, nv); // nv: nivel socioeconómico (INE) del lugar
       // 11/11/2026: más colectivos cerca de la Gobernación, la Municipalidad y la Terminal (y más micros en calles anchas / rutas)
       if (!moto && e.w >= 4 * VR.TILE - 1) {
         if (!this.hot) this.hot = (W.labels || []).filter((l) => /^Gobernaci|^Municipalidad|^Terminal/.test(l.text));
@@ -6093,7 +6165,7 @@ VR.Traffic = class {
       const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       if (VR.CAR_MODELS[model] && (VR.CAR_MODELS[model].bus || VR.CAR_MODELS[model].big) && W.boxOverlap(lx - Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly - Math.max(52, VR.CAR_MODELS[model].len * 0.6), lx + Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly + Math.max(52, VR.CAR_MODELS[model].len * 0.6))) continue; // colectivos y camiones grandes necesitan más lugar para aparecer
-      const tune = this.rnd() < 0.1 && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
+      const tune = this.rnd() < (VR.tuneChance ? VR.tuneChance(nv) : 0.1) && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
       const v = new VR.Car(W, lx, ly, Math.atan2(dx, -dy), color, type, model, tune);
       { const h = v.contacts(lx, ly, v.a); if (h && h.other) continue; } // no aparecer encima de nadie
       if (moto) { // conductores: personas del avatar 2 (algunas con casco), sentadas en la moto
@@ -6341,6 +6413,9 @@ VR.Peds = class {
     // 32 looks al azar del mismo sistema que el probador; los cuadros se dibujan a medida que se usan
     this.sprites = [];
     for (let i = 0; i < 32; i++) this.sprites.push(VR.av2Lazy(VR.av2Random(R)));
+    // 13/11/2026: dos grupos más según el nivel socioeconómico del INE (humilde y acomodado); el de arriba es el "típico"
+    this.pools = { mid: [0, 32], low: [32, 32], high: [64, 32] };
+    for (const [lv, n] of [[1, 32], [5, 32]]) for (let i = 0; i < n; i++) this.sprites.push(VR.av2Lazy(VR.av2Nivel(VR.av2Random(R), lv, R)));
     this.flat = new Map(); // sprite "acostado" (cuando lo chocás)
     // gente sentada en los bancos de las plazas (05/11/2026): quietos, algunos con el termo de tereré
     this.sitters = [];
@@ -6372,13 +6447,18 @@ VR.Peds = class {
     const b = this.world.barrioName(focus.x, focus.y);
     return b === 'Centro' ? 30 : b ? 16 : 6;
   }
+  // cara según el nivel socioeconómico del lugar (world.nivelAt)
+  pickPal(x, y) {
+    const pl = this.pools[VR.pedPool(this.world.nivelAt ? this.world.nivelAt(x, y) : 0, this.rnd())];
+    return pl[0] + ((this.rnd() * pl[1]) | 0);
+  }
   spawn(focus, view) {
     for (let t = 0; t < 30; t++) {
       const a = this.rnd() * Math.PI * 2, d = 260 + this.rnd() * 380;
       const x = focus.x + Math.cos(a) * d, y = focus.y + Math.sin(a) * d;
       if (x > view.x0 - 20 && x < view.x1 + 20 && y > view.y0 - 30 && y < view.y1 + 30) continue;
       if (!this.free(x, y)) continue;
-      const p = { x, y, px: x, py: y, dir: 'down', vx: 0, vy: 0, anim: 0, mode: 'walk', t: 0, sp: 26 + this.rnd() * 18, pal: (this.rnd() * this.sprites.length) | 0, say: null };
+      const p = { x, y, px: x, py: y, dir: 'down', vx: 0, vy: 0, anim: 0, mode: 'walk', t: 0, sp: 26 + this.rnd() * 18, pal: this.pickPal(x, y), say: null };
       this.newDir(p);
       this.list.push(p);
       return p;

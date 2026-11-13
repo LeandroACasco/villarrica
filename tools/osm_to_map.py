@@ -671,6 +671,7 @@ def main(src, out, preview=None):
         big_ = max(found_, key=lambda v: (sub_ == v).sum())
         for v in found_: poi_lm[v] = dict(st_, label=text_ if v == big_ else None, kind=kind_)
     print('POIs: %d edificios marcados' % len(poi_lm))
+    nivel_arr = np.asarray(nivel_im)
     for new_id, old in enumerate(ids, 1):
         tags = buildings[old - 1]['tags']
         xm = int(xsum[new_id] / cnt[new_id])
@@ -692,6 +693,17 @@ def main(src, out, preview=None):
             rc, wc = rnd.randrange(N_ROOFS), rnd.randrange(N_WALLS)
             shop = 1 if (tags.get('shop') or tags.get('amenity') in ('bank', 'pharmacy', 'restaurant', 'cafe') or
                          (below in main_street and rnd.random() < 0.6) or rnd.random() < 0.12) else 0
+        # 13/11/2026: nivel socioeconómico del INE en el centro del edificio → pisos, techo y color (con un generador propio,
+        # así el resto del azar del mapa queda igual). 1-2 y sin dato: humilde; 5: acomodado; 3-4: como antes.
+        if not lm and has_nivel:
+            nv_ = int(nivel_arr[min(H - 1, int((ymin[new_id] + ymax[new_id]) // 2)), xm])
+            r2_ = random.Random(new_id * 7919 + 13)
+            hi_, lo_ = nv_ == 5, nv_ in (0, 1, 2)
+            if not tags.get('building:levels'):
+                q_ = r2_.random(); q2_ = r2_.random()
+                floors = (1 if q_ < 0.88 else 2 if q2_ < 0.93 else 3) if lo_ else (1 if q_ < 0.58 else 2 if q2_ < 0.8 else 3) if hi_ else floors
+            if lo_: rt = r2_.choice([1, 1, 1, 0, 0, 2]); wc = r2_.choice([1, 2, 3, 5, 6, 7, 6, 1])
+            elif hi_: rt = r2_.choice([0, 2, 2, 0, 0, 2, 1]); wc = r2_.choice([0, 4, 4, 0, 3, 2, 4, 5])
         floors = max(1, min(4, floors))
         bdata += [int(xmin[new_id]), int(xmax[new_id]), floors, rt, rc, wc, shop, rnd.randrange(N_AWN)]
 
