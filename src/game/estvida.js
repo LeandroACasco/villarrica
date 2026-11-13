@@ -3,8 +3,8 @@
 //
 // Circuito (mano derecha, igual que el resto del tránsito): el vehículo viene por la calle, dobla a la derecha por el
 // pasillo de entrada, recorre un carril del techo hasta un surtidor, para, el playero le carga, y sale por el pasillo del
-// otro lado, donde dobla a la derecha y se va por la calle. Los vehículos van "sobre rieles" (una curva suavizada) y frenan
-// si hay algo adelante; no son del tránsito (no se pueden robar mientras cargan).
+// otro lado, donde dobla a la derecha y se mete en el tránsito. Los vehículos van "sobre rieles" (una curva suavizada) y frenan
+// si hay algo adelante. Al salir a la calle pasan al tránsito normal (`toTraffic`). Si te los llevás (robo) dejan de ser de la estación (`release`).
 // Los playeros se quedan sobre las islas: caminan por la isla hasta el surtidor del cliente (un auto de la gente o el tuyo
 // cuando cargás con ACCIÓN), le hablan, y vuelven a su lugar.
 'use strict';
@@ -105,12 +105,38 @@
       const path = smooth(pts, 3); let sl = 0, bd = 1e9;
       path.forEach((p, i) => { const q = Math.hypot(p[0] - slot[0], p[1] - slot[1]); if (q < bd) { bd = q; sl = i; } });
       v.a = Math.atan2(path[3][0] - path[0][0], -(path[3][1] - path[0][1]));
-      v.est = { st, k, path, stopI: sl, i: 0, ph: 'in', t: 0, wait: 0, fill: (moto ? 4 : 6) + R() * 5, cruise: 62 + R() * 22, done: false, kind: 'visit' };
+      let xi = 0; { const xp = st.P(-7 * S, dStreet); bd = 1e9; path.forEach((q, i) => { if (i < sl) return; const w = Math.hypot(q[0] - xp[0], q[1] - xp[1]); if (w < bd) { bd = w; xi = i; } }); }
+      v.est = { st, k, path, stopI: sl, exitI: xi, i: 0, ph: 'in', t: 0, wait: 0, fill: (moto ? 4 : 6) + R() * 5, cruise: 62 + R() * 22, done: false, kind: 'visit' };
       v.px = v.x; v.py = v.y; v.pa = v.a; v.v = 30; st.lane[k] = v;
       W.addBox(v); this.vis.push(v);
       return v;
     }
-    kill(v) { this.world.removeBox(v); const i = this.vis.indexOf(v); if (i >= 0) this.vis.splice(i, 1); const e = v.est; if (e && e.st.lane[e.k] === v) e.st.lane[e.k] = null; for (const p of e.st.pl) if (p.cl === v) p.cl = null; }
+    // pasa el vehículo al tránsito normal: busca el tramo de calle más cercano que vaya para donde mira
+    toTraffic(v) {
+      const T = VR.traffic; if (!T || !T.ok || v.driven) return false;
+      const hx = Math.sin(v.a), hy = -Math.cos(v.a); let best = null, bd = 1e9;
+      for (const e of T.edges) {
+        const ax = T.nx[e.a], ay = T.ny[e.a], dx = (T.nx[e.b] - ax) / e.len, dy = (T.ny[e.b] - ay) / e.len, px = v.x - ax, py = v.y - ay;
+        const t = px * dx + py * dy, per = Math.abs(-px * dy + py * dx);
+        if (t < -6 || t > e.len + 6 || per > e.w / 2 + 12 || per >= bd) continue;
+        const dot = hx * dx + hy * dy;
+        if (dot > 0.7 && e.ow >= 0) { bd = per; best = { e, from: e.a, s: VR.clamp(t, 0, e.len) }; }
+        else if (dot < -0.7 && e.ow <= 0) { bd = per; best = { e, from: e.b, s: VR.clamp(e.len - t, 0, e.len) }; }
+      }
+      if (!best) return false;
+      const moto = v.type === 'moto', to = best.from === best.e.a ? best.e.b : best.e.a, minW = v.spec.minW || 0;
+      v.ai = { e: best.e, from: best.from, s: best.s, next: T.pickNext(best.e, to, minW), cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (v.spec.cruiseK || 1) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
+      v.tid = ++T.seq || (T.seq = 1); T.list.push(v);
+      const i = this.vis.indexOf(v); if (i >= 0) this.vis.splice(i, 1);
+      const e = v.est; if (e) { if (e.st.lane[e.k] === v) e.st.lane[e.k] = null; for (const p of e.st.pl) if (p.cl === v) p.cl = null; } v.est = null;
+      return true;
+    }
+    // se lo llevan (robo): deja de ser de la estación
+    release(v) {
+      const i = this.vis.indexOf(v); if (i >= 0) this.vis.splice(i, 1);
+      const e = v.est; if (e) { if (e.st.lane[e.k] === v) e.st.lane[e.k] = null; for (const p of e.st.pl) if (p.cl === v) p.cl = null; } v.est = null; v.v = 0;
+    }
+    kill(v) { this.world.removeBox(v); const i = this.vis.indexOf(v); if (i >= 0) this.vis.splice(i, 1); const e = v.est; if (e) { if (e.st.lane[e.k] === v) e.st.lane[e.k] = null; for (const p of e.st.pl) if (p.cl === v) p.cl = null; } }
     drive(v, dt, view, body, car) {
       const e = v.est, W = this.world, path = e.path; v.px = v.x; v.py = v.y; v.pa = v.a;
       e.t += dt;
@@ -118,7 +144,7 @@
         v.v = 0; v.vx = v.vy = 0;
         const serv = e.st.pl.some((p) => p.cl === v && p.mode === 'idle' && p.atTgt);
         if (serv || e.t > 3) e.fill -= dt;
-        if (e.fill <= 0) { e.ph = 'out'; e.done = true; }
+        if (e.fill <= 0) { e.ph = 'out'; e.done = true; if (e.st.lane[e.k] === v) e.st.lane[e.k] = null; }
         return;
       }
       const i = Math.min(path.length - 2, e.i), fl = Math.max(2, Math.round((8 + Math.abs(v.v) * 0.12) / 2));
@@ -143,6 +169,7 @@
       if (e.wait > 14 && (v.x < view.x0 - 40 || v.x > view.x1 + 40 || v.y < view.y0 - 40 || v.y > view.y1 + 40)) { e.dead = true; return; }
       if (v.v < target) v.v = Math.min(target, v.v + (v.type === 'moto' ? 150 : 110) * dt); else v.v = Math.max(target, v.v - 300 * dt);
       const adv = Math.max(0, v.v) * dt / 2; e.f = (e.f || 0) + adv; const k = Math.floor(e.f); e.f -= k; e.i += k;
+      if (e.ph === 'out' && e.i >= e.exitI && this.toTraffic(v)) return;
       if (e.i >= path.length - 2) { e.dead = true; return; }
       const P = path[e.i], Q = path[Math.min(path.length - 1, e.i + 1)];
       v.x = P[0] + (Q[0] - P[0]) * e.f; v.y = P[1] + (Q[1] - P[1]) * e.f;
@@ -203,9 +230,10 @@
       }
       for (let i = this.vis.length - 1; i >= 0; i--) {
         const v = this.vis[i];
+        if (v.driven || !v.est) { this.release(v); continue; }
         if (Math.hypot(v.x - focus.x, v.y - focus.y) > 1300) { this.kill(v); continue; }
         this.drive(v, dt, view, body, car);
-        if (v.est.dead) this.kill(v);
+        if (v.est && v.est.dead) this.kill(v);
       }
       this.playeros(dt, car);
     }

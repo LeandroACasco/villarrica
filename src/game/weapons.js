@@ -122,7 +122,7 @@ VR.Weapons = class {
     if (!this.peds || (this.scareT || 0) > this.t) return; this.scareT = this.t + 0.3;
     this.peds.scatter(x, y, r * 1.3);
     for (const p of this.peds.list) {
-      if (p.mode === 'down' || p.mode === 'flee' && p.t > 0.5) continue;
+      if (p.armed || p.mode === 'down' || p.mode === 'flee' && p.t > 0.5) continue;
       if (Math.hypot(p.x - x, p.y - y) > r) continue;
       p.mode = 'flee'; p.t = 3 + this.rnd() * 2; this.peds.awayFrom(p, { x, y });
       if (!p.say && this.rnd() < 0.35) this.peds.talk(p, kind, 1.6);

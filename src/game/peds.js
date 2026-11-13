@@ -44,7 +44,9 @@ VR.Peds = class {
     if ((t === T.GRASS || t === T.DIRT || t === T.PLAZADIRT) && W.area[ty * W.w + tx]) return true; // pasto de plazas y parques
     return false;
   }
-  free(px, py) { return this.walkable(px, py) && !this.world.hits(px - 3, py - 3, px + 3, py); }
+  roadish(px, py) { const T = VR.T, t = this.world.get(Math.floor(px / VR.TILE), Math.floor(py / VR.TILE)); return t === T.ROAD || t === T.STONE || t === T.DIRTROAD; }
+  // `_road`: el que se bajó de un vehículo (p.road) puede correr por la calle hasta llegar a la vereda
+  free(px, py) { return (this.walkable(px, py) || (this._road && this.roadish(px, py))) && !this.world.hits(px - 3, py - 3, px + 3, py); }
   max(focus) {
     const b = this.world.barrioName(focus.x, focus.y);
     return b === 'Centro' ? 30 : b ? 16 : 6;
@@ -105,6 +107,7 @@ VR.Peds = class {
     const cs = car ? Math.hypot(car.vx || 0, car.vy || 0) : 0;
     for (const p of this.list) {
       p.px = p.x; p.py = p.y;
+      if (p.road && this.walkable(p.x, p.y)) p.road = false; this._road = !!p.road;
       if (p.say) { p.say.t -= dt; if (p.say.t <= 0) p.say = null; }
       // ¿lo chocó un vehículo (el tuyo o uno del tránsito)? Sale despedido (ragdoll)
       if (p.mode !== 'down') {
@@ -147,6 +150,7 @@ VR.Peds = class {
         else this.newDir(p);
       }
     }
+    this._road = false;
   }
   // vehículo en movimiento que está pasando por encima de esta persona (o null)
   carHit(p) {
@@ -192,11 +196,19 @@ VR.Peds = class {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
-        const pim = p.mode === 'down' ? null : (p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8));
+        const pim = p.mode === 'down' ? null : (p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, p.armed ? 'idle+aim' : 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8));
         if (pim) { VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.24); VR.sun.cast(ctx, pim, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.28); } else VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
         if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal], x, y);
         else if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
-        else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
+        else {
+          ctx.drawImage(pim, x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
+          if (p.armed && p.mode === 'idle') { // pistola en la mano (la mano sale del propio sprite)
+            const a = ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[p.dir], h = pim.hand, PSv = VR.PS || 1, hx = h ? x - 8 * PSv + h[0] * PSv : x + 3, hy = h ? y - 31 * PSv + h[1] * PSv : y - 17;
+            ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); ctx.scale(0.82, 0.82);
+            ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.25, -6, 2.5, 7.6); ctx.fillStyle = '#5a5a68'; ctx.fillRect(-0.8, -5.6, 1.6, 3.6); ctx.fillStyle = '#c4c4d2'; ctx.fillRect(-0.8, -5.6, 0.55, 3.4); ctx.fillStyle = '#1c1c22'; ctx.fillRect(-0.8, -0.8, 1.6, 2.2);
+            ctx.restore();
+          }
+        }
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
     }

@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 1fda6276 · 2026-11-13</div>
+  <div class="tVer">Versión d9b3b2b4 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 1fda6276 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d9b3b2b4 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -6999,7 +6999,9 @@ VR.Peds = class {
     if ((t === T.GRASS || t === T.DIRT || t === T.PLAZADIRT) && W.area[ty * W.w + tx]) return true; // pasto de plazas y parques
     return false;
   }
-  free(px, py) { return this.walkable(px, py) && !this.world.hits(px - 3, py - 3, px + 3, py); }
+  roadish(px, py) { const T = VR.T, t = this.world.get(Math.floor(px / VR.TILE), Math.floor(py / VR.TILE)); return t === T.ROAD || t === T.STONE || t === T.DIRTROAD; }
+  // `_road`: el que se bajó de un vehículo (p.road) puede correr por la calle hasta llegar a la vereda
+  free(px, py) { return (this.walkable(px, py) || (this._road && this.roadish(px, py))) && !this.world.hits(px - 3, py - 3, px + 3, py); }
   max(focus) {
     const b = this.world.barrioName(focus.x, focus.y);
     return b === 'Centro' ? 30 : b ? 16 : 6;
@@ -7060,6 +7062,7 @@ VR.Peds = class {
     const cs = car ? Math.hypot(car.vx || 0, car.vy || 0) : 0;
     for (const p of this.list) {
       p.px = p.x; p.py = p.y;
+      if (p.road && this.walkable(p.x, p.y)) p.road = false; this._road = !!p.road;
       if (p.say) { p.say.t -= dt; if (p.say.t <= 0) p.say = null; }
       // ¿lo chocó un vehículo (el tuyo o uno del tránsito)? Sale despedido (ragdoll)
       if (p.mode !== 'down') {
@@ -7102,6 +7105,7 @@ VR.Peds = class {
         else this.newDir(p);
       }
     }
+    this._road = false;
   }
   // vehículo en movimiento que está pasando por encima de esta persona (o null)
   carHit(p) {
@@ -7147,11 +7151,19 @@ VR.Peds = class {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
-        const pim = p.mode === 'down' ? null : (p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8));
+        const pim = p.mode === 'down' ? null : (p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, p.armed ? 'idle+aim' : 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8));
         if (pim) { VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.24); VR.sun.cast(ctx, pim, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.28); } else VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
         if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal], x, y);
         else if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
-        else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
+        else {
+          ctx.drawImage(pim, x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
+          if (p.armed && p.mode === 'idle') { // pistola en la mano (la mano sale del propio sprite)
+            const a = ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[p.dir], h = pim.hand, PSv = VR.PS || 1, hx = h ? x - 8 * PSv + h[0] * PSv : x + 3, hy = h ? y - 31 * PSv + h[1] * PSv : y - 17;
+            ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); ctx.scale(0.82, 0.82);
+            ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.25, -6, 2.5, 7.6); ctx.fillStyle = '#5a5a68'; ctx.fillRect(-0.8, -5.6, 1.6, 3.6); ctx.fillStyle = '#c4c4d2'; ctx.fillRect(-0.8, -5.6, 0.55, 3.4); ctx.fillStyle = '#1c1c22'; ctx.fillRect(-0.8, -0.8, 1.6, 2.2);
+            ctx.restore();
+          }
+        }
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
     }
@@ -8015,7 +8027,7 @@ VR.Weapons = class {
     if (!this.peds || (this.scareT || 0) > this.t) return; this.scareT = this.t + 0.3;
     this.peds.scatter(x, y, r * 1.3);
     for (const p of this.peds.list) {
-      if (p.mode === 'down' || p.mode === 'flee' && p.t > 0.5) continue;
+      if (p.armed || p.mode === 'down' || p.mode === 'flee' && p.t > 0.5) continue;
       if (Math.hypot(p.x - x, p.y - y) > r) continue;
       p.mode = 'flee'; p.t = 3 + this.rnd() * 2; this.peds.awayFrom(p, { x, y });
       if (!p.say && this.rnd() < 0.35) this.peds.talk(p, kind, 1.6);
@@ -12372,8 +12384,8 @@ VR.Cisnes = class {
 //
 // Circuito (mano derecha, igual que el resto del tránsito): el vehículo viene por la calle, dobla a la derecha por el
 // pasillo de entrada, recorre un carril del techo hasta un surtidor, para, el playero le carga, y sale por el pasillo del
-// otro lado, donde dobla a la derecha y se va por la calle. Los vehículos van "sobre rieles" (una curva suavizada) y frenan
-// si hay algo adelante; no son del tránsito (no se pueden robar mientras cargan).
+// otro lado, donde dobla a la derecha y se mete en el tránsito. Los vehículos van "sobre rieles" (una curva suavizada) y frenan
+// si hay algo adelante. Al salir a la calle pasan al tránsito normal (`toTraffic`). Si te los llevás (robo) dejan de ser de la estación (`release`).
 // Los playeros se quedan sobre las islas: caminan por la isla hasta el surtidor del cliente (un auto de la gente o el tuyo
 // cuando cargás con ACCIÓN), le hablan, y vuelven a su lugar.
 'use strict';
@@ -12474,12 +12486,38 @@ VR.Cisnes = class {
       const path = smooth(pts, 3); let sl = 0, bd = 1e9;
       path.forEach((p, i) => { const q = Math.hypot(p[0] - slot[0], p[1] - slot[1]); if (q < bd) { bd = q; sl = i; } });
       v.a = Math.atan2(path[3][0] - path[0][0], -(path[3][1] - path[0][1]));
-      v.est = { st, k, path, stopI: sl, i: 0, ph: 'in', t: 0, wait: 0, fill: (moto ? 4 : 6) + R() * 5, cruise: 62 + R() * 22, done: false, kind: 'visit' };
+      let xi = 0; { const xp = st.P(-7 * S, dStreet); bd = 1e9; path.forEach((q, i) => { if (i < sl) return; const w = Math.hypot(q[0] - xp[0], q[1] - xp[1]); if (w < bd) { bd = w; xi = i; } }); }
+      v.est = { st, k, path, stopI: sl, exitI: xi, i: 0, ph: 'in', t: 0, wait: 0, fill: (moto ? 4 : 6) + R() * 5, cruise: 62 + R() * 22, done: false, kind: 'visit' };
       v.px = v.x; v.py = v.y; v.pa = v.a; v.v = 30; st.lane[k] = v;
       W.addBox(v); this.vis.push(v);
       return v;
     }
-    kill(v) { this.world.removeBox(v); const i = this.vis.indexOf(v); if (i >= 0) this.vis.splice(i, 1); const e = v.est; if (e && e.st.lane[e.k] === v) e.st.lane[e.k] = null; for (const p of e.st.pl) if (p.cl === v) p.cl = null; }
+    // pasa el vehículo al tránsito normal: busca el tramo de calle más cercano que vaya para donde mira
+    toTraffic(v) {
+      const T = VR.traffic; if (!T || !T.ok || v.driven) return false;
+      const hx = Math.sin(v.a), hy = -Math.cos(v.a); let best = null, bd = 1e9;
+      for (const e of T.edges) {
+        const ax = T.nx[e.a], ay = T.ny[e.a], dx = (T.nx[e.b] - ax) / e.len, dy = (T.ny[e.b] - ay) / e.len, px = v.x - ax, py = v.y - ay;
+        const t = px * dx + py * dy, per = Math.abs(-px * dy + py * dx);
+        if (t < -6 || t > e.len + 6 || per > e.w / 2 + 12 || per >= bd) continue;
+        const dot = hx * dx + hy * dy;
+        if (dot > 0.7 && e.ow >= 0) { bd = per; best = { e, from: e.a, s: VR.clamp(t, 0, e.len) }; }
+        else if (dot < -0.7 && e.ow <= 0) { bd = per; best = { e, from: e.b, s: VR.clamp(e.len - t, 0, e.len) }; }
+      }
+      if (!best) return false;
+      const moto = v.type === 'moto', to = best.from === best.e.a ? best.e.b : best.e.a, minW = v.spec.minW || 0;
+      v.ai = { e: best.e, from: best.from, s: best.s, next: T.pickNext(best.e, to, minW), cruise: Math.min(v.spec.max.road * 0.6, moto ? 125 : 110) * (v.spec.cruiseK || 1) * (0.8 + this.rnd() * 0.4), wait: 0, honk: 0 };
+      v.tid = ++T.seq || (T.seq = 1); T.list.push(v);
+      const i = this.vis.indexOf(v); if (i >= 0) this.vis.splice(i, 1);
+      const e = v.est; if (e) { if (e.st.lane[e.k] === v) e.st.lane[e.k] = null; for (const p of e.st.pl) if (p.cl === v) p.cl = null; } v.est = null;
+      return true;
+    }
+    // se lo llevan (robo): deja de ser de la estación
+    release(v) {
+      const i = this.vis.indexOf(v); if (i >= 0) this.vis.splice(i, 1);
+      const e = v.est; if (e) { if (e.st.lane[e.k] === v) e.st.lane[e.k] = null; for (const p of e.st.pl) if (p.cl === v) p.cl = null; } v.est = null; v.v = 0;
+    }
+    kill(v) { this.world.removeBox(v); const i = this.vis.indexOf(v); if (i >= 0) this.vis.splice(i, 1); const e = v.est; if (e) { if (e.st.lane[e.k] === v) e.st.lane[e.k] = null; for (const p of e.st.pl) if (p.cl === v) p.cl = null; } }
     drive(v, dt, view, body, car) {
       const e = v.est, W = this.world, path = e.path; v.px = v.x; v.py = v.y; v.pa = v.a;
       e.t += dt;
@@ -12487,7 +12525,7 @@ VR.Cisnes = class {
         v.v = 0; v.vx = v.vy = 0;
         const serv = e.st.pl.some((p) => p.cl === v && p.mode === 'idle' && p.atTgt);
         if (serv || e.t > 3) e.fill -= dt;
-        if (e.fill <= 0) { e.ph = 'out'; e.done = true; }
+        if (e.fill <= 0) { e.ph = 'out'; e.done = true; if (e.st.lane[e.k] === v) e.st.lane[e.k] = null; }
         return;
       }
       const i = Math.min(path.length - 2, e.i), fl = Math.max(2, Math.round((8 + Math.abs(v.v) * 0.12) / 2));
@@ -12512,6 +12550,7 @@ VR.Cisnes = class {
       if (e.wait > 14 && (v.x < view.x0 - 40 || v.x > view.x1 + 40 || v.y < view.y0 - 40 || v.y > view.y1 + 40)) { e.dead = true; return; }
       if (v.v < target) v.v = Math.min(target, v.v + (v.type === 'moto' ? 150 : 110) * dt); else v.v = Math.max(target, v.v - 300 * dt);
       const adv = Math.max(0, v.v) * dt / 2; e.f = (e.f || 0) + adv; const k = Math.floor(e.f); e.f -= k; e.i += k;
+      if (e.ph === 'out' && e.i >= e.exitI && this.toTraffic(v)) return;
       if (e.i >= path.length - 2) { e.dead = true; return; }
       const P = path[e.i], Q = path[Math.min(path.length - 1, e.i + 1)];
       v.x = P[0] + (Q[0] - P[0]) * e.f; v.y = P[1] + (Q[1] - P[1]) * e.f;
@@ -12572,9 +12611,10 @@ VR.Cisnes = class {
       }
       for (let i = this.vis.length - 1; i >= 0; i--) {
         const v = this.vis[i];
+        if (v.driven || !v.est) { this.release(v); continue; }
         if (Math.hypot(v.x - focus.x, v.y - focus.y) > 1300) { this.kill(v); continue; }
         this.drive(v, dt, view, body, car);
-        if (v.est.dead) this.kill(v);
+        if (v.est && v.est.dead) this.kill(v);
       }
       this.playeros(dt, car);
     }
@@ -12600,6 +12640,72 @@ VR.Cisnes = class {
     }
   };
 })();
+
+// ===== game/asalto.js =====
+// Robo de vehículos (13/11/2026, pedido de Leandro): al llevarte un vehículo del tránsito o de una estación, el conductor
+// se baja. La mayoría sale corriendo (grita en jopara, corre por la calle hasta la vereda y sigue como un peatón más);
+// algunos (1 de cada 5) sacan una pistola, te apuntan y te disparan un rato (le podés errar o te pega; si te alejás, desiste).
+// Los conductores son peatones del sistema de `peds` (así los puede atropellar un vehículo o dañar tu arma, y se asustan con tiros).
+'use strict';
+VR.Asalto = class {
+  constructor(world, peds, o) {
+    this.world = world; this.peds = peds; this.o = o; this.rnd = VR.rng(515); this.armed = []; this.tr = []; this.toastT = 0;
+  }
+  bajar(c, drv) {
+    const P = this.peds, R = this.rnd, T = this.o.target(), a = c.a, rx = Math.cos(a), ry = Math.sin(a), d = c.WID / 2 + 5;
+    // de la puerta del conductor (izquierda) o, si no hay lugar, de la derecha
+    let x = c.x - rx * d, y = c.y - ry * d + 4;
+    if (this.world.hits(x - 3, y - 3, x + 3, y)) { x = c.x + rx * d; y = c.y + ry * d + 4; }
+    let pal;
+    if (drv && drv.L) { const sp = VR.av2Lazy(Object.assign({}, drv.L, { hat: drv.L.hat === 'casco' ? 'ninguno' : drv.L.hat })); P.sprites.push(sp); pal = P.sprites.length - 1; } else pal = P.pickPal(x, y);
+    const p = { x, y, px: x, py: y, dir: 'down', vx: 0, vy: 0, anim: 0, mode: 'flee', t: 4 + R() * 2.5, sp: 30, pal, say: null, road: true };
+    p._nid = P.nid = (P.nid || 0) + 1;
+    P._road = true; P.awayFrom(p, T); P._road = false;
+    const armed = R() < 0.2 && !c.spec.bus;
+    if (armed) {
+      p.mode = 'idle'; p.armed = true; p.t = 99; p.vx = p.vy = 0; p.jt = 0; p.shotT = 0.7 + R() * 0.4;
+      p.say = { text: ['¡Devolveme el auto, ladrón!', '¡Eso es mío, desgraciado!', '¡Bajate de ahí!'][(R() * 3) | 0], t: 2.4 };
+      this.armed.push(p);
+    } else p.say = { text: ['¡Mi auto! ¡Ladrón!', '¡Socorro, me robaron!', '¡Policía, policía!', '¡Che auto, ladrón!', '¡Ayudaaa!'][(R() * 5) | 0], t: 2.4 };
+    P.list.push(p);
+    return p;
+  }
+  fire(p, T) {
+    const dx = T.x - p.x, dy = T.y - p.y, dist = Math.hypot(dx, dy), R = this.rnd;
+    const chance = T.car ? (T.sp > 100 ? 0.07 : 0.22) : dist < 90 ? 0.5 : dist < 180 ? 0.32 : 0.18;
+    const hit = R() < chance, mx = p.x + (p.dir === 'right' ? 6 : p.dir === 'left' ? -6 : 3), my = p.y - 17;
+    const tx = T.x + (hit ? 0 : (R() - 0.5) * 40), ty = T.y - (T.car ? 2 : 10) + (hit ? 0 : (R() - 0.5) * 30);
+    this.tr.push({ x0: mx, y0: my, x1: tx, y1: ty, t: 0.09 });
+    VR.audio.shot(p.x, p.y); if (this.o.scare) this.o.scare(p.x, p.y);
+    if (hit) { this.o.hurt(T.car ? 3 + R() * 3 : 5 + R() * 5); VR.audio.ouch && VR.audio.ouch(T.x, T.y); if (this.toastT <= 0) { this.o.toast('🔫 ¡Te dispararon!'); this.toastT = 3; } }
+  }
+  update(dt) {
+    this.toastT -= dt;
+    for (let i = this.tr.length - 1; i >= 0; i--) { this.tr[i].t -= dt; if (this.tr[i].t <= 0) this.tr.splice(i, 1); }
+    if (!this.armed.length) return;
+    const T = this.o.target();
+    for (let i = this.armed.length - 1; i >= 0; i--) {
+      const p = this.armed[i];
+      if (!this.peds.list.includes(p) || p.mode === 'down') { p.armed = false; this.armed.splice(i, 1); continue; }
+      const dx = T.x - p.x, dy = T.y - p.y, dist = Math.hypot(dx, dy);
+      p.jt += dt; p.px = p.x; p.py = p.y; p.mode = 'idle'; p.t = 99; p.anim = 0;
+      p.dir = Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 'down' : 'up') : dx > 0 ? 'right' : 'left';
+      p.shotT -= dt;
+      if (p.shotT <= 0 && dist < 300) { this.fire(p, T); p.shotT = 0.85 + this.rnd() * 0.7; }
+      if (p.jt > 7.5 || dist > 340) { // desiste y sale corriendo
+        p.armed = false; p.mode = 'flee'; p.t = 4; this.peds._road = true; this.peds.awayFrom(p, T); this.peds._road = false;
+        if (this.rnd() < 0.5) p.say = { text: '¡Ya fue, ya fue!', t: 1.6 };
+        this.armed.splice(i, 1);
+      }
+    }
+  }
+  drawFx(ctx, cx, cy) {
+    if (!this.tr.length) return;
+    ctx.save(); ctx.strokeStyle = 'rgba(255,236,160,.95)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    for (const s of this.tr) { ctx.beginPath(); ctx.moveTo(s.x0 - cx, s.y0 - cy); ctx.lineTo(s.x1 - cx, s.y1 - cy); ctx.stroke(); ctx.fillStyle = '#fff3b0'; ctx.fillRect(s.x0 - cx - 1.5, s.y0 - cy - 1.5, 3, 3); }
+    ctx.restore();
+  }
+};
 
 // ===== game/pieza.js =====
 // El interior de la pieza (11/11/2026): una escena aparte, chica, vista desde arriba. Cama (dormir), ropero, anafe, limpiar,
@@ -13643,7 +13749,9 @@ VR.Titulo = class {
     addEventListener('touchend', () => { pd = 0; }, { passive: true }); }
   const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
+  if (peds) VR.peds = peds;
   const estvida = VR.estvida = prueba ? null : new VR.EstVida(world);   // playeros y vehículos que cargan en las estaciones (estvida.js)
+  const asalto = VR.asalto = peds ? new VR.Asalto(world, peds, { hurt: (n) => hurtPlayer(n), toast: (m) => toast(m), scare: (x, y) => weapons && weapons.scare && weapons.scare(x, y, 170, 'shots'), target: () => car ? { x: car.x, y: car.y, car: true, sp: Math.hypot(car.vx || 0, car.vy || 0) } : { x: player.x, y: player.y, car: false, sp: 0 } }) : null;   // conductores que se bajan (asalto.js)
   const night = VR.night = new VR.Night(world);
   const cisnes = VR.cisnes = new VR.Cisnes(world, night); cisnes.onMsg = (m) => toast(m);
   const perros = VR.perros = peds ? new VR.Perros(world, peds) : { update() {}, collect() {}, pet() { return false; } }; VR.toast = (m) => toast(m);   // perros callejeros (perros.js)
@@ -13703,7 +13811,7 @@ VR.Titulo = class {
   // que ya te llevaste, sí. En Libre todo sigue como antes.
   function noRobar(c) {
     if (!vida || c.mio || c.robado || c === lastCar) return null;
-    if (c.ai) return weapons && weapons.enabled ? null : '🔫 Para bajar al conductor necesitás un arma';
+    if (c.ai || c.est) return weapons && weapons.enabled ? null : '🔫 Para bajar al conductor necesitás un arma';
     return vida.s.herr ? null : '🔧 Para abrir un vehículo estacionado necesitás herramientas';
   }
   // canasto de chipa en la mano (G, o el botón 🧺): con el canasto, ACCIÓN vende al lado de la gente
@@ -13719,8 +13827,11 @@ VR.Titulo = class {
   function enterCar(c) {
     if (c.fallen) { c.fallen = null; if (c.ai) c.ai.stun = 0; if (VR.caidas) VR.caidas.riders = VR.caidas.riders.filter((r) => r.c !== c); toast('💪 Levantaste la moto'); }
     if (c._nid !== undefined && online) online.take(c); // un auto del anfitrión: pasa a ser tuyo
+    const drv = (c.ai || c.est) && !c.unit && !c.spec.emer && !c.robado ? { L: c.rider && c.rider.L } : null;   // tenía conductor: se baja (asalto.js)
+    if (c.est && VR.estvida) VR.estvida.release(c);
     if (emer) emer.stolen(c);
     if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : c.model === 'bici' ? '🚲 ¡Te llevaste la bici!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : /^cam/.test(c.model) ? '🚚 ¡Te llevaste el camión!' : '🚗 ¡Te llevaste el auto!'); }
+    if (drv && asalto) asalto.bajar(c, drv);
     if (c.type === 'moto') c.rider = me();
     c.robado = true; car = c; c.driven = true; player.moving = false; zoomPoke(); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
@@ -13927,6 +14038,7 @@ VR.Titulo = class {
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
     if (peds && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
+    if (asalto) asalto.update(dt);
     if (estvida && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; estvida.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car ? null : { x: player.x, y: player.y - 4 }, car); }
     { // fauna: lo que la asusta (vos, tu vehículo o tu cisne, el tránsito, la gente y los cisnes que andan)
       const th = [];
@@ -13980,6 +14092,7 @@ VR.Titulo = class {
     for (const t of tall) t.draw(ctx);
     if (VR._late) { for (const b of VR._late) VR.Player.prototype.drawBubble.call(b, ctx, cx, cy, 1); VR._late.length = 0; }   // globos de vendedores y perros, encima de árboles y banderas
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
+    if (asalto) asalto.drawFx(ctx, cx, cy);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);
     VR.sun.drawTint(ctx, sw, sh); VR.clima.drawGrade(ctx, sw, sh); VR.clima.drawRain(ctx, sw, sh, Math.min(0.1, dt || 0.016));

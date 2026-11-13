@@ -92,7 +92,9 @@
     addEventListener('touchend', () => { pd = 0; }, { passive: true }); }
   const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
+  if (peds) VR.peds = peds;
   const estvida = VR.estvida = prueba ? null : new VR.EstVida(world);   // playeros y vehículos que cargan en las estaciones (estvida.js)
+  const asalto = VR.asalto = peds ? new VR.Asalto(world, peds, { hurt: (n) => hurtPlayer(n), toast: (m) => toast(m), scare: (x, y) => weapons && weapons.scare && weapons.scare(x, y, 170, 'shots'), target: () => car ? { x: car.x, y: car.y, car: true, sp: Math.hypot(car.vx || 0, car.vy || 0) } : { x: player.x, y: player.y, car: false, sp: 0 } }) : null;   // conductores que se bajan (asalto.js)
   const night = VR.night = new VR.Night(world);
   const cisnes = VR.cisnes = new VR.Cisnes(world, night); cisnes.onMsg = (m) => toast(m);
   const perros = VR.perros = peds ? new VR.Perros(world, peds) : { update() {}, collect() {}, pet() { return false; } }; VR.toast = (m) => toast(m);   // perros callejeros (perros.js)
@@ -152,7 +154,7 @@
   // que ya te llevaste, sí. En Libre todo sigue como antes.
   function noRobar(c) {
     if (!vida || c.mio || c.robado || c === lastCar) return null;
-    if (c.ai) return weapons && weapons.enabled ? null : '🔫 Para bajar al conductor necesitás un arma';
+    if (c.ai || c.est) return weapons && weapons.enabled ? null : '🔫 Para bajar al conductor necesitás un arma';
     return vida.s.herr ? null : '🔧 Para abrir un vehículo estacionado necesitás herramientas';
   }
   // canasto de chipa en la mano (G, o el botón 🧺): con el canasto, ACCIÓN vende al lado de la gente
@@ -168,8 +170,11 @@
   function enterCar(c) {
     if (c.fallen) { c.fallen = null; if (c.ai) c.ai.stun = 0; if (VR.caidas) VR.caidas.riders = VR.caidas.riders.filter((r) => r.c !== c); toast('💪 Levantaste la moto'); }
     if (c._nid !== undefined && online) online.take(c); // un auto del anfitrión: pasa a ser tuyo
+    const drv = (c.ai || c.est) && !c.unit && !c.spec.emer && !c.robado ? { L: c.rider && c.rider.L } : null;   // tenía conductor: se baja (asalto.js)
+    if (c.est && VR.estvida) VR.estvida.release(c);
     if (emer) emer.stolen(c);
     if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : c.model === 'bici' ? '🚲 ¡Te llevaste la bici!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : /^cam/.test(c.model) ? '🚚 ¡Te llevaste el camión!' : '🚗 ¡Te llevaste el auto!'); }
+    if (drv && asalto) asalto.bajar(c, drv);
     if (c.type === 'moto') c.rider = me();
     c.robado = true; car = c; c.driven = true; player.moving = false; zoomPoke(); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);
@@ -376,6 +381,7 @@
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
     if (peds && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
+    if (asalto) asalto.update(dt);
     if (estvida && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; estvida.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car ? null : { x: player.x, y: player.y - 4 }, car); }
     { // fauna: lo que la asusta (vos, tu vehículo o tu cisne, el tránsito, la gente y los cisnes que andan)
       const th = [];
@@ -429,6 +435,7 @@
     for (const t of tall) t.draw(ctx);
     if (VR._late) { for (const b of VR._late) VR.Player.prototype.drawBubble.call(b, ctx, cx, cy, 1); VR._late.length = 0; }   // globos de vendedores y perros, encima de árboles y banderas
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
+    if (asalto) asalto.drawFx(ctx, cx, cy);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);
     VR.sun.drawTint(ctx, sw, sh); VR.clima.drawGrade(ctx, sw, sh); VR.clima.drawRain(ctx, sw, sh, Math.min(0.1, dt || 0.016));
