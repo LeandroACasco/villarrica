@@ -26,8 +26,8 @@ VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f 
 // ciudad (como en los juegos de la época), para que se vean y se distingan. Diseños propios, sin marcas.
 VR.VK = 1.0; VR.VSS = 5; // escala real (11/11/2026, pedido de Leandro: más realista); antes ×1,15 y, antes, ×1,3
 VR.oblOn = () => !!(VR.OBL && VR.OBL.on);
-VR.vbase = (w, h, fn, prof) => {
-  const k = VR.VK * VR.VSS, c = VR.canvas(Math.round(w * k), Math.round(h * k)), g = c.getContext('2d');
+VR.vbase = (w, h, fn, prof, sx) => {
+  const k = VR.VK * VR.VSS; let c = VR.canvas(Math.round(w * k), Math.round(h * k)), g = c.getContext('2d');
   g.scale(k, k);
   const T = {
     g,
@@ -40,6 +40,7 @@ VR.vbase = (w, h, fn, prof) => {
     tire(x, y, w, h) { T.rr(x, y, w, h, Math.min(w, h) * 0.45, '#141416'); g.fillStyle = 'rgba(255,255,255,.12)'; for (let t = y + 0.5; t < y + h - 0.3; t += 0.9) g.fillRect(x + w * 0.2, t, w * 0.6, 0.3); },
   };
   fn(T);
+  if (sx && sx < 1) { const n = VR.canvas(Math.round(w * sx * k), c.height); n.getContext('2d').drawImage(c, 0, 0, n.width, n.height); c = n; } // más angosto (proporción real)
   c.ss = k / VR.VK; // cuánto más grande está dibujado respecto del sprite final
   if (prof && VR.OBL && VR.OBL.on) c.prof = prof(); // perfil para la vista oblicua (oblicuo.js)
   return c;
@@ -87,7 +88,7 @@ VR.drawCarBase = (pal, t = {}) => VR.vbase(16, 30, (T) => {
   g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0.8, 12.6, 0.5, 9); g.fillRect(14.7, 12.6, 0.5, 9);
   if (t.aleron === 'chico') { T.rr(3, 25.4, 10, 1, 0.4, D); T.rr(3.2, 25.4, 9.6, 0.4, 0.2, L); }
   if (t.aleron === 'grande') { T.rr(5, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(10.2, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(0.8, 26.2, 14.4, 1.7, 0.5, T.hg(0.8, 15.2, [D, L, C, D])); T.rr(1, 26.3, 14, 0.5, 0.2, 'rgba(255,255,255,.25)'); }
-}, () => VR.OBL.car(VR.OBL.MITA, pal, t));
+}, () => VR.OBL.car(VR.OBL.MITA, pal, t), 0.82);
 // Motos y vehículos de dos (y tres) ruedas, vistos desde arriba mirando hacia arriba. Diseños propios por
 // categoría (sin marcas ni modelos reales): moto "cub", mini moto, moto de calle 150, motocarga y patineta.
 VR.drawMotoCub = (pal, t = {}) => VR.vbase(10, 21, (T) => { // escudo delantero ancho, piso bajo, asiento largo
@@ -348,7 +349,7 @@ VR.rotFrames = (base, S, outline = true) => {
 // Datos de cada tipo: tamaño, sprites y manejo. max = velocidad tope por piso (px/s; 240 ≈ 108 km/h).
 // name/desc: nombre inventado y descripción para la tarjeta que aparece al subirte.
 VR.VSPEC = {
-  car: { len: 30, wid: 16, S: 36, colors: VR.CAR_COLORS, base: VR.drawCarBase, acc: 175, rev: 75, turn: 2.7, brake: 420, mass: 1,
+  car: { len: 30, wid: 13, S: 36, colors: VR.CAR_COLORS, base: VR.drawCarBase, acc: 175, rev: 75, turn: 2.7, brake: 420, mass: 1,
     max: { road: 240, stone: 205, dirt: 170, side: 150, grass: 115 },
     name: 'Mitã 1.3', desc: 'Compacto de 5 puertas: chico, gasolero y fácil de estacionar.', side: 'car' },
   moto: { len: 19, wid: 8, S: 24, colors: VR.MOTO_COLORS, base: VR.drawMotoCub, acc: 230, rev: 25, turn: 3.5, brake: 460, mass: 0.3,

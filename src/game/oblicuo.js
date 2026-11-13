@@ -262,27 +262,33 @@
   // Karumbe (VR.drawKarumbe, 14×40; foto de Leandro del 13/11/2026): caballo, varas, pescante y coche de pasajeros con
   // caja de madera pintada, ventanas con parantes blancos y techo blanco con borde turquesa; ruedas chicas de goma.
   O.karumbe = (pal) => {
-    const [C, D, L] = pal, HB = '#7a4a28', HD = '#55321a', WH = '#f2f0ea', TQ = '#1f8a8a', Hh = 16.4, wy = [19.5, 34], wr = 2.2;
-    const leg = (y) => (y > 4.4 && y < 5.8) || (y > 10.6 && y < 12), wheelRow = (y) => wy.some((u) => Math.abs(y - u) <= wr);
-    return { L: 40, H: Hh, lift: Hh,
-      top: (y) => (y < 4.4 ? 11.5 : y < 13.4 ? 10.2 : y < 14.6 ? 5.4 : y < 17.3 ? 7.5 : y < 39.7 ? Hh : 0),
-      bot: (y) => (y < 3 ? 7 : y < 13.4 ? (leg(y) ? 0 : 4.6) : y < 14.6 ? 4.6 : wheelRow(y) ? 0 : 3.2),
-      ins: (y, v) => (y < 13.4 && v < 4.6 ? 5.7 : y > 14.6 && v < 3.2 ? -1.9 : 0),
+    const [C, D, L] = pal, HB = '#7a4a28', HD = '#55321a', WH = '#f4f2ec', Hh = 15.5, wu = 35, wr = 2.5, X = '#2c2420';
+    const leg = (y) => (y > 5 && y < 6.2) || (y > 8 && y < 9.2) || (y > 12.6 && y < 13.8) || (y > 14.2 && y < 15.4);
+    return { L: 42, H: Hh, lift: Hh,
+      top: (y) => (y < 3.6 ? 12.4 : y < 5.8 ? 13.2 : y < 15.2 ? 11.8 : y < 16.8 ? 10 : y < 20.2 ? 5.7 : Hh),
+      bot: (y) => (y < 16.8 ? 0 : y < 20.2 ? 4.6 : Math.abs(y - wu) <= wr ? 0 : 3),
+      ins: (y, v) => (y < 16.8 && v < 5.4 ? 5 : y >= 20.2 && v < 3 ? -1.9 : 0),
       side(g, H) {
         const R = H.R;
-        R(0, 7, 4.4, 11.5, HB); R(3, 4.6, 13.4, 10.2, HB); R(3, 4.6, 13.4, 6, HD); R(2.4, 9.6, 6.4, 10.4, '#2a1a10');   // caballo: cabeza, lomo, panza, crin
-        R(6.6, 4.6, 7.4, 10.2, WH); R(12.6, 5, 13.4, 9.4, '#2a1a10');                                              // pechera blanca y cola
-        for (const u of [4.4, 10.6]) { R(u, 0, u + 1.4, 4.6, HD); R(u, 0, u + 1.4, 0.8, '#2a2420'); }                 // patas
-        R(13.4, 4.6, 17.4, 5.4, '#5a4430');                                                                        // varas
-        for (const u of wy) H.wheel(u, wr, '#c8ccd4');
-        R(14.6, 3.2, 17.4, 7.5, SH(C, 0.8));                                                                       // pescante
-        R(17.3, 3.2, 39.7, 9.4, SH(C, 0.86)); R(17.3, 3.2, 39.7, 3.9, '#2a2a30'); R(17.3, 9, 39.7, 9.4, L);         // caja de madera pintada
-        for (const v of [5.3, 7.2]) R(17.3, v, 39.7, v + 0.25, SH(D, 0.85));
-        R(17.3, 9.4, 39.7, 15.2, '#3a2e28');                                                                       // adentro, por las ventanas
-        R(18.6, 9.4, 21.4, 12.4, '#d8d2c0'); R(19.2, 12.4, 20.8, 14, '#c98b5c'); R(18.8, 13.9, 21.2, 14.5, '#d8be78'); // carrero con sombrero
-        R(24, 9.4, 38, 10.8, '#3a9a8a');                                                                           // asiento
-        for (const u of [17.3, 22.6, 28.2, 33.8, 38.9]) R(u, 9.4, u + 0.8, 15.2, WH);                               // parantes blancos
-        R(17.3, 14.5, 39.7, 15.2, WH); R(17.3, 15.2, 39.7, 15.7, TQ); R(17.3, 15.7, 39.7, Hh, WH);                  // marco, borde turquesa y techo
+        R(4.8, 5.4, 15.2, 11.4, HB); R(4.8, 5.4, 15.2, 6.7, HD); R(5.4, 10.6, 14.8, 11.4, '#9a6438');           // caballo: lomo, panza, brillo
+        R(2.6, 8.2, 6, 13, HB); R(0, 8, 3.6, 11.4, HB); R(0, 8, 1.2, 9.4, '#3a2418'); R(2.6, 11.4, 3.3, 12.6, HD); R(2.1, 10.2, 2.6, 10.7, '#140c08'); // cuello, cabeza, hocico, oreja, ojo
+        R(3.6, 10.6, 6.4, 13.2, '#2a1a10'); R(15, 4.2, 16.4, 10, '#2a1a10');                                    // crin y cola
+        for (const [u, c] of [[5, HB], [8, HD], [12.6, HB], [14.2, HD]]) { R(u, 0.7, u + 1.2, 5.6, c); R(u, 0, u + 1.2, 0.7, '#1a1410'); } // patas
+        R(4.4, 6.6, 5.6, 11.2, WH); R(8.4, 5.6, 9.2, 11.2, WH);                                                 // arnés blanco
+        R(8, 5, 25.5, 5.7, '#3a2a1c');                                                                          // vara
+        R(20.2, 3, 42, 4.6, '#2a2a30');                                                                         // chasis
+        R(25.5, 4.6, 41.8, 9.6, SH(C, 0.9)); R(25.5, 4.6, 41.8, 5.3, D); for (const v of [6.4, 8.1]) R(25.5, v, 41.8, v + 0.22, SH(D, 0.85)); // caja de madera pintada
+        R(25.5, 9.6, 41.8, 14.7, WH);                                                                           // pared blanca
+        R(28, 10.4, 34.6, 14.1, X); R(36.2, 10.4, 40.8, 14.1, X);                                               // ventanas abiertas
+        R(30, 10.4, 40.4, 11.6, SH(C, 0.8)); R(28, 14.1, 34.6, 14.5, C); R(36.2, 14.1, 40.8, 14.5, C);         // banco de pasajeros y marcos
+        H.disc(26.9, 12.2, 0.85, '#2a2a30'); H.disc(26.9, 12.2, 0.55, WH);                                       // número
+        R(20.2, 3, 25.5, 14.4, X);                                                                              // hueco del pescante, bajo el techo
+        R(21.8, 4.4, 25.2, 5.6, C); R(21.8, 4.4, 25.2, 4.9, D);                                                 // asiento del carrero
+        R(20.6, 5.6, 23.6, 6.9, '#3a4a6a'); R(20.4, 3.4, 21.7, 5.8, '#3a4a6a'); R(20.2, 3.1, 22, 3.7, '#2a2420'); // piernas y pie
+        R(22.6, 6.9, 24.8, 11.2, '#6a7a8a'); R(22.8, 11.2, 24.4, 13, '#c98b5c'); R(22.6, 12.7, 24.7, 13.5, '#2a3a5a'); // torso, cabeza, gorra
+        R(20.2, 3.4, 20.9, 14.6, WH);                                                                           // parante delantero
+        R(20.2, 14.7, 42, 15.5, WH); R(20.2, 14.4, 42, 14.8, C);                                                // techo con borde de color
+        H.wheel(wu, wr, '#c8ccd4');
       } };
   };
 

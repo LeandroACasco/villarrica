@@ -163,24 +163,29 @@
     const [C, D, L] = pal || ['#e0541c', '#a83a10', '#f08048'];
     const W = ['#b08858', '#8a6a44', '#5e4628'], HB = ['#a06a3a', '#7a4a28', '#4a2c16'];
     g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(34, 33, 30, 1.3, 0, 0, Math.PI * 2); g.fill();
-    // coche: caja de madera pintada, parantes blancos, techo blanco con borde turquesa, pescante
-    g.fillStyle = '#2a2a30'; g.fillRect(4, 22.6, 30, 1);
-    g.fillStyle = lin(g, 0, 14, 0, 23, [L, C, D]); rrect(g, 3, 14.4, 31, 8.4, 0.6); g.fill();
-    g.strokeStyle = 'rgba(60,20,0,.45)'; g.lineWidth = 0.3; for (let y = 16.4; y < 22.4; y += 2) { g.beginPath(); g.moveTo(3.2, y); g.lineTo(33.8, y); g.stroke(); }
-    g.fillStyle = '#3a2e28'; g.fillRect(3.4, 6.4, 30.2, 8);                                                                               // adentro
-    g.fillStyle = '#3a9a8a'; rrect(g, 6, 11.6, 14, 2.8, 0.6); g.fill();                                                                   // asiento
-    g.fillStyle = '#2c3e6b'; rrect(g, 26.4, 11.4, 5.6, 3, 0.8); g.fill();                                                                 // carrero
-    g.fillStyle = lin(g, 26, 6, 32, 12, ['#f6f2e8', '#d8d2c0', '#a8a294']); rrect(g, 26.8, 7.6, 4.6, 5, 1.4); g.fill();
-    g.fillStyle = '#c98b5c'; g.beginPath(); g.ellipse(29.4, 6.6, 1.3, 1.4, 0, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#d8be78'; g.beginPath(); g.ellipse(29.4, 5.7, 2.6, 0.55, 0, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = '#c98b5c'; g.lineWidth = 0.8; g.lineCap = 'round'; g.beginPath(); g.moveTo(31, 9.4); g.lineTo(34.6, 11.4); g.stroke();
-    g.strokeStyle = '#3a2a1c'; g.lineWidth = 0.22; g.beginPath(); g.moveTo(34.8, 11.4); g.quadraticCurveTo(44, 11, 55, 9.5); g.stroke();   // riendas
-    g.fillStyle = '#f2f0ea'; for (const x of [3, 10.6, 18.2, 25.6, 33]) g.fillRect(x, 5.6, 1, 9); g.fillRect(3, 13.8, 31, 0.8);           // parantes y baranda
-    g.fillStyle = lin(g, 0, 3, 0, 5.8, ['#ffffff', '#dcd9d2']); rrect(g, 1.8, 3, 33.6, 2.8, 1); g.fill();                                  // techo
-    g.fillStyle = '#1f8a8a'; g.fillRect(2, 5.2, 33.2, 0.7);
-    g.fillStyle = lin(g, 0, 15, 0, 20, [L, C, D]); rrect(g, 34, 15.4, 4, 4.4, 0.6); g.fill();                                               // pescante
+    // coche (de las fotos reales): cabina atrás con caja pintada abajo y pared blanca arriba con ventanas abiertas, techo blanco
+    // con vuelo sobre el pescante, carrero adelante y un solo eje con ruedas chicas de goma
+    const WH = '#f4f2ec', X = '#2c2420';
+    g.fillStyle = '#2a2a30'; g.fillRect(3, 22.4, 38, 1);                                                                                  // chasis
+    g.fillStyle = lin(g, 0, 15, 0, 22.6, [L, C, D]); rrect(g, 3, 15.2, 22, 7.4, 0.6); g.fill();                                          // caja pintada
+    g.strokeStyle = 'rgba(0,30,60,.35)'; g.lineWidth = 0.3; for (const y of [17.2, 19.2, 21]) { g.beginPath(); g.moveTo(3.2, y); g.lineTo(24.8, y); g.stroke(); }
+    g.fillStyle = WH; g.fillRect(3, 5.2, 22, 10);                                                                                          // pared blanca
+    g.fillStyle = X; g.fillRect(5, 7.6, 7.6, 6.4); g.fillRect(14.4, 7.6, 7.6, 6.4);                                                       // ventanas abiertas
+    g.fillStyle = C; g.fillRect(6.5, 12, 14, 1.4); g.fillRect(5, 13.8, 7.6, 0.5); g.fillRect(14.4, 13.8, 7.6, 0.5);                        // banco y marcos
+    g.fillStyle = '#2a2a30'; g.beginPath(); g.arc(3.9, 10.6, 1.3, 0, Math.PI * 2); g.fill(); g.fillStyle = WH; g.beginPath(); g.arc(3.9, 10.6, 0.8, 0, Math.PI * 2); g.fill();
+    g.fillStyle = X; g.fillRect(25, 7, 12, 15.4);                                                                                          // hueco del pescante
+    g.fillStyle = lin(g, 0, 17, 0, 20, [L, C]); rrect(g, 27, 17.6, 9, 2.6, 0.5); g.fill();                                                // asiento
+    g.fillStyle = '#3a4a6a'; rrect(g, 28, 15.6, 9.4, 2.2, 0.8); g.fill(); rrect(g, 35.6, 15.6, 2.2, 6.6, 0.8); g.fill();                  // piernas
+    g.fillStyle = '#6a7a8a'; rrect(g, 28.4, 8.8, 3.6, 7.2, 1.2); g.fill();                                                                // torso
+    g.fillStyle = '#c98b5c'; g.beginPath(); g.ellipse(30.2, 7.2, 1.5, 1.7, 0, 0, Math.PI * 2); g.fill();                                  // cabeza
+    g.fillStyle = '#2a3a5a'; rrect(g, 28.4, 5.2, 4.2, 1.5, 0.6); g.fill();                                                                // gorra
+    g.strokeStyle = '#c98b5c'; g.lineWidth = 0.9; g.lineCap = 'round'; g.beginPath(); g.moveTo(31.2, 11.4); g.lineTo(35, 13.4); g.stroke();
+    g.strokeStyle = '#3a2a1c'; g.lineWidth = 0.22; g.beginPath(); g.moveTo(35.2, 13.4); g.quadraticCurveTo(44, 12.6, 55, 9.5); g.stroke();   // riendas
+    g.fillStyle = WH; g.fillRect(36.4, 3.4, 0.9, 19); g.fillRect(24.6, 4.6, 1, 11);                                                        // parantes
+    g.fillStyle = lin(g, 0, 3, 0, 5.8, ['#ffffff', '#dcd9d2']); rrect(g, 2, 3, 36, 2.8, 1.1); g.fill();                                    // techo blanco con vuelo
+    g.fillStyle = C; g.fillRect(2.4, 5.3, 35.2, 0.7);                                                                                      // borde de color
     // vara y arnés
-    g.strokeStyle = '#5a4430'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(37, 18.5); g.lineTo(49, 15); g.stroke();
+    g.strokeStyle = '#3a2a1c'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(37, 20.6); g.lineTo(49, 16); g.stroke();
     // caballo
     const legs = [[44.5, 0.06], [46.6, -0.12], [53.4, 0.1], [55.4, -0.08]];
     legs.forEach(([x, a], i) => { g.save(); g.translate(x, 18); g.rotate(a); g.fillStyle = lin(g, -1, 0, 1, 0, i % 2 ? [HB[1], HB[2]] : [HB[0], HB[1]]); rrect(g, -0.75, 0, 1.5, 10, 0.6); g.fill(); g.fillStyle = '#2a2420'; rrect(g, -0.9, 9.4, 1.8, 1.4, 0.4); g.fill(); g.restore(); });
@@ -194,7 +199,7 @@
     g.fillStyle = '#101010'; g.beginPath(); g.arc(61.9, 5.6, 0.35, 0, Math.PI * 2); g.fill();
     g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.ellipse(48.5, 13, 4.6, 1.3, -0.1, 0, Math.PI * 2); g.fill();
     // ruedas chicas de goma
-    for (const x of [10, 28]) { g.fillStyle = '#17171a'; g.beginPath(); g.arc(x, 27.6, 4.6, 0, Math.PI * 2); g.fill(); g.fillStyle = lin(g, 0, 24.6, 0, 30.6, ['#e8ecf2', '#8a8e96']); g.beginPath(); g.arc(x, 27.6, 2.5, 0, Math.PI * 2); g.fill(); g.fillStyle = '#4a4e56'; g.beginPath(); g.arc(x, 27.6, 0.8, 0, Math.PI * 2); g.fill(); }
+    for (const x of [10]) { g.fillStyle = '#17171a'; g.beginPath(); g.arc(x, 27.6, 4.6, 0, Math.PI * 2); g.fill(); g.fillStyle = lin(g, 0, 24.6, 0, 30.6, ['#e8ecf2', '#8a8e96']); g.beginPath(); g.arc(x, 27.6, 2.5, 0, Math.PI * 2); g.fill(); g.fillStyle = '#4a4e56'; g.beginPath(); g.arc(x, 27.6, 0.8, 0, Math.PI * 2); g.fill(); }
   };
 
   // ---------- motos ----------
