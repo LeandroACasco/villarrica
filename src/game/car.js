@@ -512,6 +512,7 @@ VR.Car = class {
   // giro con velocidad angular (w) que también cambian los choques.
   physics(dt, throttle, steer, brake, parked = false) {
     this.px = this.x; this.py = this.y; this.pa = this.a;
+    if (this.bounceT > 0) { this.bounceT -= dt; throttle = 0; }
     if (this.vx === undefined) { this.vx = Math.sin(this.a) * this.v; this.vy = -Math.cos(this.a) * this.v; this.w = 0; }
     const sp = this.spec, [max, gripF] = this.topSpeed();
     let fx = Math.sin(this.a), fy = -Math.cos(this.a), rx = Math.cos(this.a), ry = Math.sin(this.a);
@@ -561,10 +562,35 @@ VR.Car = class {
   // podía meterse entre dos puntos del costado de un auto). Devuelve los puntos tocados y el primer vehículo.
   contacts(x, y, a) {
     const W = this.world, S = VR.TILE, pts = [];
-    for (const [px, py] of this.points(x, y, a)) if (W.solid(Math.floor(px / S), Math.floor(py / S))) pts.push(px, py);
+    let nx = 0, ny = 0;                              // normal del choque (suma ponderada; apunta del obstáculo hacia el vehículo)
+    // paredes: puntos del contorno dentro de una baldosa sólida; la normal sale de la cara libre más cercana de esa baldosa
+    for (const [px, py] of this.points(x, y, a)) {
+      const tx = Math.floor(px / S), ty = Math.floor(py / S);
+      if (!W.solid(tx, ty)) continue;
+      pts.push(px, py);
+      const fx = px - tx * S, fy = py - ty * S;
+      let bd = 1e9, bx = 0, by = 0;
+      if (fx < bd && !W.solid(tx - 1, ty)) { bd = fx; bx = -1; by = 0; }
+      if (S - fx < bd && !W.solid(tx + 1, ty)) { bd = S - fx; bx = 1; by = 0; }
+      if (fy < bd && !W.solid(tx, ty - 1)) { bd = fy; bx = 0; by = -1; }
+      if (S - fy < bd && !W.solid(tx, ty + 1)) { bd = S - fy; bx = 0; by = 1; }
+      if (bd < 1e8) { const w = 1 / (1 + bd); nx += bx * w; ny += by * w; }
+    }
     let other = null;
-    if (this.ghost > 0) return pts.length ? { pts, other } : null; // Mbohasa adelantando: pasa por encima de otros vehículos un ratito
     const A = VR.obb(x, y, a, this.spec.len / 2, this.spec.wid / 2), r = A.ex + 2;
+    // postes y bancos (círculos chicos): el punto del rectángulo más cercano al círculo
+    if (W.propsNear) {
+      const pr = VR._pr || (VR._pr = []); pr.length = 0;
+      for (const c of W.propsNear(x - r - 4, y - r - 4, x + r + 4, y + r + 4, pr)) {
+        const dx = c.x - x, dy = c.y - y, u = VR.clamp(dx * A.fx + dy * A.fy, -A.hl, A.hl), v = VR.clamp(dx * A.rx + dy * A.ry, -A.hw, A.hw);
+        const qx = x + A.fx * u + A.rx * v, qy = y + A.fy * u + A.ry * v, ex = qx - c.x, ey = qy - c.y, d = Math.hypot(ex, ey);
+        if (d >= c.r) continue;
+        pts.push(qx, qy);
+        if (d > 0.01) { nx += ex / d * 1.5; ny += ey / d * 1.5; } else { nx += x - c.x; ny += y - c.y; }
+      }
+      pr.length = 0;
+    }
+    if (this.ghost > 0) return pts.length ? { pts, other, nx, ny } : null; // Mbohasa adelantando: pasa por encima de otros vehículos un ratito
     for (const o of W.carsIn(x - r - 30, y - r - 30, x + r + 30, y + r + 30, VR._near || (VR._near = []))) {
       if (o === this || o.ghost > 0) continue;
       const B = VR.obb(o.x, o.y, o.a, o.spec.len / 2, o.spec.wid / 2);
@@ -574,9 +600,17 @@ VR.Car = class {
       for (const [px, py] of VR.obbCorners(A)) if (VR.obbIn(B, px, py)) { pts.push(px, py); n++; }
       for (const [px, py] of VR.obbCorners(B)) if (VR.obbIn(A, px, py)) { pts.push(px, py); n++; }
       if (!n) pts.push((x + o.x) / 2, (y + o.y) / 2);
+      // normal: el eje de menor solapamiento (el de la cara que se golpea), orientado de B hacia A
+      const dx = x - o.x, dy = y - o.y; let bo = 1e9, bax = 0, bay = 0;
+      for (const [ax, ay] of [[A.fx, A.fy], [A.rx, A.ry], [B.fx, B.fy], [B.rx, B.ry]]) {
+        const ra = A.hl * Math.abs(A.fx * ax + A.fy * ay) + A.hw * Math.abs(A.rx * ax + A.ry * ay), rb = B.hl * Math.abs(B.fx * ax + B.fy * ay) + B.hw * Math.abs(B.rx * ax + B.ry * ay);
+        const dd = dx * ax + dy * ay, ov = ra + rb - Math.abs(dd);
+        if (ov < bo) { bo = ov; const sg = dd >= 0 ? 1 : -1; bax = ax * sg; bay = ay * sg; }
+      }
+      nx += bax * 2; ny += bay * 2;
     }
     VR._near.length = 0;
-    return pts.length ? { pts, other } : null;
+    return pts.length ? { pts, other, nx, ny } : null;
   }
   // mover en pasos chicos; al chocar: rebote (según el ángulo), roce contra la pared, giro por el golpe
   // y, si es otro vehículo, intercambio de impulso (lo empujás)
@@ -601,7 +635,8 @@ VR.Car = class {
       let mx = 0, my = 0, k = c.pts.length / 2;
       for (let j = 0; j < c.pts.length; j += 2) { mx += c.pts[j]; my += c.pts[j + 1]; }
       mx /= k; my /= k;
-      let nnx = nx - mx, nny = ny - my, nl = Math.hypot(nnx, nny);
+      let nnx = c.nx, nny = c.ny, nl = Math.hypot(nnx, nny);
+      if (nl < 0.05) { nnx = nx - mx; nny = ny - my; nl = Math.hypot(nnx, nny); }   // sin normal clara: desde los puntos tocados hacia el centro
       if (nl < 0.01) { nnx = -this.vx; nny = -this.vy; nl = Math.hypot(nnx, nny) || 1; }
       nnx /= nl; nny /= nl;
       const o = c.other;
@@ -610,7 +645,7 @@ VR.Car = class {
         if (o.vx === undefined) { o.vx = Math.sin(o.a) * o.v; o.vy = -Math.cos(o.a) * o.v; o.w = 0; }
         const rvn = (this.vx - o.vx) * nnx + (this.vy - o.vy) * nny;
         if (rvn < 0) {
-          const e = 0.35, J = -(1 + e) * rvn / (1 / this.mass + 1 / o.mass);
+          const e = 0.55, J = -(1 + e) * rvn / (1 / this.mass + 1 / o.mass);
           this.vx += J / this.mass * nnx; this.vy += J / this.mass * nny;
           o.vx -= J / o.mass * nnx; o.vy -= J / o.mass * nny;
           // giro de los dos según dónde fue el golpe
@@ -624,17 +659,18 @@ VR.Car = class {
       } else {
         const vn = this.vx * nnx + this.vy * nny;
         if (vn < 0) {
-          const e = 0.3;
+          const e = 0.5;   // rebote (13/11/2026): antes 0,3 y con la normal torcida: el auto se quedaba pegado a la pared
           this.vx -= (1 + e) * vn * nnx; this.vy -= (1 + e) * vn * nny;
           // roce: pierde algo de la velocidad que va a lo largo de la pared
           const tx = this.vx - (this.vx * nnx + this.vy * nny) * nnx, ty = this.vy - (this.vx * nnx + this.vy * nny) * nny;
-          this.vx -= tx * 0.04; this.vy -= ty * 0.04; // resbala a lo largo de la pared (antes frenaba más)
+          this.vx -= tx * 0.025; this.vy -= ty * 0.025; // resbala a lo largo de la pared (antes frenaba más)
           const cx = mx - nx, cy = my - ny;
           this.w += (cx * nny - cy * nnx) * (-vn) * 0.0022;
           impact = -vn;
         }
       }
       this.w = VR.clamp(this.w, -6, 6);
+      if (this.driven && impact > 45) this.bounceT = Math.min(0.4, 0.1 + impact / 600);   // tras un golpe fuerte el motor «suelta» un instante: el auto rebota en vez de empujarse contra lo que chocó
       if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); if (this.driven && this.type === 'moto' && impact > 140 && VR.onEject) VR.onEject(this, impact); else if (this.ai && this.type === 'moto' && impact > 110 && VR.caidas) VR.caidas.motoDown(this, impact); if (impact > 55 && VR.addDent) { VR.addDent(this, mx, my, impact); if (o) VR.addDent(o, mx, my, impact * 0.8); } }
       // no se mete en la pared: si el giro solo ya lo traba, no gira; y si quedó pegado, se separa un poco
       if (!this.contacts(this.x, this.y, na)) this.a = na;

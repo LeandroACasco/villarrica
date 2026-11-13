@@ -133,6 +133,26 @@ VR.World = class {
     for (const d of this.decals) add('d', d, d.x * S, d.y * S, (d.x + d.w) * S, (d.y + d.h) * S);
     for (const e of this.diag || []) { const m = e.hs + 40; add('r', e, Math.min(e.ax, e.bx) - m, Math.min(e.ay, e.by) - m, Math.max(e.ax, e.bx) + m, Math.max(e.ay, e.by) + m); }
     this.cw = cw; this.chh = chh;
+    this.buildProps();
+  }
+  // Obstáculos finos que los vehículos no deben atravesar (13/11/2026, pedido de Leandro): faroles y bancos de las plazas y
+  // parques. Son círculos chicos (x, y, r) en una grilla de 32 px; `contacts` de car.js los prueba contra el rectángulo del vehículo.
+  buildProps() {
+    const S = VR.TILE, G = this.props = new Map();
+    const add = (x, y, r) => { const o = { x, y, r }; for (let cy = Math.floor((y - r) / 32); cy <= Math.floor((y + r) / 32); cy++) for (let cx = Math.floor((x - r) / 32); cx <= Math.floor((x + r) / 32); cx++) { const k = cx + cy * 65536; let l = G.get(k); if (!l) G.set(k, l = []); l.push(o); } };
+    for (const d of this.decals || []) {
+      if (d.kind === 'farol_parque') add(d.x * S + 8, (d.y + 2) * S + 10, 3.5);
+      else if (d.kind === 'banco') {
+        if (d.fa !== undefined) { const q = d.fa - Math.PI / 2; for (const o of [-5.5, 0, 5.5]) add(d.px + Math.cos(q) * o, d.py + Math.sin(q) * o + 1, 4.5); }
+        else if (d.f === 's') for (const o of [3, 8, 13]) add(d.x * S + o, d.y * S + 5, 4.5);
+        else for (const o of [3, 8, 13]) add(d.x * S + 8, d.y * S + o - 1, 4.5);
+      }
+    }
+  }
+  propsNear(x0, y0, x1, y1, out) {
+    const G = this.props; if (!G) return out;
+    for (let cy = Math.floor(y0 / 32); cy <= Math.floor(y1 / 32); cy++) for (let cx = Math.floor(x0 / 32); cx <= Math.floor(x1 / 32); cx++) { const l = G.get(cx + cy * 65536); if (l) for (const o of l) if (!out.includes(o)) out.push(o); }
+    return out;
   }
 
   chunk(cx, cy) {
