@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 4c98d238 · 2026-11-13</div>
+  <div class="tVer">Versión aa0a3009 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 4c98d238 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión aa0a3009 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -6098,14 +6098,25 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     M.box(0.72, 1.1, 3.9, 4.7, 2.4, 3.7, '#d8302a');
     // guardabarros delantero (arco concéntrico a la rueda)
     const fz = (y) => 3.1 + Math.sqrt(Math.max(0, 3.65 * 3.65 - (y - 3.2) * (y - 3.2)));
-    M.loft(0.9, 5.5, 0.4, (y) => ({ w: 1.2, zb: fz(y) - 0.45, zt: fz(y) }), C, 10);
+    M.loft(0.9, 5.5, 0.4, (y) => ({ w: pl([[0.9, 1.0], [3.2, 1.6], [5.5, 1.5]], y), zb: fz(y) - 0.45, zt: fz(y) }), C, 10);
     // horquilla (dos botellas) y manubrio
     for (const sg of [-1, 1]) M.tube([sg * 1.0, 3.2, 3.1], [sg * 1.0, 6.9, 11.0], 0.24, CH);
     M.loft(5.6, 10.4, 0.35, (y) => { const zt = pl([[5.6, 8.2], [6.4, 9.2], [7.2, 9.7], [7.9, 9.2], [8.6, 8.2], [9.4, 7], [10.4, 6.3]], y), zb = pl([[5.6, 5.4], [9, 4.2], [10.4, 4]], y); return { w: pl([[5.6, 1.9], [6.8, 2.4], [8.5, 2.3], [10.4, 1.5]], y), zb, zt }; }, C, 14, 2.6); // escudo
-    M.loft(6.0, 8.2, 0.3, (y) => ({ w: 1.9 - 0.12 * Math.abs(y - 7.1), zb: 9.4, zt: 11.3 }), C, 14, 2.4);                        // faro
-    M.face([[-1.0, 5.98, 9.7], [1.0, 5.98, 9.7], [1.0, 5.98, 10.9], [-1.0, 5.98, 10.9]], t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0', [0, 7.1, 10.3]);
+    // cabeza (tapa del manubrio) en cuña, como la Fusion: angosta adelante, con el faro trapezoidal inclinado
+    M.loft(6.0, 8.3, 0.3, (y) => ({ w: pl([[6.0, 1.25], [6.9, 1.75], [8.3, 1.9]], y), zb: pl([[6.0, 9.4], [8.3, 9.7]], y), zt: pl([[6.0, 10.5], [7.0, 11.3], [8.3, 11.0]], y) }), C, 14, 2.4);
+    const lamp = M.face([[-1.05, 5.97, 10.45], [1.05, 5.97, 10.45], [0.62, 5.97, 9.55], [-0.62, 5.97, 9.55]], '#c9d6e6', [0, 7.1, 10.2]);   // marco plateado del faro
+    lamp.d.push({ p: [[-0.9, 5.95, 10.3], [0.9, 5.95, 10.3], [0.52, 5.95, 9.7], [-0.52, 5.95, 9.7]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.3, 5.93, 10.15], [0.3, 5.93, 10.15], [0.3, 5.93, 9.85], [-0.3, 5.93, 9.85]], c: rgb('#8a7a40') });
+    // cara negra del escudo con las luces de posición en las puntas, como la Fusion
+    const cara = M.face([[-1.55, 5.58, 8.1], [1.55, 5.58, 8.1], [1.2, 5.58, 6.3], [-1.2, 5.58, 6.3]], '#14161c', [0, 8, 7]);
+    for (const sg of [-1, 1]) cara.d.push({ p: [[sg * 1.5, 5.56, 7.95], [sg * 1.15, 5.56, 7.75], [sg * 1.0, 5.56, 7.1], [sg * 1.3, 5.56, 7.4]], c: rgb('#cfe4ff') });
+    for (const sg of [-1, 1]) M.tube([sg * 2.1, 6.4, 8.0], [sg * 2.6, 6.5, 8.0], 0.32, '#f0a020', 6);                              // luces de giro ámbar
+    // manubrio, puños y espejos grandes con vidrio oscuro
     M.tube([-2.9, 7.2, 11.2], [2.9, 7.2, 11.2], 0.2, DK);
-    for (const sg of [-1, 1]) { M.tube([sg * 2.35, 7.2, 11.2], [sg * 3.0, 7.2, 11.2], 0.34, '#101012'); M.tube([sg * 2.5, 7.2, 11.3], [sg * 2.8, 7.4, 12.9], 0.11, DK, 4); M.box(sg > 0 ? 2.3 : -3.3, sg > 0 ? 3.3 : -2.3, 7.25, 7.5, 12.9, 13.6, '#7a7e86'); }
+    for (const sg of [-1, 1]) {
+      M.tube([sg * 2.3, 7.2, 11.2], [sg * 3.1, 7.2, 11.2], 0.34, '#101012'); M.tube([sg * 2.5, 7.2, 11.3], [sg * 2.9, 7.5, 13.0], 0.1, DK, 4);
+      const mir = M.box(sg > 0 ? 2.35 : -3.45, sg > 0 ? 3.45 : -2.35, 7.3, 7.6, 12.9, 14.5, C); mir[3].d.push({ p: [[sg * 2.5, 7.62, 13.1], [sg * 3.3, 7.62, 13.1], [sg * 3.3, 7.62, 14.3], [sg * 2.5, 7.62, 14.3]].map((q) => q), c: rgb('#1b2230') });
+    }
+    M.box(-1.3, 1.3, 7.9, 8.9, 10.4, 11.3, '#1c1d22')[5].d.push({ p: [[-0.8, 8.1, 11.32], [0.8, 8.1, 11.32], [0.8, 8.7, 11.32], [-0.8, 8.7, 11.32]], c: rgb('#6f93c4') }); // tablero
     // piso, motor, chasis y brazo oscilante
     M.box(-2.2, 2.2, 8.8, 11.2, 5.4, 6.3, '#3a3a40');
     const eng = M.box(-1.7, 1.7, 8.6, 13.2, 1.5, 4.6, ENG);
