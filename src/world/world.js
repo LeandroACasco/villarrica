@@ -10,6 +10,7 @@ VR.World = class {
     this.street = new Uint8Array(N); // índice+1 en this.streets (calle más cercana)
     this.area = new Uint8Array(N);   // índice+1 en this.areas (plazas y parques)
     this.barrio = new Uint8Array(N); // índice+1 en this.barrios (barrios del INE)
+    this.nivel = null;               // nivel socioeconómico por baldosa (0-5), si el mapa lo trae
     this.bid = new Uint16Array(N);   // edificio de cada celda (índice+1 en this.buildings)
     this.buildings = []; this.trees = []; this.decals = []; this.labels = [];
     this.inSenda = () => false;
@@ -102,6 +103,13 @@ VR.World = class {
     if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return null;
     const b = this.barrio[ty * this.w + tx];
     return b ? this.barrios[b - 1] : null;
+  }
+  // nivel socioeconómico del INE en ese punto: 0 sin dato, 1 Bajo, 2 Medio bajo, 3 Medio, 4 Medio alto, 5 Alto
+  nivelAt(px, py) {
+    if (!this.nivel) return 0;
+    const tx = Math.floor(px / VR.TILE), ty = Math.floor(py / VR.TILE);
+    if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return 0;
+    return this.nivel[ty * this.w + tx];
   }
   // edificio rectangular (barrio de prueba)
   addBuilding(b) {
@@ -1259,7 +1267,7 @@ VR.decorTop = {
 VR.loadMap = async (url) => {
   const res = await fetch(url, { cache: 'no-cache' });  // que el celular no use un mapa viejo del caché HTTP
   if (!res.ok) throw new Error('No se pudo bajar el mapa (' + res.status + ')');
-  const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 52000000);
+  const raw = Inflate.inflateRaw(new Uint8Array(await res.arrayBuffer()), 0, 58000000);
   const jl = raw[0] | (raw[1] << 8) | (raw[2] << 16) | (raw[3] << 24);
   const meta = JSON.parse(new TextDecoder().decode(raw.subarray(4, 4 + jl)));
   const w = new VR.World(meta.w, meta.h), N = meta.w * meta.h;
@@ -1273,6 +1281,7 @@ VR.loadMap = async (url) => {
     w.buildings.push({ x0, x1, door: (x0 + x1) >> 1, floors, rt: P.types[rt], roof: P.roofs[rt][rc], wall: P.walls[wc], shop: !!shop, awning: P.awnings[awn] });
   }
   for (let i = 0; i < meta.nt; i++) w.trees.push({ x: tr[i * 4], y: tr[i * 4 + 1], r: tr[i * 4 + 2], pal: tr[i * 4 + 3] });
+  if (meta.nivel) w.nivel = u8(); // capa de nivel socioeconómico (va al final de map.bin)
   w.sendas = (meta.decals || []).filter((d) => d.kind === 'senda');
   { const c = (meta.decals || []).find((d) => d.kind === 'cuartel'); if (c) w.firehouse = { x: (c.x + 6) * VR.TILE, y: (c.ry + 1) * VR.TILE + 2, d: c }; }
   w.inSenda = (tx, ty) => { for (const d of w.sendas) { const ux = d.bx - d.ax, uy = d.by - d.ay, L = Math.hypot(ux, uy), px = tx + 0.5 - d.ax, py = ty + 0.5 - d.ay, t = (px * ux + py * uy) / (L * L);

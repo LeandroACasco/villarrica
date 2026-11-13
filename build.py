@@ -19,7 +19,7 @@ def build():
         shutil.copy(root / 'icons' / f, docs / 'icons' / f)
     # mapa: se vuelve a generar solo si cambió el .osm o el convertidor
     osm, conv, mp = root / 'data/villarrica.osm.gz', root / 'tools/osm_to_map.py', docs / 'map.bin'
-    deps = [osm, conv, root / 'data/barrios_ine.json']
+    deps = [osm, conv, root / 'data/barrios_ine.json', root / 'data/nivel_ine.json']
     if not mp.exists() or mp.stat().st_mtime < max(d.stat().st_mtime for d in deps):
         subprocess.run([sys.executable, str(conv), str(osm), str(mp)], check=True)
     code = '\n'.join('// ===== %s =====\n%s' % (s, (root / 'src' / s).read_text()) for s in SCRIPTS)

@@ -21,6 +21,7 @@ from PIL import Image, ImageDraw
 M_PER_TILE = 2.0
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BARRIOS = ROOT / 'data/barrios_ine.json'
+NIVEL = ROOT / 'data/nivel_ine.json'  # nivel socioeconómico del INE (Censo 2022) por polígono: 1 Bajo … 5 Alto
 # tipos de tile (iguales a VR.T en src/world/tiles.js)
 GRASS, ROAD, SIDEWALK, BUILDING, PAVING, TREE, MONUMENT, DIRT, WATER, STONE, DIRTROAD, CHECKER, PLAZADIRT, LAGUNA, SENDERO, LADRILLO = range(16)
 # LAGUNA: agua verde oliva de la laguna Ykua Pytã; SENDERO: tierra clara apisonada; LADRILLO: piso de ladrillo del parque (10/11/2026)
@@ -273,6 +274,21 @@ def main(src, out, preview=None):
                 poly(brd, [T(place(*proj(la, lo))) for lo, la in pl[0]], len(barrio_names))
     except FileNotFoundError:
         print('(sin barrios del INE)')
+
+    # ---------- nivel socioeconómico (INE) ----------
+    # un valor por baldosa: 0 sin dato, 1 Bajo, 2 Medio bajo, 3 Medio, 4 Medio alto, 5 Alto (el juego lo lee con world.nivelAt)
+    nivel_im, nvd = canvas()
+    has_nivel = False
+    try:
+        gj = json.loads(NIVEL.read_text())
+        for f in gj['features']:
+            g = f['geometry']
+            polys = g['coordinates'] if g['type'] == 'MultiPolygon' else [g['coordinates']]
+            for pl in polys:
+                poly(nvd, [T(place(*proj(la, lo))) for lo, la in pl[0]], int(f['properties']['nivel']))
+        has_nivel = True
+    except FileNotFoundError:
+        print('(sin nivel socioeconómico del INE)')
 
     # ---------- áreas ----------
     wood_im, wd = canvas()
@@ -1372,12 +1388,13 @@ def main(src, out, preview=None):
     roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'swidths': [ROADS[k][1] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
     meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'pois': {k: [int(v[0]), int(v[1])] for k, v in poi_pos.items()}, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
             'spawn': spawn, 'nb': len(ids), 'nt': len(trees), 'bounds': [mnla, mnlo, mxla, mxlo], 'rot': round(ang, 3),
-            'credit': '© colaboradores de OpenStreetMap (ODbL) · barrios: INE Paraguay'}
+            'nivel': has_nivel,
+            'credit': '© colaboradores de OpenStreetMap (ODbL) · barrios y nivel socioeconómico: INE Paraguay'}
     js = json.dumps(meta, ensure_ascii=False).encode()
     tarr = np.array([v for t in trees for v in t], np.uint16)
     payload = b''.join([struct.pack('<I', len(js)), js, tiles.tobytes(), line.tobytes(), street.astype(np.uint8).tobytes(),
                         area.tobytes(), barrio.astype(np.uint8).tobytes(), bid.astype('<u2').tobytes(),
-                        np.array(bdata, '<u2').tobytes(), tarr.astype('<u2').tobytes()])
+                        np.array(bdata, '<u2').tobytes(), tarr.astype('<u2').tobytes()] + ([np.asarray(nivel_im).astype(np.uint8).tobytes()] if has_nivel else []))
     comp = zlib.compressobj(9, zlib.DEFLATED, -15)
     data = comp.compress(payload) + comp.flush()
     open(out, 'wb').write(data)
