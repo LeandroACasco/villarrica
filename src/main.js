@@ -107,7 +107,7 @@
   VR.emer = emer;
   const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
   VR.weapons = weapons;
-  VR.audio.setOn(VR.store.get('snd', true));
+  VR.audio.setOn(VR.store.get('snd', true)); VR.audio.setVol(VR.store.get('vol', 0.6));
   if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
     vida.onMsg = (m) => toast(m);
     vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios), 'hospital'); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
@@ -839,6 +839,7 @@
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
+  $('optVol').value = Math.round(VR.audio.vol * 100); $('optVolN').textContent = Math.round(VR.audio.vol * 100) + '%'; $('optVol').oninput = (e) => { VR.audio.setVol(e.target.value / 100); $('optVolN').textContent = e.target.value + '%'; VR.store.set('vol', e.target.value / 100); if (!VR.audio.on) return; VR.audio.resume(); VR.audio.coin(); };
   $('optSnd').checked = emer ? emer.sound : true; $('optSnd').onchange = (e) => { if (emer) emer.sound = e.target.checked; VR.audio.setOn(e.target.checked); VR.store.set('snd', e.target.checked); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
   if (weapons) {
@@ -1164,7 +1165,8 @@
       car: c ? { i, type: c.type, model: c.model, color: c.color, tune: c.tune || null, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
   };
   setInterval(savePos, 3000);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } VR.audio.hold(document.hidden); });
+  window.addEventListener('pagehide', () => VR.audio.hold(true)); window.addEventListener('pageshow', () => VR.audio.hold(document.hidden));
   addEventListener('pagehide', savePos);
 
   addEventListener('resize', () => VR.screen.fit());

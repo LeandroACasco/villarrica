@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 8de01005 · 2026-11-13</div>
+  <div class="tVer">Versión 31040b52 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -480,6 +480,7 @@
     <h3>Opciones</h3>
     <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
     <label class="chk"><input type="checkbox" id="optSnd"> Sonido (sirenas)</label>
+    <label class="chk" style="gap:10px">🔊 Volumen <input type="range" id="optVol" min="0" max="100" step="5" style="flex:1;min-width:120px"> <span id="optVolN" style="min-width:38px;text-align:right">60%</span></label>
     <label class="chk"><input type="checkbox" id="optVib"> Vibración</label>
     <h3>Desarrollador</h3>
     <label class="chk"><input type="checkbox" id="optArmas"> Armas (pistola y lanzallamas)</label>
@@ -508,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 8de01005 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 31040b52 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -954,19 +955,23 @@ VR.gfx = {
 // que también usa la sirena. El volumen baja con la distancia a la cámara. Menú → Sonido lo apaga todo.
 'use strict';
 VR.audio = {
-  ac: null, master: null, on: true, failed: false, noiseBuf: null,
+  ac: null, master: null, on: true, vol: 0.6, failed: false, noiseBuf: null,
   ctx() {
     if (this.ac || this.failed) return this.ac;
     try {
       const AC = window.AudioContext || window.webkitAudioContext; this.ac = new AC();
-      this.master = this.ac.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.ac.destination);
+      this.master = this.ac.createGain(); this.master.gain.value = this.on ? this.vol * this.vol : 0; this.master.connect(this.ac.destination);
       const n = this.ac.sampleRate, b = this.ac.createBuffer(1, n, n), d = b.getChannelData(0);
       for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
       this.noiseBuf = b;
     } catch (e) { this.failed = true; }
     return this.ac;
   },
-  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; },
+  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? this.vol * this.vol : 0; },
+  // volumen general 0..1 (curva cuadrática: el control se siente parejo al oído)
+  setVol(v) { this.vol = Math.max(0, Math.min(1, v)); if (this.master) this.master.gain.value = this.on ? this.vol * this.vol : 0; },
+  // al minimizar o cambiar de pestaña se congela todo el audio (si no, el motor y la sirena quedan sonando colgados)
+  hold(h) { const ac = this.ac; if (!ac) return; if (h) ac.suspend().catch(() => {}); else if (this.on) ac.resume().catch(() => {}); },
   resume() { const ac = this.ctx(); if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); },
   // volumen según la distancia (px del mapa) al punto que mira la cámara
   near(x, y, far = 520) { const c = VR.audioCam; if (!c) return 1; const d = Math.hypot(x - c.x, y - c.y); return Math.max(0, 1 - d / far); },
@@ -12275,7 +12280,7 @@ VR.Titulo = class {
   VR.emer = emer;
   const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
   VR.weapons = weapons;
-  VR.audio.setOn(VR.store.get('snd', true));
+  VR.audio.setOn(VR.store.get('snd', true)); VR.audio.setVol(VR.store.get('vol', 0.6));
   if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
     vida.onMsg = (m) => toast(m);
     vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios), 'hospital'); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
@@ -13007,6 +13012,7 @@ VR.Titulo = class {
   const paintPj = seg('segPj', 'pj', () => { player.setLook(settings.pj); if (car && car.rider) car.rider = me(); });
   $('btnPlata').onclick = () => { VR.Wallet.add(1000000); toast('💵 Ahora tenés ' + VR.fmtGs(VR.Wallet.get())); };
   $('optFps').checked = settings.fps; $('optFps').onchange = (e) => { settings.fps = e.target.checked; VR.store.set('fps', settings.fps); };
+  $('optVol').value = Math.round(VR.audio.vol * 100); $('optVolN').textContent = Math.round(VR.audio.vol * 100) + '%'; $('optVol').oninput = (e) => { VR.audio.setVol(e.target.value / 100); $('optVolN').textContent = e.target.value + '%'; VR.store.set('vol', e.target.value / 100); if (!VR.audio.on) return; VR.audio.resume(); VR.audio.coin(); };
   $('optSnd').checked = emer ? emer.sound : true; $('optSnd').onchange = (e) => { if (emer) emer.sound = e.target.checked; VR.audio.setOn(e.target.checked); VR.store.set('snd', e.target.checked); };
   $('optVib').checked = settings.vib; $('optVib').onchange = (e) => { settings.vib = VR.input.vibrate = e.target.checked; VR.store.set('vib', settings.vib); };
   if (weapons) {
@@ -13332,7 +13338,8 @@ VR.Titulo = class {
       car: c ? { i, type: c.type, model: c.model, color: c.color, tune: c.tune || null, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
   };
   setInterval(savePos, 3000);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } VR.audio.hold(document.hidden); });
+  window.addEventListener('pagehide', () => VR.audio.hold(true)); window.addEventListener('pageshow', () => VR.audio.hold(document.hidden));
   addEventListener('pagehide', savePos);
 
   addEventListener('resize', () => VR.screen.fit());

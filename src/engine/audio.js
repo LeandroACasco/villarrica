@@ -3,19 +3,23 @@
 // que también usa la sirena. El volumen baja con la distancia a la cámara. Menú → Sonido lo apaga todo.
 'use strict';
 VR.audio = {
-  ac: null, master: null, on: true, failed: false, noiseBuf: null,
+  ac: null, master: null, on: true, vol: 0.6, failed: false, noiseBuf: null,
   ctx() {
     if (this.ac || this.failed) return this.ac;
     try {
       const AC = window.AudioContext || window.webkitAudioContext; this.ac = new AC();
-      this.master = this.ac.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.ac.destination);
+      this.master = this.ac.createGain(); this.master.gain.value = this.on ? this.vol * this.vol : 0; this.master.connect(this.ac.destination);
       const n = this.ac.sampleRate, b = this.ac.createBuffer(1, n, n), d = b.getChannelData(0);
       for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
       this.noiseBuf = b;
     } catch (e) { this.failed = true; }
     return this.ac;
   },
-  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; },
+  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? this.vol * this.vol : 0; },
+  // volumen general 0..1 (curva cuadrática: el control se siente parejo al oído)
+  setVol(v) { this.vol = Math.max(0, Math.min(1, v)); if (this.master) this.master.gain.value = this.on ? this.vol * this.vol : 0; },
+  // al minimizar o cambiar de pestaña se congela todo el audio (si no, el motor y la sirena quedan sonando colgados)
+  hold(h) { const ac = this.ac; if (!ac) return; if (h) ac.suspend().catch(() => {}); else if (this.on) ac.resume().catch(() => {}); },
   resume() { const ac = this.ctx(); if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); },
   // volumen según la distancia (px del mapa) al punto que mira la cámara
   near(x, y, far = 520) { const c = VR.audioCam; if (!c) return 1; const d = Math.hypot(x - c.x, y - c.y); return Math.max(0, 1 - d / far); },

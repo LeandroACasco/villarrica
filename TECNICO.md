@@ -580,3 +580,8 @@ El vehículo se "apila": para cada altura se dibuja la silueta girada y corrida 
 ## Clima (13/11/2026)
 
 `src/game/clima.js` (`VR.clima`): lee el clima de Open-Meteo (`init`, `fetch`, caché de 30 min en `climaCache`), lo convierte en factores `f = { calor, frio, nube, lluvia }` (0..1) o usa un preset (`setMode`), y dibuja el tinte (`drawGrade`) y la lluvia (`drawRain`) en `main.js` antes de la noche. `sol.js` usa `f.nube` para aflojar las sombras y la salida/puesta reales (`VR.clima.rise/set`); `night.js` también. Configuración: sección Clima (`segClima`, clave `clima`). `?clima=` fuerza uno. Ver `claude/clima-estado.md`.
+
+
+## Volumen y audio al minimizar (13/11/2026)
+
+`VR.audio` (`src/engine/audio.js`): `vol` 0..1 (guardado en `vol`, por defecto 0,6) con curva cuadrática sobre el `master`; `setVol`. Slider en Menú → Opciones (`#optVol`), con un `coin()` de muestra al soltar. `hold(true)` suspende el AudioContext cuando la página se oculta (`visibilitychange`, `pagehide`) y `hold(false)` lo retoma, para que el motor y la sirena no queden colgados.
