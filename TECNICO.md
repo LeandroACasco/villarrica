@@ -149,7 +149,7 @@ Todo lo que es **"dónde está cada cosa en la ciudad"** se decide acá, no en e
 8. **punto de inicio**, **nombres de barrio**, **empaquetar**.
 
 ### Formato de `map.bin`
-Todo el archivo es **deflate crudo** (zlib sin cabecera). Descomprimido: `[uint32 largo del JSON][JSON meta][tiles u8 w×h][line u8][street u8][area u8][barrio u8][bid u16 (id de edificio por baldosa)][edificios u16×8 c/u][árboles u16×4 c/u]`. Lo arma la sección `empaquetar` del convertidor y lo lee `VR.loadMap()` al final de `world.js` (**si agregás una capa, cambiá los dos en el mismo orden**). El JSON `meta` tiene: `w, h, nb, nt, roads, special, streets, areas, barrios, barrioLabels, labels, decals, spawn…`.
+Todo el archivo es **deflate crudo** (zlib sin cabecera). Descomprimido: `[uint32 largo del JSON][JSON meta][tiles u8 w×h][line u8][street u8][area u8][barrio u8][bid u16 (id de edificio por baldosa)][edificios u16×8 c/u][árboles u16×4 c/u]`. Lo arma la sección `empaquetar` del convertidor y lo lee `VR.loadMap()` al final de `world.js` (**si agregás una capa, cambiá los dos en el mismo orden**). Desde el 13/11/2026, si `meta.nivel` es `true`, al final del archivo (después de los árboles) va una capa más: `[nivel u8 w×h]` (ver «Nivel socioeconómico» abajo). El JSON `meta` tiene: `w, h, nb, nt, roads, special, streets, areas, barrios, barrioLabels, labels, decals, spawn…`.
 
 ### Las "decals" (decoraciones con datos)
 Son la forma de agregar **cosas puntuales** al mapa. El convertidor agrega diccionarios a la lista `decals`:
@@ -592,3 +592,9 @@ El vehículo se "apila": para cada altura se dibuja la silueta girada y corrida 
 
 ## Taller inmersivo (13/11/2026)
 `VR.Garage` (src/game/taller.js) ya no es un diálogo: es una pantalla completa `#garView` con (arriba) el taller por dentro dibujado vectorial (`drawShop`/`drawFore`, cacheado por tamaño: pared de bloques, cartel, tablero de herramientas, estante con pintura, portón entreabierto, lámparas, piso con manchas, elevador) y el vehículo grande (`turnImg`, 64 ángulos de la vista oblicua; gira solo y se arrastra con el dedo, y se achica si queda de punta para no salirse) que se rearma en vivo al cambiar piezas, con destello, chispas o pintura en spray y neón en el piso; y (abajo) pestañas por categoría con iconos dibujados por código (`VR.garageIcon(part,key,t)`, 48×48 → 96×96, cacheados) y tarjetas de opciones con precio (la pintura y el color de franjas son círculos de color). Botones: ↺ deshacer, Reparar, Comprar, Salir (también Esc). Escala `s=min(w/460,h/330)`: funciona en vertical y horizontal.
+
+### Nivel socioeconómico del INE (13/11/2026)
+- **Datos:** `data/nivel_ine.json` = 168 polígonos de Villarrica urbano de la capa `geonode:_guaira___urbano` del INE (Censo 2022), con `barrio`, `clave`, `nivel` (1 Bajo, 2 Medio bajo, 3 Medio, 4 Medio alto, 5 Alto) y `desc`. Se bajó de `geonode.ine.gov.py` por WFS (GeoJSON, EPSG:4326) y se recortó al distrito 01. Un mismo barrio mezcla niveles (ej. Santa Lucía tiene los 4 usados).
+- **Convertidor:** la sección `# ---------- nivel socioeconómico (INE) ----------` de `tools/osm_to_map.py` pinta los polígonos en una grilla u8 (0 = sin dato) y la agrega al final de `map.bin`. `build.py` la tiene en `deps`.
+- **Juego:** `world.nivel` (Uint8Array) y `world.nivelAt(px, py)` → 0-5 en ese punto (unidades del mundo). Sirve para variar ropa de peatones, autos estacionados, casas, etc. según la zona.
+- `VR.loadMap` baja el tamaño sugerido del descompresor a 58 MB (el mapa descomprimido ocupa 56,3 MB).
