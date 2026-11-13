@@ -151,8 +151,8 @@ VR.Player = class {
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
     if (this.rag) { this.rag.draw(ctx, this.sprites, x, y); return; }
-    VR.sun.blob(ctx, x, y, 30 * VR.PS, 6 * VR.PS, 2.5 * VR.PS, 0.3);
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
+    VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.26); VR.sun.cast(ctx, img, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.3);
     const PS = VR.PS; ctx.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);
     if (this.equipo === 'canasto') { // canasto de chipa en la mano (J3)
       const r = this.dir === 'left' ? -1 : 1, bx = x + r * 4 - 3, by = y - Math.round(15 * VR.PS); ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx - 1, by - 1, 8, 6); ctx.fillStyle = '#b07a3a'; ctx.fillRect(bx, by, 6, 4); ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx + 1, by - 1, 2, 2); ctx.fillRect(bx + 3, by - 2, 2, 2); ctx.fillStyle = '#5a3a1c'; ctx.fillRect(bx + 2, by - 4, 1, 3); ctx.fillRect(bx + 3, by - 5, 1, 1); ctx.fillRect(bx + 4, by - 4, 1, 3);

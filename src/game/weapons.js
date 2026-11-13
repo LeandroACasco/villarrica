@@ -135,20 +135,43 @@ VR.Weapons = class {
     if (!this.enabled) return;
     const firing = VR.input.down('fire'), a = firing ? this.aim : ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
     if (player.dir === 'up' && !firing) return; // de espaldas no se ve
-    const [hx, hy] = this.hand(VR.lerp(player.px, player.x, al) - cx, VR.lerp(player.py, player.y, al) - cy, a);
-    ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); // el largo hacia arriba o abajo se ve acortado (vista 3/4)
-    if (this.cur === 'pistola') {
-      ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.25, -7.5, 2.5, 8.5);                                   // contorno
-      ctx.fillStyle = '#2e2e36'; ctx.fillRect(-0.75, -7, 1.5, 7); ctx.fillStyle = '#5a5a66'; ctx.fillRect(-0.75, -7, 0.5, 6); // cañón
-      ctx.fillStyle = '#1a1a20'; ctx.fillRect(-1, -1, 2, 2.5);                                          // empuñadura en la mano
-    } else {
-      ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.75, -12.5, 3.5, 14);
-      ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1.25, -12, 2.5, 12); ctx.fillStyle = '#6a6a74'; ctx.fillRect(-1.25, -12, 0.75, 11);
-      ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-1, -12.5, 2, 1.5);
-      ctx.fillStyle = '#7a1a12'; ctx.fillRect(-2.5, -1, 5, 3.5); ctx.fillStyle = '#c23a28'; ctx.fillRect(-2, -0.5, 4, 2.5); ctx.fillStyle = '#e8584a'; ctx.fillRect(-2, -0.5, 1.5, 2.5); // tanque
-    }
-    ctx.restore();
-    ctx.fillStyle = player.lookData ? VR.AV2_CAT.skin[player.lookData.skin] : '#c98b5c'; ctx.fillRect(hx - 1, hy - 1, 2, 2); // la mano encima de la empuñadura
+    const px0 = VR.lerp(player.px, player.x, al) - cx, py0 = VR.lerp(player.py, player.y, al) - cy, PS = VR.PS || 1;
+    const [hx, hy] = this.hand(px0, py0, a);
+    const Lk = player.lookData || {}, CAT = VR.AV2_CAT, skin = CAT ? CAT.skin[Lk.skin] || '#c98b5c' : '#c98b5c';
+    const sleeveless = Lk.top === 'musculosa' || Lk.top === 'top', short = Lk.top === 'remera' || Lk.top === 'polo' || Lk.top === 'camisaCorta' || Lk.top === 'camiseta';
+    const slv = sleeveless ? skin : (CAT && CAT.cloth[Lk.topColor]) || '#d8d4c8';
+    const shade = (c, f) => VR.av2Shade ? VR.av2Shade(c, f) : c;
+    // brazo: del hombro a la mano (manga arriba, antebrazo y mano abajo), con contorno oscuro
+    const sg = Math.sin(a) >= 0 ? 1 : -1, sideV = Math.abs(Math.sin(a)) > 0.6;
+    const sx = px0 + (sideV ? sg * 0.6 : 3 * PS * (Math.cos(a) < 0 ? 1 : 1)), sy = py0 - 21.5 * PS;
+    const ex = sx + (hx - sx) * 0.5 + (sideV ? 0 : 0.8 * sg), ey = sy + (hy - sy) * 0.5 + 1.6;
+    const limb = (x0, y0, x1, y1, w, col) => { const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0))); ctx.fillStyle = col; for (let i = 0; i <= n; i++) { const t = i / n; ctx.fillRect(Math.round(x0 + (x1 - x0) * t - w / 2), Math.round(y0 + (y1 - y0) * t - w / 2), w, w); } };
+    const armColors = () => {
+      limb(sx, sy, ex, ey, 3, shade(slv, 0.62)); limb(ex, ey, hx, hy, 3, shade(sleeveless || short ? skin : slv, 0.62)); // sombra/contorno suave
+      limb(sx, sy, ex, ey, 2, slv); if (!sleeveless && !short) limb(ex, ey, hx, hy, 2, slv); else limb(ex, ey, hx, hy, 2, skin);
+    };
+    const wpn = () => {
+      ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); // el largo hacia arriba o abajo se ve acortado (vista 3/4)
+      if (this.cur === 'pistola') {
+        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.5, -8, 3, 9.5);                                          // contorno
+        ctx.fillStyle = '#34343c'; ctx.fillRect(-1, -7.5, 2, 5.5); ctx.fillStyle = '#7a7a86'; ctx.fillRect(-1, -7.5, 0.6, 5); // corredera con brillo
+        ctx.fillStyle = '#9a9aa6'; ctx.fillRect(-0.3, -8.2, 0.6, 0.9);                                       // mira
+        ctx.fillStyle = '#22222a'; ctx.fillRect(-1, -2, 2, 1.2);                                              // cuerpo
+        ctx.fillStyle = '#4a3020'; ctx.fillRect(-1, -0.8, 2, 2.6); ctx.fillStyle = '#6a4630'; ctx.fillRect(-1, -0.8, 0.6, 2.4); // cacha de madera
+        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-1.6, -1.2, 0.6, 1.6);                                       // guardamonte
+      } else {
+        ctx.fillStyle = '#0c0c10'; ctx.fillRect(-2, -13, 4, 14.5);
+        ctx.fillStyle = '#3a3a42'; ctx.fillRect(-1.5, -12.5, 3, 12.5); ctx.fillStyle = '#6a6a74'; ctx.fillRect(-1.5, -12.5, 0.9, 11.5);
+        ctx.fillStyle = '#b8b4a8'; ctx.fillRect(-1.2, -13, 2.4, 1.6); ctx.fillStyle = '#e8a030'; ctx.fillRect(-0.5, -13.4, 1, 0.8); // boquilla y piloto
+        ctx.fillStyle = '#15151a'; ctx.fillRect(-1.5, -7, 3, 0.7); ctx.fillRect(-1.5, -4.5, 3, 0.7);        // abrazaderas
+        ctx.fillStyle = '#7a1a12'; ctx.fillRect(-3, -1.5, 6, 4.2); ctx.fillStyle = '#c23a28'; ctx.fillRect(-2.5, -1, 5, 3.2); ctx.fillStyle = '#e8584a'; ctx.fillRect(-2.5, -1, 1.5, 3.2); // tanque
+        ctx.fillStyle = '#2a2a30'; ctx.fillRect(-0.6, -2.4, 1.2, 1);                                         // válvula
+      }
+      ctx.restore();
+    };
+    armColors(); wpn();
+    // la mano rodea la empuñadura (por encima del arma)
+    ctx.fillStyle = shade(skin, 0.55); ctx.fillRect(Math.round(hx - 1.5), Math.round(hy - 1.5), 3, 3); ctx.fillStyle = skin; ctx.fillRect(Math.round(hx - 1), Math.round(hy - 1), 2, 2); ctx.fillStyle = shade(skin, 0.8); ctx.fillRect(Math.round(hx - 1), Math.round(hy), 2, 1);
     if (this.flash > 0 && this.cur === 'pistola') {
       const [mx, my] = this.muzzle({ x: VR.lerp(player.px, player.x, al), y: VR.lerp(player.py, player.y, al) });
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(mx - cx, my - cy, 0, mx - cx, my - cy, 6);

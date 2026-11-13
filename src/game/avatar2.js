@@ -6,6 +6,7 @@
 'use strict';
 (function (VR) {
   const SH = (h, k) => { const n = parseInt(h.slice(1), 16), f = (v) => Math.max(0, Math.min(255, Math.round(v * k))).toString(16).padStart(2, '0'); return '#' + f(n >> 16) + f((n >> 8) & 255) + f(n & 255); };
+  VR.av2Shade = SH;
   const RGB = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
   // ---------- catálogo de la tienda (precios en guaraníes) ----------
@@ -358,6 +359,14 @@
         if (L.top === 'campera' || L.top === 'hoodieAbierto') paint((g) => ell(g, 8, 7.1 + S.bob, 1.05, 0.7), skin, { shade: skinD });
         if (L.top === 'puffer') { paint((g) => poly(g, [[8 - 0.8, 7.2 + S.bob], [8 + 0.8, 7.2 + S.bob], [8, 8.6 + S.bob]]), skin, { shade: skinD }); paint((g) => { poly(g, [[8 - 1.3, 7.1 + S.bob], [8 - 0.2, 7.4 + S.bob], [8 - 0.5, 8.5 + S.bob]]); poly(g, [[8 + 1.3, 7.1 + S.bob], [8 + 0.2, 7.4 + S.bob], [8 + 0.5, 8.5 + S.bob]]); }, SH(top2, 1.1), { light: false }); }
       }
+      if (back && hasTop && L.top !== 'musculosa') { // espalda: cuello de la prenda, costura del medio, omóplatos y dobladillo (para que no se confunda con el frente)
+        paint((g) => ell(g, 8, 7.35 + S.bob, 1.7, 0.85), SH(topC, 0.74), { light: false });
+        if (k >= 2) {
+          pix(8 - 0.2, 8.6 + S.bob, SH(topC, 0.72), P, Math.round(6.5 * k)); pix(8 - 2.7 * sw, 8.5 + S.bob, SH(topC, 0.8), Math.round(5.4 * sw * k), P);
+          for (const sx of [-1, 1]) pix(8 + sx * 1.5 * sw - 0.6, 9.0 + S.bob, SH(topC, 0.8), Math.round(1.4 * k), Math.round(2.6 * k));
+          pix(8 - 2.4 * ww, 15.5 + S.bob, SH(topC, 0.7), Math.round(4.8 * ww * k), P);
+        }
+      }
       if (back && (L.top === 'buzo' || L.top === 'hoodieAbierto')) paint((g) => ell(g, 8, 7.6 + S.bob, 2.4, 1.4), SH(topC, 0.86));
       if (back && L.top === 'puffer' && k >= 2) for (let y = 9; y <= 15.4; y += 1.25) pix(8 - 3.0 * sw, y + S.bob, SH(topC, 0.62), Math.round(6 * sw * k), P);
       if (L.mochila) {
@@ -485,7 +494,7 @@
       if (st === 'pelado') { if (k >= 2) pix(hx - 0.9, hy - 1.7, SH(skin, 1.15), Math.round(1 * k), P); }
       else if (back) {
         // de espaldas: el pelo tapa toda la cabeza
-        paint((g) => { ell(g, hx, hy - 0.1, st === 'rulos' ? 2.5 : 2.08, st === 'rulos' ? 2.6 : 2.35); if (st !== 'rapado' && st !== 'degrade') g.fillRect(hx - 1.7, hy, 3.4, 1.7); }, st === 'rapado' ? SH(hair, 0.82) : H2, { shade: HD });
+        paint((g) => { ell(g, hx, hy - 0.1, st === 'rulos' ? 2.5 : 2.3, st === 'rulos' ? 2.6 : 2.5); if (st !== 'rapado' && st !== 'degrade') g.fillRect(hx - 2.0, hy, 4.0, 2.1); }, st === 'rapado' ? SH(hair, 0.82) : H2, { shade: HD });
         if (st === 'degrade' || st === 'rapado') paint((g) => g.fillRect(hx - 1.6, hy + 0.9, 3.2, 1.1), SH(skin, 0.92), { light: false, sep: false });
         if (longHair) paint((g) => { poly(g, [[hx - 2.1, hy], [hx + 2.1, hy], [hx + 2.4, 10.6 + S.bob], [hx - 2.4, 10.6 + S.bob]]); }, H2, { shade: HD });
         if (st === 'trenza') paint((g) => { for (let i = 0; i < 5; i++) ell(g, hx, 9.8 + S.bob + i * 1.0, 0.7, 0.6); }, H2, { shade: HD });

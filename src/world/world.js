@@ -318,8 +318,15 @@ VR.World = class {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const x = cx + dx, y = cy + dy; if (x < 0 || y < 0 || x >= this.cw || y >= this.chh) continue;
       for (const t of this.index[y * this.cw + x].t) {
-        const bx = t.x * S + 8, by = t.y * S + 11, [vx, vy] = sun.off(15, 40), n = Math.max(1, Math.ceil(Math.hypot(vx, vy) / 3));
-        for (let i = 0; i <= n; i++) { g.beginPath(); g.ellipse(bx + vx * i / n, by + vy * i / n, t.r * 0.85, t.r * 0.6, 0, 0, Math.PI * 2); g.fill(); }
+        // árbol: tronco fino hasta la copa + copa con lóbulos (no una elipse lisa); el tronco largo de las plazas da una sombra más larga
+        const big = this.calSet && this.calSet.has(this.area[t.y * this.w + t.x]), k = big ? 1.35 : 1, rk = t.r * k, hc = big ? rk * 1.3 + 8 : 15;
+        const bx = t.x * S + 8, by = t.y * S + 11, [vx, vy] = sun.off(hc, 44), ccx = bx + vx, ccy = by + vy;
+        g.beginPath(); g.lineWidth = big ? 2.2 : 1.8; g.strokeStyle = '#000'; g.moveTo(bx, by); g.lineTo(ccx, ccy); g.stroke();
+        g.beginPath(); g.ellipse(bx, by, 2.6, 1.3, 0, 0, Math.PI * 2); g.fill();
+        let hs = (t.x * 73856093) ^ (t.y * 19349663); const rn = () => { hs = (hs * 1103515245 + 12345) & 0x7fffffff; return hs / 0x7fffffff; };
+        g.beginPath(); g.ellipse(ccx, ccy, rk * 0.72, rk * 0.5, 0, 0, Math.PI * 2); g.fill();
+        const nl = 6 + Math.floor(rn() * 3);
+        for (let j = 0; j < nl; j++) { const an = (j / nl) * Math.PI * 2 + rn() * 0.5, d = rk * (0.45 + rn() * 0.2), lr = rk * (0.3 + rn() * 0.14); g.beginPath(); g.ellipse(ccx + Math.cos(an) * d, ccy + Math.sin(an) * d * 0.62, lr, lr * 0.68, 0, 0, Math.PI * 2); g.fill(); }
       }
     }
     g.globalCompositeOperation = 'destination-out';   // no se pinta sobre los edificios

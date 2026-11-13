@@ -397,8 +397,9 @@ VR.Emergency = class {
       const x = Math.round(VR.lerp(c.px, c.x, al) - cx), y = Math.round(VR.lerp(c.py, c.y, al) - cy);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + cy, draw: (ctx) => {
-        VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
-        ctx.drawImage(c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, 'idle', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
+        const cim = c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, 'idle', 0);
+        VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.24); VR.sun.cast(ctx, cim, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.28);
+        ctx.drawImage(cim, x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (c.say) VR.Player.prototype.drawBubble.call({ bubble: c.say, px: x + cx, x: x + cx, py: y + cy + 6, y: y + cy + 6 }, ctx, cx, cy, 1);
       } });
     }

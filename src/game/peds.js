@@ -184,7 +184,8 @@ VR.Peds = class {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
-        VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
+        const pim = p.mode === 'down' ? null : (p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8));
+        if (pim) { VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.24); VR.sun.cast(ctx, pim, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.28); } else VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
         if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal], x, y);
         else if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
         else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);

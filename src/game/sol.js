@@ -38,6 +38,17 @@ VR.sun = {
     ctx.fillStyle = 'rgba(0,0,0,' + (a * this.str).toFixed(3) + ')'; ctx.beginPath();
     ctx.ellipse(cx, cy, rx + L * 0.5, ry + 0.4, Math.atan2(this.dy, this.dx), 0, Math.PI * 2); ctx.fill();
   },
+  // sombra con la silueta real de un sprite (persona, perro): se proyecta sobre el piso inclinada hacia donde cae. El pie queda en (x, y).
+  cast(ctx, img, x, y, w, h, a = 0.3, maxLen = 34) {
+    if (!this.on || this.str < 0.03) return;
+    const sil = this._sil || (this._sil = new WeakMap());
+    let s = sil.get(img);
+    if (!s) { s = document.createElement('canvas'); s.width = img.width; s.height = img.height; const g = s.getContext('2d'); g.drawImage(img, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#000'; g.fillRect(0, 0, s.width, s.height); sil.set(img, s); }
+    const o = this.off(h, maxLen), ox = o[0], oy = Math.max(o[1], h * 0.1);
+    ctx.save(); ctx.globalAlpha = Math.min(1, a * this.str);
+    ctx.transform(1, 0, -ox / h, -oy / h, x - w / 2 + ox, y + oy); ctx.drawImage(s, 0, 0, w, h);
+    ctx.restore();
+  },
   // tinte cálido del amanecer y el atardecer (se multiplica sobre todo el cuadro)
   drawTint(ctx, sw, sh) {
     if (!this.on || this.tint < 0.02) return;
