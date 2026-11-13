@@ -80,6 +80,7 @@ VR.Night = class {
       // la fuente de los enamorados con luz rosada suave (por la leyenda) y el embarcadero
       else if (d.kind === 'farol_parque') this.put(X + 8, Y + 2 * S - 8, 60, LED, 0.85);
       else if (d.kind === 'cancha_sint') { for (const [fx, fy] of [[0, 0], [d.w, 0], [0, d.h], [d.w, d.h]]) this.put((d.x + fx) * S, (d.y + fy) * S, 44, LED, 0.55); }
+      else if (d.kind === 'estacion') { const L = VR.Estaciones.lay(d), [cx, cy, cw, ch] = L.canopy; for (const [lx, ly] of [[0.2, 0.25], [0.8, 0.25], [0.2, 0.75], [0.8, 0.75], [0.5, 0.5]]) this.put(cx + cw * lx, cy + ch * ly, 70, '255,244,214', 1); this.put(L.totem[0], L.totem[1] - 40, 46, CALIDO, 0.9); this.put(L.kiosk[0] + L.kiosk[2] / 2, L.kiosk[1] + L.kiosk[3] - 4, 56, '230,244,255', 0.9); }
       else if (d.kind === 'surtidor') this.put(d.px, d.py - 8, 36, '150,220,255', 0.9);
       else if (d.kind === 'fuente_amor') this.put((d.px + 1.5) * S, (d.py + 1.5) * S, 56, '255,170,205', 0.7);
       else if (d.kind === 'capillita') this.put(d.bx * S + 8, (d.by + 1) * S - 4, 34, CALIDO, 0.7);

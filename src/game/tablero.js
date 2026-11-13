@@ -56,6 +56,13 @@
     tick(c, dt, th, st, brake) {
       if (!ensure(c)) return [th, st];
       const f = ficha(c), T = VR.T, t = performance.now() / 1000;
+      if (c._carga) {                                                  // cargando: quieto, el surtidor corre
+        th = 0; st = 0; c.v *= 0.8;
+        const dl = Math.min(1.2 * dt, f.tank - c.fuel), cost = (c._carga.l + dl) * PRECIO_L;
+        if (Math.abs(c.v) > 25 || !Tab.enSurtidor(c)) Tab.fin(c, 'Te fuiste');
+        else if (cost > VR.Wallet.get()) Tab.fin(c, 'Se acabó la plata');
+        else { c.fuel += dl; c._carga.l += dl; if (c.fuel >= f.tank - 0.01) { c.fuel = f.tank; Tab.fin(c, 'Tanque lleno'); } }
+      }
       if (!rough) rough = ROUGH(T);
       const step = Math.abs(c.v) / VR.TILE * 2 * dt;                  // metros recorridos en este cuadro
       c.dist += step;
@@ -110,6 +117,30 @@
       const f = ficha(c); if (!f || f.bici || c.fuel > 0.05) return;
       if (BIDON > VR.Wallet.get()) { say('No te alcanza para el bidón (' + VR.fmtGs(BIDON) + ').'); return; }
       VR.Wallet.add(-BIDON, f.bat ? 'Carga de emergencia' : 'Bidón de nafta'); c.fuel = Math.min(f.tank, f.bat ? f.tank * 0.2 : BIDON_L); say((f.bat ? '🔋 Carga de emergencia' : '⛽ Un vecino te vendió ' + BIDON_L + ' L') + ' por ' + VR.fmtGs(BIDON) + '.'); VR.audio && VR.audio.coin && VR.audio.coin();
+    },
+    // estación de servicio: ¿el vehículo está bajo el techo de alguna?
+    enSurtidor(c) {
+      const E = VR.Estaciones, w = VR.world; if (!E || !w || !c) return null;
+      for (const d of (w.decals || [])) {
+        if (d.kind !== 'estacion') continue;
+        const r = E.lay(d).canopy; if (c.x > r[0] && c.x < r[0] + r[2] && c.y > r[1] && c.y < r[1] + r[3]) return d;
+      }
+      return null;
+    },
+    // carga en el surtidor: ~1,2 L/s; se cobra al terminar (o al arrancar). Devuelve true si empezó.
+    cargar(c) {
+      if (!ensure(c)) return false; const f = ficha(c);
+      if (f.bici) { say('🚲 A la bici no se le echa nafta, jaja.'); return false; }
+      if (c._carga) return true;
+      if (c.fuel >= f.tank - 0.05) { say('El tanque ya está lleno.'); return false; }
+      if (PRECIO_L > VR.Wallet.get()) { say('No te alcanza ni para un litro (' + VR.fmtGs(PRECIO_L) + ').'); return false; }
+      c.v = 0; c._carga = { l: 0 }; say(f.bat ? '🔋 Cargando batería…' : '⛽ Cargando nafta · ' + VR.fmtGs(PRECIO_L) + ' el litro'); return true;
+    },
+    fin(c, why) {
+      const k = c._carga; if (!k) return; c._carga = null;
+      const n = Math.round(k.l * PRECIO_L / 500) * 500;
+      if (n > 0) { VR.Wallet.add(-n, 'Estación: ' + (ficha(c).bat ? 'carga' : 'nafta')); VR.audio && VR.audio.coin && VR.audio.coin(); }
+      say((why || 'Listo') + ' · ' + Math.round(k.l * 10) / 10 + (ficha(c).bat ? ' pts' : ' L') + ' · ' + VR.fmtGs(n));
     },
     parche(c) {
       if (!flat(c) || c.fixT > 0) return;

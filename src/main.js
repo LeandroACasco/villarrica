@@ -22,6 +22,7 @@
   let world;
   try { world = prueba ? VR.makeTestMap() : await VR.loadMap('map.bin'); }
   catch (e) { $('ovSub').textContent = '⚠ ' + e.message + ' · revisá la conexión y recargá'; return; }
+  VR.world = world;
   $('zone').textContent = prueba ? 'Barrio de prueba' : 'Centro';
   $('ovSub').textContent = prueba ? 'Barrio de prueba' : 'Etapa 1.5 · Villarrica entera';
   const saved = VR.store.get('pos:' + world.id, null);
@@ -316,6 +317,11 @@
       player.px = player.x; player.py = player.y; player.x = car.x; player.y = car.y;
       const ng = nearGarage(); hint = ng ? (VR.input.source === 'touch' ? '🔧 Taller: ACCIÓN' : VR.input.source === 'pad' ? '🔧 A: taller' : '🔧 Espacio: taller') : ''; hintCar = ng;
       if (ng && VR.input.pressed('action')) { car.v = 0; garage.open(car, toast); return; }
+      const est = !ng && VR.Tab && VR.Tab.enSurtidor(car);
+      if (est && Math.abs(car.v) < 40) {
+        if (car._carga) { hint = '⛽ Cargando… ACCIÓN: parar'; hintCar = car; if (VR.input.pressed('action')) VR.Tab.fin(car, 'Listo'); }
+        else { hint = VR.input.source === 'touch' ? '⛽ Cargar: ACCIÓN' : VR.input.source === 'pad' ? '⛽ A: cargar' : '⛽ Espacio: cargar'; hintCar = car; if (VR.input.pressed('action')) { car.v = 0; VR.Tab.cargar(car); return; } }
+      }
       if (car.spec.emer) { // sirena (tocar) y, en el camión bomba, cañón de agua (mantener)
         if (VR.input.down('action')) holdT += dt;
         else { if (holdT > 0 && holdT <= 0.22) { car.siren = !car.siren; toast(car.siren ? '🚨 Sirena prendida' : 'Sirena apagada'); } holdT = 0; }
@@ -787,6 +793,7 @@
     if (shopDoor) o.push({ x: shopDoor.x, y: shopDoor.y - 6, ico: '👕', c: '#ff9ed0', name: 'Tienda Ao Porã' });
     if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro' });
     const C = { despensa: '#9fe0a0', pieza: '#ffd84a', cajero: '#7fd8ff', cajero2: '#7fd8ff', financiera: '#ffb36b', celulares: '#c9a0ff' };
+    for (const d of (world.decals || [])) if (d.kind === 'estacion') { const k = VR.Estaciones.lay(d).canopy; o.push({ x: k[0] + k[2] / 2, y: k[1] + k[3] / 2, ico: '⛽', c: '#ff8f6b', name: d.name }); }
     if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
     if (mbh.activo && mbh.v && !mbh.riding) o.push({ x: mbh.v.x, y: mbh.v.y, ico: mbh.r.tipo === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: 'Tu Mbohasa' }); // el conductor, siempre visible en el minimapa y el mapa grande (12/11/2026)
     const ks = mis ? Object.keys(VR.PUNTOS) : ['despensa'];

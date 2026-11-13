@@ -1396,6 +1396,59 @@ def main(src, out, preview=None):
         if len(xs):
             blabels.append({'text': nm, 'x': int(np.median(xs)) * 4 * 16, 'y': int(np.median(ys)) * 4 * 16})
 
+    # ---------- estaciones de servicio (13/11/2026): puntos de OSM (amenity=fuel) + fotos de Street View de Leandro ----------
+    # cada una: (lat, lon, estilo de colores 0-6, nombre inventado). Se busca el terreno libre más cercano, pegado a una calle,
+    # de 16×12 baldosas (frente al sur o al norte) o 12×16 (frente al este u oeste); se pavimenta (ROAD, con boca hacia la calle),
+    # y quedan reservados el techo (10×8), dos islas de surtidores y la minitienda (sólidos: MONUMENT). El dibujo está en src/world/estaciones.js.
+    ESTACIONES = [(-25.774782, -56.4403688, 0, 'Estación Tapé Pora'), (-25.7707563, -56.4400984, 1, 'Estación Aravo'),
+                  (-25.78299376, -56.44681512, 2, 'Estación Pytã Guasu'), (-25.7774226, -56.4466828, 3, 'Estación Yvyra'),
+                  (-25.7716355, -56.4460945, 4, 'Estación Ypaĩ'), (-25.7755478, -56.4462804, 5, 'Estación Hovy'),
+                  (-25.7813637, -56.4406652, 6, 'Estación Tuja Sur'), (-25.764966, -56.4411465, 6, 'Estación Tuja Norte'),
+                  (-25.7703519, -56.4461051, 6, 'Estación Tuja Oeste')]
+    ROADY = (ROAD, STONE, DIRTROAD)
+    est_n = 0
+    for lat_, lon_, st_, nm_ in ESTACIONES:
+        qx_, qy_ = T(place(*proj(lat_, lon_))); qx_, qy_ = int(qx_), int(qy_)
+        best_ = None
+        for o_ in 'snew':
+            LW_, LH_ = (16, 12) if o_ in 'sn' else (12, 16)
+            for oy_ in range(-14, 15):
+                for ox_ in range(-14, 15):
+                    lx_, ly_ = qx_ - LW_ // 2 + ox_, qy_ - LH_ // 2 + oy_
+                    if lx_ < 4 or ly_ < 4 or lx_ + LW_ + 4 >= W or ly_ + LH_ + 4 >= H: continue
+                    sub_ = tiles[ly_:ly_ + LH_, lx_:lx_ + LW_]
+                    nb_ = int((sub_ == BUILDING).sum()); nr_ = int(np.isin(sub_, ROADY).sum()); nm_o = int(np.isin(sub_, (MONUMENT, WATER, LAGUNA)).sum())
+                    if nr_ > 12 or nm_o: continue
+                    fr_ = {'s': tiles[ly_ + LH_:ly_ + LH_ + 3, lx_ + 2:lx_ + LW_ - 2], 'n': tiles[ly_ - 3:ly_, lx_ + 2:lx_ + LW_ - 2],
+                           'e': tiles[ly_ + 2:ly_ + LH_ - 2, lx_ + LW_:lx_ + LW_ + 3], 'w': tiles[ly_ + 2:ly_ + LH_ - 2, lx_ - 3:lx_]}[o_]
+                    road_fr_ = float(np.isin(fr_, ROADY).mean())
+                    if road_fr_ < 0.35: continue
+                    cost_ = nb_ * 8 + nr_ * 5 + (abs(ox_) + abs(oy_)) * 0.7 + (1 - road_fr_) * 20
+                    if best_ is None or cost_ < best_[0]: best_ = (cost_, lx_, ly_, LW_, LH_, o_)
+        if best_ is None: print('SIN LUGAR para', nm_); continue
+        _, lx_, ly_, LW_, LH_, o_ = best_
+        for t_ in [t for t in trees if lx_ - 1 <= t[0] <= lx_ + LW_ and ly_ - 1 <= t[1] <= ly_ + LH_]:
+            tree_at[t_[1], t_[0]] = False
+        trees = [t for t in trees if not (lx_ - 1 <= t[0] <= lx_ + LW_ and ly_ - 1 <= t[1] <= ly_ + LH_)]
+        tiles[ly_:ly_ + LH_, lx_:lx_ + LW_] = ROAD; bid[ly_:ly_ + LH_, lx_:lx_ + LW_] = 0      # pavimento (el tipo ROAD lo pinta el dibujo de la estación)
+        mouth_ = {'s': (ly_ + LH_, ly_ + LH_ + 3, lx_ + 2, lx_ + LW_ - 2), 'n': (ly_ - 3, ly_, lx_ + 2, lx_ + LW_ - 2),
+                  'e': (ly_ + 2, ly_ + LH_ - 2, lx_ + LW_, lx_ + LW_ + 3), 'w': (ly_ + 2, ly_ + LH_ - 2, lx_ - 3, lx_)}[o_]     # boca: rampa hasta la calle
+        for yy_ in range(mouth_[0], mouth_[1]):
+            for xx_ in range(mouth_[2], mouth_[3]):
+                if tiles[yy_, xx_] in (GRASS, SIDEWALK, DIRT, PAVING, PLAZADIRT, TREE, BUILDING): tiles[yy_, xx_] = ROAD; bid[yy_, xx_] = 0
+        # sólidos: minitienda e islas (mismas posiciones que usa estaciones.js: lay())
+        if o_ in 'sn':
+            cy0_ = ly_ + 3 if o_ == 's' else ly_ + 1
+            solids_ = [(lx_, cy0_ + 2, lx_ + 4, cy0_ + 5)] + [(lx_ + 7, cy0_ + r_, lx_ + 12, cy0_ + r_) for r_ in (2, 5)]
+        else:
+            cx0_ = lx_ + 3 if o_ == 'e' else lx_ + 1
+            solids_ = [(lx_ + 3, ly_, lx_ + 8, ly_ + 2)] + [(cx0_ + c_, ly_ + 6, cx0_ + c_, ly_ + 11) for c_ in (2, 5)]
+        for xa_, ya_, xb_, yb_ in solids_: tiles[ya_:yb_ + 1, xa_:xb_ + 1] = MONUMENT
+        decals.append({'kind': 'estacion', 'x': lx_, 'y': ly_, 'w': LW_, 'h': LH_, 'o': o_, 'st': st_, 'name': nm_})
+        labels.append({'text': nm_, 'x': (lx_ + LW_ // 2) * 16 + 8, 'y': ly_ * 16 - 6, 'small': 1})
+        est_n += 1; print('estación', nm_, (lx_, ly_), o_, round(best_[0], 1))
+    print('Estaciones:', est_n)
+
     # ---------- empaquetar ----------
     roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'swidths': [ROADS[k][1] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
     meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'pois': {k: [int(v[0]), int(v[1])] for k, v in poi_pos.items()}, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
