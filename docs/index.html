@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión dd831be3 · 2026-11-13</div>
+  <div class="tVer">Versión 78304dd5 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión dd831be3 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 78304dd5 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -3953,7 +3953,7 @@ VR.makeTestMap = () => {
     neutral: { bt: 0, by: 0, eo: 1, m: 'n' }, feliz: { bt: -0.05, by: -0.08, eo: 0.55, m: 'f', squint: true }, enojado: { bt: 0.42, by: 0.1, eo: 0.72, m: 'e' },
     triste: { bt: -0.42, by: 0.02, eo: 0.82, m: 't' }, sorpresa: { bt: -0.1, by: -0.32, eo: 1.3, m: 'o' }, duda: { bt: 0.18, by: -0.04, eo: 0.9, m: 'd', one: true },
   };
-  const EDAD = { ramona: 'mayor', cirilo: 'mayor', chela: 'mayor' };
+  const EDAD = { ramona: 'mayor', cirilo: 'mayor', chela: 'mayor', chicho: 'mayor' };
   const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   const mix = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
   const cache = new Map();
@@ -8121,13 +8121,16 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
   const CSS = `#garView{position:fixed;inset:0;z-index:5;background:#14100c;display:flex;flex-direction:column;color:#eee;font:13px system-ui,sans-serif;user-select:none}
 #garView[hidden]{display:none}
 #garScene{flex:1 1 52%;min-height:0;position:relative;overflow:hidden}
-#garScene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#garScene>canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #garTop{position:absolute;left:8px;top:calc(env(safe-area-inset-top) + 6px);right:8px;display:flex;justify-content:space-between;pointer-events:none;gap:8px}
-#garHint{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:rgba(10,10,14,.6);border-radius:8px;padding:3px 9px;font-size:11px;color:#ccc;pointer-events:none}
-#garStats{position:absolute;left:8px;bottom:8px;background:rgba(10,10,14,.72);border:1px solid #444;border-radius:8px;padding:5px 8px;font:700 10px system-ui;pointer-events:none;min-width:118px}
-#garStats div{display:flex;align-items:center;gap:5px;margin:2px 0}#garStats b{flex:1;min-width:44px;height:5px;background:#333;border-radius:3px;overflow:hidden}#garStats b i{display:block;height:100%;background:#e6b422}#garStats em{font-style:normal;color:#9fd69a;min-width:30px;text-align:right}
-@media (max-width:600px){#garStats{bottom:auto;left:8px;top:calc(env(safe-area-inset-top) + 42px)}}
-#garTop span{background:rgba(10,10,14,.72);border:1px solid #444;border-radius:8px;padding:4px 9px;font-weight:700}
+#garStats{position:absolute;left:8px;top:calc(env(safe-area-inset-top) + 40px);display:flex;gap:5px;flex-wrap:wrap;pointer-events:none;font:700 10px system-ui}
+#garStats span{background:rgba(10,10,14,.72);border:1px solid #444;border-radius:7px;padding:2px 6px}#garStats em{font-style:normal;color:#9fd69a}
+#garChat{position:absolute;right:8px;bottom:8px;width:min(430px,calc(100% - 16px));display:flex;gap:9px;align-items:flex-start;background:rgba(18,18,24,.94);border:2px solid #ece9e2;border-radius:12px;padding:7px 10px;box-shadow:0 4px 18px #000a;transition:opacity .35s;pointer-events:none}
+@media (max-width:600px){#garChat{bottom:auto;top:calc(env(safe-area-inset-top) + 68px)}#garHint{display:none}}
+#garChat[hidden]{display:none}#garChat.off{opacity:0}
+#garChat canvas{width:62px;height:62px;flex:0 0 auto;border-radius:9px;border:2px solid #e6b422;background:#222}
+#garChat b{display:block;color:#e6b422;font-size:12px;margin-bottom:2px}#garChat p{margin:0;font-size:13px;line-height:1.3;min-height:34px}
+#garTop span{white-space:nowrap;background:rgba(10,10,14,.72);border:1px solid #444;border-radius:8px;padding:4px 9px;font-weight:700}
 #garPanel{flex:0 0 auto;background:linear-gradient(#22201c,#171512);border-top:3px solid #e6b422;padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);max-height:46%;display:flex;flex-direction:column;gap:5px}
 #garTabs{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
 #garTabs button{flex:0 0 auto;width:58px;background:#2a2823;border:2px solid #3b3830;border-radius:9px;color:#ddd;padding:3px 0 2px;font:700 10px system-ui;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
@@ -8204,6 +8207,25 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     const ck = part + ':' + key + ':' + (part === 'franja' ? t.color2 : part === 'techo' ? t.color : ''); let c = ICON.get(ck); if (c) return c;
     c = document.createElement('canvas'); c.width = c.height = 96; const g = c.getContext('2d'); g.scale(2, 2); try { drawIcon(g, part, key, t); } catch (e) {} ICON.set(ck, c); return c;
   };
+
+  // ------------------------------------------------------------ Don Chicho, el mecánico: charla con cada cosa que elegís
+  const CHICHO = { gender: 'm', skin: 2, build: 'panza', hair: 'peinadoAtras', hairColor: 5, beard: 'bigote', top: 'remera', topColor: 13, bottom: 'jean', bottomColor: 3, shoes: 'zapatillas', shoesColor: 3, hat: 'gorra', hatColor: 0 };
+  const R = (a) => a[(Math.random() * a.length) | 0];
+  const COLOR_L = { Rojo: 'Rojo: dicen que corre más. Mentira, pero se ve lindo.', Bordó: 'Bordó, color de vino de domingo. Elegante, che.', Naranja: 'Naranja: te ven desde la Terminal, no hay forma de perderte.', Amarillo: 'Amarillo... te van a parar pensando que sos taxi. Jaja, pero queda bien.', Lima: 'Verde lima: grita «¡mírenme!» a todo volumen.', Verde: 'Verde, como la yerba. Un clásico bien paraguayo.', Turquesa: 'Turquesa, color de pileta. Me gusta.', Celeste: 'Celeste, tranquilo, como tarde de tereré.', Azul: 'Azul profundo. Serio, de persona que paga a tiempo.', Violeta: 'Violeta, qué atrevido. Me gusta que seas diferente.', Rosa: '¡Rosa! No cualquiera se anima. Te respeto.', Blanco: 'Blanco... ¿lo vas a lavar vos, no? Porque con el barro de acá...', Plateado: 'Plateado, brilla lindo y se le nota poco la tierra.', Gris: 'Gris, discreto. Pasás desapercibido, como ninja.', Negro: 'Negro: elegante, misterioso, y no se le nota la mugre.', Dorado: '¿Dorado? Parecés intendente en campaña.' };
+  const LINES = {
+    color: (v) => COLOR_L[colName(v)] || 'Ese color le queda joya.',
+    color2: () => R(['Buen contraste, tenés ojo.', 'Con ese color de franjas se destaca de lejos.', 'Combina bien, che.']),
+    franja: { no: 'Sin franjas, limpio y serio.', carrera: 'Franjas de carrera: ahora sí parece que corre.', centro: 'Una ancha al medio, estilo campeón de domingo.', costado: 'A los costados, finitas, con clase.' },
+    llantas: { serie: 'Las de fábrica: aburridas pero honestas.', deportivas: 'Deportivas: lindas de verdad, aunque sigas yendo a 40 por la calle.', cromadas: 'Cromadas: brillan tanto que van a darle señales al avión.', negras: 'Negras, estilo misterioso. Elegante.', doradas: '¿Llantas doradas? Ahora sí sos el patrón del barrio.' },
+    polarizado: { 0: 'Vidrios limpios: así saludás a la gente.', 1: 'Medio polarizado: te ven, pero no tanto.', 2: 'Polarizado total... ¿qué escondés, che? Jajaja, a mí no me contás.' },
+    aleron: { no: 'Sin alerón, más aerodinámico. O eso dicen.', chico: 'Alerón chico: discreto, pero se nota.', grande: '¡Ese alerón es enorme! Con eso despegás en la ruta.' },
+    techo: { serie: 'Techo del color del auto: prolijo.', negro: 'Techo negro, pinta de auto caro.', parrilla: '¡Parrilla! Ahí cargás de todo... hasta la heladera del vecino.' },
+    escape: { serie: 'Escape de serie: silencio de biblioteca.', deportivo: '¡Doble escape! Vas a despertar a todo el barrio... y a la suegra.' },
+    faros: { normal: 'Faros normales, los de siempre. Naranjitas y fieles.', xenon: '¡Xenón! Vas a encandilar hasta a los murciélagos.' },
+    bajo: { 0: 'Altura normal, para los lomos de burro de Villarrica.', 1: 'Bajito... ojo con los lomos de burro, che, que raspás.' },
+    neon: (k) => k === 'no' ? 'Sin neón: sencillo, como cena de domingo.' : 'Neón ' + (VR.TUNE_PARTS.neon.opts[k] || [''])[0].toLowerCase() + ': de noche vas a parecer una nave espacial.',
+  };
+  const EXP = { franja: 'feliz', llantas: 'feliz', aleron: 'sorpresa', escape: 'sorpresa', neon: 'sorpresa', faros: 'feliz', polarizado: 'duda', bajo: 'duda', techo: 'feliz', color: 'feliz', color2: 'feliz' };
   const stamp = (cv, src) => { cv.width = cv.height = 96; cv.getContext('2d').drawImage(src, 0, 0); };
   // ------------------------------------------------------------ fondo del taller (vectorial, se guarda en un canvas por tamaño)
   // Vw×Vh: unidades virtuales; el piso siempre queda abajo y el centro (cx) es donde va el vehículo.
@@ -8271,7 +8293,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
   VR.Garage = class {
     constructor() {
       const d = this.d = document.createElement('div'); d.id = 'garView'; d.hidden = true;
-      d.innerHTML = '<div id="garScene"><canvas></canvas><div id="garTop"><span>🔧 Taller Pyahu</span><span id="garMoney"></span></div><div id="garStats"></div><span id="garHint">↔ Arrastrá para girarlo</span></div><div id="garPanel"><div id="garTabs"></div><div id="garOpts"></div><div id="garBar"><div id="garTot"></div><button id="garUndo" title="Deshacer cambios">↺</button><button id="garFix">🔧 Reparar</button><button id="garBuy">Comprar</button><button id="garOut">Salir</button></div></div>';
+      d.innerHTML = '<div id="garScene"><canvas></canvas><div id="garTop"><span>🔧 Taller Pyahu</span><span id="garHint" style="font-weight:500;font-size:11px;color:#ccc">↔ Arrastrá para girarlo</span><span id="garMoney"></span></div><div id="garStats"></div><div id="garChat" hidden><canvas width="64" height="64"></canvas><div><b>Don Chicho · mecánico</b><p></p></div></div></div><div id="garPanel"><div id="garTabs"></div><div id="garOpts"></div><div id="garBar"><div id="garTot"></div><button id="garUndo" title="Deshacer cambios">↺</button><button id="garFix">🔧 Reparar</button><button id="garBuy">Comprar</button><button id="garOut">Salir</button></div></div>';
       document.body.append(d); this.cv = d.querySelector('#garScene canvas'); this.g = this.cv.getContext('2d'); this.fr = new Map(); this.ang = 0.9; this.auto = true; this.fx = null; this.parts = []; this.tab = 'color';
       const cv = this.cv; let drag = null; cv.style.touchAction = 'none'; cv.style.cursor = 'grab';
       cv.onpointerdown = (e) => { drag = { x: e.clientX, a: this.ang }; this.auto = false; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; };
@@ -8279,11 +8301,11 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       cv.onpointerup = cv.onpointercancel = () => { drag = null; cv.style.cursor = 'grab'; clearTimeout(this._at); this._at = setTimeout(() => { if (!drag) this.auto = true; }, 2500); };
       d.querySelector('#garOut').onclick = () => this.close();
       d.querySelector('#garBuy').onclick = () => this.buy();
-      d.querySelector('#garUndo').onclick = () => { this.t = { ...this.old }; this.base = null; this.fx = { t: 0, rgb: '255,255,255', kind: 'spark' }; this.build(); };
+      d.querySelector('#garUndo').onclick = () => { this.t = { ...this.old }; this.base = null; this.fx = { t: 0, rgb: '255,255,255', kind: 'spark' }; this.build(); this.say(R(['Listo, todo borrado. Como si nada hubiera pasado, jajaja.', '¿Te arrepentiste? Pasa, che, pasa. Empezamos de nuevo.']), 'feliz', 5); };
       d.querySelector('#garFix').onclick = () => { // reparar: 1.500 Gs. por punto de vida
-        const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.toast('✨ Está joya, no hace falta'); return; }
-        const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.toast('💸 Reparar cuesta ' + VR.fmtGs(n)); return; }
-        VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.toast('🔧 Quedó como nuevo · ' + VR.fmtGs(n)); this.fx = { t: 0, rgb: '255,230,120', kind: 'spark' }; this.total(); };
+        const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.say('Si está joya, ¿qué querés que le repare? Dejalo así, che.', 'duda', 5); return; }
+        const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.say('Reparar te sale ' + VR.fmtGs(n) + '. Y vos tenés ' + VR.fmtGs(VR.Wallet.get()) + '. Las cuentas no cierran, amigo.', 'triste', 7); return; }
+        VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.say('¡Chapa y pintura! Quedó como recién salido de fábrica. Son ' + VR.fmtGs(n) + ', amigo.', 'feliz', 6); this.fx = { t: 0, rgb: '255,230,120', kind: 'spark' }; this.total(); };
       addEventListener('keydown', (e) => { if (!this.d.hidden && e.key === 'Escape') this.close(); });
       addEventListener('resize', () => { if (!this.d.hidden) this.size(); });
     }
@@ -8292,15 +8314,37 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       if (!M) { toast('Este vehículo no se puede tunear'); return; }
       this.old = Object.assign(VR.tuneDefault(m), car.tune || { color: this.realColor(car) }); this.t = { ...this.old }; this.parts = M.parts.filter((p) => p !== 'color2'); this.tab = this.parts[0];
       VR.input.releaseAll(); VR.input.enabled = false; this.fr.clear(); this.base = null; this.fit = null; this.ang = 0.9; this.auto = true; this.fx = { t: 0, rgb: '255,255,255', kind: 'spark' }; this.bg = null;
-      this.d.hidden = false; document.body.classList.add('adentro'); this.size(); this.build(); this.t0 = performance.now(); this.loop();
+      this.d.hidden = false; document.body.classList.add('adentro'); this.size(); this.build(); this.t0 = performance.now(); this._idle = this.t0; this.chat = null; this.greet(); this.loop();
     }
     realColor(car) { const sp = VR.vspec(car.type, car.model), pal = sp.colors[(car.color || 0) % sp.colors.length]; return Array.isArray(pal) ? pal[0] : pal; }
+    // --------------------------------------------------- Don Chicho
+    say(txt, exp = 'feliz', hold = 6) { const c = this.chat || (this.chat = {}); Object.assign(c, { full: txt, n: 0, t0: performance.now(), exp, hold, done: 0, open: false }); const el = this.d.querySelector('#garChat'); el.hidden = false; el.classList.remove('off'); this.d.querySelector('#garChat p').textContent = ''; this.face(false); }
+    face(open) { const c = this.chat; if (!c || !VR.retrato) return; try { const g = this.d.querySelector('#garChat canvas').getContext('2d'); g.clearRect(0, 0, 64, 64); g.drawImage(VR.retrato(CHICHO, 'chicho', c.exp, open, '#e6b422'), 0, 0, 64, 64); } catch (e) {} }
+    chatTick(now) {
+      const c = this.chat; if (!c || !c.full) return; const p = this.d.querySelector('#garChat p'), el = this.d.querySelector('#garChat');
+      if (c.n < c.full.length) { c.n = Math.min(c.full.length, Math.floor((now - c.t0) / 1000 * 50) + 1); p.textContent = c.full.slice(0, c.n); const o = Math.floor(now / 110) % 2 === 0 && /[a-záéíóúñü]/i.test(c.full[c.n - 1] || ''); if (o !== c.open) { c.open = o; this.face(o); } if (c.n >= c.full.length) { c.done = now; this.face(false); } }
+      else if (now - c.done > c.hold * 1000) el.classList.add('off');
+      if (!this._idle || now - this._idle > 22000) { if (this._idle && c.n >= c.full.length && c.done && now - c.done > 4000) this.say(R(['Dale, elegí tranquilo. Yo me tomo un tereré mientras.', 'Esa pintura se ve mejor con sol, che. Pero bueno, acá estamos bajo techo.', 'Mirá que acá no hay apuro... bueno, un poquito, que viene otro cliente.', 'Si querés mi opinión: todo, pero cobrando, jaja.']), 'feliz', 5); this._idle = now; }
+    }
+    greet() {
+      const car = this.car, m = this.model, moto = car.type === 'moto', pati = m === 'pati', hp = car.hp ?? 100;
+      if (hp < 50) return this.say('¡Mba\'éichapa quedó ese vehículo! ¿Te chocaste con la Terminal? Primero reparalo con el botón, después lo hacemos lindo.', 'sorpresa', 9);
+      this.say(R(pati ? ['¿Una patineta? También la tuneamos, che. En Taller Pyahu nadie discrimina.'] : moto ? ['¡Una moto! Esto me lo hago entre mate y mate. ¿Qué le ponemos?', '¡Ha upéi! Linda moto. Elegí lo que quieras, que la dejo como nueva.'] : ['¡Ha upéi, che! Pasá nomás. ¿Qué le hacemos a esta belleza?', 'Uy, mirá qué tenemos acá. Tiene buenos huesos. ¿Qué le ponemos?']), 'feliz', 8);
+    }
+    react(part, key) {
+      const L = LINES[part]; let t = typeof L === 'function' ? L(key) : L && L[key]; if (!t) return;
+      const n = this.cost(), m = VR.Wallet.get(); let exp = EXP[part] || 'feliz';
+      if (n > m) { t += ' Pero ojo: ya vas por ' + VR.fmtGs(n) + ' y tenés ' + VR.fmtGs(m) + '. ¿Tenés eso en el bolsillo o en la imaginación?'; exp = 'duda'; }
+      else if (n > m * 0.7 && n > 0) t += ' Ojo que ya vas por ' + VR.fmtGs(n) + ', se te va casi toda la plata.';
+      else if (n === 0 && String(this.t[part]) === String(this.old[part]) && part !== 'color2') t += ' (Como estaba antes.)';
+      this.say(t, exp, 7);
+    }
     // --------------------------------------------------- panel: categorías con icono y opciones
     build() {
       const tabs = this.d.querySelector('#garTabs'); tabs.innerHTML = '';
       for (const p of this.parts) { const b = document.createElement('button'); b.className = p === this.tab ? 'on' : ''; const cv = document.createElement('canvas'); stamp(cv, VR.garageIcon(p, this.t[p], this.t)); const l = document.createElement('span'); l.textContent = NAMES[p] || VR.TUNE_PARTS[p].name; b.append(cv, l); b.onclick = () => { this.tab = p; this.build(); }; tabs.append(b); }
       const box = this.d.querySelector('#garOpts'); box.innerHTML = ''; const p = this.tab, m = this.model;
-      const pick = (part, v) => { const num = part === 'color' || part === 'color2' || part === 'polarizado' || part === 'bajo'; this.t[part] = num && typeof v !== 'string' ? +v : v; this.base = null; this.fx = { t: 0, rgb: this.fxRgb(part), kind: part === 'color' ? 'spray' : 'spark' }; this.build(); };
+      const pick = (part, v) => { const num = part === 'color' || part === 'color2' || part === 'polarizado' || part === 'bajo'; this.t[part] = num && typeof v !== 'string' ? +v : v; this.base = null; this.fx = { t: 0, rgb: this.fxRgb(part), kind: part === 'color' ? 'spray' : 'spark' }; this.build(); this.react(part, this.t[part]); };
       const swatches = (part, title) => { if (title) { const h = document.createElement('h4'); h.textContent = title; box.append(h); } const all = VR.TUNE_COLORS.map((c, i) => [i, c[1], c[0]]); if (typeof this.old[part] === 'string') all.unshift([this.old[part], this.old[part], 'Original']); all.forEach(([i, hx, nm]) => { const s = document.createElement('div'); s.className = 'sw' + (this.t[part] === i ? ' on' : ''); s.style.background = hx; s.title = nm; s.onclick = () => pick(part, i); box.append(s); }); };
       if (p === 'color') { swatches('color'); const pr = VR.tunePartPrice(m, 'color', this.t); const h = document.createElement('h4'); h.textContent = colName(this.t.color) + (pr ? ' · ' + VR.fmtGs(pr) : ' · de serie'); h.style.flexBasis = '100%'; box.append(h); }
       else {
@@ -8317,8 +8361,8 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     cost() { const m = this.model; return VR.TUNE_MODELS[m].parts.reduce((s, p) => s + (String(this.t[p]) !== String(this.old[p]) ? VR.tunePartPrice(m, p, this.t) : 0), 0); }
     total() {
       this.d.querySelector('#garTot').innerHTML = 'Total: <b>' + VR.fmtGs(this.cost()) + '</b><br>Vida ' + Math.round(Math.max(0, this.car.hp ?? 100)) + '%';
-      const sp = VR.vspec(this.car.type, this.model), a = VR.tuneSpec(sp, this.t), pc = (x, y) => Math.round((x / y - 1) * 100), rows = [['⚡ Aceler.', a.acc / sp.acc, pc(a.acc, sp.acc)], ['↻ Giro', a.turn / sp.turn, pc(a.turn, sp.turn)], ['🏁 Asfalto', a.max.road / sp.max.road, pc(a.max.road, sp.max.road)], ['🌿 Tierra', a.max.dirt / sp.max.dirt, pc(a.max.dirt, sp.max.dirt)]];
-      this.d.querySelector('#garStats').innerHTML = rows.map(([n, r, d]) => '<div><span style="width:56px">' + n + '</span><b><i style="width:' + Math.max(10, Math.min(100, 50 * r)) + '%"></i></b><em style="' + (d < 0 ? 'color:#e08a7a' : '') + '">' + (d ? (d > 0 ? '+' : '') + d + '%' : '=') + '</em></div>').join('');
+      const sp = VR.vspec(this.car.type, this.model), a = VR.tuneSpec(sp, this.t), pc = (x, y) => Math.round((x / y - 1) * 100), rows = [['⚡', a.acc / sp.acc, pc(a.acc, sp.acc)], ['↻', a.turn / sp.turn, pc(a.turn, sp.turn)], ['🏁', a.max.road / sp.max.road, pc(a.max.road, sp.max.road)], ['🌿', a.max.dirt / sp.max.dirt, pc(a.max.dirt, sp.max.dirt)]];
+      this.d.querySelector('#garStats').innerHTML = rows.map(([n, r, d]) => '<span>' + n + ' <em style="' + (d < 0 ? 'color:#e08a7a' : '') + '">' + (d ? (d > 0 ? '+' : '') + d + '%' : '=') + '</em></span>').join('');
       this.d.querySelector('#garMoney').textContent = '💰 ' + VR.fmtGs(VR.Wallet.get());
     }
     // --------------------------------------------------- escena
@@ -8363,19 +8407,9 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
         if (this.fx && this.fx.t < 0.9) this.sparks(g, X, Y, w, h, py);
       } else { g.fillStyle = '#fff'; g.font = '14px system-ui'; g.textAlign = 'center'; g.fillText('Armando el vehículo…', cx, py - 40); g.textAlign = 'left'; }
       g.save(); g.globalCompositeOperation = 'lighter'; for (let i = 0; i < 26; i++) { const lx = cx + (i % 2 ? 120 : -120), u = (t * 0.03 + VR.hash(i, 31) % 100 / 100) % 1, x = lx + (VR.hash(i, 7) % 100 / 100 - 0.5) * (30 + u * 150) + Math.sin(t + i) * 4, y = 40 + u * (Vh - 130); g.fillStyle = 'rgba(255,240,200,' + (0.35 * Math.sin(u * 3.14)) + ')'; g.beginPath(); g.arc(x, y, 0.9 + (i % 3) * 0.4, 0, 7); g.fill(); } g.restore();
-      this.mecanico(g, cx, py + 72, t);
       g.restore(); g.drawImage(this.fore, 0, 0);
       // viñeta
       g.save(); g.scale(s, s); const vg = g.createRadialGradient(cx, Vh * 0.55, Vh * 0.35, cx, Vh * 0.55, Vw * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.45)'); g.fillStyle = vg; g.fillRect(0, 0, Vw, Vh); g.restore();
-    }
-    // el mecánico: camina despacio por delante del elevador, se frena un rato mirando el vehículo y vuelve
-    mecanico(g, cx, y, t) {
-      const L = this.mechLook || (this.mechLook = VR.av2Lazy({ gender: 'm', skin: 2, hair: 'corto', hairColor: 0, beard: 'no', top: 'remera', topColor: 13, bottom: 'jean', bottomColor: 3, shoes: 'zapatillas', shoesColor: 3, hat: 'gorra', hatColor: 0 }, 7));
-      const T = 18, p = (t % T) / T, R = Math.min(190, this.Vw * 0.4); let x, dir, walk = true;
-      if (p < 0.4) { x = -R + p / 0.4 * 2 * R; dir = 'right'; } else if (p < 0.5) { x = R; dir = 'down'; walk = false; } else if (p < 0.9) { x = R - (p - 0.5) / 0.4 * 2 * R; dir = 'left'; } else { x = -R; dir = 'down'; walk = false; }
-      const img = walk ? L.get(dir, 'walk', Math.floor(t * 8) % 8) : L.get(dir, 'idle', 0); if (!img) return; const X = cx + x, sc = 2.5;
-      const gr = g.createRadialGradient(X, y + 1, 1, X, y + 1, 14); gr.addColorStop(0, 'rgba(0,0,0,.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(X, y + 1, 14, 5, 0, 0, 7); g.fill();
-      g.drawImage(img, X - 8 * sc, y - 31.5 * sc, 16 * sc, 32 * sc);
     }
     sparks(g, X, Y, w, h, py) {
       const fx = this.fx, n = fx.kind === 'spray' ? 26 : 16; g.save(); g.globalCompositeOperation = 'lighter';
@@ -8385,13 +8419,13 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       g.restore();
     }
     loop() {
-      if (this.d.hidden) return; const now = performance.now(); if (this.auto) this.ang += 0.012; if (this.fx) { this.fx.t += Math.min(0.05, (now - (this._l || now)) / 1000); if (this.fx.t > 1) this.fx = null; } this._l = now; this.paint(now); requestAnimationFrame(() => this.loop());
+      if (this.d.hidden) return; const now = performance.now(); if (this.auto) this.ang += 0.012; if (this.fx) { this.fx.t += Math.min(0.05, (now - (this._l || now)) / 1000); if (this.fx.t > 1) this.fx = null; } this._l = now; this.paint(now); this.chatTick(now); requestAnimationFrame(() => this.loop());
     }
     buy() {
-      const n = this.cost(); if (n > VR.Wallet.get()) { this.toast('💸 No te alcanza la plata'); return; }
+      const n = this.cost(); if (this.closing) return; if (n > VR.Wallet.get()) { this.say('No te alcanza la plata, che. Sacale algo o volvé con más billete.', 'triste', 7); return; }
       VR.Wallet.add(-n, 'Taller: tuneo'); const c = this.car; c.tune = { ...this.t };
       c.frames = VR.vframes(c.type, c.color, c.model, c.tune); c.spec = VR.tuneSpec(VR.vspec(c.type, c.model), c.tune);
-      this.toast(n ? '🔧 ¡Quedó joya! ' + VR.fmtGs(n) : 'Sin cambios'); this.close();
+      this.toast(n ? '🔧 ¡Quedó joya! ' + VR.fmtGs(n) : 'Sin cambios'); this.say(n ? R(['¡Listo! Quedó joya. Son ' + VR.fmtGs(n) + '. Llevalo con cuidado, ¿eh?', '¡Terminé! Ahora sí, que se vea quién manda en Villarrica. Son ' + VR.fmtGs(n) + '.']) : 'Nada que cobrar. Fácil, la tuya.', 'feliz', 3); this.closing = true; setTimeout(() => { this.closing = false; this.close(); }, 1900);
     }
     close() { if (this.d.hidden) return; this.d.hidden = true; document.body.classList.remove('adentro'); VR.input.enabled = true; this._l = 0; }
   };

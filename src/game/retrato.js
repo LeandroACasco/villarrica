@@ -6,7 +6,7 @@
     neutral: { bt: 0, by: 0, eo: 1, m: 'n' }, feliz: { bt: -0.05, by: -0.08, eo: 0.55, m: 'f', squint: true }, enojado: { bt: 0.42, by: 0.1, eo: 0.72, m: 'e' },
     triste: { bt: -0.42, by: 0.02, eo: 0.82, m: 't' }, sorpresa: { bt: -0.1, by: -0.32, eo: 1.3, m: 'o' }, duda: { bt: 0.18, by: -0.04, eo: 0.9, m: 'd', one: true },
   };
-  const EDAD = { ramona: 'mayor', cirilo: 'mayor', chela: 'mayor' };
+  const EDAD = { ramona: 'mayor', cirilo: 'mayor', chela: 'mayor', chicho: 'mayor' };
   const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   const mix = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
   const cache = new Map();
