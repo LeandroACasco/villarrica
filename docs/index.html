@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión c942f5e4 · 2026-11-13</div>
+  <div class="tVer">Versión ad7e0091 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión c942f5e4 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión ad7e0091 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -5959,13 +5959,13 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     return [
       ...slices(0.9, 5.9, 6.0, (y) => 6.6 + 0.95 * Math.sqrt(Math.max(0, 1 - Math.pow((y - 3.4) / 2.5, 2))), C, 3.8, 0.15),   // guardabarros
       ...slices(3.4, 6.9, (y) => fk(y) - 0.35, (y) => fk(y + 0.35) + 0.3, '#5c6068', 4.2, 0.15),                                  // horquilla
-      ...slices(5.6, 10.4, [[5.6, 5.4], [9, 4.2], [10.4, 4]], [[5.6, 8.4], [6.4, 9.6], [7.2, 10.3], [7.9, 9.6], [8.6, 8.3], [9.4, 7], [10.4, 6.3]], C, 2.7, 0.12), // escudo
+      ...slices(5.6, 10.4, [[5.6, 5.4], [9, 4.2], [10.4, 4]], [[5.6, 8.2], [6.4, 9.2], [7.2, 9.7], [7.9, 9.2], [8.6, 8.2], [9.4, 7], [10.4, 6.3]], C, 2.7, 0.12), // escudo
       [6, 8.2, 9.4, 11.3, C, 3.3],                                                  // cabeza del manubrio y faro
-      [6.9, 7.3, 11.0, 11.5, DK, 2.1],                                              // manubrio (angosto, ~0,7 m)
-      [7.05, 7.3, 11.5, 12.6, DK, 2.0], [7.1, 7.7, 12.6, 13.3, DK, 1.6],         // varillas y espejos
+      [6.8, 7.5, 10.9, 11.6, DK, 2.1],                                              // manubrio (angosto, ~0,7 m)
+      [7, 7.5, 11.6, 12.4, DK, 1.9], [7, 7.7, 12.4, 13.1, DK, 1.5],         // varillas y espejos
       [8.8, 11.2, 5.4, 6.3, GR, 3.2],                                               // piso
       [8.6, 13.2, 1.5, 4.6, ENG, 3.4], [8.8, 17, 3.7, 4.5, DK, 4],                 // motor y chasis
-      ...slices(10.8, 19.4, [[10.8, 7], [13, 7.4], [19.4, 7.6]], [[10.8, 8.3], [12, 8.9], [14, 9.3], [17, 9.5], [19, 9.4], [19.4, 8.8]], SEAT, 2.7, 0.15), // asiento
+      ...slices(10.8, 19.4, [[10.8, 7], [13, 7.4], [19.4, 7.6]], [[10.8, 8.1], [12, 8.6], [14, 8.9], [17, 9.0], [19, 8.9], [19.4, 8.5]], SEAT, 2.7, 0.15), // asiento
       [11.4, 18.8, 4.4, 7.2, C, 3],                                                 // tapas laterales
       ...slices(17.8, 21, [[17.8, 6.4], [21, 7.6]], [[17.8, 7.6], [19.4, 8.2], [21, 9]], C, 3.3, 0.15), // cola
     ];
