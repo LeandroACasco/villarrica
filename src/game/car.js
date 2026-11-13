@@ -358,10 +358,10 @@ VR.VSPEC = {
 };
 VR.PATI_COLORS = [['#2c2c32', '#16161a', '#55555e'], ['#e8e6e0', '#a9a69e', '#ffffff'], ['#2f5fa8', '#1e3f74', '#5c8ad0']];
 VR.MOTO_MODELS = {
-  cub: { rider: { gy: -3.5, gx: 4.2, hip: 3.4, zoff: 2.3 }, name: 'Mbojoaju 125', desc: 'La moto de todos los días: liviana, económica y con lugar para dos.', side: 'cub' },
-  mini: { rider: { gy: -4.1, gx: 3.8, hip: 2.4 }, len: 16, wid: 9, S: 22, base: VR.drawMotoMini, acc: 205, turn: 4.1, max: { road: 200, stone: 175, dirt: 170, side: 150, grass: 125 },
+  cub: { len: 21, wid: 7, S: 26, rider: { gy: -3.5, gx: 4.2, hip: 3.4, zoff: 2.3 }, name: 'Mbojoaju 125', desc: 'La moto de todos los días: liviana, económica y con lugar para dos.', side: 'cub' },
+  mini: { rider: { gy: -4.1, gx: 3.8, hip: 2.4 }, len: 17, wid: 7, S: 22, base: VR.drawMotoMini, acc: 205, turn: 4.1, max: { road: 200, stone: 175, dirt: 170, side: 150, grass: 125 },
     name: 'Tatu 110', desc: 'Mini moto de ruedas gordas: chiquita, divertida y dobla en un pañuelo.', side: 'mini' },
-  calle: { rider: { gy: -5.6, gx: 4.6, hip: 2.6 }, len: 21, wid: 8, S: 26, base: VR.drawMotoCalle, acc: 265, turn: 3.2, max: { road: 290, stone: 240, dirt: 215, side: 160, grass: 140 },
+  calle: { rider: { gy: -5.6, gx: 4.6, hip: 2.6 }, len: 21, wid: 7, S: 26, base: VR.drawMotoCalle, acc: 265, turn: 3.2, max: { road: 290, stone: 240, dirt: 215, side: 160, grass: 140 },
     name: 'Yvytu GT 150', desc: 'Moto de calle con tanque grande y escape cromado: la más rápida.', side: 'calle' },
   carga: { rider: { gy: -3.7, gx: 5.2, hip: 2.2 }, len: 32, wid: 16, S: 40, base: VR.drawMotoCarga, acc: 135, rev: 40, turn: 2.3, brake: 380, mass: 0.8,
     max: { road: 185, stone: 165, dirt: 160, side: 120, grass: 105 },
