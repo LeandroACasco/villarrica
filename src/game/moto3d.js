@@ -161,6 +161,52 @@
     return M.F;
   };
 
+  // ---------- Tatu 110 (mini moto de ruedas gordas tipo Bravo 150: tanque cuadrado, faro vertical, parabrisas, parrilla) ----------
+  MESH.mini = (pal, t = {}) => {
+    const C = pal[0], M = new Mesh(), BLK = '#26272c', GR = '#5a5d65', CH = '#b0b4bc';
+    const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#3a3d44', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
+    const FW = 2.2, RW = 14.1, R = 2.2, circ = (u, y, z, r, n = 18, plane = 'y') => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push(plane === 'y' ? [u + Math.cos(a) * r, y, z + Math.sin(a) * r] : [u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
+    const wo = { spoke: '#9096a0', nsp: 5 };
+    M.wheel(FW, R, rim, 0.56, wo); M.wheel(RW, R, rim, 0.58, wo);
+    M.face(circ(0.6, FW, R, 1.05, 16, 'x'), '#b8bcc6', [0, FW, R]);                                                             // disco delantero
+    const fz = (y) => R + Math.sqrt(Math.max(0, 2.85 * 2.85 - (y - FW) * (y - FW)));
+    M.loft(0.6, 4.4, 0.3, (y) => ({ w: pl([[0.6, 0.8], [2.2, 1.05], [4.4, 1.0]], y), zb: fz(y) - 0.3, zt: fz(y) }), C, 10);           // guardabarros azul
+    for (const sg of [-1, 1]) { M.tube([sg * 0.95, FW, R], [sg * 0.95, 5.0, 7.7], 0.3, BLK); M.tube([sg * 0.95, 3.2, 4.6], [sg * 0.95, 4.6, 7.0], 0.4, '#2a2b2f', 8); } // horquilla con resortes
+    // faro vertical con rejilla, aro negro y luces de giro ámbar
+    M.loft(2.9, 4.6, 0.3, () => ({ w: 0.8, zb: 6.8, zt: 8.7 }), C, 12, 2.6);
+    const lamp = M.face([[-0.65, 2.87, 8.55], [0.65, 2.87, 8.55], [0.65, 2.87, 6.95], [-0.65, 2.87, 6.95]], '#cfd6e0', [0, 3.8, 7.7]);
+    lamp.d.push({ p: [[-0.5, 2.85, 8.4], [0.5, 2.85, 8.4], [0.5, 2.85, 7.1], [-0.5, 2.85, 7.1]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.5, 2.83, 7.8], [0.5, 2.83, 7.8], [0.5, 2.83, 7.7], [-0.5, 2.83, 7.7]], c: rgb('#5a5d65') });
+    for (const sg of [-1, 1]) M.box(sg > 0 ? 1.1 : -1.9, sg > 0 ? 1.9 : -1.1, 3.2, 3.8, 7.5, 8.1, '#f0a020');
+    M.prism([[3.2, 8.8], [4.6, 11.0], [4.8, 10.9], [3.4, 8.7]], -1.1, 1.1, '#1d1e22');                                             // parabrisas oscuro
+    // manubrio negro, puños y espejos
+    M.tube([-1.4, 5.8, 9.5], [0, 5.4, 8.9], 0.2, BLK, 5); M.tube([0, 5.4, 8.9], [1.4, 5.8, 9.5], 0.2, BLK, 5);
+    for (const sg of [-1, 1]) {
+      M.tube([sg * 1.4, 5.8, 9.5], [sg * 2.7, 6.4, 10.1], 0.2, BLK, 5); M.tube([sg * 2.2, 6.4, 10.1], [sg * 3.0, 6.5, 10.1], 0.3, '#101012');
+      M.tube([sg * 2.6, 6.4, 10.2], [sg * 2.9, 6.2, 11.6], 0.1, '#2a2a2e', 4);
+      const mir = M.box(sg > 0 ? 2.35 : -3.35, sg > 0 ? 3.35 : -2.35, 6.1, 6.4, 11.5, 12.9, '#1a1a1e'); mir[3].d.push({ p: [[sg * 2.5, 6.42, 11.7], [sg * 3.2, 6.42, 11.7], [sg * 3.2, 6.42, 12.7], [sg * 2.5, 6.42, 12.7]], c: rgb('#8a929c') });
+    }
+    // tanque cuadrado, banda gris, asiento plano y parrilla
+    M.loft(5.0, 11.4, 0.4, (y) => ({ w: pl([[5.0, 1.2], [6.5, 1.65], [10, 1.7], [11.4, 1.3]], y), zb: pl([[5.0, 6.2], [11.4, 5.3]], y), zt: pl([[5.0, 8.2], [6.5, 8.4], [9, 8.3], [11.4, 7.9]], y) }), C, 14, 3.2);
+    for (const sg of [-1, 1]) M.prism([[13.4, 7.0], [13.6, 6.0], [10.4, 4.3], [6.0, 4.7], [6.0, 5.4], [10.4, 5.1]], sg > 0 ? 1.45 : -1.95, sg > 0 ? 1.95 : -1.45, GR);
+    M.loft(8.9, 15.4, 0.5, (y) => ({ w: pl([[8.9, 0.9], [11, 1.3], [15.4, 1.7]], y), zb: 6.9, zt: pl([[8.9, 8.1], [11, 7.9], [15.4, 7.9]], y) }), BLK, 14, 2.6);
+    M.box(-1.5, 1.5, 15.0, 16.8, 8.0, 8.4, '#2a2b2f');
+    for (const sg of [-1, 1]) M.tube([sg * 1.75, 11.8, 8.2], [sg * 1.75, 16.6, 8.2], 0.18, BLK, 5); M.tube([-1.75, 16.6, 8.2], [1.75, 16.6, 8.2], 0.18, BLK, 5);
+    M.face([[-0.8, 16.9, 7.0], [0.8, 16.9, 7.0], [0.8, 16.9, 7.8], [-0.8, 16.9, 7.8]], '#c42a2a', [0, 15, 7.4]);                      // farol trasero
+    for (const sg of [-1, 1]) M.box(sg > 0 ? 1.7 : -2.4, sg > 0 ? 2.4 : -1.7, 15.5, 16.0, 5.6, 6.1, '#f0a020');
+    // caja negra de abajo (batería/caja), motor, pedaleras y guardabarros trasero
+    M.box(-1.45, 1.45, 5.4, 8.6, 2.7, 5.8, '#33343a'); M.box(-1.3, 1.3, 4.0, 5.4, 2.3, 4.2, '#3c3d43');
+    const en = M.box(-1.2, 1.2, 9.2, 12.8, 1.8, 3.8, '#44464c'); en[1].d.push({ p: circ(1.22, 11.6, 2.6, 0.8, 14, 'x'), c: rgb('#8a8e96') });
+    M.box(-1.3, 1.3, 5.6, 10.0, 2.1, 2.5, '#33343a');
+    for (const sg of [-1, 1]) M.box(sg > 0 ? 1.3 : -2.4, sg > 0 ? 2.4 : -1.3, 7.0, 8.2, 2.4, 2.8, '#33343a');
+    const rz = (y) => R + Math.sqrt(Math.max(0, 3.0 * 3.0 - (y - RW) * (y - RW)));
+    M.loft(12.4, 16.1, 0.4, (y) => ({ w: 1.2, zb: rz(y) - 0.4, zt: rz(y) }), '#2a2b30', 10);
+    for (const sg of [-1, 1]) { M.tube([sg * 1.2, 13.6, 6.0], [sg * 1.2, 14.2, 3.6], 0.22, '#c82828', 6); M.tube([sg * 1.15, 11.0, 2.3], [sg * 1.15, RW, R], 0.3, '#17181b'); }
+    const mu = (sg) => { M.tube([sg * 1.4, 10.6, 2.6], [sg * 1.8, 11.6, 2.4], 0.3, CH, 5); M.tube([sg * 1.9, 11.4, 2.4], [sg * 2.0, 15.6, 3.9], 0.56, t.escape === 'deportivo' ? '#d8dce4' : '#2a2b30', 8); };
+    mu(1); if (t.escape === 'deportivo') mu(-1);
+    if (S2) for (const sg of [-1, 1]) M.box(sg > 0 ? 1.6 : -1.8, sg > 0 ? 1.8 : -1.6, 7.0, 10.4, 6.9, 7.4, S2);
+    return M.F;
+  };
+
   // ---------- dibujo ----------
   const L = norm([-0.38, -0.48, 0.8]);
   const meshRender = (base, a, B, F) => {
