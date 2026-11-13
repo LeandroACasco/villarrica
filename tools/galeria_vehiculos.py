@@ -36,15 +36,15 @@ const tunable=(m)=>!!VR.TUNE_MODELS[m];
 const st={sel:ALL[0],elev:30,col:0,tune:null,real:false,ang:0.9,auto:true};
 // frame(type,model,pal,tune,k,elev,hq): el mismo dibujo oblicuo del juego; baja la cámara (kz = cot elev) y aplasta el piso (sen elev)
 const bases=new Map();
-function base(t,m,pal,tune,hq){const k=t+m+JSON.stringify(pal)+JSON.stringify(tune||0)+hq;let b=bases.get(k);if(b)return b;const sp=spec(t,m);VR.VSS=VSS0*(hq?2:1);try{b=sp.base(pal,tune||{});}finally{VR.VSS=VSS0;}bases.set(k,b);if(bases.size>40)bases.delete(bases.keys().next().value);return b;}
+function base(t,m,pal,tune,hq){const k=t+m+JSON.stringify(pal)+JSON.stringify(tune||0)+hq;let b=bases.get(k);if(b)return b;const sp=spec(t,m);VR.VSS=VSS0*(hq?3:1);try{b=sp.base(pal,tune||{});}finally{VR.VSS=VSS0;}bases.set(k,b);if(bases.size>40)bases.delete(bases.keys().next().value);return b;}
 const fcache=new Map();
 function frame(t,m,pal,tune,k,elev,hq){const key=[t,m,JSON.stringify(pal),JSON.stringify(tune||0),k,elev,hq].join('|');let c=fcache.get(key);if(c)return c;
- const sp=spec(t,m),b=base(t,m,pal,tune,hq);if(!b.prof||!OB||!OB.on)return null;const e=rad(elev),kz0=OB.kz;OB.kz=Math.cos(e)/Math.sin(e);let big,ss;
- try{const S=sp.S+2*OB.extra(b);ss=b.ss||1;const B=Math.round(S*ss);big=OB.render(b,k/64*Math.PI*2,B);}finally{OB.kz=kz0;}
- c=VR.gfx.softOutline(big,'rgba(18,16,20,.92)',ss*0.8);c.ss=ss;c.sinE=Math.sin(e);fcache.set(key,c);if(fcache.size>900)fcache.delete(fcache.keys().next().value);return c;}
+ const sp=spec(t,m),b=base(t,m,pal,tune,hq);if(!b.prof||!OB||!OB.on)return null;const e=rad(elev),kz0=OB.kz,st0=OB.step;OB.kz=Math.cos(e)/Math.sin(e);if(hq)OB.step=1;let big,ss;
+ try{const S=sp.S+2*OB.extra(b);ss=b.ss||1;const B=Math.round(S*ss);big=OB.render(b,k/64*Math.PI*2,B);}finally{OB.kz=kz0;OB.step=st0;}
+ c=VR.gfx.softOutline(big,'rgba(18,16,20,.92)',ss*0.8);c.ss=ss;c.sinE=Math.sin(e);{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,w=c.width,h=c.height;let x0=w,x1=0,y0=h,y1=0;for(let y=0;y<h;y+=2)for(let x=0;x<w;x+=2)if(d[(y*w+x)*4+3]>20){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}c.bb=[x0,y0,x1+2,y1+2];}fcache.set(key,c);if(fcache.size>900)fcache.delete(fcache.keys().next().value);return c;}
 function palOf(t,m,col,tune){const sp=spec(t,m);if(tune)return VR.tunePal(tune.color);return sp.colors[col%sp.colors.length];}
 // dibuja el cuadro en (cx,cy) con la escala px por unidad del mundo
-function draw(g,img,sp,cx,cy,pxu){const f=pxu/((VR.VK||1)*img.ss), w=img.width*f, h=img.height*f*img.sinE;g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(cx,cy+h*0.04,w*0.34,h*0.2,0,0,7);g.fill();g.drawImage(img,cx-w/2,cy-h/2-h*0.04,w,h);}
+function draw(g,img,sp,cx,cy,pxu,fit){let f=pxu/((VR.VK||1)*img.ss);const bb=img.bb||[0,0,img.width,img.height],cw=g.canvas.width,ch=g.canvas.height,sy=img.sinE;const bw=bb[2]-bb[0],bh=(bb[3]-bb[1])*sy;const lim=Math.min(cw*0.92/bw,ch*0.88/bh);if(fit)f=lim;else f=Math.min(f,lim);const w=img.width*f,h=img.height*f*sy;const ox=((bb[0]+bb[2])/2-img.width/2)*f,oy=((bb[1]+bb[3])/2-img.height/2)*f*sy;const px=cx-ox,py=(fit?ch*0.52:cy)-oy;g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(cx,(fit?ch*0.52:cy)+bh*f*0.42,bw*f*0.4,bh*f*0.12,0,0,7);g.fill();g.drawImage(img,px-w/2,py-h/2,w,h);}
 const $=(s)=>document.querySelector(s);
 function floor(g,W,H){const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#4a4d54');gr.addColorStop(1,'#2f3237');g.fillStyle=gr;g.fillRect(0,0,W,H);g.strokeStyle='rgba(255,255,255,.05)';for(let i=1;i<6;i++){g.beginPath();g.moveTo(0,H*i/6);g.lineTo(W,H*i/6);g.stroke();}
  g.fillStyle='rgba(255,215,94,.35)';g.beginPath();g.ellipse(W/2,H*0.62,W*0.43,H*0.3,0,0,7);g.lineWidth=2;g.strokeStyle='rgba(255,215,94,.5)';g.setLineDash([8,6]);g.stroke();g.setLineDash([]);g.fillStyle='rgba(0,0,0,.18)';g.fill();}
@@ -73,7 +73,7 @@ function buildDet(){const [t,m]=st.sel,sp=spec(t,m);$('#nm').innerHTML='<b>'+(sp
  else{spec(t,m).colors.forEach((c,i)=>{const b=document.createElement('button');b.className='sw'+(st.col===i?' on':'');b.style.background=c[0];b.onclick=()=>{st.col=i;buildDet();};col.append(b);});g1.innerHTML='<p class="sub">Este vehículo no se tunea en el taller (solo cambia de color).</p>';}
  for(const b of document.querySelectorAll('#cam button'))b.classList.toggle('on',+b.dataset.e===st.elev);}
 function loopDet(now){ if(!$('#det').hidden){const dt=now-(loopDet.l||now);loopDet.l=now;if(st.auto)st.ang+=dt*0.0007;const [t,m]=st.sel,sp=spec(t,m),pal=palOf(t,m,st.col,st.tune),tune=st.tune,k=((Math.round(st.ang/(Math.PI*2)*64)%64)+64)%64;
-  const cv=$('#big'),g=cv.getContext('2d'),W=cv.width,H=cv.height;floor(g,W,H);const img=frame(t,m,pal,tune,k,st.elev,true);if(img)draw(g,img,sp,W/2,H*0.6,Math.min(W*0.8,H*1.5)/Math.max(sp.len,sp.wid));
+  const cv=$('#big'),g=cv.getContext('2d'),W=cv.width,H=cv.height;floor(g,W,H);const img=frame(t,m,pal,tune,k,st.elev,true);if(img)draw(g,img,sp,W/2,H*0.6,1,true);
   const sc=$('#strip').children;for(let i=0;i<8;i++){const c=sc[i].getContext('2d'),w=sc[i].width,h=sc[i].height;floor(c,w,h);const im=frame(t,m,pal,tune,i*8,st.elev,false);if(im)draw(c,im,sp,w/2,h*0.6,Math.min(w*0.85,h*1.5)/Math.max(sp.len,sp.wid));}}
  requestAnimationFrame(loopDet);}
 function tab(n){for(const b of document.querySelectorAll('.tabs button'))b.classList.toggle('on',b.dataset.t===n);$('#all').hidden=n!=='all';$('#det').hidden=n!=='det';}
