@@ -88,7 +88,7 @@ VR.drawCarBase = (pal, t = {}) => VR.vbase(16, 30, (T) => {
   g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0.8, 12.6, 0.5, 9); g.fillRect(14.7, 12.6, 0.5, 9);
   if (t.aleron === 'chico') { T.rr(3, 25.4, 10, 1, 0.4, D); T.rr(3.2, 25.4, 9.6, 0.4, 0.2, L); }
   if (t.aleron === 'grande') { T.rr(5, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(10.2, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(0.8, 26.2, 14.4, 1.7, 0.5, T.hg(0.8, 15.2, [D, L, C, D])); T.rr(1, 26.3, 14, 0.5, 0.2, 'rgba(255,255,255,.25)'); }
-}, () => VR.OBL.car(VR.OBL.MITA, pal, t), 0.82);
+}, () => VR.OBL.car(VR.OBL.MITA, pal, t));
 // Motos y vehículos de dos (y tres) ruedas, vistos desde arriba mirando hacia arriba. Diseños propios por
 // categoría (sin marcas ni modelos reales): moto "cub", mini moto, moto de calle 150, motocarga y patineta.
 VR.drawMotoCub = (pal, t = {}) => VR.vbase(10, 21, (T) => { // escudo delantero ancho, piso bajo, asiento largo
@@ -349,7 +349,7 @@ VR.rotFrames = (base, S, outline = true) => {
 // Datos de cada tipo: tamaño, sprites y manejo. max = velocidad tope por piso (px/s; 240 ≈ 108 km/h).
 // name/desc: nombre inventado y descripción para la tarjeta que aparece al subirte.
 VR.VSPEC = {
-  car: { len: 30, wid: 13, S: 36, colors: VR.CAR_COLORS, base: VR.drawCarBase, acc: 175, rev: 75, turn: 2.7, brake: 420, mass: 1,
+  car: { len: 30, wid: 16, S: 36, colors: VR.CAR_COLORS, base: VR.drawCarBase, acc: 175, rev: 75, turn: 2.7, brake: 420, mass: 1,
     max: { road: 240, stone: 205, dirt: 170, side: 150, grass: 115 },
     name: 'Mitã 1.3', desc: 'Compacto de 5 puertas: chico, gasolero y fácil de estacionar.', side: 'car' },
   moto: { len: 19, wid: 8, S: 24, colors: VR.MOTO_COLORS, base: VR.drawMotoCub, acc: 230, rev: 25, turn: 3.5, brake: 460, mass: 0.3,
@@ -638,7 +638,13 @@ VR.Car = class {
     const k = this.frame(ak), F = this.frames, h = F.S >> 1, lift = Math.round(F.lift || 0);
     const shake = this.hit > 0 ? ((this.hit * 60) | 0) % 2 : 0;
     if (this.tune && this.tune.neon !== 'no' && (this.driven || this.ai)) VR.drawNeon(ctx, x, y, a, this.LEN, this.WID, VR.NEON[this.tune.neon], VR.night ? 0.35 + VR.night.level * 0.65 : 0.4);
-    ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
+    { const sn = VR.sun;   // sombra según el sol: se corre hacia donde cae y se alarga con el sol bajo
+      if (!sn || !sn.on) ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
+      else if (sn.str > 0.03) {
+        const [ox, oy] = sn.off(7, 22), SH = F.getShadow(k); ctx.globalAlpha = sn.str;
+        if (Math.abs(ox) + Math.abs(oy) > 5) ctx.drawImage(SH, Math.round(x - h + ox * 0.5), Math.round(y - h + oy * 0.5), F.S, F.S);
+        ctx.drawImage(SH, Math.round(x - h + ox), Math.round(y - h + oy), F.S, F.S); ctx.globalAlpha = 1;
+      } }
     ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
     if (this.dents && this.dents.length && !this.wreck) VR.drawDents(ctx, this, x + shake, y - Math.round(lift * 0.55), ak);
     if (this.pasajero && this.pasajero.L) { // pasajero atrás del conductor (Mbohasa en moto): se dibuja primero, así el conductor le tapa las manos en su cintura

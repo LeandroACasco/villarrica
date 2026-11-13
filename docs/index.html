@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 633c4436 · 2026-11-13</div>
+  <div class="tVer">Versión 047e1919 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -505,7 +505,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 633c4436 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 047e1919 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -1676,14 +1676,16 @@ VR.World = class {
     }
     // 3b) calles en diagonal (05/11/2026): las baldosas quedan escalonadas, así que encima se dibujan lisas
     if (idx.r.length) VR.drawDiagonals(g, this, idx.r, tx0, ty0, tx1, ty1);
-    // 4) sombras (sol del noroeste): árboles, y edificios hacia el este y el sur
-    g.fillStyle = 'rgba(10,20,10,.28)';
-    for (const t of idx.t) { g.beginPath(); g.ellipse(t.x * S + 11, t.y * S + 4, t.r, t.r * 0.7, 0, 0, Math.PI * 2); g.fill(); }
-    g.fillStyle = 'rgba(0,0,0,.26)';
-    for (let ty = ty0 - 1; ty < ty1; ty++) for (let tx = tx0 - 1; tx < tx1; tx++) {
-      if (!this.b(tx, ty)) continue;
-      if (!this.b(tx + 1, ty)) g.fillRect((tx + 1) * S, ty * S + (this.b(tx, ty - 1) ? 0 : 5), 5, S);
-      if (!this.b(tx, ty + 1)) g.fillRect(tx * S + (this.b(tx - 1, ty) ? 0 : 5), (ty + 1) * S, S, 3);
+    // 4) sombras: con VR.sun van en una capa aparte que cambia con la hora (shadeOf, más abajo); si no, las de siempre (sol del noroeste)
+    if (!(VR.sun && VR.sun.on)) {
+      g.fillStyle = 'rgba(10,20,10,.28)';
+      for (const t of idx.t) { g.beginPath(); g.ellipse(t.x * S + 11, t.y * S + 4, t.r, t.r * 0.7, 0, 0, Math.PI * 2); g.fill(); }
+      g.fillStyle = 'rgba(0,0,0,.26)';
+      for (let ty = ty0 - 1; ty < ty1; ty++) for (let tx = tx0 - 1; tx < tx1; tx++) {
+        if (!this.b(tx, ty)) continue;
+        if (!this.b(tx + 1, ty)) g.fillRect((tx + 1) * S, ty * S + (this.b(tx, ty - 1) ? 0 : 5), 5, S);
+        if (!this.b(tx, ty + 1)) g.fillRect(tx * S + (this.b(tx - 1, ty) ? 0 : 5), (ty + 1) * S, S, 3);
+      }
     }
     // 5) troncos
     for (const t of idx.t) {
@@ -1714,8 +1716,37 @@ VR.World = class {
     const PX = this.CH * VR.TILE;
     const c0 = Math.max(0, Math.floor(camX / PX)), c1 = Math.min(this.cw - 1, Math.floor((camX + sw) / PX));
     const r0 = Math.max(0, Math.floor(camY / PX)), r1 = Math.min(this.chh - 1, Math.floor((camY + sh) / PX));
-    for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++)
-      ctx.drawImage(this.chunk(cx, cy).ground, cx * PX - camX, cy * PX - camY, PX, PX);
+    const sun = VR.sun, useShade = sun && sun.on && sun.str > 0.03; let budget = 2;
+    for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {
+      const ch = this.chunk(cx, cy); ctx.drawImage(ch.ground, cx * PX - camX, cy * PX - camY, PX, PX);
+      if (!useShade) continue;
+      if ((!ch.shade || ch.shKey !== sun.key) && (budget > 0 || !ch.shade)) { this.renderShade(ch, cx, cy); budget--; }
+      ctx.globalAlpha = 0.3 * sun.str; ctx.drawImage(ch.shade, cx * PX - camX, cy * PX - camY, PX, PX); ctx.globalAlpha = 1;
+    }
+  }
+  // Capa de sombras de un chunk (13/11/2026): árboles y edificios proyectan según la hora (VR.sun). Se dibuja sólida y se
+  // aplica con transparencia; se recorta lo que cae sobre edificios y se rehace (poco a poco) cuando cambia el sol.
+  renderShade(ch, cx, cy) {
+    const sun = VR.sun, S = VR.TILE, N = this.CH, PX = N * S, R = 1;
+    if (!ch.shade) ch.shade = VR.canvas(PX * R, PX * R);
+    const g = ch.shade.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, PX, PX);
+    g.globalCompositeOperation = 'source-over'; g.fillStyle = '#000'; g.translate(-cx * PX, -cy * PX);
+    const tx0 = cx * N, ty0 = cy * N, M = 5;   // edificios hasta 5 baldosas afuera: sus sombras entran al chunk
+    for (let ty = ty0 - M; ty < ty0 + N + M; ty++) for (let tx = tx0 - M; tx < tx0 + N + M; tx++) {
+      const id = this.b(tx, ty); if (!id) continue;
+      const fl = this.buildings[id - 1].floors || 1, [vx, vy] = sun.off(7 + fl * 9, 46), n = Math.max(1, Math.ceil(Math.hypot(vx, vy) / 3));
+      for (let i = 0; i <= n; i++) g.fillRect(tx * S + vx * i / n, ty * S + vy * i / n, S, S);
+    }
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const x = cx + dx, y = cy + dy; if (x < 0 || y < 0 || x >= this.cw || y >= this.chh) continue;
+      for (const t of this.index[y * this.cw + x].t) {
+        const bx = t.x * S + 8, by = t.y * S + 11, [vx, vy] = sun.off(15, 40), n = Math.max(1, Math.ceil(Math.hypot(vx, vy) / 3));
+        for (let i = 0; i <= n; i++) { g.beginPath(); g.ellipse(bx + vx * i / n, by + vy * i / n, t.r * 0.85, t.r * 0.6, 0, 0, Math.PI * 2); g.fill(); }
+      }
+    }
+    g.globalCompositeOperation = 'destination-out';   // no se pinta sobre los edificios
+    for (let ty = ty0; ty < ty0 + N; ty++) for (let tx = tx0; tx < tx0 + N; tx++) if (this.b(tx, ty)) g.fillRect(tx * S, ty * S, S, S);
+    g.globalCompositeOperation = 'source-over'; ch.shKey = sun.key;
   }
   // Cosas altas visibles (copas, obelisco, arcos): se ordenan por Y junto con los personajes.
   collectTall(camX, camY, sw, sh, out) {
@@ -4117,7 +4148,7 @@ VR.Player = class {
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
     if (this.rag) { this.rag.draw(ctx, this.sprites, x, y); return; }
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6 * VR.PS, 2.5 * VR.PS, 0, 0, Math.PI * 2); ctx.fill();
+    VR.sun.blob(ctx, x, y, 30 * VR.PS, 6 * VR.PS, 2.5 * VR.PS, 0.3);
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
     const PS = VR.PS; ctx.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);
     if (this.equipo === 'canasto') { // canasto de chipa en la mano (J3)
@@ -4295,7 +4326,7 @@ VR.drawCarBase = (pal, t = {}) => VR.vbase(16, 30, (T) => {
   g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0.8, 12.6, 0.5, 9); g.fillRect(14.7, 12.6, 0.5, 9);
   if (t.aleron === 'chico') { T.rr(3, 25.4, 10, 1, 0.4, D); T.rr(3.2, 25.4, 9.6, 0.4, 0.2, L); }
   if (t.aleron === 'grande') { T.rr(5, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(10.2, 25.6, 0.8, 1.6, 0.2, '#2a2a30'); T.rr(0.8, 26.2, 14.4, 1.7, 0.5, T.hg(0.8, 15.2, [D, L, C, D])); T.rr(1, 26.3, 14, 0.5, 0.2, 'rgba(255,255,255,.25)'); }
-}, () => VR.OBL.car(VR.OBL.MITA, pal, t), 0.82);
+}, () => VR.OBL.car(VR.OBL.MITA, pal, t));
 // Motos y vehículos de dos (y tres) ruedas, vistos desde arriba mirando hacia arriba. Diseños propios por
 // categoría (sin marcas ni modelos reales): moto "cub", mini moto, moto de calle 150, motocarga y patineta.
 VR.drawMotoCub = (pal, t = {}) => VR.vbase(10, 21, (T) => { // escudo delantero ancho, piso bajo, asiento largo
@@ -4556,7 +4587,7 @@ VR.rotFrames = (base, S, outline = true) => {
 // Datos de cada tipo: tamaño, sprites y manejo. max = velocidad tope por piso (px/s; 240 ≈ 108 km/h).
 // name/desc: nombre inventado y descripción para la tarjeta que aparece al subirte.
 VR.VSPEC = {
-  car: { len: 30, wid: 13, S: 36, colors: VR.CAR_COLORS, base: VR.drawCarBase, acc: 175, rev: 75, turn: 2.7, brake: 420, mass: 1,
+  car: { len: 30, wid: 16, S: 36, colors: VR.CAR_COLORS, base: VR.drawCarBase, acc: 175, rev: 75, turn: 2.7, brake: 420, mass: 1,
     max: { road: 240, stone: 205, dirt: 170, side: 150, grass: 115 },
     name: 'Mitã 1.3', desc: 'Compacto de 5 puertas: chico, gasolero y fácil de estacionar.', side: 'car' },
   moto: { len: 19, wid: 8, S: 24, colors: VR.MOTO_COLORS, base: VR.drawMotoCub, acc: 230, rev: 25, turn: 3.5, brake: 460, mass: 0.3,
@@ -4845,7 +4876,13 @@ VR.Car = class {
     const k = this.frame(ak), F = this.frames, h = F.S >> 1, lift = Math.round(F.lift || 0);
     const shake = this.hit > 0 ? ((this.hit * 60) | 0) % 2 : 0;
     if (this.tune && this.tune.neon !== 'no' && (this.driven || this.ai)) VR.drawNeon(ctx, x, y, a, this.LEN, this.WID, VR.NEON[this.tune.neon], VR.night ? 0.35 + VR.night.level * 0.65 : 0.4);
-    ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
+    { const sn = VR.sun;   // sombra según el sol: se corre hacia donde cae y se alarga con el sol bajo
+      if (!sn || !sn.on) ctx.drawImage(F.getShadow(k), x - h + 3, y - h + 3, F.S, F.S);
+      else if (sn.str > 0.03) {
+        const [ox, oy] = sn.off(7, 22), SH = F.getShadow(k); ctx.globalAlpha = sn.str;
+        if (Math.abs(ox) + Math.abs(oy) > 5) ctx.drawImage(SH, Math.round(x - h + ox * 0.5), Math.round(y - h + oy * 0.5), F.S, F.S);
+        ctx.drawImage(SH, Math.round(x - h + ox), Math.round(y - h + oy), F.S, F.S); ctx.globalAlpha = 1;
+      } }
     ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
     if (this.dents && this.dents.length && !this.wreck) VR.drawDents(ctx, this, x + shake, y - Math.round(lift * 0.55), ak);
     if (this.pasajero && this.pasajero.L) { // pasajero atrás del conductor (Mbohasa en moto): se dibuja primero, así el conductor le tapa las manos en su cintura
@@ -5251,48 +5288,48 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     mita: { name: 'Mitã 1.3', desc: 'Compacto de 5 puertas: chico, gasolero y fácil de estacionar.', side: 'car', base: VR.drawCarBase,
       sideShape: { body: [[4, 27], [4, 18], [10, 15], [20, 7], [42, 6], [52, 15], [60, 17], [61, 26], [55, 27], [53, 23], [43, 23], [41, 27], [23, 27], [21, 23], [11, 23], [9, 27]],
         win: [[[21, 8.6], [32, 7.8], [32, 15], [14, 15]], [[34, 7.8], [41, 7.8], [49, 15], [34, 15]]], pillars: [33], yr: 6, rx0: 20, rx1: 42, belt: 15, sill: 27, doors: [33, 46], tailx: 4, tailTop: 17, nose: 61, hood: [52, 15], wheels: [16, 48], wr: 5 } },
-    sedan: { len: 35, wid: 14, S: 40, acc: 168, turn: 2.5, max: { road: 245, stone: 205, dirt: 160, side: 145, grass: 105 },
+    sedan: { len: 35, wid: 16, S: 40, acc: 168, turn: 2.5, max: { road: 245, stone: 205, dirt: 160, side: 145, grass: 105 },
       name: 'Porã 1.5', desc: 'Sedán familiar de 4 puertas con baúl grande: el de los remises y las familias.', side: 'sedan',
-      base: VR.drawAuto({ sx: 0.875, L: 35, W: 16, hood: 8.4, ws: 4, roof: 10.4, rg: 3.6, fa: 0.2, ra: 0.74, hl: 'slant', tl: 'bar', pinch: 1.2 }),
+      base: VR.drawAuto({ L: 35, W: 16, hood: 8.4, ws: 4, roof: 10.4, rg: 3.6, fa: 0.2, ra: 0.74, hl: 'slant', tl: 'bar', pinch: 1.2 }),
       sideShape: side({ body: [[3, 27], [3, 18], [12, 16], [21, 8], [38, 7], [47, 15], [60, 17], [61, 26], [55, 27], [53, 23], [43, 23], [41, 27], [22, 27], [20, 23], [10, 23], [8, 27]],
         win: [[[22, 9], [31, 8], [31, 15], [16, 15]], [[33, 8], [38, 8], [45, 15], [33, 15]]], pillars: [32], yr: 7, rx0: 22, rx1: 38, belt: 15, sill: 27, doors: [32, 44], tailx: 3, tailTop: 16, nose: 61, hood: [47, 15], wheels: [15, 48], wr: 5 }) },
-    mono: { len: 31, wid: 13, S: 36, acc: 160, turn: 2.8, max: { road: 225, stone: 198, dirt: 165, side: 145, grass: 110 },
+    mono: { len: 31, wid: 16, S: 36, acc: 160, turn: 2.8, max: { road: 225, stone: 198, dirt: 165, side: 145, grass: 110 },
       name: "Ka'i 1.3", desc: 'Monovolumen chico de techo alto: entra todo y se estaciona en cualquier lado.', side: 'mono',
-      base: VR.drawAuto({ sx: 0.84, hz: [7.8, 12.8], L: 31, W: 16, hood: 5.6, ws: 5.4, roof: 13.4, rg: 2.6, fa: 0.19, ra: 0.79, tl: 'vertical', pinch: 1.6 }),
+      base: VR.drawAuto({ hz: [7.8, 12.8], L: 31, W: 16, hood: 5.6, ws: 5.4, roof: 13.4, rg: 2.6, fa: 0.19, ra: 0.79, tl: 'vertical', pinch: 1.6 }),
       sideShape: side({ body: [[4, 27], [4, 9], [8, 5], [36, 4], [48, 13], [59, 16], [60, 26], [54, 27], [52, 23], [42, 23], [40, 27], [21, 27], [19, 23], [9, 23], [7, 27]],
         win: [[[6, 7], [8, 6], [20, 6], [20, 14], [6, 14]], [[22, 6], [32, 6], [32, 14], [22, 14]], [[34, 5], [36, 5], [45, 14], [34, 14]]], pillars: [21, 33], yr: 4, rx0: 8, rx1: 36, belt: 14, sill: 27, doors: [21, 33], tailx: 4, tailTop: 12, nose: 60, hood: [48, 13], wheels: [14, 47], wr: 5 }) },
-    pickup: { len: 41, wid: 15, S: 46, acc: 165, rev: 70, turn: 2.2, brake: 380, mass: 1.5, max: { road: 230, stone: 212, dirt: 205, side: 140, grass: 165 },
+    pickup: { len: 41, wid: 18, S: 46, acc: 165, rev: 70, turn: 2.2, brake: 380, mass: 1.5, max: { road: 230, stone: 212, dirt: 205, side: 140, grass: 165 },
       name: 'Yvyty Cabina Doble', desc: 'Camioneta doble cabina con caja: anda en el barro, en el campo y en el centro.', side: 'pickup',
-      base: VR.drawAuto({ sx: 0.83, L: 41, W: 18, hood: 9.6, ws: 3.6, roof: 9.6, rg: 1.4, fa: 0.19, ra: 0.77, box: true, bed: true, rollbar: true, tireL: 6.4, grille: '#3a3a40' }),
+      base: VR.drawAuto({ L: 41, W: 18, hood: 9.6, ws: 3.6, roof: 9.6, rg: 1.4, fa: 0.19, ra: 0.77, box: true, bed: true, rollbar: true, tireL: 6.4, grille: '#3a3a40' }),
       sideShape: side({ body: [[2, 27], [2, 15], [27, 15], [27, 6], [42, 5], [47, 13], [61, 14], [62, 26], [56, 27], [54, 22], [43, 22], [41, 27], [20, 27], [18, 22], [7, 22], [5, 27]],
         win: [[[29, 7], [34, 7], [34, 13], [29, 13]], [[36, 6], [41, 6], [45, 13], [36, 13]]], pillars: [35], yr: 5, rx0: 27, rx1: 42, belt: 13, sill: 27, doors: [35, 46], tailx: 2, tailTop: 15, nose: 62, hood: [47, 13], bed: [3, 15, 27], rollbar: true, wheels: [12, 49], wr: 6 }) },
-    suv: { len: 37, wid: 15, S: 42, acc: 175, rev: 70, turn: 2.4, brake: 400, mass: 1.4, max: { road: 235, stone: 214, dirt: 205, side: 140, grass: 168 },
+    suv: { len: 37, wid: 18, S: 42, acc: 175, rev: 70, turn: 2.4, brake: 400, mass: 1.4, max: { road: 235, stone: 214, dirt: 205, side: 140, grass: 168 },
       name: 'Jaguarete 3.2', desc: 'Todoterreno grande con rueda de auxilio atrás: no hay calle de tierra que lo pare.', side: 'suv',
-      base: VR.drawAuto({ sx: 0.83, L: 37, W: 18, hood: 8.6, ws: 3.6, roof: 17.4, rg: 1.8, fa: 0.2, ra: 0.76, box: true, rails: true, spare: true, tireL: 6.4, scoop: true, tl: 'vertical', flares: true }),
+      base: VR.drawAuto({ L: 37, W: 18, hood: 8.6, ws: 3.6, roof: 17.4, rg: 1.8, fa: 0.2, ra: 0.76, box: true, rails: true, spare: true, tireL: 6.4, scoop: true, tl: 'vertical', flares: true }),
       sideShape: side({ body: [[4, 27], [4, 6], [6, 4], [41, 4], [46, 12], [60, 13], [61, 26], [55, 27], [53, 22], [42, 22], [40, 27], [20, 27], [18, 22], [8, 22], [6, 27]],
         win: [[[6, 6], [16, 6], [16, 12], [6, 12]], [[18, 6], [28, 6], [28, 12], [18, 12]], [[30, 6], [40, 6], [44, 12], [30, 12]]], pillars: [17, 29], yr: 4, rx0: 6, rx1: 41, belt: 12, sill: 27, doors: [29, 44], tailx: 4, tailTop: 8, nose: 61, hood: [46, 12], rails: true, spare: 17, bull: true, wheels: [13, 48], wr: 6 }) },
-    suvmed: { len: 35, wid: 14, S: 40, acc: 170, rev: 70, turn: 2.5, brake: 400, mass: 1.3, max: { road: 230, stone: 210, dirt: 200, side: 140, grass: 162 },
+    suvmed: { len: 35, wid: 17, S: 40, acc: 170, rev: 70, turn: 2.5, brake: 400, mass: 1.3, max: { road: 230, stone: 210, dirt: 200, side: 140, grass: 162 },
       name: 'Mborevi 2.7', desc: 'Todoterreno mediano de 5 puertas: firme en la ruta y en la tierra colorada.', side: 'suvmed',
-      base: VR.drawAuto({ sx: 0.82, L: 35, W: 17, hood: 8.8, ws: 3.8, roof: 14.4, rg: 2.4, fa: 0.2, ra: 0.77, box: true, spare: true, spareC: true, tireL: 6, tl: 'vertical', hl: 'slant' }),
+      base: VR.drawAuto({ L: 35, W: 17, hood: 8.8, ws: 3.8, roof: 14.4, rg: 2.4, fa: 0.2, ra: 0.77, box: true, spare: true, spareC: true, tireL: 6, tl: 'vertical', hl: 'slant' }),
       sideShape: side({ body: [[4, 27], [4, 8], [7, 5], [39, 5], [45, 13], [60, 14], [61, 26], [55, 27], [53, 22], [43, 22], [41, 27], [20, 27], [18, 22], [8, 22], [6, 27]],
         win: [[[7, 7], [18, 7], [18, 13], [6, 13]], [[20, 7], [29, 7], [29, 13], [20, 13]], [[31, 7], [38, 7], [43, 13], [31, 13]]], pillars: [19, 30], yr: 5, rx0: 7, rx1: 39, belt: 13, sill: 27, doors: [30, 43], tailx: 4, tailTop: 9, nose: 61, hood: [45, 13], spare: 18, wheels: [13, 48], wr: 6 }) },
-    suvchico: { len: 28, wid: 13, S: 34, acc: 168, rev: 70, turn: 2.9, brake: 420, mass: 1.1, max: { road: 215, stone: 198, dirt: 195, side: 145, grass: 160 },
+    suvchico: { len: 28, wid: 16, S: 34, acc: 168, rev: 70, turn: 2.9, brake: 420, mass: 1.1, max: { road: 215, stone: 198, dirt: 195, side: 145, grass: 160 },
       name: 'Jaguarete Mirĩ', desc: 'Todoterreno chico de 3 puertas: corto, alto y guapo en la tierra.', side: 'suvchico',
-      base: VR.drawAuto({ sx: 0.82, hz: [8.4, 13.4], L: 28, W: 16, hood: 7.2, ws: 3.4, roof: 11.6, rg: 1.6, fa: 0.21, ra: 0.75, box: true, spare: true, doors3: true, tireL: 5.6, rails: true, hl: 'round', flares: true }),
+      base: VR.drawAuto({ hz: [8.4, 13.4], L: 28, W: 16, hood: 7.2, ws: 3.4, roof: 11.6, rg: 1.6, fa: 0.21, ra: 0.75, box: true, spare: true, doors3: true, tireL: 5.6, rails: true, hl: 'round', flares: true }),
       sideShape: side({ body: [[8, 27], [8, 7], [10, 5], [36, 5], [42, 13], [56, 14], [57, 26], [51, 27], [49, 22], [39, 22], [37, 27], [24, 27], [22, 22], [12, 22], [10, 27]],
         win: [[[10, 7], [20, 7], [20, 13], [10, 13]], [[22, 7], [35, 7], [40, 13], [22, 13]]], pillars: [21], yr: 5, rx0: 10, rx1: 36, belt: 13, sill: 27, doors: [21, 40], tailx: 8, tailTop: 9, nose: 57, hood: [42, 13], rails: true, spare: 18, wheels: [17, 44], wr: 6 }) },
     // Deportivos (Leandro, 05/11/2026, pidió un sedán de rally turbo y un coupé deportivo de los 90-2000 que se ven
     // en la calle): como siempre, la categoría con diseño propio y nombre inventado, no la copia del modelo.
-    rally: { len: 35, wid: 14, S: 40, acc: 215, rev: 70, turn: 2.8, brake: 440, mass: 1.05, max: { road: 275, stone: 245, dirt: 235, side: 150, grass: 185 },
+    rally: { len: 35, wid: 17, S: 40, acc: 215, rev: 70, turn: 2.8, brake: 440, mass: 1.05, max: { road: 275, stone: 245, dirt: 235, side: 150, grass: 185 },
       colors: [['#1f4fa8', '#13336e', '#4f80d8'], ['#eceae4', '#a8a59e', '#ffffff'], ['#c8322a', '#8e1f1a', '#e4685c'], ['#26262c', '#141418', '#4a4a54'], ['#a8acb4', '#70747c', '#d4d8e0']],
       name: 'Mbarakaja Turbo', desc: 'Sedán de rally con tracción en las cuatro: toma de aire en el capó, alerón alto y guapo en la tierra.', side: 'rally',
-      base: VR.drawAuto({ sx: 0.82, L: 35, W: 17, hood: 9, ws: 4, roof: 10, rg: 3.4, fa: 0.2, ra: 0.75, hl: 'slant', tl: 'round', scoop: 'rally', wing: true, flares: true, pinch: 1.4, tireL: 5.8 }),
+      base: VR.drawAuto({ L: 35, W: 17, hood: 9, ws: 4, roof: 10, rg: 3.4, fa: 0.2, ra: 0.75, hl: 'slant', tl: 'round', scoop: 'rally', wing: true, flares: true, pinch: 1.4, tireL: 5.8 }),
       sideShape: side({ body: [[3, 27], [3, 18], [12, 16], [21, 9], [37, 8], [46, 15], [60, 17], [61, 26], [55, 27], [53, 23], [43, 23], [41, 27], [22, 27], [20, 23], [10, 23], [8, 27]],
         win: [[[22, 10], [31, 9], [31, 15], [16, 15]], [[33, 9], [37, 9], [44, 15], [33, 15]]], pillars: [32], yr: 8, rx0: 22, rx1: 37, belt: 15, sill: 27, doors: [32, 44], tailx: 3, tailTop: 16, nose: 61, hood: [46, 15], wheels: [15, 48], wr: 5, wing: true, scoop: true }) },
-    coupe: { len: 34, wid: 14, S: 40, acc: 205, rev: 70, turn: 3.0, brake: 440, mass: 0.95, max: { road: 270, stone: 215, dirt: 170, side: 150, grass: 120 },
+    coupe: { len: 34, wid: 17, S: 40, acc: 205, rev: 70, turn: 3.0, brake: 440, mass: 0.95, max: { road: 270, stone: 215, dirt: 170, side: 150, grass: 120 },
       colors: [['#d0302a', '#8e1f1a', '#f06a5c'], ['#e8c02a', '#a8820e', '#f8dc6a'], ['#26262c', '#141418', '#4a4a54'], ['#eceae4', '#a8a59e', '#ffffff'], ['#a8acb4', '#70747c', '#d4d8e0']],
       name: 'Panambi GT', desc: 'Coupé deportivo de dos puertas, bajito, con cuatro faros redondos y luneta larga: dobla como pocos.', side: 'coupe',
-      base: VR.drawAuto({ sx: 0.82, hz: [6.6, 10.2], L: 34, W: 17, hood: 10.5, ws: 4.6, roof: 6.4, rg: 7, fa: 0.21, ra: 0.76, hl: 'quad', tl: 'bar', pinch: 2.4, lip: true, doors3: true }),
+      base: VR.drawAuto({ hz: [6.6, 10.2], L: 34, W: 17, hood: 10.5, ws: 4.6, roof: 6.4, rg: 7, fa: 0.21, ra: 0.76, hl: 'quad', tl: 'bar', pinch: 2.4, lip: true, doors3: true }),
       sideShape: side({ body: [[3, 26], [3, 19], [8, 17], [14, 15], [27, 9], [37, 8], [46, 15], [60, 18], [61, 25], [55, 26], [53, 22], [43, 22], [41, 26], [22, 26], [20, 22], [10, 22], [8, 26]],
         win: [[[20, 13], [27, 10.5], [33, 10.5], [33, 15], [18, 15]], [[35, 9.5], [37, 9.5], [44, 15], [35, 15]]], pillars: [34], yr: 8, rx0: 27, rx1: 37, belt: 15, sill: 26, doors: [24, 45], tailx: 3, tailTop: 17, nose: 61, hood: [46, 15], wheels: [15, 48], wr: 5, lip: true }) },
     karumbe: { len: 42, wid: 13, S: 48, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, noFire: true, colors: [['#3a9ad0', '#256a96', '#78c4ec'], ['#e0541c', '#a83a10', '#f08048'], ['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
@@ -5321,15 +5358,15 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
   // Unidades de emergencia: no salen al azar en el tránsito común (las manda la central) salvo alguna patrullera
   const WHITE = [['#f2f0ea', '#b9b6ae', '#ffffff']], ORANGE = [['#f0a018', '#b06e08', '#ffc850']], YELLOW = [['#f2c21a', '#b08a08', '#ffe06a']];
   Object.assign(VR.CAR_MODELS, {
-    patrulla: { len: 35, wid: 14, S: 40, acc: 185, turn: 2.6, max: { road: 255, stone: 215, dirt: 175, side: 150, grass: 120 }, colors: WHITE, emer: 'policia', lights: ['255,40,40', '40,90,255'],
+    patrulla: { len: 35, wid: 16, S: 40, acc: 185, turn: 2.6, max: { road: 255, stone: 215, dirt: 175, side: 150, grass: 120 }, colors: WHITE, emer: 'policia', lights: ['255,40,40', '40,90,255'],
       name: 'Patrullera', desc: 'Sedán de la Policía con barra de luces. Robarla te sube dos estrellas.', side: 'patrulla',
-      base: VR.drawAuto({ sx: 0.875, L: 35, W: 16, hood: 8.4, ws: 4, roof: 10.4, rg: 3.6, fa: 0.2, ra: 0.74, bar: ['#d8302a', '#2a5ad8'], stripe: '#1e3a8a' }) },
-    policam: { len: 41, wid: 15, S: 46, acc: 175, rev: 70, turn: 2.3, brake: 400, mass: 1.6, max: { road: 240, stone: 220, dirt: 210, side: 145, grass: 170 }, colors: WHITE, emer: 'policia', lights: ['255,40,40', '40,90,255'],
+      base: VR.drawAuto({ L: 35, W: 16, hood: 8.4, ws: 4, roof: 10.4, rg: 3.6, fa: 0.2, ra: 0.74, bar: ['#d8302a', '#2a5ad8'], stripe: '#1e3a8a' }) },
+    policam: { len: 41, wid: 18, S: 46, acc: 175, rev: 70, turn: 2.3, brake: 400, mass: 1.6, max: { road: 240, stone: 220, dirt: 210, side: 145, grass: 170 }, colors: WHITE, emer: 'policia', lights: ['255,40,40', '40,90,255'],
       name: 'Camioneta de la Policía', desc: 'Doble cabina de la Policía: la que más patrulla la ciudad.', side: 'policam',
-      base: VR.drawAuto({ sx: 0.83, L: 41, W: 18, hood: 9.6, ws: 3.6, roof: 9.6, rg: 1.4, fa: 0.19, ra: 0.77, box: true, bed: true, rollbar: true, tireL: 6.4, grille: '#3a3a40', bar: ['#d8302a', '#2a5ad8'], stripe: '#1e3a8a' }) },
-    ambulancia: { len: 39, wid: 15, S: 44, acc: 170, rev: 60, turn: 2.4, brake: 400, mass: 1.4, max: { road: 235, stone: 205, dirt: 180, side: 140, grass: 140 }, colors: ORANGE, emer: 'ambulancia', lights: ['60,255,120', '255,40,40'],
+      base: VR.drawAuto({ L: 41, W: 18, hood: 9.6, ws: 3.6, roof: 9.6, rg: 1.4, fa: 0.19, ra: 0.77, box: true, bed: true, rollbar: true, tireL: 6.4, grille: '#3a3a40', bar: ['#d8302a', '#2a5ad8'], stripe: '#1e3a8a' }) },
+    ambulancia: { len: 39, wid: 17, S: 44, acc: 170, rev: 60, turn: 2.4, brake: 400, mass: 1.4, max: { road: 235, stone: 205, dirt: 180, side: 140, grass: 140 }, colors: ORANGE, emer: 'ambulancia', lights: ['60,255,120', '255,40,40'],
       name: 'Ambulancia', desc: 'Furgón de los bomberos voluntarios. Con la sirena te abren paso.', side: 'ambulancia',
-      base: VR.drawAuto({ sx: 0.88, hz: [9, 17], L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#c8241a', tireL: 6 }),
+      base: VR.drawAuto({ hz: [9, 17], L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#c8241a', tireL: 6 }),
       sideShape: { body: [[3, 27], [3, 6], [5, 4], [44, 4], [52, 12], [60, 15], [61, 26], [55, 27], [53, 22], [43, 22], [41, 27], [20, 27], [18, 22], [8, 22], [6, 27]],
         win: [[[45, 6], [47, 6], [51, 12.5], [45, 12.5]], [[34, 6], [42, 6], [42, 12.5], [34, 12.5]]], pillars: [43], yr: 4, rx0: 5, rx1: 44, belt: 12.5, sill: 27, doors: [43, 33], tailx: 3, tailTop: 7, nose: 61, hood: [52, 12], wheels: [13, 48], wr: 5 } },
     bomba: { len: 58, wid: 21, S: 64, acc: 120, rev: 45, turn: 1.7, brake: 330, mass: 3.2, max: { road: 200, stone: 180, dirt: 165, side: 110, grass: 120 }, colors: YELLOW, emer: 'bomberos', lights: ['255,40,40', '255,255,255'],
@@ -6440,7 +6477,7 @@ VR.Peds = class {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
-        ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
+        VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
         if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal], x, y);
         else if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
         else ctx.drawImage(p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
@@ -6448,6 +6485,53 @@ VR.Peds = class {
       } });
     }
   }
+};
+
+// ===== game/sol.js =====
+// Sol y sombras según la hora (13/11/2026, pedido de Leandro). Este y oeste están fijos en el mapa (norte arriba):
+// el sol sale por el este (las sombras caen hacia el oeste y son largas), al mediodía está casi arriba (Villarrica está
+// al sur del trópico y en noviembre el sol pasa cerca del cénit, por el norte: sombras cortas hacia el sur) y se pone
+// por el oeste (sombras largas hacia el este). `VR.sun` da la dirección (dx, dy), el largo relativo (len = 1/tan de la
+// altura del sol), la fuerza (str, 0 de noche) y el tinte cálido del amanecer y el atardecer. Con ?sol=7.5 en la
+// dirección se fuerza una hora para probar. Las sombras de árboles y edificios se arman en world.js (capa aparte).
+VR.sun = {
+  on: !/[?&]plano=sol|[?&]sinsol/.test(location.search), h: 12, dx: 0, dy: 1, len: 0.15, str: 1, tint: 0, key: '',
+  force: (() => { const m = /[?&]sol=([\d.]+)/.exec(location.search); return m ? +m[1] : null; })(),
+  RISE: 5.5, SET: 18.5,
+  hourOf(mode) {
+    if (this.force != null) return this.force;
+    if (mode === 'noche') return 0;
+    if (mode === 'juego') return VR.gameHour || 12;
+    const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
+    return mode === 'dia' ? (h >= 7 && h <= 17.5 ? h : 15) : h;
+  },
+  update(mode) {
+    const h = this.h = this.hourOf(mode), t = (h - this.RISE) / (this.SET - this.RISE);
+    const bump = (c, w) => Math.max(0, 1 - Math.abs(h - c) / w);
+    this.tint = Math.max(bump(6.1, 1.2), bump(18.0, 1.3));
+    if (t <= 0 || t >= 1) { this.str = 0; this.len = 0; this.key = 'n'; return; }
+    const th = Math.PI * t, elev = Math.max(0.1, 1.45 * Math.sin(th));
+    const vx = -Math.cos(th), vy = 0.12 + Math.sin(th) * 0.88, n = Math.hypot(vx, vy) || 1;   // la sombra apunta al lado contrario del sol
+    this.dx = vx / n; this.dy = vy / n;
+    this.len = Math.min(3, 1 / Math.tan(elev));
+    this.str = Math.min(1, Math.sin(th) * 7);                                                   // se desvanece al ras del horizonte
+    this.key = Math.round(this.dx * 12) + ',' + Math.round(this.dy * 12) + ',' + Math.round(this.len * 6);
+  },
+  // corrimiento (px) de la sombra de algo de altura h
+  off(h, max = 40) { const L = Math.min(max, this.len * h); return [this.dx * L, this.dy * L]; },
+  // sombra de una persona o animal: elipse estirada hacia donde cae (h = altura aprox. en px)
+  blob(ctx, x, y, h, rx, ry, a) {
+    if (!this.on) { ctx.fillStyle = 'rgba(0,0,0,' + a + ')'; ctx.beginPath(); ctx.ellipse(x, y - 1, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); return; }
+    if (this.str < 0.03) return;
+    const L = Math.min(h * 1.1, this.len * h), cx = x + this.dx * L * 0.5, cy = y - 1 + this.dy * L * 0.5;
+    ctx.fillStyle = 'rgba(0,0,0,' + (a * this.str).toFixed(3) + ')'; ctx.beginPath();
+    ctx.ellipse(cx, cy, rx + L * 0.5, ry + 0.4, Math.atan2(this.dy, this.dx), 0, Math.PI * 2); ctx.fill();
+  },
+  // tinte cálido del amanecer y el atardecer (se multiplica sobre todo el cuadro)
+  drawTint(ctx, sw, sh) {
+    if (!this.on || this.tint < 0.02) return;
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = 'rgba(255,168,112,' + (0.34 * this.tint).toFixed(3) + ')'; ctx.fillRect(0, 0, sw, sh); ctx.restore();
+  },
 };
 
 // ===== game/night.js =====
@@ -6559,6 +6643,7 @@ VR.Night = class {
     return 0;
   }
   update(dt, mode) {
+    if (VR.sun) VR.sun.update(mode);
     const t = this.target(mode);
     this.level += VR.clamp(t - this.level, -dt * 0.8, dt * 0.8);
   }
@@ -7014,7 +7099,7 @@ VR.Emergency = class {
       const x = Math.round(VR.lerp(c.px, c.x, al) - cx), y = Math.round(VR.lerp(c.py, c.y, al) - cy);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + cy, draw: (ctx) => {
-        ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); ctx.fill();
+        VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
         ctx.drawImage(c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, 'idle', 0), x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (c.say) VR.Player.prototype.drawBubble.call({ bubble: c.say, px: x + cx, x: x + cx, py: y + cy + 6, y: y + cy + 6 }, ctx, cx, cy, 1);
       } });
@@ -10779,7 +10864,7 @@ VR.Cisnes = class {
           let img, w, h;
           if (d.dir === 'd' || d.dir === 'u') { img = S[d.dir][moving ? fr : 0]; } else img = S[d.dir][moving ? fr : d.pose];
           w = img.width * 0.62; h = img.height * 0.62;   // sprite de 2 px por unidad, un poco más grande para que se lea
-          ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y - 1, w * 0.45, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+          VR.sun.blob(ctx, x, y, 12, w * 0.45, 1.6, 0.25);
           const wag = d.follow > 0 && d.mode === 'idle' ? Math.sin(this.t * 22) : 0;
           ctx.drawImage(img, Math.round(x - w / 2 + wag * 0.4), y - h + 1, w, h);
         } });
@@ -12385,6 +12470,7 @@ VR.Titulo = class {
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);
+    VR.sun.drawTint(ctx, sw, sh);
     night.render(ctx, cx, cy, sw, sh, vis);
     if (emer) emer.drawFlash(ctx, sw, sh);
     for (const l of world.labels) {
@@ -13235,6 +13321,7 @@ VR.Titulo = class {
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
     night.update(Math.min(0.1, dt || 0.016), settings.hora);
+    VR.sun.drawTint(ctx, sw, sh);
     night.render(ctx, cx, cy, sw, sh, vis);
     if (tFade._f !== title.fade) { tFade._f = title.fade; tFade.style.opacity = title.fade; }
   }

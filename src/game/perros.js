@@ -147,7 +147,7 @@
           let img, w, h;
           if (d.dir === 'd' || d.dir === 'u') { img = S[d.dir][moving ? fr : 0]; } else img = S[d.dir][moving ? fr : d.pose];
           w = img.width * 0.62; h = img.height * 0.62;   // sprite de 2 px por unidad, un poco más grande para que se lea
-          ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y - 1, w * 0.45, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+          VR.sun.blob(ctx, x, y, 12, w * 0.45, 1.6, 0.25);
           const wag = d.follow > 0 && d.mode === 'idle' ? Math.sin(this.t * 22) : 0;
           ctx.drawImage(img, Math.round(x - w / 2 + wag * 0.4), y - h + 1, w, h);
         } });

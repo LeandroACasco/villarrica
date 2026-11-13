@@ -1,6 +1,6 @@
 # Vehículos de Villarrica: fichas y referencias (13/11/2026)
 
-*Documento propio de vehículos. Reúne qué vehículos hay, con qué se comparan en la vida real (para que se parezcan) y sus números. Los datos de juego salen de `src/game/autos.js`, `car.js`, `camiones.js` y `oblicuo.js` (commit `27b8964`).*
+*Documento propio de vehículos. Reúne qué vehículos hay, con qué se comparan en la vida real (para que se parezcan) y sus números. Los datos de juego salen de `src/game/autos.js`, `car.js`, `camiones.js` y `oblicuo.js` (13/11/2026).*
 
 ## 1. Reglas
 
@@ -11,23 +11,23 @@
 ## 2. Escala y proporciones
 
 - **1 m ≈ 7,9 unidades del juego** (el compacto mide 30 u ≈ 3,8 m). Velocidades: `u/s ÷ 7,9 × 3,6 = km/h`.
-- **Largo / ancho:** el 13/11 los coches estaban demasiado anchos (relación 1,75–2,3 contra 2,3–2,9 reales: de ahí lo "gordito"). Se les angostó el dibujo (`sx` en `VR.drawAuto`, y `wid` en `VR.CAR_MODELS`), ahora quedan en 2,3–2,7.
+- **Largo / ancho:** los coches del juego son algo más anchos que los reales (relación largo/ancho 1,75–2,3 contra 2,2–2,9: Hilux 2,9, Jimny 2,1, Vitz 2,2). El 13/11 se probó angostarlos (`sx` en `VR.vbase`, queda disponible) y Leandro prefirió **el estilo ancho de siempre**, que se parece más a los autitos de Gangstar. Se dejaron como estaban.
 - **Altura (vista oblicua):** `hz: [capó, techo]` por modelo en `VR.drawAuto` (unidades de altura) y `VR.OBL.kz = 0,46` (píxeles en pantalla por unidad de altura; con `?kz=` en la dirección se prueba otro valor).
 - **Pendiente de proporción:** colectivos (largo/ancho 3,5 contra ~4,7 real), camiones livianos (2,5 contra ~3) y el camión de bomberos (2,8 contra ~3,4) siguen algo anchos o cortos. Se pueden afinar igual que los autos.
 
 ## 3. Autos
 
-| Modelo (`VR.CAR_MODELS`) | Nombre en el juego | Referencia real (a confirmar) | Largo × ancho (u) → real aprox. | Tope asfalto / tierra (km/h) | Masa | Giro |
+| Modelo (`VR.CAR_MODELS`) | Nombre en el juego | Referencia real (a confirmar) | Largo × ancho (u) | Tope asfalto / tierra (km/h) | Masa | Giro |
 |---|---|---|---|---|---|---|
-| `mita` | Mitã 1.3 | Compacto 5 puertas (tipo Vitz / Swift): 3,8 × 1,67 × 1,50 m | 30 × 13 → 3,8 × 1,6 m | 109 / 77 | 1 | 2,7 |
-| `sedan` | Porã 1.5 | Sedán mediano de remís (tipo Corolla / Premio): 4,5 × 1,75 × 1,45 | 35 × 14 → 4,4 × 1,8 | 112 / 73 | 1 | 2,5 |
-| `mono` | Ka'i 1.3 | Monovolumen chico de techo alto (tipo Ractis / Fit): 3,9 × 1,70 × 1,55 | 31 × 13 → 3,9 × 1,6 | 103 / 75 | 1 | 2,8 |
-| `pickup` | Yvyty Cabina Doble | Camioneta doble cabina (tipo Hilux): 5,3 × 1,86 × 1,80 | 41 × 15 → 5,2 × 1,9 | 105 / 93 | 1,5 | 2,2 |
-| `suv` | Jaguarete 3.2 | Todoterreno grande, auxilio atrás (tipo Prado / Montero): 4,8 × 1,88 × 1,85 | 37 × 15 → 4,7 × 1,9 | 107 / 93 | 1,4 | 2,4 |
-| `suvmed` | Mborevi 2.7 | Todoterreno mediano de 5 puertas (tipo Fortuner): 4,8 × 1,85 × 1,85 | 35 × 14 → 4,4 × 1,8 | 105 / 91 | 1,3 | 2,5 |
-| `suvchico` | Jaguarete Mirĩ | Todoterreno chico de 3 puertas (tipo Jimny): 3,65 × 1,65 × 1,70 | 28 × 13 → 3,5 × 1,6 | 98 / 89 | 1,1 | 2,9 |
-| `rally` | Mbarakaja Turbo | Sedán de rally japonés (tipo Impreza WRX / Lancer Evo): 4,5 × 1,78 × 1,45 | 35 × 14 → 4,4 × 1,8 | 125 / 107 | 1,05 | 2,8 |
-| `coupe` | Panambi GT | Coupé japonés de los 90 (tipo Silvia / Celica / RX-7): 4,3 × 1,72 × 1,30 | 34 × 14 → 4,3 × 1,8 | 123 / 77 | 0,95 | 3,0 |
+| `mita` | Mitã 1.3 | Compacto 5 puertas (tipo Vitz, verificado: 3,61–3,75 × 1,66–1,70 × 1,49–1,52 m) | 30 × 16 | 109 / 77 | 1 | 2,7 |
+| `sedan` | Porã 1.5 | Sedán mediano de remís (tipo Corolla / Premio): 4,5 × 1,75 × 1,45 | 35 × 16 | 112 / 73 | 1 | 2,5 |
+| `mono` | Ka'i 1.3 | Monovolumen chico de techo alto (tipo Ractis / Fit): 3,9 × 1,70 × 1,55 | 31 × 16 | 103 / 75 | 1 | 2,8 |
+| `pickup` | Yvyty Cabina Doble | Camioneta doble cabina (tipo Hilux, verificado: 5,33 × 1,86 × 1,82 m) | 41 × 18 | 105 / 93 | 1,5 | 2,2 |
+| `suv` | Jaguarete 3.2 | Todoterreno grande, auxilio atrás (tipo Prado / Montero): 4,8 × 1,88 × 1,85 | 37 × 18 | 107 / 93 | 1,4 | 2,4 |
+| `suvmed` | Mborevi 2.7 | Todoterreno mediano de 5 puertas (tipo Fortuner): 4,8 × 1,85 × 1,85 | 35 × 17 | 105 / 91 | 1,3 | 2,5 |
+| `suvchico` | Jaguarete Mirĩ | Todoterreno chico de 3 puertas (tipo Jimny, verificado: 3,48–3,65 × 1,65 × 1,72 m) | 28 × 16 | 98 / 89 | 1,1 | 2,9 |
+| `rally` | Mbarakaja Turbo | Sedán de rally japonés (tipo Impreza WRX / Lancer Evo): 4,5 × 1,78 × 1,45 | 35 × 17 | 125 / 107 | 1,05 | 2,8 |
+| `coupe` | Panambi GT | Coupé japonés de los 90 (tipo Silvia / Celica / RX-7): 4,3 × 1,72 × 1,30 | 34 × 17 | 123 / 77 | 0,95 | 3,0 |
 
 Características de dibujo: el `mita` va con `VR.drawCarBase` (`VR.OBL.MITA`) y el resto con `VR.drawAuto`. Techo, parabrisas y luneta tienen su largo propio (`hood`, `ws`, `roof`, `rg`); los todoterrenos llevan auxilio atrás, barras o pasarruedas; la camioneta tiene caja con barra; el rally tiene toma de aire y alerón; el coupé, cuatro faros redondos.
 
@@ -35,9 +35,9 @@ Características de dibujo: el `mita` va con `VR.drawCarBase` (`VR.OBL.MITA`) y 
 
 | Modelo | Nombre | Referencia real (a confirmar) | Largo × ancho (u) | Tope asfalto (km/h) | Masa |
 |---|---|---|---|---|---|
-| `patrulla` | Patrullera | Sedán de la Policía con barra de luces | 35 × 14 | 116 | 1 |
-| `policam` | Camioneta de la Policía | Doble cabina de la Policía (tipo Hilux) | 41 × 15 | 109 | 1,6 |
-| `ambulancia` | Ambulancia | Furgón de bomberos voluntarios (tipo Hiace): 5,3 × 1,9 × 2,2 | 39 × 15 | 107 | 1,4 |
+| `patrulla` | Patrullera | Sedán de la Policía con barra de luces | 35 × 16 | 116 | 1 |
+| `policam` | Camioneta de la Policía | Doble cabina de la Policía (tipo Hilux) | 41 × 18 | 109 | 1,6 |
+| `ambulancia` | Ambulancia | Furgón de bomberos voluntarios (tipo Hiace): 5,3 × 1,9 × 2,2 | 39 × 17 | 107 | 1,4 |
 | `bomba` | Camión de bomberos | Camión bomba con escalera y devanadera | 58 × 21 | 91 | 3,2 |
 
 ## 5. Colectivos y camiones (fotos de Leandro, 10/11/2026)

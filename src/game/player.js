@@ -151,7 +151,7 @@ VR.Player = class {
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);
     if (this.rag) { this.rag.draw(ctx, this.sprites, x, y); return; }
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 6 * VR.PS, 2.5 * VR.PS, 0, 0, Math.PI * 2); ctx.fill();
+    VR.sun.blob(ctx, x, y, 30 * VR.PS, 6 * VR.PS, 2.5 * VR.PS, 0.3);
     const img = this.moving ? this.sprites.get(this.dir, this.run ? 'run' : 'walk', Math.floor(this.anim) % 8) : this.sprites.get(this.dir, 'idle', 0);
     const PS = VR.PS; ctx.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);
     if (this.equipo === 'canasto') { // canasto de chipa en la mano (J3)

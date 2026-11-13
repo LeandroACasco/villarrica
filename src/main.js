@@ -422,6 +422,7 @@
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);
+    VR.sun.drawTint(ctx, sw, sh);
     night.render(ctx, cx, cy, sw, sh, vis);
     if (emer) emer.drawFlash(ctx, sw, sh);
     for (const l of world.labels) {
@@ -1272,6 +1273,7 @@
     tall.sort((p, q) => p.sy - q.sy);
     for (const t of tall) t.draw(ctx);
     night.update(Math.min(0.1, dt || 0.016), settings.hora);
+    VR.sun.drawTint(ctx, sw, sh);
     night.render(ctx, cx, cy, sw, sh, vis);
     if (tFade._f !== title.fade) { tFade._f = title.fade; tFade.style.opacity = title.fade; }
   }

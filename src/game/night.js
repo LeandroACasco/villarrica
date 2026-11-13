@@ -106,6 +106,7 @@ VR.Night = class {
     return 0;
   }
   update(dt, mode) {
+    if (VR.sun) VR.sun.update(mode);
     const t = this.target(mode);
     this.level += VR.clamp(t - this.level, -dt * 0.8, dt * 0.8);
   }

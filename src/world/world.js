@@ -254,14 +254,16 @@ VR.World = class {
     }
     // 3b) calles en diagonal (05/11/2026): las baldosas quedan escalonadas, así que encima se dibujan lisas
     if (idx.r.length) VR.drawDiagonals(g, this, idx.r, tx0, ty0, tx1, ty1);
-    // 4) sombras (sol del noroeste): árboles, y edificios hacia el este y el sur
-    g.fillStyle = 'rgba(10,20,10,.28)';
-    for (const t of idx.t) { g.beginPath(); g.ellipse(t.x * S + 11, t.y * S + 4, t.r, t.r * 0.7, 0, 0, Math.PI * 2); g.fill(); }
-    g.fillStyle = 'rgba(0,0,0,.26)';
-    for (let ty = ty0 - 1; ty < ty1; ty++) for (let tx = tx0 - 1; tx < tx1; tx++) {
-      if (!this.b(tx, ty)) continue;
-      if (!this.b(tx + 1, ty)) g.fillRect((tx + 1) * S, ty * S + (this.b(tx, ty - 1) ? 0 : 5), 5, S);
-      if (!this.b(tx, ty + 1)) g.fillRect(tx * S + (this.b(tx - 1, ty) ? 0 : 5), (ty + 1) * S, S, 3);
+    // 4) sombras: con VR.sun van en una capa aparte que cambia con la hora (shadeOf, más abajo); si no, las de siempre (sol del noroeste)
+    if (!(VR.sun && VR.sun.on)) {
+      g.fillStyle = 'rgba(10,20,10,.28)';
+      for (const t of idx.t) { g.beginPath(); g.ellipse(t.x * S + 11, t.y * S + 4, t.r, t.r * 0.7, 0, 0, Math.PI * 2); g.fill(); }
+      g.fillStyle = 'rgba(0,0,0,.26)';
+      for (let ty = ty0 - 1; ty < ty1; ty++) for (let tx = tx0 - 1; tx < tx1; tx++) {
+        if (!this.b(tx, ty)) continue;
+        if (!this.b(tx + 1, ty)) g.fillRect((tx + 1) * S, ty * S + (this.b(tx, ty - 1) ? 0 : 5), 5, S);
+        if (!this.b(tx, ty + 1)) g.fillRect(tx * S + (this.b(tx - 1, ty) ? 0 : 5), (ty + 1) * S, S, 3);
+      }
     }
     // 5) troncos
     for (const t of idx.t) {
@@ -292,8 +294,37 @@ VR.World = class {
     const PX = this.CH * VR.TILE;
     const c0 = Math.max(0, Math.floor(camX / PX)), c1 = Math.min(this.cw - 1, Math.floor((camX + sw) / PX));
     const r0 = Math.max(0, Math.floor(camY / PX)), r1 = Math.min(this.chh - 1, Math.floor((camY + sh) / PX));
-    for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++)
-      ctx.drawImage(this.chunk(cx, cy).ground, cx * PX - camX, cy * PX - camY, PX, PX);
+    const sun = VR.sun, useShade = sun && sun.on && sun.str > 0.03; let budget = 2;
+    for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {
+      const ch = this.chunk(cx, cy); ctx.drawImage(ch.ground, cx * PX - camX, cy * PX - camY, PX, PX);
+      if (!useShade) continue;
+      if ((!ch.shade || ch.shKey !== sun.key) && (budget > 0 || !ch.shade)) { this.renderShade(ch, cx, cy); budget--; }
+      ctx.globalAlpha = 0.3 * sun.str; ctx.drawImage(ch.shade, cx * PX - camX, cy * PX - camY, PX, PX); ctx.globalAlpha = 1;
+    }
+  }
+  // Capa de sombras de un chunk (13/11/2026): árboles y edificios proyectan según la hora (VR.sun). Se dibuja sólida y se
+  // aplica con transparencia; se recorta lo que cae sobre edificios y se rehace (poco a poco) cuando cambia el sol.
+  renderShade(ch, cx, cy) {
+    const sun = VR.sun, S = VR.TILE, N = this.CH, PX = N * S, R = 1;
+    if (!ch.shade) ch.shade = VR.canvas(PX * R, PX * R);
+    const g = ch.shade.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, PX, PX);
+    g.globalCompositeOperation = 'source-over'; g.fillStyle = '#000'; g.translate(-cx * PX, -cy * PX);
+    const tx0 = cx * N, ty0 = cy * N, M = 5;   // edificios hasta 5 baldosas afuera: sus sombras entran al chunk
+    for (let ty = ty0 - M; ty < ty0 + N + M; ty++) for (let tx = tx0 - M; tx < tx0 + N + M; tx++) {
+      const id = this.b(tx, ty); if (!id) continue;
+      const fl = this.buildings[id - 1].floors || 1, [vx, vy] = sun.off(7 + fl * 9, 46), n = Math.max(1, Math.ceil(Math.hypot(vx, vy) / 3));
+      for (let i = 0; i <= n; i++) g.fillRect(tx * S + vx * i / n, ty * S + vy * i / n, S, S);
+    }
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const x = cx + dx, y = cy + dy; if (x < 0 || y < 0 || x >= this.cw || y >= this.chh) continue;
+      for (const t of this.index[y * this.cw + x].t) {
+        const bx = t.x * S + 8, by = t.y * S + 11, [vx, vy] = sun.off(15, 40), n = Math.max(1, Math.ceil(Math.hypot(vx, vy) / 3));
+        for (let i = 0; i <= n; i++) { g.beginPath(); g.ellipse(bx + vx * i / n, by + vy * i / n, t.r * 0.85, t.r * 0.6, 0, 0, Math.PI * 2); g.fill(); }
+      }
+    }
+    g.globalCompositeOperation = 'destination-out';   // no se pinta sobre los edificios
+    for (let ty = ty0; ty < ty0 + N; ty++) for (let tx = tx0; tx < tx0 + N; tx++) if (this.b(tx, ty)) g.fillRect(tx * S, ty * S, S, S);
+    g.globalCompositeOperation = 'source-over'; ch.shKey = sun.key;
   }
   // Cosas altas visibles (copas, obelisco, arcos): se ordenan por Y junto con los personajes.
   collectTall(camX, camY, sw, sh, out) {

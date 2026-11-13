@@ -570,3 +570,7 @@ El vehículo se "apila": para cada altura se dibuja la silueta girada y corrida 
 - Espejos, guardabarros anchos, alerón alto y rueda de auxilio no tienen altura propia (van pegados a la carrocería).
 - La tarjeta del vehículo y el taller siguen usando el dibujo de costado en alta (`sidehd.js`), sin cambios.
 - Los vehículos quemados usan el mismo volumen oscurecido.
+
+## Sol y sombras según la hora (13/11/2026)
+
+`src/game/sol.js` (`VR.sun`): dirección, largo y fuerza de las sombras y tinte según la hora (reloj real, hora de Historia, o `?sol=HORA` para probar; `?sinsol` apaga todo). `World.renderShade` (world.js) arma una capa de sombras por chunk (`ch.shade`, se rehace cuando cambia `VR.sun.key`, máx. 2 por cuadro) en vez de las sombras fijas dibujadas en el piso. Autos (`Car.draw`), personas, perros y bomberos usan `VR.sun.off`/`VR.sun.blob`. `night.update` llama a `VR.sun.update`; `main.js` dibuja el tinte antes de la noche. Ver `claude/sol-sombras-estado.md`.
