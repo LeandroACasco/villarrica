@@ -585,3 +585,7 @@ El vehículo se "apila": para cada altura se dibuja la silueta girada y corrida 
 ## Volumen y audio al minimizar (13/11/2026)
 
 `VR.audio` (`src/engine/audio.js`): `vol` 0..1 (guardado en `vol`, por defecto 0,6) con curva cuadrática sobre el `master`; `setVol`. Slider en Menú → Opciones (`#optVol`), con un `coin()` de muestra al soltar. `hold(true)` suspende el AudioContext cuando la página se oculta (`visibilitychange`, `pagehide`) y `hold(false)` lo retoma, para que el motor y la sirena no queden colgados.
+
+## Taller: vista giratoria (13/11/2026)
+
+`VR.Garage` (`src/game/taller.js`): además del costado en alta (pestaña Costado), el taller tiene una **vista giratoria** (🔄 Girar, la de entrada) con el mismo dibujo oblicuo del juego pero sin achicarlo: `turnImg(k)` arma el vehículo con `VR.OBL.render` a la resolución de supermuestreo (`base.ss`) y le pone el contorno suave, en 64 ángulos que se guardan por tuneo (`VR.tuneKey`). Gira solo y se arrastra con el dedo o el mouse; al cambiar una pieza se rehace. Vale para autos, camiones y motos.
