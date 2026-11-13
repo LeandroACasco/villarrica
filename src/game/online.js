@@ -62,7 +62,7 @@ VR.Online = class {
     let best = null, bd = 34;
     for (const o of this.others.values()) {
       if (!o.c || o.r) continue; const d = Math.hypot(o.x - p.x, o.y - p.y); if (d > bd) continue;
-      const used = [...this.others.values()].filter((q) => q.r === o.id).length, cap = o.c[0] === 'moto' ? (o.c[1] === 'pati' ? 0 : 1) : o.c[1] === 'karumbe' ? 2 : 4;
+      const used = [...this.others.values()].filter((q) => q.r === o.id).length, cap = o.c[0] === 'moto' ? (o.c[1] === 'pati' || o.c[1] === 'bici' ? 0 : 1) : o.c[1] === 'karumbe' ? 2 : 4;
       if (used < cap) { bd = d; best = o; }
     }
     return best;

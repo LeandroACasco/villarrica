@@ -157,6 +157,16 @@ VR.drawPati = (pal, t = {}) => VR.vbase(6, 14, (T) => { // manubrio en T, tabla 
   for (let y = 5.2; y < 11; y += 0.9) T.line(2, y, 4, y, 0.2, '#2c2c32');
   T.rr(2.2, 12, 1.6, 0.6, 0.3, '#e8302a');
 }, () => VR.OBL.moto('pati', pal));
+VR.BICI_COLORS = [['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#c8322a', '#8e1f1a', '#e4685c'], ['#e8e6e0', '#a9a69e', '#ffffff'], ['#3f8f4a', '#28552f', '#66b872'], ['#e8b830', '#a8841c', '#f4d870'], ['#2c2c32', '#16161a', '#55555e']];
+VR.drawBici = (pal, t = {}) => VR.vbase(6, 15, (T) => { // vista desde arriba: dos cubiertas finitas, cuadro al medio, manubrio recto, asiento y parrilla
+  const [C, D] = pal;
+  T.tire(2.4, 0.2, 1.2, 3.6); T.tire(2.4, 11.2, 1.2, 3.6);
+  T.line(3, 2.4, 3, 12.4, 0.5, D); T.line(3, 3.0, 3, 10.2, 0.34, C);
+  T.line(0.5, 3.4, 5.5, 3.4, 0.4, '#2a2a2e'); T.ell(0.45, 3.4, 0.5, 0.4, '#16161a'); T.ell(5.55, 3.4, 0.5, 0.4, '#16161a');
+  T.ell(3, 2.8, 0.38, 0.3, t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0');
+  T.ell(3, 9.6, 0.7, 1.15, '#202126'); T.ell(1.9, 8.0, 0.5, 0.28, '#2a2a30'); T.ell(4.1, 9.0, 0.5, 0.28, '#2a2a30');
+  T.rr(2.2, 12.3, 1.6, 2.2, 0.4, '#3a3d44'); T.rr(2.6, 14.3, 0.8, 0.4, 0.2, '#e8302a');
+}, () => VR.OBL.moto('bici', pal));
 // Conductor visto desde arriba (10×20 unidades): casco o pelo, hombros con sombra, brazos al manubrio, rodillas.
 // o (05/11/2026): colores del personaje que maneja (piel, pantalón, pelo o gorra), así el jugador se ve como el
 // personaje que eligió o se armó en la tienda.
@@ -366,6 +376,9 @@ VR.MOTO_MODELS = {
   carga: { rider: { gy: -3.7, gx: 5.2, hip: 2.2, zoff: 0.7 }, len: 33, wid: 12, S: 40, base: VR.drawMotoCarga, acc: 135, rev: 40, turn: 2.3, brake: 380, mass: 0.8,
     max: { road: 185, stone: 165, dirt: 160, side: 120, grass: 105 },
     name: 'Kárga Guasu 200', desc: 'Motocarga de tres ruedas: lenta, pesada y aguanta de todo atrás.', side: 'carga', riderOff: 8 },
+  bici: { rider: { gy: -4.4, gx: 1.9, hip: 1.9, kx: 1.0, zoff: 2.0 }, len: 14, wid: 5, S: 20, base: VR.drawBici, colors: VR.BICI_COLORS, acc: 95, rev: 8, turn: 4.6, brake: 300, mass: 0.12,
+    max: { road: 72, stone: 52, dirt: 54, side: 66, grass: 40 },
+    name: 'Bici Karumbé', desc: 'Bicicleta de paseo: sin nafta, pero se te acaba el aliento. Ideal para la costanera.', side: 'bici' },
   pati: { rider: { gy: -4.6, gx: 2.6, stand: true }, len: 12, wid: 6, S: 16, base: VR.drawPati, colors: VR.PATI_COLORS, acc: 150, rev: 15, turn: 4.4, brake: 420, mass: 0.15,
     max: { road: 115, stone: 85, dirt: 70, side: 110, grass: 60 },
     name: 'Pati-e', desc: 'Patineta eléctrica: silenciosa y ágil, pero no le pidas mucho en el empedrado.', side: 'pati' },
@@ -373,8 +386,8 @@ VR.MOTO_MODELS = {
 // sorteo de modelo: en el tránsito hay motocargas; estacionadas en batería, no (no entran)
 VR.pickMoto = (rnd, parked) => {
   const r = rnd();
-  if (parked) return r < 0.55 ? 'cub' : r < 0.78 ? 'calle' : r < 0.95 ? 'mini' : 'pati';
-  return r < 0.46 ? 'cub' : r < 0.66 ? 'calle' : r < 0.78 ? 'mini' : r < 0.95 ? 'carga' : 'pati';
+  if (parked) return r < 0.5 ? 'cub' : r < 0.72 ? 'calle' : r < 0.86 ? 'mini' : r < 0.94 ? 'bici' : 'pati';
+  return r < 0.43 ? 'cub' : r < 0.62 ? 'calle' : r < 0.73 ? 'mini' : r < 0.82 ? 'bici' : r < 0.95 ? 'carga' : 'pati';
 };
 VR.vspec = (() => {
   const cache = new Map();

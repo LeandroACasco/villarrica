@@ -96,7 +96,7 @@ VR.audio = {
   engine(car, dt) {
     const L = this.loop('engine'); if (!L) return;
     const t = this.ac.currentTime;
-    if (!car || !this.on || car.wreck || car.model === 'karumbe' || car.model === 'pati') { L.g.gain.setTargetAtTime(car && car.model === 'pati' && this.on ? 0.012 : 0, t, 0.08); if (car && car.model === 'pati') { L.o.frequency.setTargetAtTime(300 + Math.abs(car.v) * 3, t, 0.05); L.f.frequency.setTargetAtTime(1400, t, 0.1); } return; }
+    if (!car || !this.on || car.wreck || car.model === 'karumbe' || car.model === 'pati' || car.model === 'bici') { L.g.gain.setTargetAtTime(car && car.model === 'pati' && this.on ? 0.012 : 0, t, 0.08); if (car && car.model === 'pati') { L.o.frequency.setTargetAtTime(300 + Math.abs(car.v) * 3, t, 0.05); L.f.frequency.setTargetAtTime(1400, t, 0.1); } return; }
     const moto = car.type === 'moto', big = car.spec.mass > 1.3, s = Math.min(1, Math.abs(car.v) / (car.spec.max.road || 240));
     const gear = moto ? 4 : 5, gp = (s * gear) % 1, rpm = 0.25 + (s < 0.05 ? 0 : 0.35 + gp * 0.6) * (0.6 + s * 0.4);
     const base = moto ? 46 : big ? 28 : 34, f = base + rpm * (moto ? 120 : 80);

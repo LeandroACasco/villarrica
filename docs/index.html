@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 9fe01783 · 2026-11-13</div>
+  <div class="tVer">Versión 02c2fed6 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 9fe01783 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 02c2fed6 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -1048,7 +1048,7 @@ VR.audio = {
   engine(car, dt) {
     const L = this.loop('engine'); if (!L) return;
     const t = this.ac.currentTime;
-    if (!car || !this.on || car.wreck || car.model === 'karumbe' || car.model === 'pati') { L.g.gain.setTargetAtTime(car && car.model === 'pati' && this.on ? 0.012 : 0, t, 0.08); if (car && car.model === 'pati') { L.o.frequency.setTargetAtTime(300 + Math.abs(car.v) * 3, t, 0.05); L.f.frequency.setTargetAtTime(1400, t, 0.1); } return; }
+    if (!car || !this.on || car.wreck || car.model === 'karumbe' || car.model === 'pati' || car.model === 'bici') { L.g.gain.setTargetAtTime(car && car.model === 'pati' && this.on ? 0.012 : 0, t, 0.08); if (car && car.model === 'pati') { L.o.frequency.setTargetAtTime(300 + Math.abs(car.v) * 3, t, 0.05); L.f.frequency.setTargetAtTime(1400, t, 0.1); } return; }
     const moto = car.type === 'moto', big = car.spec.mass > 1.3, s = Math.min(1, Math.abs(car.v) / (car.spec.max.road || 240));
     const gear = moto ? 4 : 5, gp = (s * gear) % 1, rpm = 0.25 + (s < 0.05 ? 0 : 0.35 + gp * 0.6) * (0.6 + s * 0.4);
     const base = moto ? 46 : big ? 28 : 34, f = base + rpm * (moto ? 120 : 80);
@@ -4437,6 +4437,16 @@ VR.drawPati = (pal, t = {}) => VR.vbase(6, 14, (T) => { // manubrio en T, tabla 
   for (let y = 5.2; y < 11; y += 0.9) T.line(2, y, 4, y, 0.2, '#2c2c32');
   T.rr(2.2, 12, 1.6, 0.6, 0.3, '#e8302a');
 }, () => VR.OBL.moto('pati', pal));
+VR.BICI_COLORS = [['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#c8322a', '#8e1f1a', '#e4685c'], ['#e8e6e0', '#a9a69e', '#ffffff'], ['#3f8f4a', '#28552f', '#66b872'], ['#e8b830', '#a8841c', '#f4d870'], ['#2c2c32', '#16161a', '#55555e']];
+VR.drawBici = (pal, t = {}) => VR.vbase(6, 15, (T) => { // vista desde arriba: dos cubiertas finitas, cuadro al medio, manubrio recto, asiento y parrilla
+  const [C, D] = pal;
+  T.tire(2.4, 0.2, 1.2, 3.6); T.tire(2.4, 11.2, 1.2, 3.6);
+  T.line(3, 2.4, 3, 12.4, 0.5, D); T.line(3, 3.0, 3, 10.2, 0.34, C);
+  T.line(0.5, 3.4, 5.5, 3.4, 0.4, '#2a2a2e'); T.ell(0.45, 3.4, 0.5, 0.4, '#16161a'); T.ell(5.55, 3.4, 0.5, 0.4, '#16161a');
+  T.ell(3, 2.8, 0.38, 0.3, t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0');
+  T.ell(3, 9.6, 0.7, 1.15, '#202126'); T.ell(1.9, 8.0, 0.5, 0.28, '#2a2a30'); T.ell(4.1, 9.0, 0.5, 0.28, '#2a2a30');
+  T.rr(2.2, 12.3, 1.6, 2.2, 0.4, '#3a3d44'); T.rr(2.6, 14.3, 0.8, 0.4, 0.2, '#e8302a');
+}, () => VR.OBL.moto('bici', pal));
 // Conductor visto desde arriba (10×20 unidades): casco o pelo, hombros con sombra, brazos al manubrio, rodillas.
 // o (05/11/2026): colores del personaje que maneja (piel, pantalón, pelo o gorra), así el jugador se ve como el
 // personaje que eligió o se armó en la tienda.
@@ -4646,6 +4656,9 @@ VR.MOTO_MODELS = {
   carga: { rider: { gy: -3.7, gx: 5.2, hip: 2.2, zoff: 0.7 }, len: 33, wid: 12, S: 40, base: VR.drawMotoCarga, acc: 135, rev: 40, turn: 2.3, brake: 380, mass: 0.8,
     max: { road: 185, stone: 165, dirt: 160, side: 120, grass: 105 },
     name: 'Kárga Guasu 200', desc: 'Motocarga de tres ruedas: lenta, pesada y aguanta de todo atrás.', side: 'carga', riderOff: 8 },
+  bici: { rider: { gy: -4.4, gx: 1.9, hip: 1.9, kx: 1.0, zoff: 2.0 }, len: 14, wid: 5, S: 20, base: VR.drawBici, colors: VR.BICI_COLORS, acc: 95, rev: 8, turn: 4.6, brake: 300, mass: 0.12,
+    max: { road: 72, stone: 52, dirt: 54, side: 66, grass: 40 },
+    name: 'Bici Karumbé', desc: 'Bicicleta de paseo: sin nafta, pero se te acaba el aliento. Ideal para la costanera.', side: 'bici' },
   pati: { rider: { gy: -4.6, gx: 2.6, stand: true }, len: 12, wid: 6, S: 16, base: VR.drawPati, colors: VR.PATI_COLORS, acc: 150, rev: 15, turn: 4.4, brake: 420, mass: 0.15,
     max: { road: 115, stone: 85, dirt: 70, side: 110, grass: 60 },
     name: 'Pati-e', desc: 'Patineta eléctrica: silenciosa y ágil, pero no le pidas mucho en el empedrado.', side: 'pati' },
@@ -4653,8 +4666,8 @@ VR.MOTO_MODELS = {
 // sorteo de modelo: en el tránsito hay motocargas; estacionadas en batería, no (no entran)
 VR.pickMoto = (rnd, parked) => {
   const r = rnd();
-  if (parked) return r < 0.55 ? 'cub' : r < 0.78 ? 'calle' : r < 0.95 ? 'mini' : 'pati';
-  return r < 0.46 ? 'cub' : r < 0.66 ? 'calle' : r < 0.78 ? 'mini' : r < 0.95 ? 'carga' : 'pati';
+  if (parked) return r < 0.5 ? 'cub' : r < 0.72 ? 'calle' : r < 0.86 ? 'mini' : r < 0.94 ? 'bici' : 'pati';
+  return r < 0.43 ? 'cub' : r < 0.62 ? 'calle' : r < 0.73 ? 'mini' : r < 0.82 ? 'bici' : r < 0.95 ? 'carga' : 'pati';
 };
 VR.vspec = (() => {
   const cache = new Map();
@@ -5602,8 +5615,8 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
   // peso de aceptación (0–1) de cada modelo en nivel 1 (bajo) y 5 (alto); en el medio se interpola. Lo que no figura pesa 1.
   const CAR_LO = { mita: 1, sedan: 0.75, mono: 1, pickup: 0.7, suv: 0.3, suvmed: 0.4, suvchico: 1, rally: 0.2, coupe: 0.15, karumbe: 1 };
   const CAR_HI = { mita: 0.7, sedan: 1, mono: 0.85, pickup: 1, suv: 1, suvmed: 1, suvchico: 0.9, rally: 1, coupe: 1, karumbe: 0.3 };
-  const MOTO_LO = { cub: 1, calle: 0.5, mini: 1, carga: 1, pati: 0.2 };
-  const MOTO_HI = { cub: 0.8, calle: 1, mini: 0.6, carga: 0.6, pati: 1 };
+  const MOTO_LO = { cub: 1, calle: 0.5, mini: 1, carga: 1, pati: 0.2, bici: 1 };
+  const MOTO_HI = { cub: 0.8, calle: 1, mini: 0.6, carga: 0.6, pati: 1, bici: 0.5 };
   const pick = (draw, lo, hi, rnd, n) => {
     if (!n) n = 0; // 0 = sin dato en el llamador: no se filtra nada
     let m = draw();
@@ -6004,6 +6017,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     cub: { W: 10, L: 21, lift: 9.4, w: [[3.2, 3.1, 0.6], [17.3, 3.1, 0.6]], segs: (C, t) => cubSegs(C, t), paint: cubPaint, ownWheels: true },
     mini: { W: 10, L: 17, w: [[2.2, 2.2, 0.6], [14.1, 2.2, 0.6]], segs: () => [[0, 1, 0, 13.2, '#000', 0]], ownWheels: true },
     calle: { W: 10, L: 22, w: [[3.1, 3.1, 0.6], [17, 3.1, 0.6]], segs: () => [[0, 1, 0, 14.2, '#000', 0]], ownWheels: true },
+    bici: { W: 6, L: 15, w: [[2.7, 2.7, 0.22], [11.2, 2.7, 0.22]], segs: () => [[0, 1, 0, 13, '#000', 0]], ownWheels: true },
     pati: { W: 6, L: 14, w: [[1.5, 1.5, 1.05], [12.5, 1.5, 1.05]], segs: (C) => [[2, 2.8, 8.6, 9.4, '#2a2a2e', 0], [2.6, 3.7, 1, 8.6, C, 2.4], [4, 12, 1, 2, '#3c3c44', 1]] },
     carga: { W: 18, L: 34, w: [[2.5, 2.5, 0.6]], segs: () => [[0, 1, 0, 14.2, '#000', 0]], ownWheels: true },
   };
@@ -6287,6 +6301,44 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     if (S2) for (const sg of [-1, 1]) M.box(sg > 0 ? 5.38 : -5.5, sg > 0 ? 5.5 : -5.38, 16.0, 31.5, 6.4, 7.0, S2);
     return M.F;
   };
+  // Bicicleta urbana (13/11/2026): cuadro con tubo superior, horquilla, manubrio con puños, asiento, parrilla, pedales y
+  // rueda finita con rayos. 8 unidades ≈ 1 m: rodado ~27", base de ruedas ~1,05 m. `pal[0]` pinta el cuadro.
+  MESH.bici = (pal, t = {}) => {
+    const C = pal[0], M = new Mesh(), BLK = '#202126', CH = '#c4c8d0', GR = '#8a8e96';
+    const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#c4c8d0';
+    const FW = 2.7, RW = 11.2, R = 2.7, BB = [7.4, 1.9], ST = [9.3, 9.0], HT = [3.6, 9.4], HB = [3.9, 7.6];
+    const circ = (u, y, z, r, n = 16) => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push([u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
+    const wo = { spoke: '#d4d8de', acc: '#9096a0', nsp: 10 };
+    M.wheel(FW, R, rim, 0.22, wo); M.wheel(RW, R, rim, 0.22, wo);
+    const T3 = (a, b, r, col, n = 6) => M.tube(a, b, r, col, n);
+    // horquilla (dos barras) y tubo de dirección
+    for (const sg of [-1, 1]) T3([sg * 0.42, FW, R], [sg * 0.42, HB[0] - 0.2, HB[1]], 0.15, CH);
+    T3([0, HB[0], HB[1]], [0, HT[0], HT[1]], 0.24, C);
+    // cuadro: superior, inferior, tubo del asiento, vainas
+    T3([0, HT[0] + 0.1, HT[1] - 0.2], [0, ST[0], ST[1] - 0.2], 0.2, C);
+    T3([0, HB[0] + 0.1, HB[1] + 0.1], [0, BB[0], BB[1]], 0.24, C);
+    T3([0, BB[0], BB[1]], [0, ST[0] + 0.2, ST[1] + 0.8], 0.2, C);
+    for (const sg of [-1, 1]) { T3([sg * 0.4, BB[0], BB[1]], [sg * 0.45, RW, R], 0.14, C); T3([sg * 0.4, ST[0] + 0.1, ST[1] - 0.4], [sg * 0.45, RW, R], 0.13, C); }
+    // asiento y poste
+    T3([0, ST[0] + 0.2, ST[1] + 0.8], [0, ST[0] + 0.5, ST[1] + 1.6], 0.14, CH);
+    M.loft(ST[0] - 0.2, ST[0] + 2.3, 0.4, (y) => ({ w: pl([[ST[0] - 0.2, 0.2], [ST[0] + 0.5, 0.28], [ST[0] + 2.3, 0.55]], y), zb: ST[1] + 1.55, zt: ST[1] + 1.85 }), BLK, 8);
+    // manubrio: potencia, barra recta, puños y palancas de freno
+    T3([0, HT[0], HT[1]], [0, HT[0] - 0.4, HT[1] + 1.0], 0.17, CH);
+    T3([-2.0, HT[0] - 0.5, HT[1] + 1.1], [2.0, HT[0] - 0.5, HT[1] + 1.1], 0.14, CH);
+    for (const sg of [-1, 1]) { T3([sg * 1.5, HT[0] - 0.5, HT[1] + 1.1], [sg * 2.35, HT[0] - 0.5, HT[1] + 1.1], 0.21, BLK, 6); T3([sg * 1.7, HT[0] - 0.9, HT[1] + 1.0], [sg * 1.3, HT[0] - 1.6, HT[1] + 0.8], 0.06, '#2a2a30', 4); }
+    // farito delantero y reflector trasero
+    M.box(-0.3, 0.3, HT[0] - 1.3, HT[0] - 0.8, HT[1] + 0.2, HT[1] + 0.8, '#2a2b30').forEach((f, i) => { if (i === 2) f.d.push({ p: [[-0.2, HT[0] - 1.3, HT[1] + 0.3], [0.2, HT[0] - 1.3, HT[1] + 0.3], [0.2, HT[0] - 1.3, HT[1] + 0.7], [-0.2, HT[0] - 1.3, HT[1] + 0.7]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }); });
+    // plato, biela y pedales (pose fija: pedal izquierdo adelante y abajo)
+    M.face(circ(0.62, BB[0], BB[1], 0.8, 14), '#9096a0', [0.62, BB[0], BB[1]]);
+    T3([-0.75, BB[0] + 0.1, BB[1] + 0.2], [-0.75, BB[0] + 1.5, BB[1] - 1.1], 0.12, GR, 5); T3([0.75, BB[0] - 0.1, BB[1] - 0.2], [0.75, BB[0] - 1.5, BB[1] + 1.1], 0.12, GR, 5);
+    M.box(-1.7, -0.7, BB[0] + 1.0, BB[0] + 2.2, BB[1] - 1.5, BB[1] - 1.2, BLK); M.box(0.7, 1.7, BB[0] - 2.2, BB[0] - 1.0, BB[1] + 1.2, BB[1] + 1.5, BLK);
+    // cadena (cinta oscura) y parrilla trasera con luz roja
+    M.face([[0.62, BB[0], BB[1] + 1.0], [0.62, RW, R + 0.55], [0.62, RW, R + 0.2], [0.62, BB[0], BB[1] + 0.8]], '#3a3a40', [0.62, 9, 3]);
+    M.box(-0.9, 0.9, RW - 0.9, RW + 1.7, R + 3.1, R + 3.3, '#3a3d44');
+    for (const sg of [-1, 1]) T3([sg * 0.7, RW - 0.4, R + 0.3], [sg * 0.8, RW, R + 3.2], 0.07, GR, 4);
+    M.face([[-0.35, RW + 1.7, R + 3.4], [0.35, RW + 1.7, R + 3.4], [0.35, RW + 1.7, R + 2.9], [-0.35, RW + 1.7, R + 2.9]], '#c42a2a', [0, RW + 1.7, R + 3.1]);
+    return M.F;
+  };
 
   // ---------- dibujo ----------
   const L = norm([-0.38, -0.48, 0.8]);
@@ -6520,7 +6572,7 @@ VR.Traffic = class {
         if (!this.hot) this.hot = (W.labels || []).filter((l) => /^Gobernaci|^Municipalidad|^Terminal/.test(l.text));
         if (!(VR.CAR_MODELS[model] && VR.CAR_MODELS[model].bus) && this.hot.some((h) => Math.hypot(h.x - lx, h.y - ly) < 900) && this.rnd() < 0.3) model = this.rnd() < (e.w >= 6 * VR.TILE - 1 ? 0.5 : 0.25) ? 'guairena' : 'indep';
       }
-      const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
+      const pal = model === 'pati' ? VR.PATI_COLORS : model === 'bici' ? VR.BICI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       if (VR.CAR_MODELS[model] && (VR.CAR_MODELS[model].bus || VR.CAR_MODELS[model].big) && W.boxOverlap(lx - Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly - Math.max(52, VR.CAR_MODELS[model].len * 0.6), lx + Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly + Math.max(52, VR.CAR_MODELS[model].len * 0.6))) continue; // colectivos y camiones grandes necesitan más lugar para aparecer
       const tune = this.rnd() < (VR.tuneChance ? VR.tuneChance(nv) : 0.1) && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados
@@ -8302,7 +8354,7 @@ VR.Online = class {
     let best = null, bd = 34;
     for (const o of this.others.values()) {
       if (!o.c || o.r) continue; const d = Math.hypot(o.x - p.x, o.y - p.y); if (d > bd) continue;
-      const used = [...this.others.values()].filter((q) => q.r === o.id).length, cap = o.c[0] === 'moto' ? (o.c[1] === 'pati' ? 0 : 1) : o.c[1] === 'karumbe' ? 2 : 4;
+      const used = [...this.others.values()].filter((q) => q.r === o.id).length, cap = o.c[0] === 'moto' ? (o.c[1] === 'pati' || o.c[1] === 'bici' ? 0 : 1) : o.c[1] === 'karumbe' ? 2 : 4;
       if (used < cap) { bd = d; best = o; }
     }
     return best;
@@ -9776,6 +9828,7 @@ VR.showVehicleCard = (v) => {
     mini:  { cc: 150, hp: 8.3, tank: 9.5,  kg: 92,  kml: 38, fk: 6, frenos: 'Disco + tambor', llantas: '90/90-12 / 3.50-10', trans: 'Automática' },
     calle: { cc: 150, hp: 11.3, tank: 15,  kg: 120, kml: 35, fk: 6, frenos: 'Disco + tambor', llantas: '2.75-18 / 100/90-18', trans: 'Manual de 5' },
     carga: { cc: 175, hp: 12.3, tank: 18,  kg: null, kml: 22, fk: 6, frenos: 'Tambor', llantas: '4.50-12', trans: 'Mecánica', nm: 12.5 },
+    bici:  { bici: true, tank: 100, kml: 1, fk: 1, kg: 14, frenos: 'Zapata', llantas: '27 × 1,75' },
     pati:  { bat: true, tank: 100, kml: 0.25, fk: 1.5, kg: 14, hp: 0.5 },
   };
   const ficha = (c) => {
@@ -9786,6 +9839,7 @@ VR.showVehicleCard = (v) => {
   };
   VR.fichaTxt = (c) => {
     const f = ficha(c); if (!f) return '';
+    if (f.bici) return 'Pedal · ' + f.kg + ' kg · llantas ' + f.llantas;
     if (f.bat) return 'Eléctrica · batería para ~' + Math.round(f.tank * f.kml) + ' km';
     return (f.cc ? f.cc + ' cc · ' + String(f.hp).replace('.', ',') + ' HP · ' : '') + 'tanque ' + String(f.tank).replace('.', ',') + ' L' + (f.kg ? ' · ' + f.kg + ' kg' : '');
   };
@@ -9817,9 +9871,17 @@ VR.showVehicleCard = (v) => {
       // arreglo en el lugar: el vehículo queda quieto hasta terminar
       if (c.fixT > 0) { c.fixT -= dt; th = 0; st = 0; if (c.fixT <= 0) { c.tq.f = c.tq.r = 1; c.wear = Math.min(c.wear, 0.5); say('🛞 Listo, la llanta quedó como nueva.'); VR.audio && VR.audio.coin && VR.audio.coin(); } }
       // nafta: gasta más si acelerás; parado con el motor prendido gasta un poquito
-      const use = step / 1000 / f.kml * f.fk * (1 + 0.5 * Math.max(0, th)) + f.tank * dt / 2400;
-      if (c.fuel > 0) { c.fuel = Math.max(0, c.fuel - use); if (c.fuel === 0) { say(f.bat ? '🔋 ¡Sin batería! Tocá el ⛽ del tablero para una carga de emergencia.' : '⛽ ¡Te quedaste sin nafta! Tocá el ⛽ del tablero para pedir un bidón.'); buzz(40); } }
-      if (c.fuel <= 0) { if (th > 0) th = 0; }
+      if (f.bici) {                                                    // bici: el "tanque" es el aliento; pedalear fuerte lo gasta, rodar lo recupera
+        const hard = th > 0.5 && Math.abs(c.v) > 8 ? th : 0;
+        c.fuel = Math.max(0, Math.min(100, c.fuel + (hard ? -2.2 * hard : 4) * dt));
+        if (c.fuel <= 0 && !c._ahog) { c._ahog = true; say('💪 ¡Sin aliento! Soltá un rato y recuperá.'); }
+        if (c.fuel > 25) c._ahog = false;
+        if (c._ahog && th > 0) th *= 0.3;
+      }
+      const use = f.bici ? 0 : step / 1000 / f.kml * f.fk * (1 + 0.5 * Math.max(0, th)) + f.tank * dt / 2400;
+      if (f.bici) { /* arriba */ } else if (c.fuel > 0) { c.fuel = Math.max(0, c.fuel - use); if (c.fuel === 0) { say(f.bat ? '🔋 ¡Sin batería! Tocá el ⛽ del tablero para una carga de emergencia.' : '⛽ ¡Te quedaste sin nafta! Tocá el ⛽ del tablero para pedir un bidón.'); buzz(40); } }
+      if (f.bici) { /* sin reserva */ }
+      else if (c.fuel <= 0) { if (th > 0) th = 0; }
       else if (c.fuel < f.tank * 0.07 && th > 0 && Math.sin(t * 13) > 0.78) th = 0;   // reserva: el motor tose
       // llantas: desgaste y pinchaduras
       const tile = c.world.get(Math.floor(c.x / VR.TILE), Math.floor(c.y / VR.TILE));
@@ -9845,16 +9907,16 @@ VR.showVehicleCard = (v) => {
     // servicio completo (taller): llena el tanque, arregla las llantas; devuelve el texto o null si no hace falta
     servicio(c) {
       if (!ensure(c)) return { msg: 'A este no hay nada que cargarle.' };
-      const f = ficha(c), litros = Math.max(0, f.tank - c.fuel), costoL = Math.round(litros * PRECIO_L / 500) * 500;
+      const f = ficha(c), litros = f.bici ? 0 : Math.max(0, f.tank - c.fuel), costoL = Math.round(litros * PRECIO_L / 500) * 500;
       const llantas = flat(c) || c.wear > 0.7, costoT = (flat(c) ? 8000 : 0) + (c.wear > 0.7 ? 20000 : 0);
       const n = costoL + costoT; if (n < 1) return { msg: 'Tanque lleno y llantas bien. No hay nada que hacer.' };
       if (n > VR.Wallet.get()) return { msg: 'Sale ' + VR.fmtGs(n) + ' y tenés ' + VR.fmtGs(VR.Wallet.get()) + '. No alcanza.', bad: true };
       VR.Wallet.add(-n, 'Taller: ' + (f.bat ? 'carga' : 'nafta') + (llantas ? ' y llantas' : ''));
-      c.fuel = f.tank; if (llantas) { c.tq.f = c.tq.r = 1; if (c.wear > 0.7) c.wear = 0.1; }
+      c.fuel = f.tank; c._ahog = false; if (llantas) { c.tq.f = c.tq.r = 1; if (c.wear > 0.7) c.wear = 0.1; }
       return { msg: (f.bat ? 'Batería llena' : 'Tanque lleno (' + Math.round(litros) + ' L)') + (llantas ? ', llantas arregladas' : '') + '. Son ' + VR.fmtGs(n) + '.', n };
     },
     bidon(c) {
-      const f = ficha(c); if (!f || c.fuel > 0.05) return;
+      const f = ficha(c); if (!f || f.bici || c.fuel > 0.05) return;
       if (BIDON > VR.Wallet.get()) { say('No te alcanza para el bidón (' + VR.fmtGs(BIDON) + ').'); return; }
       VR.Wallet.add(-BIDON, f.bat ? 'Carga de emergencia' : 'Bidón de nafta'); c.fuel = Math.min(f.tank, f.bat ? f.tank * 0.2 : BIDON_L); say((f.bat ? '🔋 Carga de emergencia' : '⛽ Un vecino te vendió ' + BIDON_L + ' L') + ' por ' + VR.fmtGs(BIDON) + '.'); VR.audio && VR.audio.coin && VR.audio.coin();
     },
@@ -9922,15 +9984,15 @@ VR.showVehicleCard = (v) => {
     $q('.v').firstChild.hidden = $q('.v small').hidden = !!manualTouch; N.textContent = kmh; G.textContent = gear;
     if (!ok) { F.hidden = TT.hidden = true; S.textContent = 'Tracción a sangre'; X.textContent = ''; BT.hidden = true; const hp = (car.hp ?? 100) / 100; H.hidden = false; bar(H, hp, Math.round(hp * 100) + '%'); return; }
     F.hidden = TT.hidden = false;
-    const fp = car.fuel / f.tank; F.classList.toggle('bad', fp < 0.12);
-    F.querySelector('i').textContent = f.bat ? '🔋' : '⛽';
-    bar(F, fp, f.bat ? Math.round(fp * 100) + '%' : (car.fuel < 10 ? car.fuel.toFixed(1).replace('.', ',') : Math.round(car.fuel)) + ' L');
+    const fp = car.fuel / f.tank; F.classList.toggle('bad', fp < 0.12 && !f.bici);
+    F.querySelector('i').textContent = f.bici ? '💪' : f.bat ? '🔋' : '⛽';
+    bar(F, fp, f.bat || f.bici ? Math.round(fp * 100) + '%' : (car.fuel < 10 ? car.fuel.toFixed(1).replace('.', ',') : Math.round(car.fuel)) + ' L');
     const hp = (car.hp ?? 100) / 100; H.classList.toggle('bad', hp < 0.25); bar(H, hp, Math.round(hp * 100) + '%');
     TS[0].textContent = 'D ' + Math.round(car.tq.f * 100) + '%'; TS[1].textContent = 'T ' + Math.round(car.tq.r * 100) + '%';
     TS[0].classList.toggle('bad', car.tq.f < 0.5); TS[1].classList.toggle('bad', car.tq.r < 0.5); TT.classList.toggle('bad', flat(car));
-    S.textContent = 'Rinde ~' + Math.round(range(car)) + ' km · ' + (car.dist / 1000).toFixed(1).replace('.', ',') + ' km';
+    S.textContent = f.bici ? 'Viaje ' + (car.dist / 1000).toFixed(1).replace('.', ',') + ' km' : 'Rinde ~' + Math.round(range(car)) + ' km · ' + (car.dist / 1000).toFixed(1).replace('.', ',') + ' km';
     X.textContent = VR.fichaTxt(car);
-    const empty = car.fuel <= 0, fl = flat(car);
+    const empty = car.fuel <= 0 && !f.bici, fl = flat(car);
     BT.hidden = !(empty || fl);
     if (car.fixT > 0) { BT.hidden = false; BT.textContent = '🛞 Arreglando… ' + Math.ceil(car.fixT) + ' s'; BT.disabled = true; }
     else { BT.disabled = false; BT.textContent = empty ? (f.bat ? '🔋 Carga de emergencia · ' : '⛽ Bidón ' + BIDON_L + ' L · ') + VR.fmtGs(BIDON) : '🛞 Parche · ' + VR.fmtGs(PARCHE); }
@@ -13242,7 +13304,7 @@ VR.Titulo = class {
     if (c.fallen) { c.fallen = null; if (c.ai) c.ai.stun = 0; if (VR.caidas) VR.caidas.riders = VR.caidas.riders.filter((r) => r.c !== c); toast('💪 Levantaste la moto'); }
     if (c._nid !== undefined && online) online.take(c); // un auto del anfitrión: pasa a ser tuyo
     if (emer) emer.stolen(c);
-    if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : /^cam/.test(c.model) ? '🚚 ¡Te llevaste el camión!' : '🚗 ¡Te llevaste el auto!'); }
+    if (c.ai && traffic) { traffic.release(c); if (!cars.includes(c)) cars.push(c); toast(c.type === 'moto' ? (c.model === 'pati' ? '🛴 ¡Te llevaste la patineta!' : c.model === 'bici' ? '🚲 ¡Te llevaste la bici!' : '🏍 ¡Te llevaste la moto!') : c.model === 'karumbe' ? '🐴 ¡Te llevaste el karumbe!' : c.spec.bus ? '🚌 ¡Te llevaste el colectivo!' : /^cam/.test(c.model) ? '🚚 ¡Te llevaste el camión!' : '🚗 ¡Te llevaste el auto!'); }
     if (c.type === 'moto') c.rider = me();
     c.robado = true; car = c; c.driven = true; player.moving = false; zoomPoke(); VR.showVehicleCard(c);
     hint = ''; lastCar = c; driveLabels(true);

@@ -99,7 +99,7 @@ VR.Traffic = class {
         if (!this.hot) this.hot = (W.labels || []).filter((l) => /^Gobernaci|^Municipalidad|^Terminal/.test(l.text));
         if (!(VR.CAR_MODELS[model] && VR.CAR_MODELS[model].bus) && this.hot.some((h) => Math.hypot(h.x - lx, h.y - ly) < 900) && this.rnd() < 0.3) model = this.rnd() < (e.w >= 6 * VR.TILE - 1 ? 0.5 : 0.25) ? 'guairena' : 'indep';
       }
-      const pal = model === 'pati' ? VR.PATI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
+      const pal = model === 'pati' ? VR.PATI_COLORS : model === 'bici' ? VR.BICI_COLORS : moto ? VR.MOTO_COLORS : VR.CAR_COLORS, color = (this.rnd() * pal.length) | 0;
       if (W.boxOverlap(lx - 30, ly - 30, lx + 30, ly + 30) && model === 'carga') continue;
       if (VR.CAR_MODELS[model] && (VR.CAR_MODELS[model].bus || VR.CAR_MODELS[model].big) && W.boxOverlap(lx - Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly - Math.max(52, VR.CAR_MODELS[model].len * 0.6), lx + Math.max(52, VR.CAR_MODELS[model].len * 0.6), ly + Math.max(52, VR.CAR_MODELS[model].len * 0.6))) continue; // colectivos y camiones grandes necesitan más lugar para aparecer
       const tune = this.rnd() < (VR.tuneChance ? VR.tuneChance(nv) : 0.1) && VR.TUNE_MODELS[model] ? VR.tuneRandom(model, this.rnd) : null; // algunos vienen tuneados

@@ -254,6 +254,44 @@
     if (S2) for (const sg of [-1, 1]) M.box(sg > 0 ? 5.38 : -5.5, sg > 0 ? 5.5 : -5.38, 16.0, 31.5, 6.4, 7.0, S2);
     return M.F;
   };
+  // Bicicleta urbana (13/11/2026): cuadro con tubo superior, horquilla, manubrio con puños, asiento, parrilla, pedales y
+  // rueda finita con rayos. 8 unidades ≈ 1 m: rodado ~27", base de ruedas ~1,05 m. `pal[0]` pinta el cuadro.
+  MESH.bici = (pal, t = {}) => {
+    const C = pal[0], M = new Mesh(), BLK = '#202126', CH = '#c4c8d0', GR = '#8a8e96';
+    const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#c4c8d0';
+    const FW = 2.7, RW = 11.2, R = 2.7, BB = [7.4, 1.9], ST = [9.3, 9.0], HT = [3.6, 9.4], HB = [3.9, 7.6];
+    const circ = (u, y, z, r, n = 16) => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push([u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
+    const wo = { spoke: '#d4d8de', acc: '#9096a0', nsp: 10 };
+    M.wheel(FW, R, rim, 0.22, wo); M.wheel(RW, R, rim, 0.22, wo);
+    const T3 = (a, b, r, col, n = 6) => M.tube(a, b, r, col, n);
+    // horquilla (dos barras) y tubo de dirección
+    for (const sg of [-1, 1]) T3([sg * 0.42, FW, R], [sg * 0.42, HB[0] - 0.2, HB[1]], 0.15, CH);
+    T3([0, HB[0], HB[1]], [0, HT[0], HT[1]], 0.24, C);
+    // cuadro: superior, inferior, tubo del asiento, vainas
+    T3([0, HT[0] + 0.1, HT[1] - 0.2], [0, ST[0], ST[1] - 0.2], 0.2, C);
+    T3([0, HB[0] + 0.1, HB[1] + 0.1], [0, BB[0], BB[1]], 0.24, C);
+    T3([0, BB[0], BB[1]], [0, ST[0] + 0.2, ST[1] + 0.8], 0.2, C);
+    for (const sg of [-1, 1]) { T3([sg * 0.4, BB[0], BB[1]], [sg * 0.45, RW, R], 0.14, C); T3([sg * 0.4, ST[0] + 0.1, ST[1] - 0.4], [sg * 0.45, RW, R], 0.13, C); }
+    // asiento y poste
+    T3([0, ST[0] + 0.2, ST[1] + 0.8], [0, ST[0] + 0.5, ST[1] + 1.6], 0.14, CH);
+    M.loft(ST[0] - 0.2, ST[0] + 2.3, 0.4, (y) => ({ w: pl([[ST[0] - 0.2, 0.2], [ST[0] + 0.5, 0.28], [ST[0] + 2.3, 0.55]], y), zb: ST[1] + 1.55, zt: ST[1] + 1.85 }), BLK, 8);
+    // manubrio: potencia, barra recta, puños y palancas de freno
+    T3([0, HT[0], HT[1]], [0, HT[0] - 0.4, HT[1] + 1.0], 0.17, CH);
+    T3([-2.0, HT[0] - 0.5, HT[1] + 1.1], [2.0, HT[0] - 0.5, HT[1] + 1.1], 0.14, CH);
+    for (const sg of [-1, 1]) { T3([sg * 1.5, HT[0] - 0.5, HT[1] + 1.1], [sg * 2.35, HT[0] - 0.5, HT[1] + 1.1], 0.21, BLK, 6); T3([sg * 1.7, HT[0] - 0.9, HT[1] + 1.0], [sg * 1.3, HT[0] - 1.6, HT[1] + 0.8], 0.06, '#2a2a30', 4); }
+    // farito delantero y reflector trasero
+    M.box(-0.3, 0.3, HT[0] - 1.3, HT[0] - 0.8, HT[1] + 0.2, HT[1] + 0.8, '#2a2b30').forEach((f, i) => { if (i === 2) f.d.push({ p: [[-0.2, HT[0] - 1.3, HT[1] + 0.3], [0.2, HT[0] - 1.3, HT[1] + 0.3], [0.2, HT[0] - 1.3, HT[1] + 0.7], [-0.2, HT[0] - 1.3, HT[1] + 0.7]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }); });
+    // plato, biela y pedales (pose fija: pedal izquierdo adelante y abajo)
+    M.face(circ(0.62, BB[0], BB[1], 0.8, 14), '#9096a0', [0.62, BB[0], BB[1]]);
+    T3([-0.75, BB[0] + 0.1, BB[1] + 0.2], [-0.75, BB[0] + 1.5, BB[1] - 1.1], 0.12, GR, 5); T3([0.75, BB[0] - 0.1, BB[1] - 0.2], [0.75, BB[0] - 1.5, BB[1] + 1.1], 0.12, GR, 5);
+    M.box(-1.7, -0.7, BB[0] + 1.0, BB[0] + 2.2, BB[1] - 1.5, BB[1] - 1.2, BLK); M.box(0.7, 1.7, BB[0] - 2.2, BB[0] - 1.0, BB[1] + 1.2, BB[1] + 1.5, BLK);
+    // cadena (cinta oscura) y parrilla trasera con luz roja
+    M.face([[0.62, BB[0], BB[1] + 1.0], [0.62, RW, R + 0.55], [0.62, RW, R + 0.2], [0.62, BB[0], BB[1] + 0.8]], '#3a3a40', [0.62, 9, 3]);
+    M.box(-0.9, 0.9, RW - 0.9, RW + 1.7, R + 3.1, R + 3.3, '#3a3d44');
+    for (const sg of [-1, 1]) T3([sg * 0.7, RW - 0.4, R + 0.3], [sg * 0.8, RW, R + 3.2], 0.07, GR, 4);
+    M.face([[-0.35, RW + 1.7, R + 3.4], [0.35, RW + 1.7, R + 3.4], [0.35, RW + 1.7, R + 2.9], [-0.35, RW + 1.7, R + 2.9]], '#c42a2a', [0, RW + 1.7, R + 3.1]);
+    return M.F;
+  };
 
   // ---------- dibujo ----------
   const L = norm([-0.38, -0.48, 0.8]);

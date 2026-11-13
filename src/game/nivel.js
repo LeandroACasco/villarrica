@@ -10,8 +10,8 @@
   // peso de aceptación (0–1) de cada modelo en nivel 1 (bajo) y 5 (alto); en el medio se interpola. Lo que no figura pesa 1.
   const CAR_LO = { mita: 1, sedan: 0.75, mono: 1, pickup: 0.7, suv: 0.3, suvmed: 0.4, suvchico: 1, rally: 0.2, coupe: 0.15, karumbe: 1 };
   const CAR_HI = { mita: 0.7, sedan: 1, mono: 0.85, pickup: 1, suv: 1, suvmed: 1, suvchico: 0.9, rally: 1, coupe: 1, karumbe: 0.3 };
-  const MOTO_LO = { cub: 1, calle: 0.5, mini: 1, carga: 1, pati: 0.2 };
-  const MOTO_HI = { cub: 0.8, calle: 1, mini: 0.6, carga: 0.6, pati: 1 };
+  const MOTO_LO = { cub: 1, calle: 0.5, mini: 1, carga: 1, pati: 0.2, bici: 1 };
+  const MOTO_HI = { cub: 0.8, calle: 1, mini: 0.6, carga: 0.6, pati: 1, bici: 0.5 };
   const pick = (draw, lo, hi, rnd, n) => {
     if (!n) n = 0; // 0 = sin dato en el llamador: no se filtra nada
     let m = draw();

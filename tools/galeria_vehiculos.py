@@ -30,7 +30,7 @@ h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)
 JS = r'''
 const OB=VR.OBL, VSS0=VR.VSS, rad=(d)=>d*Math.PI/180;
 const ALL=[...Object.keys(VR.CAR_MODELS).map(m=>['car',m]),...Object.keys(VR.MOTO_MODELS).map(m=>['moto',m])];
-const GROUPS=[['Autos',['mita','sedan','mono','coupe','rally','suvchico']],['Camionetas y SUV',['pickup','suv','suvmed']],['Camiones',['camchata','camcarpa','camfurgon','camvolcador','camtractor']],['Colectivos',['indep','guairena']],['Emergencia y otros',['patrulla','policam','ambulancia','bomba','karumbe']],['Motos y patinetas',['cub','mini','calle','carga','pati']]];
+const GROUPS=[['Autos',['mita','sedan','mono','coupe','rally','suvchico']],['Camionetas y SUV',['pickup','suv','suvmed']],['Camiones',['camchata','camcarpa','camfurgon','camvolcador','camtractor']],['Colectivos',['indep','guairena']],['Emergencia y otros',['patrulla','policam','ambulancia','bomba','karumbe']],['Motos y patinetas',['cub','mini','calle','carga','bici','pati']]];
 const key=(t,m)=>t+':'+m; const spec=(t,m)=>VR.vspec(t,m);
 const tunable=(m)=>!!VR.TUNE_MODELS[m];
 const st={sel:ALL[0],elev:30,col:0,tune:null,real:false,ang:0.9,auto:true};

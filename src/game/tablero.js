@@ -19,6 +19,7 @@
     mini:  { cc: 150, hp: 8.3, tank: 9.5,  kg: 92,  kml: 38, fk: 6, frenos: 'Disco + tambor', llantas: '90/90-12 / 3.50-10', trans: 'Automática' },
     calle: { cc: 150, hp: 11.3, tank: 15,  kg: 120, kml: 35, fk: 6, frenos: 'Disco + tambor', llantas: '2.75-18 / 100/90-18', trans: 'Manual de 5' },
     carga: { cc: 175, hp: 12.3, tank: 18,  kg: null, kml: 22, fk: 6, frenos: 'Tambor', llantas: '4.50-12', trans: 'Mecánica', nm: 12.5 },
+    bici:  { bici: true, tank: 100, kml: 1, fk: 1, kg: 14, frenos: 'Zapata', llantas: '27 × 1,75' },
     pati:  { bat: true, tank: 100, kml: 0.25, fk: 1.5, kg: 14, hp: 0.5 },
   };
   const ficha = (c) => {
@@ -29,6 +30,7 @@
   };
   VR.fichaTxt = (c) => {
     const f = ficha(c); if (!f) return '';
+    if (f.bici) return 'Pedal · ' + f.kg + ' kg · llantas ' + f.llantas;
     if (f.bat) return 'Eléctrica · batería para ~' + Math.round(f.tank * f.kml) + ' km';
     return (f.cc ? f.cc + ' cc · ' + String(f.hp).replace('.', ',') + ' HP · ' : '') + 'tanque ' + String(f.tank).replace('.', ',') + ' L' + (f.kg ? ' · ' + f.kg + ' kg' : '');
   };
@@ -60,9 +62,17 @@
       // arreglo en el lugar: el vehículo queda quieto hasta terminar
       if (c.fixT > 0) { c.fixT -= dt; th = 0; st = 0; if (c.fixT <= 0) { c.tq.f = c.tq.r = 1; c.wear = Math.min(c.wear, 0.5); say('🛞 Listo, la llanta quedó como nueva.'); VR.audio && VR.audio.coin && VR.audio.coin(); } }
       // nafta: gasta más si acelerás; parado con el motor prendido gasta un poquito
-      const use = step / 1000 / f.kml * f.fk * (1 + 0.5 * Math.max(0, th)) + f.tank * dt / 2400;
-      if (c.fuel > 0) { c.fuel = Math.max(0, c.fuel - use); if (c.fuel === 0) { say(f.bat ? '🔋 ¡Sin batería! Tocá el ⛽ del tablero para una carga de emergencia.' : '⛽ ¡Te quedaste sin nafta! Tocá el ⛽ del tablero para pedir un bidón.'); buzz(40); } }
-      if (c.fuel <= 0) { if (th > 0) th = 0; }
+      if (f.bici) {                                                    // bici: el "tanque" es el aliento; pedalear fuerte lo gasta, rodar lo recupera
+        const hard = th > 0.5 && Math.abs(c.v) > 8 ? th : 0;
+        c.fuel = Math.max(0, Math.min(100, c.fuel + (hard ? -2.2 * hard : 4) * dt));
+        if (c.fuel <= 0 && !c._ahog) { c._ahog = true; say('💪 ¡Sin aliento! Soltá un rato y recuperá.'); }
+        if (c.fuel > 25) c._ahog = false;
+        if (c._ahog && th > 0) th *= 0.3;
+      }
+      const use = f.bici ? 0 : step / 1000 / f.kml * f.fk * (1 + 0.5 * Math.max(0, th)) + f.tank * dt / 2400;
+      if (f.bici) { /* arriba */ } else if (c.fuel > 0) { c.fuel = Math.max(0, c.fuel - use); if (c.fuel === 0) { say(f.bat ? '🔋 ¡Sin batería! Tocá el ⛽ del tablero para una carga de emergencia.' : '⛽ ¡Te quedaste sin nafta! Tocá el ⛽ del tablero para pedir un bidón.'); buzz(40); } }
+      if (f.bici) { /* sin reserva */ }
+      else if (c.fuel <= 0) { if (th > 0) th = 0; }
       else if (c.fuel < f.tank * 0.07 && th > 0 && Math.sin(t * 13) > 0.78) th = 0;   // reserva: el motor tose
       // llantas: desgaste y pinchaduras
       const tile = c.world.get(Math.floor(c.x / VR.TILE), Math.floor(c.y / VR.TILE));
@@ -88,16 +98,16 @@
     // servicio completo (taller): llena el tanque, arregla las llantas; devuelve el texto o null si no hace falta
     servicio(c) {
       if (!ensure(c)) return { msg: 'A este no hay nada que cargarle.' };
-      const f = ficha(c), litros = Math.max(0, f.tank - c.fuel), costoL = Math.round(litros * PRECIO_L / 500) * 500;
+      const f = ficha(c), litros = f.bici ? 0 : Math.max(0, f.tank - c.fuel), costoL = Math.round(litros * PRECIO_L / 500) * 500;
       const llantas = flat(c) || c.wear > 0.7, costoT = (flat(c) ? 8000 : 0) + (c.wear > 0.7 ? 20000 : 0);
       const n = costoL + costoT; if (n < 1) return { msg: 'Tanque lleno y llantas bien. No hay nada que hacer.' };
       if (n > VR.Wallet.get()) return { msg: 'Sale ' + VR.fmtGs(n) + ' y tenés ' + VR.fmtGs(VR.Wallet.get()) + '. No alcanza.', bad: true };
       VR.Wallet.add(-n, 'Taller: ' + (f.bat ? 'carga' : 'nafta') + (llantas ? ' y llantas' : ''));
-      c.fuel = f.tank; if (llantas) { c.tq.f = c.tq.r = 1; if (c.wear > 0.7) c.wear = 0.1; }
+      c.fuel = f.tank; c._ahog = false; if (llantas) { c.tq.f = c.tq.r = 1; if (c.wear > 0.7) c.wear = 0.1; }
       return { msg: (f.bat ? 'Batería llena' : 'Tanque lleno (' + Math.round(litros) + ' L)') + (llantas ? ', llantas arregladas' : '') + '. Son ' + VR.fmtGs(n) + '.', n };
     },
     bidon(c) {
-      const f = ficha(c); if (!f || c.fuel > 0.05) return;
+      const f = ficha(c); if (!f || f.bici || c.fuel > 0.05) return;
       if (BIDON > VR.Wallet.get()) { say('No te alcanza para el bidón (' + VR.fmtGs(BIDON) + ').'); return; }
       VR.Wallet.add(-BIDON, f.bat ? 'Carga de emergencia' : 'Bidón de nafta'); c.fuel = Math.min(f.tank, f.bat ? f.tank * 0.2 : BIDON_L); say((f.bat ? '🔋 Carga de emergencia' : '⛽ Un vecino te vendió ' + BIDON_L + ' L') + ' por ' + VR.fmtGs(BIDON) + '.'); VR.audio && VR.audio.coin && VR.audio.coin();
     },
@@ -165,15 +175,15 @@
     $q('.v').firstChild.hidden = $q('.v small').hidden = !!manualTouch; N.textContent = kmh; G.textContent = gear;
     if (!ok) { F.hidden = TT.hidden = true; S.textContent = 'Tracción a sangre'; X.textContent = ''; BT.hidden = true; const hp = (car.hp ?? 100) / 100; H.hidden = false; bar(H, hp, Math.round(hp * 100) + '%'); return; }
     F.hidden = TT.hidden = false;
-    const fp = car.fuel / f.tank; F.classList.toggle('bad', fp < 0.12);
-    F.querySelector('i').textContent = f.bat ? '🔋' : '⛽';
-    bar(F, fp, f.bat ? Math.round(fp * 100) + '%' : (car.fuel < 10 ? car.fuel.toFixed(1).replace('.', ',') : Math.round(car.fuel)) + ' L');
+    const fp = car.fuel / f.tank; F.classList.toggle('bad', fp < 0.12 && !f.bici);
+    F.querySelector('i').textContent = f.bici ? '💪' : f.bat ? '🔋' : '⛽';
+    bar(F, fp, f.bat || f.bici ? Math.round(fp * 100) + '%' : (car.fuel < 10 ? car.fuel.toFixed(1).replace('.', ',') : Math.round(car.fuel)) + ' L');
     const hp = (car.hp ?? 100) / 100; H.classList.toggle('bad', hp < 0.25); bar(H, hp, Math.round(hp * 100) + '%');
     TS[0].textContent = 'D ' + Math.round(car.tq.f * 100) + '%'; TS[1].textContent = 'T ' + Math.round(car.tq.r * 100) + '%';
     TS[0].classList.toggle('bad', car.tq.f < 0.5); TS[1].classList.toggle('bad', car.tq.r < 0.5); TT.classList.toggle('bad', flat(car));
-    S.textContent = 'Rinde ~' + Math.round(range(car)) + ' km · ' + (car.dist / 1000).toFixed(1).replace('.', ',') + ' km';
+    S.textContent = f.bici ? 'Viaje ' + (car.dist / 1000).toFixed(1).replace('.', ',') + ' km' : 'Rinde ~' + Math.round(range(car)) + ' km · ' + (car.dist / 1000).toFixed(1).replace('.', ',') + ' km';
     X.textContent = VR.fichaTxt(car);
-    const empty = car.fuel <= 0, fl = flat(car);
+    const empty = car.fuel <= 0 && !f.bici, fl = flat(car);
     BT.hidden = !(empty || fl);
     if (car.fixT > 0) { BT.hidden = false; BT.textContent = '🛞 Arreglando… ' + Math.ceil(car.fixT) + ' s'; BT.disabled = true; }
     else { BT.disabled = false; BT.textContent = empty ? (f.bat ? '🔋 Carga de emergencia · ' : '⛽ Bidón ' + BIDON_L + ' L · ') + VR.fmtGs(BIDON) : '🛞 Parche · ' + VR.fmtGs(PARCHE); }
