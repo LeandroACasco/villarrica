@@ -562,7 +562,7 @@ VR.Car = class {
   // podía meterse entre dos puntos del costado de un auto). Devuelve los puntos tocados y el primer vehículo.
   contacts(x, y, a) {
     const W = this.world, S = VR.TILE, pts = [];
-    let nx = 0, ny = 0;                              // normal del choque (suma ponderada; apunta del obstáculo hacia el vehículo)
+    let nx = 0, ny = 0, gx = 0, gy = 0, gl = 0;      // normal del choque (suma ponderada; apunta del obstáculo hacia el vehículo); g*: roce de esquina con otro vehículo (ver move)
     // paredes: puntos del contorno dentro de una baldosa sólida; la normal sale de la cara libre más cercana de esa baldosa
     for (const [px, py] of this.points(x, y, a)) {
       const tx = Math.floor(px / S), ty = Math.floor(py / S);
@@ -601,16 +601,21 @@ VR.Car = class {
       for (const [px, py] of VR.obbCorners(B)) if (VR.obbIn(A, px, py)) { pts.push(px, py); n++; }
       if (!n) pts.push((x + o.x) / 2, (y + o.y) / 2);
       // normal: el eje de menor solapamiento (el de la cara que se golpea), orientado de B hacia A
-      const dx = x - o.x, dy = y - o.y; let bo = 1e9, bax = 0, bay = 0;
+      const dx = x - o.x, dy = y - o.y; let bo = 1e9, bax = 0, bay = 0; const ovs = [];
       for (const [ax, ay] of [[A.fx, A.fy], [A.rx, A.ry], [B.fx, B.fy], [B.rx, B.ry]]) {
         const ra = A.hl * Math.abs(A.fx * ax + A.fy * ay) + A.hw * Math.abs(A.rx * ax + A.ry * ay), rb = B.hl * Math.abs(B.fx * ax + B.fy * ay) + B.hw * Math.abs(B.rx * ax + B.ry * ay);
-        const dd = dx * ax + dy * ay, ov = ra + rb - Math.abs(dd);
-        if (ov < bo) { bo = ov; const sg = dd >= 0 ? 1 : -1; bax = ax * sg; bay = ay * sg; }
+        const dd = dx * ax + dy * ay, ov = ra + rb - Math.abs(dd), sg = dd >= 0 ? 1 : -1;
+        ovs.push([ov, ax * sg, ay * sg]);
+        if (ov < bo) { bo = ov; bax = ax * sg; bay = ay * sg; }
       }
       nx += bax * 2; ny += bay * 2;
+      // roce de esquina: entre los ejes que no son el del choque, el de menor solapamiento; si es chico (< 8 px) el vehículo puede salirse de costado
+      let lo = 1e9, lx = 0, ly = 0;
+      for (const [ov, ax, ay] of ovs) if (Math.abs(ax * bax + ay * bay) < 0.7 && ov < lo) { lo = ov; lx = ax; ly = ay; }
+      if (lo < 8 && lo > 0 && lo < 1e8) { gx += lx * lo; gy += ly * lo; gl = Math.max(gl, lo); }
     }
     VR._near.length = 0;
-    return pts.length ? { pts, other, nx, ny } : null;
+    return pts.length ? { pts, other, nx, ny, gx, gy, gl } : null;
   }
   // mover en pasos chicos; al chocar: rebote (según el ángulo), roce contra la pared, giro por el golpe
   // y, si es otro vehículo, intercambio de impulso (lo empujás)
@@ -670,6 +675,15 @@ VR.Car = class {
         }
       }
       this.w = VR.clamp(this.w, -6, 6);
+      // roce de esquina contra otro vehículo (13/11/2026): con poco solapamiento de costado el vehículo se desliza hacia afuera
+      // en vez de quedarse pegado (antes la normal de frente lo frenaba y, con el acelerador apretado, no salía más)
+      if (o && c.gl > 0) {
+        const gl = Math.hypot(c.gx, c.gy) || 1, tx = c.gx / gl, ty = c.gy / gl, st = Math.min(c.gl + 0.8, 6), ox0 = this.x, oy0 = this.y;
+        this.x += tx * st; this.y += ty * st;
+        const c2 = this.contacts(this.x, this.y, this.a);
+        if (c2 && !c2.other) { this.x = ox0; this.y = oy0; }                    // ahí hay una pared: no se corre
+        else { const vt = this.vx * tx + this.vy * ty; if (vt < 40) { this.vx += tx * (40 - vt); this.vy += ty * (40 - vt); } }   // y sigue deslizándose hacia afuera
+      }
       if (this.driven && impact > 45) this.bounceT = Math.min(0.4, 0.1 + impact / 600);   // tras un golpe fuerte el motor «suelta» un instante: el auto rebota en vez de empujarse contra lo que chocó
       if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); if (this.driven && this.type === 'moto' && impact > 140 && VR.onEject) VR.onEject(this, impact); else if (this.ai && this.type === 'moto' && impact > 110 && VR.caidas) VR.caidas.motoDown(this, impact); if (impact > 55 && VR.addDent) { VR.addDent(this, mx, my, impact); if (o) VR.addDent(o, mx, my, impact * 0.8); } }
       // no se mete en la pared: si el giro solo ya lo traba, no gira; y si quedó pegado, se separa un poco
