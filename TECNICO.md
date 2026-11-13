@@ -513,6 +513,8 @@ En Libre no existen `mis` ni `VR.PUNTOS`, así que `main.js` crea `VR.despensa` 
 
 Pedido de Leandro: en Gangstar los autos no se ven planos desde arriba, se ven también un poco de costado (techo + puerta, ventanillas y ruedas del lado que mira a la cámara), igual que el personaje. Los nuestros eran planos. Ahora **todos los vehículos tienen volumen**, en los 64 ángulos.
 
+**Retoque del mismo día (segunda versión), por lo que vio Leandro al probar:** el dibujo no seguía al vehículo al doblar (tampoco el conductor de la moto), las ventanillas salían dos veces, los vehículos se veían altos ("gorditos") y el karumbe era una carreta. Los cuatro puntos están arreglados; ver abajo.
+
 Referencia usada: los cuadros de autos de la carpeta de assets de Gangstar (paquetes `k_00`…`k_04`), **solo para mirar la perspectiva**. No se copió nada: los dibujos siguen siendo los nuestros, hechos por código.
 
 ### Qué cambió
@@ -521,7 +523,8 @@ Referencia usada: los cuadros de autos de la carpeta de assets de Gangstar (paqu
 - **Colectivos y micro:** costado con la fila de ventanillas, parantes, puertas y las franjas de la empresa (solo colores).
 - **Camiones:** cabina con puerta y ventanilla, y la carga con su altura (chata, baranda con carpa, furgón, volcador con costillas, granelero con lona). **Camión de bomberos** con persianas.
 - **Motos:** ruedas, escudo, tanque, asiento, manubrio y escape con altura; el **conductor y el pasajero** van sentados encima (piernas, torso y cabeza en tres alturas).
-- **Karumbe:** caballo, carro y carrero con altura (más simple: usa el mismo dibujo oscurecido como costado).
+- **Karumbe:** rehecho con la foto de Leandro de uno de Villarrica. Ya no es una carreta: es el **coche de caballo de pasajeros**, con caja de madera pintada (naranja, roja, azul, verde o amarilla), ventanas con parantes blancos, **techo blanco con borde turquesa**, pescante, cuatro ruedas chicas de goma y el carrero adentro. Cambiaron el dibujo de arriba, el costado con volumen y los dos dibujos de la tarjeta.
+- **Ventanillas:** el dibujo de arriba ya no pinta las ventanillas a los dos lados del techo (era de la vista plana); ahora van solo en el costado. El parabrisas y la luneta siguen arriba.
 - La **sombra** ahora es la silueta apoyada en el piso (antes era la del sprite entero).
 - El cartel del taxi, las luces de la sirena y las abolladuras se dibujan a la altura del techo o del costado.
 - La física, los choques, el tamaño en la calle y el estacionamiento **no cambian**: el vehículo ocupa lo mismo en el piso y el volumen crece hacia arriba en pantalla, como los edificios.
@@ -543,10 +546,11 @@ Cada vehículo sigue teniendo su dibujo desde arriba (`VR.vbase`) y ahora, adem�
 El vehículo se "apila": para cada altura se dibuja la silueta girada y corrida hacia arriba, pintada con la fila del costado que le toca, y encima la franja del dibujo de arriba que queda a esa altura.
 
 - Perfiles: `VR.OBL.car(config)` (todo lo de `VR.drawAuto`; alturas `hz: [capó, techo]` por modelo), `VR.OBL.bus`, `VR.OBL.truck`, `VR.OBL.bomba`, `VR.OBL.karumbe`, `VR.OBL.moto(modelo)` (tabla `MOTO`) y `VR.OBL.parts` (conductor).
-- `VR.OBL.kz` (0,68): cuántos píxeles sube cada unidad de altura. Más = vehículos más altos.
+- `VR.OBL.kz` (**0,46**; empezó en 0,68 y Leandro los vio demasiado altos): cuántos píxeles sube cada unidad de altura. Más = vehículos más altos.
 - `VR.rotFrames` suma lugar arriba y abajo al cuadro (sigue centrado), guarda `F.lift` y hace la sombra con la silueta plana.
-- **Rendimiento:** armar un ángulo con volumen cuesta más que girar un dibujo plano (auto ~9 ms en la PC, colectivo ~40 ms), así que **no se hace de golpe**: va a una cola (`VR.OBL.enqueue`) que trabaja ~2 ms por cuadro. Mientras tanto se muestra el ángulo ya hecho más parecido, y un modelo o color que aparece por primera vez tarda unos cuadros en verse. Medido en la PC manejando por el centro: mediana 16,7 ms, 4 cuadros de más de 25 ms en 860 (con los dibujos planos de antes, 2).
-- Para probar: `?plano` en la dirección muestra los vehículos como antes, `?kz=0.8` cambia la altura, `?sinc` arma los ángulos en el momento (sin cola).
+- **Rendimiento:** las capas se apilan **en memoria, píxel por píxel y sin girar** (correr una capa hacia arriba en pantalla es correrla en diagonal en el dibujo sin girar) y al final se gira todo junto una sola vez. Un ángulo nuevo cuesta ~1 ms de apilado en la PC para un auto y ~5 ms para un colectivo (la primera versión giraba capa por capa: 10 y 55 ms), así que se hace **en el momento**: el dibujo sigue al vehículo y al conductor cuando doblan. Medido en la PC manejando por el centro: mediana 16,7 ms, 3 cuadros de más de 25 ms en 850 (con los dibujos planos de antes, 2).
+- La primera versión usaba una cola que repartía el trabajo entre cuadros y mientras tanto mostraba el ángulo de al lado: por eso el dibujo "llegaba tarde" al doblar. La cola quedó en el código pero apagada (`VR.OBL.async = false`).
+- Para probar: `?plano` en la dirección muestra los vehículos como antes, `?kz=0.8` cambia la altura, `?cola` vuelve a prender la cola vieja.
 
 ### Receta: vehículo nuevo
 
@@ -561,8 +565,8 @@ El vehículo se "apila": para cada altura se dibuja la silueta girada y corrida 
 
 ### Conocido / para ajustar
 
-- El costado de las ventanillas de los autos comunes es finito (la cabina mide ~3 px de alto en pantalla); si Leandro los quiere más "altos", subir `VR.OBL.kz`.
-- El karumbe es el más simple (bloques oscuros como costado): se puede dibujar mejor.
+- Con la altura más baja, el costado de las ventanillas de los autos comunes es finito (~2 px en pantalla). Si se quiere otra altura, es un solo número (`VR.OBL.kz`).
+- Karumbe: el caballo de costado es simple (cuerpo, patas y cabeza en bloques); falta que Leandro confirme colores y forma contra los de verdad.
 - Espejos, guardabarros anchos, alerón alto y rueda de auxilio no tienen altura propia (van pegados a la carrocería).
 - La tarjeta del vehículo y el taller siguen usando el dibujo de costado en alta (`sidehd.js`), sin cambios.
 - Los vehículos quemados usan el mismo volumen oscurecido.

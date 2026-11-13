@@ -56,7 +56,7 @@
     if (t.techo !== 'negro') st(yW, yR);
     T.rr(x0 + 3.3, yW + 1, 5, 1, 0.5, 'rgba(255,255,255,.3)');
     const nwin = c.doors3 ? 1 : 2, wl = (c.roof - 0.6) / nwin;
-    for (let i = 0; i < nwin; i++) { const y = yW + 0.2 + i * wl; T.rr(x0 + 0.5, y, 1.2, wl - 0.4, 0.4, T.vg(y, y + wl, gl)); T.rr(x1 - 1.7, y, 1.2, wl - 0.4, 0.4, T.vg(y, y + wl, gl)); }
+    if (!VR.oblOn()) for (let i = 0; i < nwin; i++) { const y = yW + 0.2 + i * wl; T.rr(x0 + 0.5, y, 1.2, wl - 0.4, 0.4, T.vg(y, y + wl, gl)); T.rr(x1 - 1.7, y, 1.2, wl - 0.4, 0.4, T.vg(y, y + wl, gl)); }
     const rails = c.rails || t.techo === 'parrilla';
     if (rails) { T.line(x0 + 2.9, yW + 0.8, x0 + 2.9, yR - 0.8, 0.45, '#2a2a30'); T.line(x1 - 2.9, yW + 0.8, x1 - 2.9, yR - 0.8, 0.45, '#2a2a30'); if (t.techo === 'parrilla') for (let y = yW + 1.8; y < yR - 1; y += 3) T.line(x0 + 2.9, y, x1 - 2.9, y, 0.35, '#45454c'); }
     // luneta
@@ -94,7 +94,9 @@
     if (pf) { T.rr(-0.7 + x0, yH + 0.6, 1.4, 1.2, 0.4, D); T.rr(x1 - 0.7, yH + 0.6, 1.4, 1.2, 0.4, D); } // espejos (fuera del recorte)
   }, () => VR.OBL.car(c, pal, t));
 
-  // Karumbe: caballo adelante, varas, carro de madera con dos ruedas grandes y el carrero sentado
+  // Karumbe (13/11/2026, con foto de Leandro de uno de Villarrica): coche de caballo de pasajeros, no una carreta:
+  // caballo adelante, varas, pescante, caja de madera pintada, techo blanco sobre parantes y ruedas chicas de goma.
+  // Desde arriba se ven el caballo y el techo; el carrero y las ventanas se ven en el costado (oblicuo.js).
   VR.drawKarumbe = (pal) => VR.vbase(14, 40, (T) => {
     const [C, D, L] = pal, g = T.g, HB = '#7a4a28', HD = '#55321a', HL = '#9a6438', W = '#8a6a44', WD = '#5e4628';
     T.line(4.6, 13, 4.2, 4.5, 0.55, '#5a4430'); T.line(9.4, 13, 9.8, 4.5, 0.55, '#5a4430');                 // varas
@@ -104,35 +106,32 @@
     T.ell(7, 8.4, 2.4, 5, T.hg(4.6, 9.4, [HL, HB, HB, HD]));                                              // lomo
     T.rr(6.5, 3.6, 1, 6, 0.5, '#2a1a10');                                                                   // crin larga
     T.rr(4.6, 7.2, 4.8, 1.2, 0.4, '#3a2a1c'); T.ell(7, 13.6, 0.8, 1.2, '#2a1a10');                         // arnés y cola
-    T.rr(-0.1, 21, 1.8, 9, 0.8, '#2a2018'); T.rr(12.3, 21, 1.8, 9, 0.8, '#2a2018');                       // ruedas
-    T.rr(0.2, 24.6, 1.2, 1.8, 0.3, '#8a8e96'); T.rr(12.6, 24.6, 1.2, 1.8, 0.3, '#8a8e96');
-    T.rr(1.4, 14.6, 11.2, 24.6, 0.6, WD);                                                                   // carro
-    T.rr(2, 15.2, 10, 23.4, 0.4, T.hg(2, 12, [W, '#9c7a50', W, WD]));
-    for (let y = 17.4; y < 38; y += 2.2) T.rr(2, y, 10, 0.25, 0, WD);
-    T.rr(1.4, 14.6, 11.2, 1.2, 0.4, C);                                                                     // banco del carrero (color)
-    T.rr(3.2, 26, 3.6, 3.6, 0.6, '#c8b060'); T.rr(7.4, 29, 3.4, 4.4, 0.6, '#b89a50'); T.rr(3.6, 32, 3, 3, 0.5, '#6a8a3a'); // bolsas y verdura
-    // carrero: sombrero de paja, hombros, brazos con las riendas
-    T.line(4, 17, 5.4, 12.6, 0.9, '#d8d2c0'); T.line(10, 17, 8.6, 12.6, 0.9, '#d8d2c0');
-    T.line(5.4, 12.6, 6.6, 9, 0.18, '#3a2a1c'); T.line(8.6, 12.6, 7.4, 9, 0.18, '#3a2a1c');
-    T.rr(3.6, 16, 6.8, 3.6, 1.6, T.hg(3.6, 10.4, ['#f0ece2', '#d8d2c0', '#a8a294']));
-    T.ell(7, 17.4, 2.6, 2.4, T.hg(4.4, 9.6, ['#f0dca0', '#d8be78', '#a88c50'])); T.ell(7, 17.4, 1.2, 1.1, '#c8ac68');
-  }, () => VR.OBL.karumbe());
+    for (const y of [19.5, 34]) { T.tire(0, y - 2.2, 1.8, 4.4); T.tire(12.2, y - 2.2, 1.8, 4.4); }               // cuatro ruedas chicas de goma
+    T.rr(1.5, 14.6, 11, 24.9, 0.8, D);                                                                       // caja de madera (borde)
+    T.rr(2, 14.9, 10, 2.8, 0.5, T.hg(2, 12, [L, C, D]));                                                     // pescante
+    T.line(5.4, 15.2, 6.6, 9, 0.18, '#3a2a1c'); T.line(8.6, 15.2, 7.4, 9, 0.18, '#3a2a1c');                  // riendas
+    T.rr(1.1, 17.3, 11.8, 22.4, 1.5, '#1f8a8a');                                                             // borde turquesa del techo
+    T.rr(1.5, 17.7, 11, 21.6, 1.2, T.hg(1.5, 12.5, ['#ffffff', '#f4f2ec', '#f4f2ec', '#c6c3bb']));           // techo blanco
+    for (let y = 21.6; y < 38; y += 4.4) T.rr(1.7, y, 10.6, 0.25, 0, 'rgba(0,0,0,.10)');
+    T.rr(3, 19, 4.6, 0.9, 0.4, 'rgba(255,255,255,.8)');
+  }, () => VR.OBL.karumbe(pal));
 
   // Costado de los autos (64×36, frente a la derecha): perfil por puntos, ventanillas, ruedas y detalles
   VR.drawSideAuto = (m, pal, t = {}, P, g, wheel, HL, S2) => {
     const c = VR.CAR_MODELS[m].sideShape, [C, D, L] = pal, poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
     const GLS = t.polarizado == 2 ? '#14181e' : t.polarizado == 1 ? '#27323e' : '#3b4d63', CH = '#c8ccd4';
     if (m === 'karumbe') {
-      const W = '#8a6a44', WD = '#5e4628', HB = '#7a4a28', HD = '#55321a';
-      P.r(4, 20, 30, 2, WD); P.r(4, 14, 30, 6, W); for (let x = 6; x < 34; x += 5) P.r(x, 14, 1, 6, WD); P.r(4, 13, 30, 1, WD); // carro
-      P.r(9, 10, 6, 4, '#c8b060'); P.r(16, 11, 6, 3, '#6a8a3a');                                               // carga
-      P.r(30, 9, 5, 5, '#d8d2c0'); P.r(31, 5, 4, 4, '#c98b5c'); P.r(29, 4, 8, 1, '#d8be78'); P.r(30, 2, 6, 2, '#d8be78'); // carrero
-      P.r(34, 17, 12, 1, '#5a4430');                                                                       // vara
+      const HB = '#7a4a28', HD = '#55321a', WH = '#f2f0ea';
+      P.r(4, 15, 30, 8, C); P.r(4, 17, 30, 1, D); P.r(4, 20, 30, 1, D); P.r(4, 22, 30, 1, '#2a2a30');           // caja de madera pintada
+      P.r(4, 7, 30, 8, '#3a2e28'); P.r(28, 10, 4, 5, '#d8d2c0'); P.r(29, 8, 2, 2, '#c98b5c');                  // ventanas y carrero
+      for (const x of [4, 12, 20, 27, 33]) P.r(x, 7, 1, 8, WH); P.r(4, 7, 30, 1, WH); P.r(4, 14, 30, 1, L);    // parantes
+      P.r(3, 4, 32, 2, WH); P.r(3, 6, 32, 1, '#1f8a8a');                                                       // techo blanco
+      P.r(34, 19, 12, 1, '#5a4430');                                                                       // vara
       poly([[44, 12], [56, 11], [58, 13], [57, 19], [45, 19], [43, 16]], HB);                              // caballo
       poly([[55, 11], [59, 5], [62, 5], [63, 8], [60, 9], [58, 13]], HB); P.r(57, 5, 2, 5, '#2a1a10'); P.r(61, 4, 1, 2, HD);
-      P.r(43, 13, 1, 6, '#2a1a10');
+      P.r(43, 13, 1, 6, '#2a1a10'); P.r(50, 12, 1, 7, WH);
       for (const [x, k] of [[45, 0], [47, 1], [54, 1], [56, 0]]) { P.r(x, 19, 2, 9 - k, k ? HD : HB); P.r(x, 28 - k, 2, 2, '#2a2420'); }
-      for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) { const d = Math.hypot(x, y), an = Math.atan2(y, x); if (d <= 8.3) P.r(20 + x, 22 + y, 1, 1, d > 7 ? '#2a2018' : d < 1.6 ? '#8a8e96' : Math.abs(Math.sin(an * 4)) < 0.22 ? '#6a5030' : 'rgba(0,0,0,0)'); }
+      for (const cx of [11, 28]) for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) { const d = Math.hypot(x, y); if (d <= 4.3) P.r(cx + x, 26 + y, 1, 1, d > 2.2 ? '#1c1c1e' : d < 1 ? '#5a5e66' : '#b8bcc4'); }
       return;
     }
     const lo = +t.bajo ? 2 : 0; g.save(); g.translate(0, lo);
@@ -210,8 +209,8 @@
       base: VR.drawAuto({ hz: [6.6, 10.2], L: 34, W: 17, hood: 10.5, ws: 4.6, roof: 6.4, rg: 7, fa: 0.21, ra: 0.76, hl: 'quad', tl: 'bar', pinch: 2.4, lip: true, doors3: true }),
       sideShape: side({ body: [[3, 26], [3, 19], [8, 17], [14, 15], [27, 9], [37, 8], [46, 15], [60, 18], [61, 25], [55, 26], [53, 22], [43, 22], [41, 26], [22, 26], [20, 22], [10, 22], [8, 26]],
         win: [[[20, 13], [27, 10.5], [33, 10.5], [33, 15], [18, 15]], [[35, 9.5], [37, 9.5], [44, 15], [35, 15]]], pillars: [34], yr: 8, rx0: 27, rx1: 37, belt: 15, sill: 26, doors: [24, 45], tailx: 3, tailTop: 17, nose: 61, hood: [46, 15], wheels: [15, 48], wr: 5, lip: true }) },
-    karumbe: { len: 40, wid: 14, S: 46, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, noFire: true, colors: [['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
-      name: 'Karumbe', desc: 'Carro de caballo: lento, pero llega a todos lados. Ojo con el caballo.', side: 'karumbe', base: VR.drawKarumbe },
+    karumbe: { len: 40, wid: 14, S: 46, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, noFire: true, colors: [['#e0541c', '#a83a10', '#f08048'], ['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
+      name: 'Karumbe', desc: 'Coche de caballo con techo: el taxi de siempre de Villarrica. Lento, pero llega.', side: 'karumbe', base: VR.drawKarumbe },
   };
   // Camión de bomberos desde arriba: cabina, techo de la caja con escalera, devanadera de manguera y luces
   VR.drawBomba = (pal) => VR.vbase(21, 58, (T) => {
@@ -280,7 +279,7 @@
     if (urban) T.line(mid, yW0, mid, yW1, 0.5, '#e8e6e0');
     T.rr(mid - 3.6, yW0 + 0.35, 7.2, 1.2, 0.3, urban ? '#ffb030' : '#dff0ff');                                 // cartel de destino
     T.rr(x0 + 1.6, yR0, bw - 3.2, rl, 1.6, T.hg(x0, x1, [D, C, L, C, D]));                                     // techo
-    for (const sx of [x0 + 0.7, x1 - 1.8]) {                                                                   // ventanillas
+    if (!VR.oblOn()) for (const sx of [x0 + 0.7, x1 - 1.8]) {                                                  // ventanillas (en la vista oblicua van en el costado)
       T.rr(sx, yR0 + 0.2, 1.1, rl - 0.4, 0.4, T.vg(yR0, yR1, urban ? BUS_GL : BUS_DARK));
       g.fillStyle = C; for (let y = yR0 + c.pitch; y < yR1 - 2; y += c.pitch) g.fillRect(sx - 0.2, y, 1.5, 0.45);
     }

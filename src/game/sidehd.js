@@ -159,26 +159,28 @@
   };
 
   // ---------- karumbe ----------
-  const karumbeHD = (g) => {
+  const karumbeHD = (g, pal) => {
+    const [C, D, L] = pal || ['#e0541c', '#a83a10', '#f08048'];
     const W = ['#b08858', '#8a6a44', '#5e4628'], HB = ['#a06a3a', '#7a4a28', '#4a2c16'];
     g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(34, 33, 30, 1.3, 0, 0, Math.PI * 2); g.fill();
-    // carro
-    g.fillStyle = lin(g, 0, 12, 0, 22, W); rrect(g, 3, 12.5, 31, 8, 0.6); g.fill();
-    g.strokeStyle = 'rgba(60,40,20,.7)'; g.lineWidth = 0.3; for (let y = 14.5; y < 20.5; y += 2) { g.beginPath(); g.moveTo(3.2, y); g.lineTo(33.8, y); g.stroke(); }
-    for (const x of [4.5, 12, 19.5, 27, 32.5]) { g.fillStyle = '#4a3420'; g.fillRect(x, 11.5, 0.9, 10); }
-    g.fillStyle = '#4a3420'; g.fillRect(2.6, 11.2, 31.8, 1);
-    g.fillStyle = lin(g, 0, 7, 0, 12.5, ['#e0c878', '#b89a50']); rrect(g, 7, 8, 7, 4.6, 1.4); g.fill();                 // bolsas
-    g.fillStyle = lin(g, 0, 8, 0, 12.5, ['#86ae4a', '#4a7a2a']); g.beginPath(); g.ellipse(18, 10.6, 3.4, 2.4, 0, 0, Math.PI * 2); g.fill(); // mandioca y verdura
-    g.fillStyle = '#c87a3a'; for (const x of [22.5, 24, 25.5]) { g.beginPath(); g.ellipse(x, 11.4, 0.6, 1.4, 0.5, 0, Math.PI * 2); g.fill(); }
-    // carrero
-    g.fillStyle = '#2c3e6b'; rrect(g, 28, 9.6, 5.4, 2.6, 0.8); g.fill(); g.fillRect(31.8, 9.6, 1.6, 5);
-    g.fillStyle = lin(g, 27, 3, 33, 10, ['#f6f2e8', '#d8d2c0', '#a8a294']); rrect(g, 28.2, 3.6, 4.8, 6.4, 1.6); g.fill();
-    g.fillStyle = '#c98b5c'; g.beginPath(); g.ellipse(31, 1.9, 1.5, 1.7, 0, 0, Math.PI * 2); g.fill();
-    g.fillStyle = lin(g, 0, -0.6, 0, 1.2, ['#f4e4a8', '#c8a860']); g.beginPath(); g.ellipse(31, 0.9, 3.6, 0.7, 0, 0, Math.PI * 2); g.fill(); rrect(g, 29.4, -1.2, 3.2, 2, 0.8); g.fill();
-    g.strokeStyle = '#c98b5c'; g.lineWidth = 0.9; g.lineCap = 'round'; g.beginPath(); g.moveTo(32.4, 5); g.lineTo(35, 8.4); g.stroke();
-    g.strokeStyle = '#3a2a1c'; g.lineWidth = 0.22; g.beginPath(); g.moveTo(35.2, 8.4); g.quadraticCurveTo(44, 10, 55, 9.5); g.stroke();   // riendas
+    // coche: caja de madera pintada, parantes blancos, techo blanco con borde turquesa, pescante
+    g.fillStyle = '#2a2a30'; g.fillRect(4, 22.6, 30, 1);
+    g.fillStyle = lin(g, 0, 14, 0, 23, [L, C, D]); rrect(g, 3, 14.4, 31, 8.4, 0.6); g.fill();
+    g.strokeStyle = 'rgba(60,20,0,.45)'; g.lineWidth = 0.3; for (let y = 16.4; y < 22.4; y += 2) { g.beginPath(); g.moveTo(3.2, y); g.lineTo(33.8, y); g.stroke(); }
+    g.fillStyle = '#3a2e28'; g.fillRect(3.4, 6.4, 30.2, 8);                                                                               // adentro
+    g.fillStyle = '#3a9a8a'; rrect(g, 6, 11.6, 14, 2.8, 0.6); g.fill();                                                                   // asiento
+    g.fillStyle = '#2c3e6b'; rrect(g, 26.4, 11.4, 5.6, 3, 0.8); g.fill();                                                                 // carrero
+    g.fillStyle = lin(g, 26, 6, 32, 12, ['#f6f2e8', '#d8d2c0', '#a8a294']); rrect(g, 26.8, 7.6, 4.6, 5, 1.4); g.fill();
+    g.fillStyle = '#c98b5c'; g.beginPath(); g.ellipse(29.4, 6.6, 1.3, 1.4, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#d8be78'; g.beginPath(); g.ellipse(29.4, 5.7, 2.6, 0.55, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#c98b5c'; g.lineWidth = 0.8; g.lineCap = 'round'; g.beginPath(); g.moveTo(31, 9.4); g.lineTo(34.6, 11.4); g.stroke();
+    g.strokeStyle = '#3a2a1c'; g.lineWidth = 0.22; g.beginPath(); g.moveTo(34.8, 11.4); g.quadraticCurveTo(44, 11, 55, 9.5); g.stroke();   // riendas
+    g.fillStyle = '#f2f0ea'; for (const x of [3, 10.6, 18.2, 25.6, 33]) g.fillRect(x, 5.6, 1, 9); g.fillRect(3, 13.8, 31, 0.8);           // parantes y baranda
+    g.fillStyle = lin(g, 0, 3, 0, 5.8, ['#ffffff', '#dcd9d2']); rrect(g, 1.8, 3, 33.6, 2.8, 1); g.fill();                                  // techo
+    g.fillStyle = '#1f8a8a'; g.fillRect(2, 5.2, 33.2, 0.7);
+    g.fillStyle = lin(g, 0, 15, 0, 20, [L, C, D]); rrect(g, 34, 15.4, 4, 4.4, 0.6); g.fill();                                               // pescante
     // vara y arnés
-    g.strokeStyle = '#5a4430'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(33, 16.5); g.lineTo(49, 15); g.stroke();
+    g.strokeStyle = '#5a4430'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(37, 18.5); g.lineTo(49, 15); g.stroke();
     // caballo
     const legs = [[44.5, 0.06], [46.6, -0.12], [53.4, 0.1], [55.4, -0.08]];
     legs.forEach(([x, a], i) => { g.save(); g.translate(x, 18); g.rotate(a); g.fillStyle = lin(g, -1, 0, 1, 0, i % 2 ? [HB[1], HB[2]] : [HB[0], HB[1]]); rrect(g, -0.75, 0, 1.5, 10, 0.6); g.fill(); g.fillStyle = '#2a2420'; rrect(g, -0.9, 9.4, 1.8, 1.4, 0.4); g.fill(); g.restore(); });
@@ -191,10 +193,8 @@
     g.fillStyle = '#3a2a1c'; rrect(g, 47, 12.4, 1.2, 7.4, 0.4); g.fill(); rrect(g, 42.8, 14.6, 14, 0.9, 0.4); g.fill();                     // arnés
     g.fillStyle = '#101010'; g.beginPath(); g.arc(61.9, 5.6, 0.35, 0, Math.PI * 2); g.fill();
     g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.ellipse(48.5, 13, 4.6, 1.3, -0.1, 0, Math.PI * 2); g.fill();
-    // rueda grande de rayos
-    g.save(); g.fillStyle = '#2a2018'; g.beginPath(); g.arc(19, 22.5, 9.4, 0, Math.PI * 2); g.arc(19, 22.5, 8.1, 0, Math.PI * 2, true); g.fill('evenodd');
-    g.strokeStyle = '#6a5030'; g.lineWidth = 0.7; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; g.beginPath(); g.moveTo(19, 22.5); g.lineTo(19 + Math.cos(a) * 8.2, 22.5 + Math.sin(a) * 8.2); g.stroke(); }
-    g.fillStyle = '#8a8e96'; g.beginPath(); g.arc(19, 22.5, 1.4, 0, Math.PI * 2); g.fill(); g.restore();
+    // ruedas chicas de goma
+    for (const x of [10, 28]) { g.fillStyle = '#17171a'; g.beginPath(); g.arc(x, 27.6, 4.6, 0, Math.PI * 2); g.fill(); g.fillStyle = lin(g, 0, 24.6, 0, 30.6, ['#e8ecf2', '#8a8e96']); g.beginPath(); g.arc(x, 27.6, 2.5, 0, Math.PI * 2); g.fill(); g.fillStyle = '#4a4e56'; g.beginPath(); g.arc(x, 27.6, 0.8, 0, Math.PI * 2); g.fill(); }
   };
 
   // ---------- motos ----------
@@ -443,7 +443,7 @@
   VR.drawSideHD = (kind, pal, t = {}, W = 320, H = 180) => {
     const c = VR.canvas(W, H), g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.scale(W / 64, H / 36);
     if (kind === 'car') kind = 'mita';
-    if (kind === 'karumbe') karumbeHD(g);
+    if (kind === 'karumbe') karumbeHD(g, pal);
     else if (kind === 'busindep') busIndepHD(g, pal);
     else if (kind === 'busguai') busGuaiHD(g, pal);
     else if (kind === 'bomba') bombaHD(g, pal);

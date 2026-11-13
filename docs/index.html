@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión c35c3119 · 2026-11-13</div>
+  <div class="tVer">Versión d4440715 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -505,7 +505,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión c35c3119 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d4440715 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -4232,6 +4232,7 @@ VR.shadeHex = function (hex, k) { const n = parseInt(hex.slice(1), 16); const f 
 // vidrios, faros, espejos, llantas y costuras del asiento aunque sean chicos. Se dibujan ×1,3 respecto de la
 // ciudad (como en los juegos de la época), para que se vean y se distingan. Diseños propios, sin marcas.
 VR.VK = 1.0; VR.VSS = 5; // escala real (11/11/2026, pedido de Leandro: más realista); antes ×1,15 y, antes, ×1,3
+VR.oblOn = () => !!(VR.OBL && VR.OBL.on);
 VR.vbase = (w, h, fn, prof) => {
   const k = VR.VK * VR.VSS, c = VR.canvas(Math.round(w * k), Math.round(h * k)), g = c.getContext('2d');
   g.scale(k, k);
@@ -4281,8 +4282,10 @@ VR.drawCarBase = (pal, t = {}) => VR.vbase(16, 30, (T) => {
   if (t.techo !== 'negro') st(12.2, 21.8);
   T.rr(4, 13.2, 5, 1, 0.5, 'rgba(255,255,255,.3)');
   if (t.techo === 'parrilla') { T.line(3.6, 13, 3.6, 21, 0.45, '#2a2a30'); T.line(12.4, 13, 12.4, 21, 0.45, '#2a2a30'); for (const y of [14, 17, 20]) T.line(3.6, y, 12.4, y, 0.35, '#45454c'); }
+  if (!VR.oblOn()) { // ventanillas vistas desde arriba: en la vista oblicua van en el costado (si no, salen dos veces)
   T.rr(1.2, 12.4, 1.2, 4.4, 0.4, T.vg(12, 17, gl)); T.rr(13.6, 12.4, 1.2, 4.4, 0.4, T.vg(12, 17, gl)); // ventanillas
   T.rr(1.2, 17.2, 1.2, 4.2, 0.4, T.vg(17, 21, gl)); T.rr(13.6, 17.2, 1.2, 4.2, 0.4, T.vg(17, 21, gl));
+  }
   T.poly([[2.8, 21.8], [13.2, 21.8], [12.6, 25], [3.4, 25]], T.vg(21.8, 25, gl));          // luneta
   T.rr(3.4, 25.2, 9.2, 3.6, 1, T.hg(3.4, 12.6, [C, L, D]));                               // portón
   st(25.2, 28.6);
@@ -5140,7 +5143,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     if (t.techo !== 'negro') st(yW, yR);
     T.rr(x0 + 3.3, yW + 1, 5, 1, 0.5, 'rgba(255,255,255,.3)');
     const nwin = c.doors3 ? 1 : 2, wl = (c.roof - 0.6) / nwin;
-    for (let i = 0; i < nwin; i++) { const y = yW + 0.2 + i * wl; T.rr(x0 + 0.5, y, 1.2, wl - 0.4, 0.4, T.vg(y, y + wl, gl)); T.rr(x1 - 1.7, y, 1.2, wl - 0.4, 0.4, T.vg(y, y + wl, gl)); }
+    if (!VR.oblOn()) for (let i = 0; i < nwin; i++) { const y = yW + 0.2 + i * wl; T.rr(x0 + 0.5, y, 1.2, wl - 0.4, 0.4, T.vg(y, y + wl, gl)); T.rr(x1 - 1.7, y, 1.2, wl - 0.4, 0.4, T.vg(y, y + wl, gl)); }
     const rails = c.rails || t.techo === 'parrilla';
     if (rails) { T.line(x0 + 2.9, yW + 0.8, x0 + 2.9, yR - 0.8, 0.45, '#2a2a30'); T.line(x1 - 2.9, yW + 0.8, x1 - 2.9, yR - 0.8, 0.45, '#2a2a30'); if (t.techo === 'parrilla') for (let y = yW + 1.8; y < yR - 1; y += 3) T.line(x0 + 2.9, y, x1 - 2.9, y, 0.35, '#45454c'); }
     // luneta
@@ -5178,7 +5181,9 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     if (pf) { T.rr(-0.7 + x0, yH + 0.6, 1.4, 1.2, 0.4, D); T.rr(x1 - 0.7, yH + 0.6, 1.4, 1.2, 0.4, D); } // espejos (fuera del recorte)
   }, () => VR.OBL.car(c, pal, t));
 
-  // Karumbe: caballo adelante, varas, carro de madera con dos ruedas grandes y el carrero sentado
+  // Karumbe (13/11/2026, con foto de Leandro de uno de Villarrica): coche de caballo de pasajeros, no una carreta:
+  // caballo adelante, varas, pescante, caja de madera pintada, techo blanco sobre parantes y ruedas chicas de goma.
+  // Desde arriba se ven el caballo y el techo; el carrero y las ventanas se ven en el costado (oblicuo.js).
   VR.drawKarumbe = (pal) => VR.vbase(14, 40, (T) => {
     const [C, D, L] = pal, g = T.g, HB = '#7a4a28', HD = '#55321a', HL = '#9a6438', W = '#8a6a44', WD = '#5e4628';
     T.line(4.6, 13, 4.2, 4.5, 0.55, '#5a4430'); T.line(9.4, 13, 9.8, 4.5, 0.55, '#5a4430');                 // varas
@@ -5188,35 +5193,32 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     T.ell(7, 8.4, 2.4, 5, T.hg(4.6, 9.4, [HL, HB, HB, HD]));                                              // lomo
     T.rr(6.5, 3.6, 1, 6, 0.5, '#2a1a10');                                                                   // crin larga
     T.rr(4.6, 7.2, 4.8, 1.2, 0.4, '#3a2a1c'); T.ell(7, 13.6, 0.8, 1.2, '#2a1a10');                         // arnés y cola
-    T.rr(-0.1, 21, 1.8, 9, 0.8, '#2a2018'); T.rr(12.3, 21, 1.8, 9, 0.8, '#2a2018');                       // ruedas
-    T.rr(0.2, 24.6, 1.2, 1.8, 0.3, '#8a8e96'); T.rr(12.6, 24.6, 1.2, 1.8, 0.3, '#8a8e96');
-    T.rr(1.4, 14.6, 11.2, 24.6, 0.6, WD);                                                                   // carro
-    T.rr(2, 15.2, 10, 23.4, 0.4, T.hg(2, 12, [W, '#9c7a50', W, WD]));
-    for (let y = 17.4; y < 38; y += 2.2) T.rr(2, y, 10, 0.25, 0, WD);
-    T.rr(1.4, 14.6, 11.2, 1.2, 0.4, C);                                                                     // banco del carrero (color)
-    T.rr(3.2, 26, 3.6, 3.6, 0.6, '#c8b060'); T.rr(7.4, 29, 3.4, 4.4, 0.6, '#b89a50'); T.rr(3.6, 32, 3, 3, 0.5, '#6a8a3a'); // bolsas y verdura
-    // carrero: sombrero de paja, hombros, brazos con las riendas
-    T.line(4, 17, 5.4, 12.6, 0.9, '#d8d2c0'); T.line(10, 17, 8.6, 12.6, 0.9, '#d8d2c0');
-    T.line(5.4, 12.6, 6.6, 9, 0.18, '#3a2a1c'); T.line(8.6, 12.6, 7.4, 9, 0.18, '#3a2a1c');
-    T.rr(3.6, 16, 6.8, 3.6, 1.6, T.hg(3.6, 10.4, ['#f0ece2', '#d8d2c0', '#a8a294']));
-    T.ell(7, 17.4, 2.6, 2.4, T.hg(4.4, 9.6, ['#f0dca0', '#d8be78', '#a88c50'])); T.ell(7, 17.4, 1.2, 1.1, '#c8ac68');
-  }, () => VR.OBL.karumbe());
+    for (const y of [19.5, 34]) { T.tire(0, y - 2.2, 1.8, 4.4); T.tire(12.2, y - 2.2, 1.8, 4.4); }               // cuatro ruedas chicas de goma
+    T.rr(1.5, 14.6, 11, 24.9, 0.8, D);                                                                       // caja de madera (borde)
+    T.rr(2, 14.9, 10, 2.8, 0.5, T.hg(2, 12, [L, C, D]));                                                     // pescante
+    T.line(5.4, 15.2, 6.6, 9, 0.18, '#3a2a1c'); T.line(8.6, 15.2, 7.4, 9, 0.18, '#3a2a1c');                  // riendas
+    T.rr(1.1, 17.3, 11.8, 22.4, 1.5, '#1f8a8a');                                                             // borde turquesa del techo
+    T.rr(1.5, 17.7, 11, 21.6, 1.2, T.hg(1.5, 12.5, ['#ffffff', '#f4f2ec', '#f4f2ec', '#c6c3bb']));           // techo blanco
+    for (let y = 21.6; y < 38; y += 4.4) T.rr(1.7, y, 10.6, 0.25, 0, 'rgba(0,0,0,.10)');
+    T.rr(3, 19, 4.6, 0.9, 0.4, 'rgba(255,255,255,.8)');
+  }, () => VR.OBL.karumbe(pal));
 
   // Costado de los autos (64×36, frente a la derecha): perfil por puntos, ventanillas, ruedas y detalles
   VR.drawSideAuto = (m, pal, t = {}, P, g, wheel, HL, S2) => {
     const c = VR.CAR_MODELS[m].sideShape, [C, D, L] = pal, poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
     const GLS = t.polarizado == 2 ? '#14181e' : t.polarizado == 1 ? '#27323e' : '#3b4d63', CH = '#c8ccd4';
     if (m === 'karumbe') {
-      const W = '#8a6a44', WD = '#5e4628', HB = '#7a4a28', HD = '#55321a';
-      P.r(4, 20, 30, 2, WD); P.r(4, 14, 30, 6, W); for (let x = 6; x < 34; x += 5) P.r(x, 14, 1, 6, WD); P.r(4, 13, 30, 1, WD); // carro
-      P.r(9, 10, 6, 4, '#c8b060'); P.r(16, 11, 6, 3, '#6a8a3a');                                               // carga
-      P.r(30, 9, 5, 5, '#d8d2c0'); P.r(31, 5, 4, 4, '#c98b5c'); P.r(29, 4, 8, 1, '#d8be78'); P.r(30, 2, 6, 2, '#d8be78'); // carrero
-      P.r(34, 17, 12, 1, '#5a4430');                                                                       // vara
+      const HB = '#7a4a28', HD = '#55321a', WH = '#f2f0ea';
+      P.r(4, 15, 30, 8, C); P.r(4, 17, 30, 1, D); P.r(4, 20, 30, 1, D); P.r(4, 22, 30, 1, '#2a2a30');           // caja de madera pintada
+      P.r(4, 7, 30, 8, '#3a2e28'); P.r(28, 10, 4, 5, '#d8d2c0'); P.r(29, 8, 2, 2, '#c98b5c');                  // ventanas y carrero
+      for (const x of [4, 12, 20, 27, 33]) P.r(x, 7, 1, 8, WH); P.r(4, 7, 30, 1, WH); P.r(4, 14, 30, 1, L);    // parantes
+      P.r(3, 4, 32, 2, WH); P.r(3, 6, 32, 1, '#1f8a8a');                                                       // techo blanco
+      P.r(34, 19, 12, 1, '#5a4430');                                                                       // vara
       poly([[44, 12], [56, 11], [58, 13], [57, 19], [45, 19], [43, 16]], HB);                              // caballo
       poly([[55, 11], [59, 5], [62, 5], [63, 8], [60, 9], [58, 13]], HB); P.r(57, 5, 2, 5, '#2a1a10'); P.r(61, 4, 1, 2, HD);
-      P.r(43, 13, 1, 6, '#2a1a10');
+      P.r(43, 13, 1, 6, '#2a1a10'); P.r(50, 12, 1, 7, WH);
       for (const [x, k] of [[45, 0], [47, 1], [54, 1], [56, 0]]) { P.r(x, 19, 2, 9 - k, k ? HD : HB); P.r(x, 28 - k, 2, 2, '#2a2420'); }
-      for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) { const d = Math.hypot(x, y), an = Math.atan2(y, x); if (d <= 8.3) P.r(20 + x, 22 + y, 1, 1, d > 7 ? '#2a2018' : d < 1.6 ? '#8a8e96' : Math.abs(Math.sin(an * 4)) < 0.22 ? '#6a5030' : 'rgba(0,0,0,0)'); }
+      for (const cx of [11, 28]) for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) { const d = Math.hypot(x, y); if (d <= 4.3) P.r(cx + x, 26 + y, 1, 1, d > 2.2 ? '#1c1c1e' : d < 1 ? '#5a5e66' : '#b8bcc4'); }
       return;
     }
     const lo = +t.bajo ? 2 : 0; g.save(); g.translate(0, lo);
@@ -5294,8 +5296,8 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
       base: VR.drawAuto({ hz: [6.6, 10.2], L: 34, W: 17, hood: 10.5, ws: 4.6, roof: 6.4, rg: 7, fa: 0.21, ra: 0.76, hl: 'quad', tl: 'bar', pinch: 2.4, lip: true, doors3: true }),
       sideShape: side({ body: [[3, 26], [3, 19], [8, 17], [14, 15], [27, 9], [37, 8], [46, 15], [60, 18], [61, 25], [55, 26], [53, 22], [43, 22], [41, 26], [22, 26], [20, 22], [10, 22], [8, 26]],
         win: [[[20, 13], [27, 10.5], [33, 10.5], [33, 15], [18, 15]], [[35, 9.5], [37, 9.5], [44, 15], [35, 15]]], pillars: [34], yr: 8, rx0: 27, rx1: 37, belt: 15, sill: 26, doors: [24, 45], tailx: 3, tailTop: 17, nose: 61, hood: [46, 15], wheels: [15, 48], wr: 5, lip: true }) },
-    karumbe: { len: 40, wid: 14, S: 46, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, noFire: true, colors: [['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
-      name: 'Karumbe', desc: 'Carro de caballo: lento, pero llega a todos lados. Ojo con el caballo.', side: 'karumbe', base: VR.drawKarumbe },
+    karumbe: { len: 40, wid: 14, S: 46, acc: 55, rev: 18, turn: 2.0, brake: 220, mass: 1, max: { road: 58, stone: 55, dirt: 55, side: 45, grass: 50 }, noLights: true, noFire: true, colors: [['#e0541c', '#a83a10', '#f08048'], ['#c8322a', '#8e1f1a', '#e4685c'], ['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#3f7f4a', '#28552f', '#66a872'], ['#d8a02a', '#9c6f16', '#f0c45a']],
+      name: 'Karumbe', desc: 'Coche de caballo con techo: el taxi de siempre de Villarrica. Lento, pero llega.', side: 'karumbe', base: VR.drawKarumbe },
   };
   // Camión de bomberos desde arriba: cabina, techo de la caja con escalera, devanadera de manguera y luces
   VR.drawBomba = (pal) => VR.vbase(21, 58, (T) => {
@@ -5364,7 +5366,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     if (urban) T.line(mid, yW0, mid, yW1, 0.5, '#e8e6e0');
     T.rr(mid - 3.6, yW0 + 0.35, 7.2, 1.2, 0.3, urban ? '#ffb030' : '#dff0ff');                                 // cartel de destino
     T.rr(x0 + 1.6, yR0, bw - 3.2, rl, 1.6, T.hg(x0, x1, [D, C, L, C, D]));                                     // techo
-    for (const sx of [x0 + 0.7, x1 - 1.8]) {                                                                   // ventanillas
+    if (!VR.oblOn()) for (const sx of [x0 + 0.7, x1 - 1.8]) {                                                  // ventanillas (en la vista oblicua van en el costado)
       T.rr(sx, yR0 + 0.2, 1.1, rl - 0.4, 0.4, T.vg(yR0, yR1, urban ? BUS_GL : BUS_DARK));
       g.fillStyle = C; for (let y = yR0 + c.pitch; y < yR1 - 2; y += c.pitch) g.fillRect(sx - 0.2, y, 1.5, 0.45);
     }
@@ -5524,8 +5526,8 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
 // Alturas en unidades del mundo (8 = 1 m). VR.OBL.kz = cuántos px de pantalla sube cada unidad de altura.
 'use strict';
 (() => {
-  const O = VR.OBL = { on: true, kz: 0.68, step: 2, async: true, budget: 2 };
-  try { const q = new URLSearchParams(location.search); if (q.get('kz')) O.kz = +q.get('kz'); if (q.has('plano')) O.on = false; if (q.has('sinc')) O.async = false; } catch (e) {} // para comparar: ?kz=0.7 · ?plano (como antes)
+  const O = VR.OBL = { on: true, kz: 0.46, step: 2, async: false, budget: 2 };
+  try { const q = new URLSearchParams(location.search); if (q.get('kz')) O.kz = +q.get('kz'); if (q.has('plano')) O.on = false; if (q.has('cola')) O.async = true; } catch (e) {} // para comparar: ?kz=0.7 · ?plano (como antes)
   const SH = (c, k) => VR.shadeHex(c, k);
   const GL = ['#1c2c40', '#34506c', '#9fc0dc'], CHR = ['#7a7e86', '#e8ecf2', '#9aa0a8'];
   const interp = (pts, y) => {
@@ -5535,17 +5537,19 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     for (let i = 1; i < pts.length; i++) if (y <= pts[i][0]) { const [y0, h0] = pts[i - 1], [y1, h1] = pts[i]; return y1 - y0 < 1e-6 ? h1 : h0 + (h1 - h0) * (y - y0) / (y1 - y0); }
     return pts[pts.length - 1][1];
   };
+  const px = (c) => new Uint32Array(c.getContext('2d').getImageData(0, 0, c.width, c.height).data.buffer); // píxeles (ABGR)
   const darken = (img, a = 0.36) => { const c = VR.canvas(img.width, img.height), g = c.getContext('2d'); g.drawImage(img, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = `rgba(8,8,18,${a})`; g.fillRect(0, 0, c.width, c.height); return c; };
 
   const prep = (base) => {
     if (base._obl) return base._obl;
     const P = base.prof, w = base.width, h = base.height, k = h / P.L, zs = k * O.kz;
     const o = base._obl = { w, h, k, zs };
-    if (P.layers) { o.layers = P.layers.map((l) => ({ img: l.img, dark: darken(l.img), i0: Math.round(l.z0 * zs), i1: Math.round(l.z1 * zs) })); return o; }
+    o.pix = px(base);
+    if (P.layers) { o.layers = P.layers.map((l) => ({ pix: px(l.img), dark: px(darken(l.img)), i0: Math.round(l.z0 * zs), i1: Math.round(l.z1 * zs) })); o.nz = Math.max(...o.layers.map((l) => l.i1)) + 1; return o; }
     const nz = o.nz = Math.ceil(P.H * zs) + 1, top = new Float32Array(h), bot = new Float32Array(h);
     for (let r = 0; r < h; r++) { const y = (r + 0.5) / k; top[r] = interp(P.top, y) * zs; bot[r] = interp(P.bot, y) * zs; }
     const self = P.side === 'self';
-    if (self) o.dark = darken(base);
+    if (self) o.dark = px(darken(base));
     else {
       const tex = o.tex = VR.canvas(nz + 1, h), g = tex.getContext('2d');
       g.setTransform(0, k, zs, 0, 0, 0);
@@ -5555,6 +5559,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
         wheel(u, r, rim = '#9aa0a8') { H.disc(u, r, r, '#17171a'); H.disc(u, r, r * 0.58, rim); H.disc(u, r, r * 0.3, SH(rim, 0.6)); H.disc(u, r, r * 0.12, '#d8dce4'); },
       };
       P.side(g, H);
+      o.tex = px(tex); o.tw = nz + 1;
     }
     // tramos por altura: [fila0, fila1, angostamiento en px]; side = pared a esa altura, tops = franjas del dibujo de arriba
     const runs = (i, inF, insF) => {
@@ -5571,51 +5576,61 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
       o.side.push(runs(i, (r) => bot[r] <= i && top[r] > i, P.ins));
       o.tops.push(runs(i, (r) => top[r] > 0 && top[r] >= i && top[r] < i + O.step, P.tin));
     }
-    o.caps = (P.caps || []).map((c) => ({ s0: c.src[0] * k, sh: (c.src[1] - c.src[0]) * k, d0: c.dst[0] * k, dh: (c.dst[1] - c.dst[0]) * k, i0: c.v[0] * zs, i1: c.v[1] * zs }));
+    // trompa y cola: para esas filas y alturas, el color sale de una fila del dibujo de arriba (faros, parrilla, luces)
+    o.caps = (P.caps || []).map((c) => ({ s0: c.src[0] * k, sh: (c.src[1] - c.src[0]) * k, d0: Math.round(c.dst[0] * k), d1: Math.round(c.dst[1] * k), i0: c.v[0] * zs, i1: c.v[1] * zs }));
     return o;
   };
 
   // Dibuja el vehículo girado a (radianes) y con volumen, en un lienzo de B×B (a la escala grande del dibujo base).
-  // Es un generador: cede después de cada capa, así se puede repartir entre varios cuadros (ver O.enqueue).
-  O.renderGen = function* (base, a, B) {
-    const o = prep(base), { w, h } = o, big = VR.canvas(B, B), x = big.getContext('2d');
-    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'low'; // se gira sin cambiar de tamaño: con bilineal alcanza
-    const ca = Math.cos(a), sa = Math.sin(a), cx = B / 2, cy = B / 2;
-    const put = (img, i, sx, sy, sw, sh) => { if (sw <= 0 || sh <= 0) return; x.setTransform(ca, sa, -sa, ca, cx, cy - i); x.drawImage(img, sx, sy, sw, sh, sx - w / 2, sy - h / 2, sw, sh); };
+  // Segunda versión (13/11/2026): las capas se apilan en memoria, píxel por píxel y SIN girar (correr una capa hacia
+  // arriba en pantalla es correrla en diagonal en el dibujo sin girar), y recién al final se gira todo junto una vez.
+  // Así un ángulo cuesta casi lo mismo que girar el dibujo plano y se puede hacer en el momento: el dibujo sigue
+  // al vehículo cuando dobla, sin esperar a ninguna cola.
+  O.render = (base, a, B) => {
+    const o = prep(base), { w, h, pix } = o, pad = o.nz + 2, W = w + 2 * pad, Hh = h + 2 * pad, out = new Uint32Array(W * Hh);
+    const sa = Math.sin(a), ca = Math.cos(a), A = 0xff000000, ST = O.step;
+    const off = (i) => (pad + Math.round(-i * ca)) * W + pad + Math.round(-i * sa);
     if (o.layers) {
-      for (const l of o.layers) { for (let i = l.i0; i < l.i1; i += O.step) put(l.dark, i, 0, 0, w, h); put(l.img, l.i1, 0, 0, w, h); yield; }
-      return big;
-    }
-    // lienzo de trabajo propio de este dibujo (puede haber otro a medio hacer en la cola)
-    const sc = VR.canvas(w, h), s = sc.getContext('2d'); s.imageSmoothingEnabled = false;
-    for (let n = 0; n < o.side.length; n++) {
-      const i = n * O.step, sr = o.side[n];
-      if (sr.length) {
-        s.globalCompositeOperation = 'source-over'; s.clearRect(0, 0, w, h);
-        for (const [r0, r1, xi] of sr) {
-          // xi < 0: solo los bordes (ruedas que están a los costados, sin nada en el medio)
-          for (const [X, Wd] of xi < 0 ? [[0, -xi], [w + xi, -xi]] : [[xi, w - 2 * xi]]) {
-            if (o.dark) s.drawImage(o.dark, X, r0, Wd, r1 - r0, X, r0, Wd, r1 - r0);
-            else s.drawImage(o.tex, Math.min(i, o.nz), r0, 1, r1 - r0, X, r0, Wd, r1 - r0);
+      for (const l of o.layers) for (let i = l.i0; i <= l.i1; i += (i < l.i1 && i + ST > l.i1 ? l.i1 - i : ST)) {
+        const src = i >= l.i1 ? l.pix : l.dark, o0 = off(i);
+        for (let y = 0; y < h; y++) for (let x = 0, q = y * w; x < w; x++, q++) { const c = src[q]; if ((c >>> 24) > 100) out[o0 + y * W + x] = c | A; }
+      }
+    } else {
+      const tex = o.tex, tw = o.tw, dark = o.dark;
+      for (let n = 0; n < o.side.length; n++) {
+        const i = n * ST, o0 = off(i), ti = Math.min(i, o.nz);
+        for (const [r0, r1, xi] of o.side[n]) {
+          const spans = xi < 0 ? [[0, -xi], [w + xi, w]] : [[xi, w - xi]]; // xi < 0: solo los bordes (ruedas a los costados)
+          for (let y = r0; y < r1; y++) {
+            let tc = 0, cr = -1;
+            if (!dark) {
+              tc = tex[y * tw + ti]; if ((tc >>> 24) < 128) continue; tc |= A;
+              for (const c of o.caps) if (i >= c.i0 && i <= c.i1 && y >= c.d0 && y < c.d1) cr = Math.min(h - 1, Math.round(c.s0 + (y - c.d0) / (c.d1 - c.d0) * c.sh)) * w;
+            }
+            for (const [xa, xb] of spans) for (let x = xa, q = y * w + xa, d = o0 + y * W + xa; x < xb; x++, q++, d++) {
+              if ((pix[q] >>> 24) <= 100) continue;
+              if (dark) out[d] = dark[q] | A; else if (cr >= 0 && (pix[cr + x] >>> 24) > 100) out[d] = pix[cr + x] | A; else out[d] = tc;
+            }
           }
         }
-        if (!o.dark) {
-          for (const c of o.caps) if (i >= c.i0 && i <= c.i1) { s.save(); s.globalCompositeOperation = 'source-atop'; s.drawImage(base, 0, c.s0, w, c.sh, 0, c.d0, w, c.dh); s.restore(); }
-          s.globalCompositeOperation = 'destination-in'; s.drawImage(base, 0, 0);
+        for (const [r0, r1, xi] of o.tops[n]) {
+          const ya = Math.max(0, r0 - ST), yb = Math.min(h, r1 + ST);
+          for (let y = ya; y < yb; y++) for (let x = xi, q = y * w + xi, d = o0 + y * W + xi; x < w - xi; x++, q++, d++) { const c = pix[q]; if ((c >>> 24) > 100) out[d] = c | A; }
         }
-        const ra = sr[0][0], rb = sr[sr.length - 1][1];
-        put(sc, i, 0, ra, w, rb - ra);
       }
-      for (const [r0, r1, xi] of o.tops[n]) { const a0 = Math.max(0, r0 - 1), a1 = Math.min(h, r1 + 1); put(base, i, xi, a0, w - 2 * xi, a1 - a0); }
-      yield;
     }
+    const comp = VR.canvas(W, Hh), cg = comp.getContext('2d'), id = cg.createImageData(W, Hh);
+    new Uint32Array(id.data.buffer).set(out); cg.putImageData(id, 0, 0);
+    const big = VR.canvas(B, B), x = big.getContext('2d');
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.translate(B / 2, B / 2); x.rotate(a); x.drawImage(comp, -W / 2, -Hh / 2);
     return big;
   };
-  O.render = (base, a, B) => { const it = O.renderGen(base, a, B); let r; do r = it.next(); while (!r.done); return r.value; };
+  O.renderGen = function* (base, a, B) { return O.render(base, a, B); };
 
-  // Cola de dibujos pendientes: armar un ángulo con volumen cuesta varias veces más que girar un dibujo plano, así que
-  // no se hace de golpe (trabaría el juego, sobre todo en el teléfono): se reparte de a O.budget ms por cuadro y,
-  // mientras tanto, VR.rotFrames muestra el ángulo ya hecho más parecido. Lo último que se pidió se hace primero.
+  // Cola de dibujos pendientes (apagada: O.async = false). Era para la primera versión, que tardaba ~10 ms por ángulo:
+  // repartía el trabajo entre cuadros y mientras tanto se veía el ángulo de al lado (Leandro notó que el dibujo no
+  // seguía al vehículo al doblar). Queda por si algún día hace falta; con ?cola en la dirección se prende.
   const Q = []; let ticking = false;
   const tick = () => {
     const t0 = performance.now();
@@ -5757,11 +5772,32 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
       } };
   };
 
-  // Karumbe (VR.drawKarumbe, 14×40): caballo, varas, carro con dos ruedas grandes y el carrero
-  O.karumbe = () => ({ L: 40, H: 14, lift: 9, side: 'self',
-    top: [[0, 11.5], [4.4, 11.5], [4.5, 10.2], [13.4, 10.2], [13.5, 5.4], [14.5, 5.4], [14.6, 9], [15.4, 9], [15.5, 13.6], [20.2, 13.6], [20.3, 9], [39.2, 9], [39.3, 0], [40, 0]],
-    bot: [[0, 7], [3, 7], [3.1, 4.6], [13.4, 4.6], [13.5, 4.6], [14.5, 4.6], [14.6, 4], [20.9, 4], [21, 0], [30, 0], [30.1, 4], [40, 4]],
-    ins: (y, v) => (y < 13.5 && v < 4.6 ? 5.4 : y > 21 && y < 30 && v < 4 ? -1.9 : 0) });
+  // Karumbe (VR.drawKarumbe, 14×40; foto de Leandro del 13/11/2026): caballo, varas, pescante y coche de pasajeros con
+  // caja de madera pintada, ventanas con parantes blancos y techo blanco con borde turquesa; ruedas chicas de goma.
+  O.karumbe = (pal) => {
+    const [C, D, L] = pal, HB = '#7a4a28', HD = '#55321a', WH = '#f2f0ea', TQ = '#1f8a8a', Hh = 16.4, wy = [19.5, 34], wr = 2.2;
+    const leg = (y) => (y > 4.4 && y < 5.8) || (y > 10.6 && y < 12), wheelRow = (y) => wy.some((u) => Math.abs(y - u) <= wr);
+    return { L: 40, H: Hh, lift: Hh,
+      top: (y) => (y < 4.4 ? 11.5 : y < 13.4 ? 10.2 : y < 14.6 ? 5.4 : y < 17.3 ? 7.5 : y < 39.7 ? Hh : 0),
+      bot: (y) => (y < 3 ? 7 : y < 13.4 ? (leg(y) ? 0 : 4.6) : y < 14.6 ? 4.6 : wheelRow(y) ? 0 : 3.2),
+      ins: (y, v) => (y < 13.4 && v < 4.6 ? 5.7 : y > 14.6 && v < 3.2 ? -1.9 : 0),
+      side(g, H) {
+        const R = H.R;
+        R(0, 7, 4.4, 11.5, HB); R(3, 4.6, 13.4, 10.2, HB); R(3, 4.6, 13.4, 6, HD); R(2.4, 9.6, 6.4, 10.4, '#2a1a10');   // caballo: cabeza, lomo, panza, crin
+        R(6.6, 4.6, 7.4, 10.2, WH); R(12.6, 5, 13.4, 9.4, '#2a1a10');                                              // pechera blanca y cola
+        for (const u of [4.4, 10.6]) { R(u, 0, u + 1.4, 4.6, HD); R(u, 0, u + 1.4, 0.8, '#2a2420'); }                 // patas
+        R(13.4, 4.6, 17.4, 5.4, '#5a4430');                                                                        // varas
+        for (const u of wy) H.wheel(u, wr, '#c8ccd4');
+        R(14.6, 3.2, 17.4, 7.5, SH(C, 0.8));                                                                       // pescante
+        R(17.3, 3.2, 39.7, 9.4, SH(C, 0.86)); R(17.3, 3.2, 39.7, 3.9, '#2a2a30'); R(17.3, 9, 39.7, 9.4, L);         // caja de madera pintada
+        for (const v of [5.3, 7.2]) R(17.3, v, 39.7, v + 0.25, SH(D, 0.85));
+        R(17.3, 9.4, 39.7, 15.2, '#3a2e28');                                                                       // adentro, por las ventanas
+        R(18.6, 9.4, 21.4, 12.4, '#d8d2c0'); R(19.2, 12.4, 20.8, 14, '#c98b5c'); R(18.8, 13.9, 21.2, 14.5, '#d8be78'); // carrero con sombrero
+        R(24, 9.4, 38, 10.8, '#3a9a8a');                                                                           // asiento
+        for (const u of [17.3, 22.6, 28.2, 33.8, 38.9]) R(u, 9.4, u + 0.8, 15.2, WH);                               // parantes blancos
+        R(17.3, 14.5, 39.7, 15.2, WH); R(17.3, 15.2, 39.7, 15.7, TQ); R(17.3, 15.7, 39.7, Hh, WH);                  // marco, borde turquesa y techo
+      } };
+  };
 
   // Motos: tabla por modelo. w: ruedas [y, radio, medio ancho]; segs: [y0, y1, desde, hasta, color, angostamiento]
   const MOTO = {
@@ -8947,26 +8983,28 @@ VR.showVehicleCard = (v) => {
   };
 
   // ---------- karumbe ----------
-  const karumbeHD = (g) => {
+  const karumbeHD = (g, pal) => {
+    const [C, D, L] = pal || ['#e0541c', '#a83a10', '#f08048'];
     const W = ['#b08858', '#8a6a44', '#5e4628'], HB = ['#a06a3a', '#7a4a28', '#4a2c16'];
     g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(34, 33, 30, 1.3, 0, 0, Math.PI * 2); g.fill();
-    // carro
-    g.fillStyle = lin(g, 0, 12, 0, 22, W); rrect(g, 3, 12.5, 31, 8, 0.6); g.fill();
-    g.strokeStyle = 'rgba(60,40,20,.7)'; g.lineWidth = 0.3; for (let y = 14.5; y < 20.5; y += 2) { g.beginPath(); g.moveTo(3.2, y); g.lineTo(33.8, y); g.stroke(); }
-    for (const x of [4.5, 12, 19.5, 27, 32.5]) { g.fillStyle = '#4a3420'; g.fillRect(x, 11.5, 0.9, 10); }
-    g.fillStyle = '#4a3420'; g.fillRect(2.6, 11.2, 31.8, 1);
-    g.fillStyle = lin(g, 0, 7, 0, 12.5, ['#e0c878', '#b89a50']); rrect(g, 7, 8, 7, 4.6, 1.4); g.fill();                 // bolsas
-    g.fillStyle = lin(g, 0, 8, 0, 12.5, ['#86ae4a', '#4a7a2a']); g.beginPath(); g.ellipse(18, 10.6, 3.4, 2.4, 0, 0, Math.PI * 2); g.fill(); // mandioca y verdura
-    g.fillStyle = '#c87a3a'; for (const x of [22.5, 24, 25.5]) { g.beginPath(); g.ellipse(x, 11.4, 0.6, 1.4, 0.5, 0, Math.PI * 2); g.fill(); }
-    // carrero
-    g.fillStyle = '#2c3e6b'; rrect(g, 28, 9.6, 5.4, 2.6, 0.8); g.fill(); g.fillRect(31.8, 9.6, 1.6, 5);
-    g.fillStyle = lin(g, 27, 3, 33, 10, ['#f6f2e8', '#d8d2c0', '#a8a294']); rrect(g, 28.2, 3.6, 4.8, 6.4, 1.6); g.fill();
-    g.fillStyle = '#c98b5c'; g.beginPath(); g.ellipse(31, 1.9, 1.5, 1.7, 0, 0, Math.PI * 2); g.fill();
-    g.fillStyle = lin(g, 0, -0.6, 0, 1.2, ['#f4e4a8', '#c8a860']); g.beginPath(); g.ellipse(31, 0.9, 3.6, 0.7, 0, 0, Math.PI * 2); g.fill(); rrect(g, 29.4, -1.2, 3.2, 2, 0.8); g.fill();
-    g.strokeStyle = '#c98b5c'; g.lineWidth = 0.9; g.lineCap = 'round'; g.beginPath(); g.moveTo(32.4, 5); g.lineTo(35, 8.4); g.stroke();
-    g.strokeStyle = '#3a2a1c'; g.lineWidth = 0.22; g.beginPath(); g.moveTo(35.2, 8.4); g.quadraticCurveTo(44, 10, 55, 9.5); g.stroke();   // riendas
+    // coche: caja de madera pintada, parantes blancos, techo blanco con borde turquesa, pescante
+    g.fillStyle = '#2a2a30'; g.fillRect(4, 22.6, 30, 1);
+    g.fillStyle = lin(g, 0, 14, 0, 23, [L, C, D]); rrect(g, 3, 14.4, 31, 8.4, 0.6); g.fill();
+    g.strokeStyle = 'rgba(60,20,0,.45)'; g.lineWidth = 0.3; for (let y = 16.4; y < 22.4; y += 2) { g.beginPath(); g.moveTo(3.2, y); g.lineTo(33.8, y); g.stroke(); }
+    g.fillStyle = '#3a2e28'; g.fillRect(3.4, 6.4, 30.2, 8);                                                                               // adentro
+    g.fillStyle = '#3a9a8a'; rrect(g, 6, 11.6, 14, 2.8, 0.6); g.fill();                                                                   // asiento
+    g.fillStyle = '#2c3e6b'; rrect(g, 26.4, 11.4, 5.6, 3, 0.8); g.fill();                                                                 // carrero
+    g.fillStyle = lin(g, 26, 6, 32, 12, ['#f6f2e8', '#d8d2c0', '#a8a294']); rrect(g, 26.8, 7.6, 4.6, 5, 1.4); g.fill();
+    g.fillStyle = '#c98b5c'; g.beginPath(); g.ellipse(29.4, 6.6, 1.3, 1.4, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#d8be78'; g.beginPath(); g.ellipse(29.4, 5.7, 2.6, 0.55, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#c98b5c'; g.lineWidth = 0.8; g.lineCap = 'round'; g.beginPath(); g.moveTo(31, 9.4); g.lineTo(34.6, 11.4); g.stroke();
+    g.strokeStyle = '#3a2a1c'; g.lineWidth = 0.22; g.beginPath(); g.moveTo(34.8, 11.4); g.quadraticCurveTo(44, 11, 55, 9.5); g.stroke();   // riendas
+    g.fillStyle = '#f2f0ea'; for (const x of [3, 10.6, 18.2, 25.6, 33]) g.fillRect(x, 5.6, 1, 9); g.fillRect(3, 13.8, 31, 0.8);           // parantes y baranda
+    g.fillStyle = lin(g, 0, 3, 0, 5.8, ['#ffffff', '#dcd9d2']); rrect(g, 1.8, 3, 33.6, 2.8, 1); g.fill();                                  // techo
+    g.fillStyle = '#1f8a8a'; g.fillRect(2, 5.2, 33.2, 0.7);
+    g.fillStyle = lin(g, 0, 15, 0, 20, [L, C, D]); rrect(g, 34, 15.4, 4, 4.4, 0.6); g.fill();                                               // pescante
     // vara y arnés
-    g.strokeStyle = '#5a4430'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(33, 16.5); g.lineTo(49, 15); g.stroke();
+    g.strokeStyle = '#5a4430'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(37, 18.5); g.lineTo(49, 15); g.stroke();
     // caballo
     const legs = [[44.5, 0.06], [46.6, -0.12], [53.4, 0.1], [55.4, -0.08]];
     legs.forEach(([x, a], i) => { g.save(); g.translate(x, 18); g.rotate(a); g.fillStyle = lin(g, -1, 0, 1, 0, i % 2 ? [HB[1], HB[2]] : [HB[0], HB[1]]); rrect(g, -0.75, 0, 1.5, 10, 0.6); g.fill(); g.fillStyle = '#2a2420'; rrect(g, -0.9, 9.4, 1.8, 1.4, 0.4); g.fill(); g.restore(); });
@@ -8979,10 +9017,8 @@ VR.showVehicleCard = (v) => {
     g.fillStyle = '#3a2a1c'; rrect(g, 47, 12.4, 1.2, 7.4, 0.4); g.fill(); rrect(g, 42.8, 14.6, 14, 0.9, 0.4); g.fill();                     // arnés
     g.fillStyle = '#101010'; g.beginPath(); g.arc(61.9, 5.6, 0.35, 0, Math.PI * 2); g.fill();
     g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.ellipse(48.5, 13, 4.6, 1.3, -0.1, 0, Math.PI * 2); g.fill();
-    // rueda grande de rayos
-    g.save(); g.fillStyle = '#2a2018'; g.beginPath(); g.arc(19, 22.5, 9.4, 0, Math.PI * 2); g.arc(19, 22.5, 8.1, 0, Math.PI * 2, true); g.fill('evenodd');
-    g.strokeStyle = '#6a5030'; g.lineWidth = 0.7; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; g.beginPath(); g.moveTo(19, 22.5); g.lineTo(19 + Math.cos(a) * 8.2, 22.5 + Math.sin(a) * 8.2); g.stroke(); }
-    g.fillStyle = '#8a8e96'; g.beginPath(); g.arc(19, 22.5, 1.4, 0, Math.PI * 2); g.fill(); g.restore();
+    // ruedas chicas de goma
+    for (const x of [10, 28]) { g.fillStyle = '#17171a'; g.beginPath(); g.arc(x, 27.6, 4.6, 0, Math.PI * 2); g.fill(); g.fillStyle = lin(g, 0, 24.6, 0, 30.6, ['#e8ecf2', '#8a8e96']); g.beginPath(); g.arc(x, 27.6, 2.5, 0, Math.PI * 2); g.fill(); g.fillStyle = '#4a4e56'; g.beginPath(); g.arc(x, 27.6, 0.8, 0, Math.PI * 2); g.fill(); }
   };
 
   // ---------- motos ----------
@@ -9231,7 +9267,7 @@ VR.showVehicleCard = (v) => {
   VR.drawSideHD = (kind, pal, t = {}, W = 320, H = 180) => {
     const c = VR.canvas(W, H), g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.scale(W / 64, H / 36);
     if (kind === 'car') kind = 'mita';
-    if (kind === 'karumbe') karumbeHD(g);
+    if (kind === 'karumbe') karumbeHD(g, pal);
     else if (kind === 'busindep') busIndepHD(g, pal);
     else if (kind === 'busguai') busGuaiHD(g, pal);
     else if (kind === 'bomba') bombaHD(g, pal);

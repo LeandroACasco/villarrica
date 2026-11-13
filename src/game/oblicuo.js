@@ -13,8 +13,8 @@
 // Alturas en unidades del mundo (8 = 1 m). VR.OBL.kz = cuántos px de pantalla sube cada unidad de altura.
 'use strict';
 (() => {
-  const O = VR.OBL = { on: true, kz: 0.68, step: 2, async: true, budget: 2 };
-  try { const q = new URLSearchParams(location.search); if (q.get('kz')) O.kz = +q.get('kz'); if (q.has('plano')) O.on = false; if (q.has('sinc')) O.async = false; } catch (e) {} // para comparar: ?kz=0.7 · ?plano (como antes)
+  const O = VR.OBL = { on: true, kz: 0.46, step: 2, async: false, budget: 2 };
+  try { const q = new URLSearchParams(location.search); if (q.get('kz')) O.kz = +q.get('kz'); if (q.has('plano')) O.on = false; if (q.has('cola')) O.async = true; } catch (e) {} // para comparar: ?kz=0.7 · ?plano (como antes)
   const SH = (c, k) => VR.shadeHex(c, k);
   const GL = ['#1c2c40', '#34506c', '#9fc0dc'], CHR = ['#7a7e86', '#e8ecf2', '#9aa0a8'];
   const interp = (pts, y) => {
@@ -24,17 +24,19 @@
     for (let i = 1; i < pts.length; i++) if (y <= pts[i][0]) { const [y0, h0] = pts[i - 1], [y1, h1] = pts[i]; return y1 - y0 < 1e-6 ? h1 : h0 + (h1 - h0) * (y - y0) / (y1 - y0); }
     return pts[pts.length - 1][1];
   };
+  const px = (c) => new Uint32Array(c.getContext('2d').getImageData(0, 0, c.width, c.height).data.buffer); // píxeles (ABGR)
   const darken = (img, a = 0.36) => { const c = VR.canvas(img.width, img.height), g = c.getContext('2d'); g.drawImage(img, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = `rgba(8,8,18,${a})`; g.fillRect(0, 0, c.width, c.height); return c; };
 
   const prep = (base) => {
     if (base._obl) return base._obl;
     const P = base.prof, w = base.width, h = base.height, k = h / P.L, zs = k * O.kz;
     const o = base._obl = { w, h, k, zs };
-    if (P.layers) { o.layers = P.layers.map((l) => ({ img: l.img, dark: darken(l.img), i0: Math.round(l.z0 * zs), i1: Math.round(l.z1 * zs) })); return o; }
+    o.pix = px(base);
+    if (P.layers) { o.layers = P.layers.map((l) => ({ pix: px(l.img), dark: px(darken(l.img)), i0: Math.round(l.z0 * zs), i1: Math.round(l.z1 * zs) })); o.nz = Math.max(...o.layers.map((l) => l.i1)) + 1; return o; }
     const nz = o.nz = Math.ceil(P.H * zs) + 1, top = new Float32Array(h), bot = new Float32Array(h);
     for (let r = 0; r < h; r++) { const y = (r + 0.5) / k; top[r] = interp(P.top, y) * zs; bot[r] = interp(P.bot, y) * zs; }
     const self = P.side === 'self';
-    if (self) o.dark = darken(base);
+    if (self) o.dark = px(darken(base));
     else {
       const tex = o.tex = VR.canvas(nz + 1, h), g = tex.getContext('2d');
       g.setTransform(0, k, zs, 0, 0, 0);
@@ -44,6 +46,7 @@
         wheel(u, r, rim = '#9aa0a8') { H.disc(u, r, r, '#17171a'); H.disc(u, r, r * 0.58, rim); H.disc(u, r, r * 0.3, SH(rim, 0.6)); H.disc(u, r, r * 0.12, '#d8dce4'); },
       };
       P.side(g, H);
+      o.tex = px(tex); o.tw = nz + 1;
     }
     // tramos por altura: [fila0, fila1, angostamiento en px]; side = pared a esa altura, tops = franjas del dibujo de arriba
     const runs = (i, inF, insF) => {
@@ -60,51 +63,61 @@
       o.side.push(runs(i, (r) => bot[r] <= i && top[r] > i, P.ins));
       o.tops.push(runs(i, (r) => top[r] > 0 && top[r] >= i && top[r] < i + O.step, P.tin));
     }
-    o.caps = (P.caps || []).map((c) => ({ s0: c.src[0] * k, sh: (c.src[1] - c.src[0]) * k, d0: c.dst[0] * k, dh: (c.dst[1] - c.dst[0]) * k, i0: c.v[0] * zs, i1: c.v[1] * zs }));
+    // trompa y cola: para esas filas y alturas, el color sale de una fila del dibujo de arriba (faros, parrilla, luces)
+    o.caps = (P.caps || []).map((c) => ({ s0: c.src[0] * k, sh: (c.src[1] - c.src[0]) * k, d0: Math.round(c.dst[0] * k), d1: Math.round(c.dst[1] * k), i0: c.v[0] * zs, i1: c.v[1] * zs }));
     return o;
   };
 
   // Dibuja el vehículo girado a (radianes) y con volumen, en un lienzo de B×B (a la escala grande del dibujo base).
-  // Es un generador: cede después de cada capa, así se puede repartir entre varios cuadros (ver O.enqueue).
-  O.renderGen = function* (base, a, B) {
-    const o = prep(base), { w, h } = o, big = VR.canvas(B, B), x = big.getContext('2d');
-    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'low'; // se gira sin cambiar de tamaño: con bilineal alcanza
-    const ca = Math.cos(a), sa = Math.sin(a), cx = B / 2, cy = B / 2;
-    const put = (img, i, sx, sy, sw, sh) => { if (sw <= 0 || sh <= 0) return; x.setTransform(ca, sa, -sa, ca, cx, cy - i); x.drawImage(img, sx, sy, sw, sh, sx - w / 2, sy - h / 2, sw, sh); };
+  // Segunda versión (13/11/2026): las capas se apilan en memoria, píxel por píxel y SIN girar (correr una capa hacia
+  // arriba en pantalla es correrla en diagonal en el dibujo sin girar), y recién al final se gira todo junto una vez.
+  // Así un ángulo cuesta casi lo mismo que girar el dibujo plano y se puede hacer en el momento: el dibujo sigue
+  // al vehículo cuando dobla, sin esperar a ninguna cola.
+  O.render = (base, a, B) => {
+    const o = prep(base), { w, h, pix } = o, pad = o.nz + 2, W = w + 2 * pad, Hh = h + 2 * pad, out = new Uint32Array(W * Hh);
+    const sa = Math.sin(a), ca = Math.cos(a), A = 0xff000000, ST = O.step;
+    const off = (i) => (pad + Math.round(-i * ca)) * W + pad + Math.round(-i * sa);
     if (o.layers) {
-      for (const l of o.layers) { for (let i = l.i0; i < l.i1; i += O.step) put(l.dark, i, 0, 0, w, h); put(l.img, l.i1, 0, 0, w, h); yield; }
-      return big;
-    }
-    // lienzo de trabajo propio de este dibujo (puede haber otro a medio hacer en la cola)
-    const sc = VR.canvas(w, h), s = sc.getContext('2d'); s.imageSmoothingEnabled = false;
-    for (let n = 0; n < o.side.length; n++) {
-      const i = n * O.step, sr = o.side[n];
-      if (sr.length) {
-        s.globalCompositeOperation = 'source-over'; s.clearRect(0, 0, w, h);
-        for (const [r0, r1, xi] of sr) {
-          // xi < 0: solo los bordes (ruedas que están a los costados, sin nada en el medio)
-          for (const [X, Wd] of xi < 0 ? [[0, -xi], [w + xi, -xi]] : [[xi, w - 2 * xi]]) {
-            if (o.dark) s.drawImage(o.dark, X, r0, Wd, r1 - r0, X, r0, Wd, r1 - r0);
-            else s.drawImage(o.tex, Math.min(i, o.nz), r0, 1, r1 - r0, X, r0, Wd, r1 - r0);
+      for (const l of o.layers) for (let i = l.i0; i <= l.i1; i += (i < l.i1 && i + ST > l.i1 ? l.i1 - i : ST)) {
+        const src = i >= l.i1 ? l.pix : l.dark, o0 = off(i);
+        for (let y = 0; y < h; y++) for (let x = 0, q = y * w; x < w; x++, q++) { const c = src[q]; if ((c >>> 24) > 100) out[o0 + y * W + x] = c | A; }
+      }
+    } else {
+      const tex = o.tex, tw = o.tw, dark = o.dark;
+      for (let n = 0; n < o.side.length; n++) {
+        const i = n * ST, o0 = off(i), ti = Math.min(i, o.nz);
+        for (const [r0, r1, xi] of o.side[n]) {
+          const spans = xi < 0 ? [[0, -xi], [w + xi, w]] : [[xi, w - xi]]; // xi < 0: solo los bordes (ruedas a los costados)
+          for (let y = r0; y < r1; y++) {
+            let tc = 0, cr = -1;
+            if (!dark) {
+              tc = tex[y * tw + ti]; if ((tc >>> 24) < 128) continue; tc |= A;
+              for (const c of o.caps) if (i >= c.i0 && i <= c.i1 && y >= c.d0 && y < c.d1) cr = Math.min(h - 1, Math.round(c.s0 + (y - c.d0) / (c.d1 - c.d0) * c.sh)) * w;
+            }
+            for (const [xa, xb] of spans) for (let x = xa, q = y * w + xa, d = o0 + y * W + xa; x < xb; x++, q++, d++) {
+              if ((pix[q] >>> 24) <= 100) continue;
+              if (dark) out[d] = dark[q] | A; else if (cr >= 0 && (pix[cr + x] >>> 24) > 100) out[d] = pix[cr + x] | A; else out[d] = tc;
+            }
           }
         }
-        if (!o.dark) {
-          for (const c of o.caps) if (i >= c.i0 && i <= c.i1) { s.save(); s.globalCompositeOperation = 'source-atop'; s.drawImage(base, 0, c.s0, w, c.sh, 0, c.d0, w, c.dh); s.restore(); }
-          s.globalCompositeOperation = 'destination-in'; s.drawImage(base, 0, 0);
+        for (const [r0, r1, xi] of o.tops[n]) {
+          const ya = Math.max(0, r0 - ST), yb = Math.min(h, r1 + ST);
+          for (let y = ya; y < yb; y++) for (let x = xi, q = y * w + xi, d = o0 + y * W + xi; x < w - xi; x++, q++, d++) { const c = pix[q]; if ((c >>> 24) > 100) out[d] = c | A; }
         }
-        const ra = sr[0][0], rb = sr[sr.length - 1][1];
-        put(sc, i, 0, ra, w, rb - ra);
       }
-      for (const [r0, r1, xi] of o.tops[n]) { const a0 = Math.max(0, r0 - 1), a1 = Math.min(h, r1 + 1); put(base, i, xi, a0, w - 2 * xi, a1 - a0); }
-      yield;
     }
+    const comp = VR.canvas(W, Hh), cg = comp.getContext('2d'), id = cg.createImageData(W, Hh);
+    new Uint32Array(id.data.buffer).set(out); cg.putImageData(id, 0, 0);
+    const big = VR.canvas(B, B), x = big.getContext('2d');
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.translate(B / 2, B / 2); x.rotate(a); x.drawImage(comp, -W / 2, -Hh / 2);
     return big;
   };
-  O.render = (base, a, B) => { const it = O.renderGen(base, a, B); let r; do r = it.next(); while (!r.done); return r.value; };
+  O.renderGen = function* (base, a, B) { return O.render(base, a, B); };
 
-  // Cola de dibujos pendientes: armar un ángulo con volumen cuesta varias veces más que girar un dibujo plano, así que
-  // no se hace de golpe (trabaría el juego, sobre todo en el teléfono): se reparte de a O.budget ms por cuadro y,
-  // mientras tanto, VR.rotFrames muestra el ángulo ya hecho más parecido. Lo último que se pidió se hace primero.
+  // Cola de dibujos pendientes (apagada: O.async = false). Era para la primera versión, que tardaba ~10 ms por ángulo:
+  // repartía el trabajo entre cuadros y mientras tanto se veía el ángulo de al lado (Leandro notó que el dibujo no
+  // seguía al vehículo al doblar). Queda por si algún día hace falta; con ?cola en la dirección se prende.
   const Q = []; let ticking = false;
   const tick = () => {
     const t0 = performance.now();
@@ -246,11 +259,32 @@
       } };
   };
 
-  // Karumbe (VR.drawKarumbe, 14×40): caballo, varas, carro con dos ruedas grandes y el carrero
-  O.karumbe = () => ({ L: 40, H: 14, lift: 9, side: 'self',
-    top: [[0, 11.5], [4.4, 11.5], [4.5, 10.2], [13.4, 10.2], [13.5, 5.4], [14.5, 5.4], [14.6, 9], [15.4, 9], [15.5, 13.6], [20.2, 13.6], [20.3, 9], [39.2, 9], [39.3, 0], [40, 0]],
-    bot: [[0, 7], [3, 7], [3.1, 4.6], [13.4, 4.6], [13.5, 4.6], [14.5, 4.6], [14.6, 4], [20.9, 4], [21, 0], [30, 0], [30.1, 4], [40, 4]],
-    ins: (y, v) => (y < 13.5 && v < 4.6 ? 5.4 : y > 21 && y < 30 && v < 4 ? -1.9 : 0) });
+  // Karumbe (VR.drawKarumbe, 14×40; foto de Leandro del 13/11/2026): caballo, varas, pescante y coche de pasajeros con
+  // caja de madera pintada, ventanas con parantes blancos y techo blanco con borde turquesa; ruedas chicas de goma.
+  O.karumbe = (pal) => {
+    const [C, D, L] = pal, HB = '#7a4a28', HD = '#55321a', WH = '#f2f0ea', TQ = '#1f8a8a', Hh = 16.4, wy = [19.5, 34], wr = 2.2;
+    const leg = (y) => (y > 4.4 && y < 5.8) || (y > 10.6 && y < 12), wheelRow = (y) => wy.some((u) => Math.abs(y - u) <= wr);
+    return { L: 40, H: Hh, lift: Hh,
+      top: (y) => (y < 4.4 ? 11.5 : y < 13.4 ? 10.2 : y < 14.6 ? 5.4 : y < 17.3 ? 7.5 : y < 39.7 ? Hh : 0),
+      bot: (y) => (y < 3 ? 7 : y < 13.4 ? (leg(y) ? 0 : 4.6) : y < 14.6 ? 4.6 : wheelRow(y) ? 0 : 3.2),
+      ins: (y, v) => (y < 13.4 && v < 4.6 ? 5.7 : y > 14.6 && v < 3.2 ? -1.9 : 0),
+      side(g, H) {
+        const R = H.R;
+        R(0, 7, 4.4, 11.5, HB); R(3, 4.6, 13.4, 10.2, HB); R(3, 4.6, 13.4, 6, HD); R(2.4, 9.6, 6.4, 10.4, '#2a1a10');   // caballo: cabeza, lomo, panza, crin
+        R(6.6, 4.6, 7.4, 10.2, WH); R(12.6, 5, 13.4, 9.4, '#2a1a10');                                              // pechera blanca y cola
+        for (const u of [4.4, 10.6]) { R(u, 0, u + 1.4, 4.6, HD); R(u, 0, u + 1.4, 0.8, '#2a2420'); }                 // patas
+        R(13.4, 4.6, 17.4, 5.4, '#5a4430');                                                                        // varas
+        for (const u of wy) H.wheel(u, wr, '#c8ccd4');
+        R(14.6, 3.2, 17.4, 7.5, SH(C, 0.8));                                                                       // pescante
+        R(17.3, 3.2, 39.7, 9.4, SH(C, 0.86)); R(17.3, 3.2, 39.7, 3.9, '#2a2a30'); R(17.3, 9, 39.7, 9.4, L);         // caja de madera pintada
+        for (const v of [5.3, 7.2]) R(17.3, v, 39.7, v + 0.25, SH(D, 0.85));
+        R(17.3, 9.4, 39.7, 15.2, '#3a2e28');                                                                       // adentro, por las ventanas
+        R(18.6, 9.4, 21.4, 12.4, '#d8d2c0'); R(19.2, 12.4, 20.8, 14, '#c98b5c'); R(18.8, 13.9, 21.2, 14.5, '#d8be78'); // carrero con sombrero
+        R(24, 9.4, 38, 10.8, '#3a9a8a');                                                                           // asiento
+        for (const u of [17.3, 22.6, 28.2, 33.8, 38.9]) R(u, 9.4, u + 0.8, 15.2, WH);                               // parantes blancos
+        R(17.3, 14.5, 39.7, 15.2, WH); R(17.3, 15.2, 39.7, 15.7, TQ); R(17.3, 15.7, 39.7, Hh, WH);                  // marco, borde turquesa y techo
+      } };
+  };
 
   // Motos: tabla por modelo. w: ruedas [y, radio, medio ancho]; segs: [y0, y1, desde, hasta, color, angostamiento]
   const MOTO = {
