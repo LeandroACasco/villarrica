@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión acc57427 · 2026-11-13</div>
+  <div class="tVer">Versión 7545c71d · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión acc57427 · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 7545c71d · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -5986,7 +5986,7 @@ VR.TUNE_COLORS = [
   ['Turquesa', '#2a9a9a'], ['Celeste', '#4a9ad8'], ['Azul', '#2f5fa8'], ['Violeta', '#6a4ab0'], ['Rosa', '#d85a9a'], ['Blanco', '#f2f0ea'],
   ['Plateado', '#c9ccd1'], ['Gris', '#6a6e76'], ['Negro', '#2c2c32'], ['Dorado', '#c8a040'],
 ];
-VR.tunePal = (i) => { const c = VR.TUNE_COLORS[i % VR.TUNE_COLORS.length][1]; return [c, VR.shadeHex(c, 0.66), VR.shadeHex(c, 1.28)]; };
+VR.tunePal = (i) => { const c = typeof i === 'string' ? i : VR.TUNE_COLORS[i % VR.TUNE_COLORS.length][1]; return [c, VR.shadeHex(c, 0.66), VR.shadeHex(c, 1.28)]; };
 VR.NEON = { celeste: '80,220,255', rosa: '255,80,200', verde: '90,255,120', violeta: '170,90,255', naranja: '255,150,40', rojo: '255,50,50' };
 VR.RIMS = { serie: '#8a8e96', deportivas: '#c8ccd4', cromadas: '#eef2f8', negras: '#2e2e34', doradas: '#d8b040' };
 // precio de cada pieza (guaraníes); en motos y patinetas se cobra una parte (k)
@@ -6024,7 +6024,7 @@ VR.tuneDefault = (m) => ({ color: VR.TUNE_MODELS[m].serie, color2: 11, franja: '
 // precio de una pieza elegida (0 si es la de serie)
 VR.tunePartPrice = (m, part, t) => {
   const M = VR.TUNE_MODELS[m], P = VR.TUNE_PARTS[part];
-  if (part === 'color') return t.color === M.serie ? 0 : Math.round(P.price * M.k / 1000) * 1000;
+  if (part === 'color') return typeof t.color === 'string' || t.color === M.serie ? 0 : Math.round(P.price * M.k / 1000) * 1000;
   if (!P.opts) return 0;
   const o = P.opts[t[part]]; if (!o) return 0;
   return part === 'neon' ? o[1] : Math.round(o[1] * M.k / 1000) * 1000;
@@ -8124,6 +8124,9 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
 #garScene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #garTop{position:absolute;left:8px;top:calc(env(safe-area-inset-top) + 6px);right:8px;display:flex;justify-content:space-between;pointer-events:none;gap:8px}
 #garHint{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:rgba(10,10,14,.6);border-radius:8px;padding:3px 9px;font-size:11px;color:#ccc;pointer-events:none}
+#garStats{position:absolute;left:8px;bottom:8px;background:rgba(10,10,14,.72);border:1px solid #444;border-radius:8px;padding:5px 8px;font:700 10px system-ui;pointer-events:none;min-width:118px}
+#garStats div{display:flex;align-items:center;gap:5px;margin:2px 0}#garStats b{flex:1;min-width:44px;height:5px;background:#333;border-radius:3px;overflow:hidden}#garStats b i{display:block;height:100%;background:#e6b422}#garStats em{font-style:normal;color:#9fd69a;min-width:30px;text-align:right}
+@media (max-width:600px){#garStats{bottom:auto;left:8px;top:calc(env(safe-area-inset-top) + 42px)}}
 #garTop span{background:rgba(10,10,14,.72);border:1px solid #444;border-radius:8px;padding:4px 9px;font-weight:700}
 #garPanel{flex:0 0 auto;background:linear-gradient(#22201c,#171512);border-top:3px solid #e6b422;padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);max-height:46%;display:flex;flex-direction:column;gap:5px}
 #garTabs{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
@@ -8145,6 +8148,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
 #garBar button#garBuy{background:#e6b422;color:#1a1608}`;
   const st = document.createElement('style'); st.textContent = CSS; document.head.append(st);
   const rr = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
+  const colHex = (i) => typeof i === 'string' ? i : VR.TUNE_COLORS[i % 16][1], colName = (i) => typeof i === 'string' ? 'Original' : VR.TUNE_COLORS[i % 16][0];
   const NAMES = { color: 'Pintura', franja: 'Franjas', llantas: 'Llantas', polarizado: 'Vidrios', aleron: 'Alerón', techo: 'Techo', escape: 'Escape', faros: 'Faros', bajo: 'Suspensión', neon: 'Neón' };
   // ------------------------------------------------------------ iconos (se dibujan en 48×48 y se guardan a 96×96)
   const ICON = new Map();
@@ -8159,9 +8163,9 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
   const drawIcon = (g, part, key, t) => {
     g.lineJoin = 'round'; g.lineCap = 'round';
     if (part === 'color') {
-      const c = VR.TUNE_COLORS[+key % 16][1]; g.fillStyle = c; g.beginPath(); g.moveTo(24, 5); g.bezierCurveTo(33, 16, 38, 22, 38, 29); g.bezierCurveTo(38, 37, 32, 43, 24, 43); g.bezierCurveTo(16, 43, 10, 37, 10, 29); g.bezierCurveTo(10, 22, 15, 16, 24, 5); g.fill(); g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 1.6; g.stroke(); g.fillStyle = 'rgba(255,255,255,.45)'; g.beginPath(); g.ellipse(19, 27, 3, 7, 0.3, 0, 7); g.fill();
+      const c = colHex(isNaN(+key) ? key : +key); g.fillStyle = c; g.beginPath(); g.moveTo(24, 5); g.bezierCurveTo(33, 16, 38, 22, 38, 29); g.bezierCurveTo(38, 37, 32, 43, 24, 43); g.bezierCurveTo(16, 43, 10, 37, 10, 29); g.bezierCurveTo(10, 22, 15, 16, 24, 5); g.fill(); g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 1.6; g.stroke(); g.fillStyle = 'rgba(255,255,255,.45)'; g.beginPath(); g.ellipse(19, 27, 3, 7, 0.3, 0, 7); g.fill();
     } else if (part === 'franja') {
-      carTop(g, '#d9dde4'); const c2 = VR.TUNE_COLORS[+(t.color2 ?? 11) % 16][1]; g.fillStyle = c2; g.save(); rr(g, 5, 14, 38, 20, 8); g.clip();
+      carTop(g, '#d9dde4'); const c2 = colHex(t.color2 ?? 11); g.fillStyle = c2; g.save(); rr(g, 5, 14, 38, 20, 8); g.clip();
       if (key === 'carrera') { g.fillRect(3, 21, 42, 2.4); g.fillRect(3, 25.6, 42, 2.4); } else if (key === 'centro') g.fillRect(3, 19.5, 42, 9); else if (key === 'costado') { g.fillRect(3, 15.5, 42, 2.4); g.fillRect(3, 30.2, 42, 2.4); } g.restore();
       g.fillStyle = '#1d2630'; rr(g, 5 + 38 * 0.62, 17, 7.6, 14, 2); g.fill(); rr(g, 5 + 38 * 0.16, 17, 5, 14, 2); g.fill();
       if (key === 'no') { g.strokeStyle = '#c33'; g.lineWidth = 3; g.beginPath(); g.moveTo(10, 38); g.lineTo(38, 10); g.stroke(); }
@@ -8177,7 +8181,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       g.fillStyle = 'rgba(255,255,255,.28)'; g.beginPath(); g.moveTo(10, 8); g.lineTo(20, 8); g.lineTo(9, 40); g.lineTo(5, 40); g.fill(); g.restore(); g.strokeStyle = '#111'; g.lineWidth = 2; rr(g, 5, 8, 38, 32, 6); g.stroke();
     } else if (part === 'aleron') { carSide(g, '#d9dde4', 0, key === 'chico' ? 1 : key === 'grande' ? 2 : 0); if (key === 'no') { g.fillStyle = 'rgba(200,50,50,.9)'; g.font = '700 10px system-ui'; g.fillText('✕', 38, 14); } }
     else if (part === 'techo') {
-      g.fillStyle = '#2a2d33'; rr(g, 6, 6, 36, 36, 6); g.fill(); const c = key === 'negro' ? '#141418' : VR.TUNE_COLORS[+(t.color || 0) % 16][1]; g.fillStyle = c; rr(g, 9, 9, 30, 30, 4); g.fill(); g.fillStyle = 'rgba(255,255,255,.22)'; rr(g, 11, 11, 12, 5, 2); g.fill();
+      g.fillStyle = '#2a2d33'; rr(g, 6, 6, 36, 36, 6); g.fill(); const c = key === 'negro' ? '#141418' : colHex(t.color || 0); g.fillStyle = c; rr(g, 9, 9, 30, 30, 4); g.fill(); g.fillStyle = 'rgba(255,255,255,.22)'; rr(g, 11, 11, 12, 5, 2); g.fill();
       if (key === 'parrilla') { g.strokeStyle = '#b8bcc4'; g.lineWidth = 2; rr(g, 12, 12, 24, 24, 2); g.stroke(); g.lineWidth = 1.6; for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(12 + 8 * (i + 1) - 4, 12); g.lineTo(12 + 8 * (i + 1) - 4, 36); g.stroke(); } }
     } else if (part === 'escape') {
       g.fillStyle = '#3a3d44'; rr(g, 3, 8, 42, 18, 4); g.fill(); g.fillStyle = '#16171a'; rr(g, 6, 20, 36, 8, 3); g.fill();
@@ -8215,6 +8219,10 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     g.shadowColor = '#ffcc33'; g.shadowBlur = 10; g.fillStyle = '#ffd84a'; g.font = '900 19px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('🔧 TALLER PYAHU', cx, sy + 20); g.shadowBlur = 0;
     g.fillStyle = '#c8c8d0'; g.font = '700 8px system-ui'; g.fillText('PINTURA · LLANTAS · NEÓN · CHAPA', cx, sy + 51); g.textAlign = 'left'; g.textBaseline = 'alphabetic';
     for (const x of [sx + 14, sx + sw - 14]) { g.strokeStyle = '#555'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, sy - 6); g.lineTo(x, sy); g.stroke(); }
+    // reloj, matafuegos y afiche
+    { const ccx = cx + 196, ccy = Math.max(40, fy - 205); if (ccx < Vw - 20) { g.fillStyle = '#111'; g.beginPath(); g.arc(ccx, ccy, 17, 0, 7); g.fill(); g.fillStyle = '#f0ece0'; g.beginPath(); g.arc(ccx, ccy, 14.5, 0, 7); g.fill(); g.strokeStyle = '#222'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(ccx, ccy); g.lineTo(ccx + 2, ccy - 9); g.moveTo(ccx, ccy); g.lineTo(ccx + 6, ccy + 3); g.stroke(); for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283; g.fillStyle = '#555'; g.fillRect(ccx + Math.cos(a) * 12 - 0.7, ccy + Math.sin(a) * 12 - 0.7, 1.4, 1.4); } }
+      if (Vw >= 560) { const ax = cx - 226, ay = fy - 205; g.fillStyle = '#e8e0c8'; g.fillRect(ax, ay, 40, 54); g.strokeStyle = '#3a2c18'; g.lineWidth = 2; g.strokeRect(ax, ay, 40, 54); g.fillStyle = '#c8322a'; g.fillRect(ax + 4, ay + 4, 32, 26); g.fillStyle = '#f2f0ea'; g.fillRect(ax + 9, ay + 14, 22, 7); g.fillStyle = '#222'; g.fillRect(ax + 12, ay + 21, 5, 4); g.fillRect(ax + 25, ay + 21, 5, 4); g.fillStyle = '#333'; g.font = '700 6px system-ui'; g.textAlign = 'center'; g.fillText('¡OFERTA!', ax + 20, ay + 42); g.fillText('LLANTAS', ax + 20, ay + 49); g.textAlign = 'left'; }
+      const mx = cx + 150; g.fillStyle = '#b8322a'; rr(g, mx, fy - 98, 14, 38, 5); g.fill(); g.fillStyle = '#222'; g.fillRect(mx + 4, fy - 105, 6, 8); g.strokeStyle = '#222'; g.lineWidth = 2; g.beginPath(); g.moveTo(mx + 10, fy - 102); g.quadraticCurveTo(mx + 22, fy - 96, mx + 14, fy - 80); g.stroke(); g.fillStyle = '#f2f0ea'; g.fillRect(mx + 2, fy - 86, 10, 10); }
     // tablero de herramientas (izquierda)
     const px = Math.max(8, cx - 300), pw = Math.min(150, cx - 175 - px); if (pw > 60) {
       const py = fy - 195; g.fillStyle = '#7a6444'; rr(g, px, py, pw, 118, 3); g.fill(); g.strokeStyle = '#3a2c18'; g.lineWidth = 3; g.stroke(); g.fillStyle = 'rgba(0,0,0,.28)'; for (let y = py + 8; y < py + 112; y += 9) for (let x = px + 8; x < px + pw - 4; x += 9) { g.beginPath(); g.arc(x, y, 1.1, 0, 7); g.fill(); }
@@ -8262,7 +8270,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
   VR.Garage = class {
     constructor() {
       const d = this.d = document.createElement('div'); d.id = 'garView'; d.hidden = true;
-      d.innerHTML = '<div id="garScene"><canvas></canvas><div id="garTop"><span>🔧 Taller Pyahu</span><span id="garMoney"></span></div><span id="garHint">↔ Arrastrá para girarlo</span></div><div id="garPanel"><div id="garTabs"></div><div id="garOpts"></div><div id="garBar"><div id="garTot"></div><button id="garUndo" title="Deshacer cambios">↺</button><button id="garFix">🔧 Reparar</button><button id="garBuy">Comprar</button><button id="garOut">Salir</button></div></div>';
+      d.innerHTML = '<div id="garScene"><canvas></canvas><div id="garTop"><span>🔧 Taller Pyahu</span><span id="garMoney"></span></div><div id="garStats"></div><span id="garHint">↔ Arrastrá para girarlo</span></div><div id="garPanel"><div id="garTabs"></div><div id="garOpts"></div><div id="garBar"><div id="garTot"></div><button id="garUndo" title="Deshacer cambios">↺</button><button id="garFix">🔧 Reparar</button><button id="garBuy">Comprar</button><button id="garOut">Salir</button></div></div>';
       document.body.append(d); this.cv = d.querySelector('#garScene canvas'); this.g = this.cv.getContext('2d'); this.fr = new Map(); this.ang = 0.9; this.auto = true; this.fx = null; this.parts = []; this.tab = 'color';
       const cv = this.cv; let drag = null; cv.style.touchAction = 'none'; cv.style.cursor = 'grab';
       cv.onpointerdown = (e) => { drag = { x: e.clientX, a: this.ang }; this.auto = false; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; };
@@ -8281,18 +8289,19 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     open(car, toast) {
       this.car = car; this.toast = toast; const m = car.model, M = VR.TUNE_MODELS[m]; this.model = m;
       if (!M) { toast('Este vehículo no se puede tunear'); return; }
-      this.old = Object.assign(VR.tuneDefault(m), car.tune || {}); this.t = { ...this.old }; this.parts = M.parts.filter((p) => p !== 'color2'); this.tab = this.parts[0];
+      this.old = Object.assign(VR.tuneDefault(m), car.tune || { color: this.realColor(car) }); this.t = { ...this.old }; this.parts = M.parts.filter((p) => p !== 'color2'); this.tab = this.parts[0];
       VR.input.releaseAll(); VR.input.enabled = false; this.fr.clear(); this.base = null; this.fit = null; this.ang = 0.9; this.auto = true; this.fx = { t: 0, rgb: '255,255,255', kind: 'spark' }; this.bg = null;
       this.d.hidden = false; document.body.classList.add('adentro'); this.size(); this.build(); this.t0 = performance.now(); this.loop();
     }
+    realColor(car) { const sp = VR.vspec(car.type, car.model), pal = sp.colors[(car.color || 0) % sp.colors.length]; return Array.isArray(pal) ? pal[0] : pal; }
     // --------------------------------------------------- panel: categorías con icono y opciones
     build() {
       const tabs = this.d.querySelector('#garTabs'); tabs.innerHTML = '';
       for (const p of this.parts) { const b = document.createElement('button'); b.className = p === this.tab ? 'on' : ''; const cv = document.createElement('canvas'); stamp(cv, VR.garageIcon(p, this.t[p], this.t)); const l = document.createElement('span'); l.textContent = NAMES[p] || VR.TUNE_PARTS[p].name; b.append(cv, l); b.onclick = () => { this.tab = p; this.build(); }; tabs.append(b); }
       const box = this.d.querySelector('#garOpts'); box.innerHTML = ''; const p = this.tab, m = this.model;
-      const pick = (part, v) => { const num = part === 'color' || part === 'color2' || part === 'polarizado' || part === 'bajo'; this.t[part] = num ? +v : v; this.base = null; this.fx = { t: 0, rgb: this.fxRgb(part), kind: part === 'color' ? 'spray' : 'spark' }; this.build(); };
-      const swatches = (part, title) => { if (title) { const h = document.createElement('h4'); h.textContent = title; box.append(h); } VR.TUNE_COLORS.forEach((c, i) => { const s = document.createElement('div'); s.className = 'sw' + (this.t[part] === i ? ' on' : ''); s.style.background = c[1]; s.title = c[0]; s.onclick = () => pick(part, i); box.append(s); }); };
-      if (p === 'color') { swatches('color'); const pr = VR.tunePartPrice(m, 'color', this.t); const h = document.createElement('h4'); h.textContent = VR.TUNE_COLORS[this.t.color][0] + (pr ? ' · ' + VR.fmtGs(pr) : ' · de serie'); h.style.flexBasis = '100%'; box.append(h); }
+      const pick = (part, v) => { const num = part === 'color' || part === 'color2' || part === 'polarizado' || part === 'bajo'; this.t[part] = num && typeof v !== 'string' ? +v : v; this.base = null; this.fx = { t: 0, rgb: this.fxRgb(part), kind: part === 'color' ? 'spray' : 'spark' }; this.build(); };
+      const swatches = (part, title) => { if (title) { const h = document.createElement('h4'); h.textContent = title; box.append(h); } const all = VR.TUNE_COLORS.map((c, i) => [i, c[1], c[0]]); if (typeof this.old[part] === 'string') all.unshift([this.old[part], this.old[part], 'Original']); all.forEach(([i, hx, nm]) => { const s = document.createElement('div'); s.className = 'sw' + (this.t[part] === i ? ' on' : ''); s.style.background = hx; s.title = nm; s.onclick = () => pick(part, i); box.append(s); }); };
+      if (p === 'color') { swatches('color'); const pr = VR.tunePartPrice(m, 'color', this.t); const h = document.createElement('h4'); h.textContent = colName(this.t.color) + (pr ? ' · ' + VR.fmtGs(pr) : ' · de serie'); h.style.flexBasis = '100%'; box.append(h); }
       else {
         for (const [k, o] of Object.entries(VR.TUNE_PARTS[p].opts)) {
           const c = document.createElement('div'), sel = String(this.t[p]) === String(k); c.className = 'card' + (sel ? ' on' : '') + (String(this.old[p]) === String(k) ? ' cur' : '');
@@ -8303,10 +8312,12 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       }
       this.total();
     }
-    fxRgb(part) { const c = part === 'color' ? VR.TUNE_COLORS[this.t.color][1] : part === 'neon' && VR.NEON[this.t.neon] ? null : null; if (c) { const n = parseInt(c.slice(1), 16); return (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255); } return part === 'neon' && VR.NEON[this.t.neon] ? VR.NEON[this.t.neon] : '255,214,90'; }
+    fxRgb(part) { const c = part === 'color' ? colHex(this.t.color) : null; if (c) { const n = parseInt(c.slice(1), 16); return (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255); } return part === 'neon' && VR.NEON[this.t.neon] ? VR.NEON[this.t.neon] : '255,214,90'; }
     cost() { const m = this.model; return VR.TUNE_MODELS[m].parts.reduce((s, p) => s + (String(this.t[p]) !== String(this.old[p]) ? VR.tunePartPrice(m, p, this.t) : 0), 0); }
     total() {
       this.d.querySelector('#garTot').innerHTML = 'Total: <b>' + VR.fmtGs(this.cost()) + '</b><br>Vida ' + Math.round(Math.max(0, this.car.hp ?? 100)) + '%';
+      const sp = VR.vspec(this.car.type, this.model), a = VR.tuneSpec(sp, this.t), pc = (x, y) => Math.round((x / y - 1) * 100), rows = [['⚡ Aceler.', a.acc / sp.acc, pc(a.acc, sp.acc)], ['↻ Giro', a.turn / sp.turn, pc(a.turn, sp.turn)], ['🏁 Asfalto', a.max.road / sp.max.road, pc(a.max.road, sp.max.road)], ['🌿 Tierra', a.max.dirt / sp.max.dirt, pc(a.max.dirt, sp.max.dirt)]];
+      this.d.querySelector('#garStats').innerHTML = rows.map(([n, r, d]) => '<div><span style="width:56px">' + n + '</span><b><i style="width:' + Math.max(10, Math.min(100, 50 * r)) + '%"></i></b><em style="' + (d < 0 ? 'color:#e08a7a' : '') + '">' + (d ? (d > 0 ? '+' : '') + d + '%' : '=') + '</em></div>').join('');
       this.d.querySelector('#garMoney').textContent = '💰 ' + VR.fmtGs(VR.Wallet.get());
     }
     // --------------------------------------------------- escena
@@ -8318,11 +8329,11 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     turnImg() {
       const key = this.model + ':' + VR.tuneKey(this.t) + ':' + this.K(); let c = this.fr.get(key); if (c) return c;
       const car = this.car, sp = VR.vspec(car.type, car.model), OB = VR.OBL;
-      if (!this.base) this.base = sp.base(VR.tunePal(this.t.color), this.t);
+      if (!this.base) { const v = VR.VSS; VR.VSS = v * 2; try { this.base = sp.base(VR.tunePal(this.t.color), this.t); } finally { VR.VSS = v; } } // dibujo base más grande que en el juego: más nítido
       const base = this.base; if (!base.prof || !OB || !OB.on) return null;
       const S = sp.S + 2 * OB.extra(base), ss = base.ss || 1, B = Math.round(S * ss), a = this.K() / 64 * Math.PI * 2;
       c = VR.gfx.softOutline(OB.render(base, a, B), 'rgba(18,16,20,.92)', ss * 0.8); this.fr.set(key, c);
-      if (this.fr.size > 200) this.fr.delete(this.fr.keys().next().value);
+      if (this.fr.size > 96) this.fr.delete(this.fr.keys().next().value);
       return c;
     }
     paint(now) {
@@ -8339,8 +8350,9 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       if (img) {
         if (!this.fit) this.fit = {}; const m = this.model; let f = this.fit[m];
         if (!f) { const side = VR.vspec(this.car.type, m), SS = this.base.ss || 1; f = this.fit[m] = 1 / (Math.max(side.len, side.wid) * (VR.VK || 1) * SS * 0.8); }
-        const T = Math.min(268, Vw * 0.5) * (this.model === 'pati' ? 0.62 : 1), hk = Math.min(1, Vh * 0.7 / (img.height * f * T)), w = img.width * f * T * hk, h = img.height * f * T * hk, X = cx - w / 2, Y = py - h * 0.62 + (+this.t.bajo ? 5 : 0);
+        const T = Math.min(268, Vw * 0.5) * (this.model === 'pati' ? 0.62 : 1), hk = Math.min(1, Math.min(Vh * 0.7, 235) / (img.height * f * T)), w = img.width * f * T * hk, h = img.height * f * T * hk, X = cx - w / 2, Y = py - h * 0.62 + (+this.t.bajo ? 5 : 0);
         g.fillStyle = 'rgba(0,0,0,.42)'; g.beginPath(); g.ellipse(cx, py + 2, w * 0.36, h * 0.1, 0, 0, 7); g.fill();
+        g.save(); g.globalAlpha = 0.14; g.translate(0, 2 * (Y + h * 0.8)); g.scale(1, -1); g.drawImage(img, X, Y, w, h); g.restore(); // reflejo en el piso
         if (this.fx && this.fx.t < 0.7 && this.fx.kind) { // destello blanco que recorre el vehículo
           const tmp = this.tmp || (this.tmp = document.createElement('canvas')); tmp.width = Math.ceil(w * s); tmp.height = Math.ceil(h * s); const q = tmp.getContext('2d'); q.clearRect(0, 0, tmp.width, tmp.height); q.imageSmoothingQuality = 'high'; q.drawImage(img, 0, 0, tmp.width, tmp.height);
           q.globalCompositeOperation = 'source-atop'; const p = this.fx.t / 0.7, gr = q.createLinearGradient(tmp.width * (p * 1.6 - 0.5), 0, tmp.width * (p * 1.6 - 0.2), 0); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, 'rgba(255,255,255,.75)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); q.fillStyle = gr; q.fillRect(0, 0, tmp.width, tmp.height);
@@ -8348,6 +8360,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
         } else g.drawImage(img, X, Y, w, h);
         if (this.fx && this.fx.t < 0.9) this.sparks(g, X, Y, w, h, py);
       } else { g.fillStyle = '#fff'; g.font = '14px system-ui'; g.textAlign = 'center'; g.fillText('Armando el vehículo…', cx, py - 40); g.textAlign = 'left'; }
+      g.save(); g.globalCompositeOperation = 'lighter'; for (let i = 0; i < 26; i++) { const lx = cx + (i % 2 ? 120 : -120), u = (t * 0.03 + VR.hash(i, 31) % 100 / 100) % 1, x = lx + (VR.hash(i, 7) % 100 / 100 - 0.5) * (30 + u * 150) + Math.sin(t + i) * 4, y = 40 + u * (Vh - 130); g.fillStyle = 'rgba(255,240,200,' + (0.35 * Math.sin(u * 3.14)) + ')'; g.beginPath(); g.arc(x, y, 0.9 + (i % 3) * 0.4, 0, 7); g.fill(); } g.restore();
       g.restore(); g.drawImage(this.fore, 0, 0);
       // viñeta
       g.save(); g.scale(s, s); const vg = g.createRadialGradient(cx, Vh * 0.55, Vh * 0.35, cx, Vh * 0.55, Vw * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.45)'); g.fillStyle = vg; g.fillRect(0, 0, Vw, Vh); g.restore();

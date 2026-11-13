@@ -7,7 +7,7 @@ VR.TUNE_COLORS = [
   ['Turquesa', '#2a9a9a'], ['Celeste', '#4a9ad8'], ['Azul', '#2f5fa8'], ['Violeta', '#6a4ab0'], ['Rosa', '#d85a9a'], ['Blanco', '#f2f0ea'],
   ['Plateado', '#c9ccd1'], ['Gris', '#6a6e76'], ['Negro', '#2c2c32'], ['Dorado', '#c8a040'],
 ];
-VR.tunePal = (i) => { const c = VR.TUNE_COLORS[i % VR.TUNE_COLORS.length][1]; return [c, VR.shadeHex(c, 0.66), VR.shadeHex(c, 1.28)]; };
+VR.tunePal = (i) => { const c = typeof i === 'string' ? i : VR.TUNE_COLORS[i % VR.TUNE_COLORS.length][1]; return [c, VR.shadeHex(c, 0.66), VR.shadeHex(c, 1.28)]; };
 VR.NEON = { celeste: '80,220,255', rosa: '255,80,200', verde: '90,255,120', violeta: '170,90,255', naranja: '255,150,40', rojo: '255,50,50' };
 VR.RIMS = { serie: '#8a8e96', deportivas: '#c8ccd4', cromadas: '#eef2f8', negras: '#2e2e34', doradas: '#d8b040' };
 // precio de cada pieza (guaraníes); en motos y patinetas se cobra una parte (k)
@@ -45,7 +45,7 @@ VR.tuneDefault = (m) => ({ color: VR.TUNE_MODELS[m].serie, color2: 11, franja: '
 // precio de una pieza elegida (0 si es la de serie)
 VR.tunePartPrice = (m, part, t) => {
   const M = VR.TUNE_MODELS[m], P = VR.TUNE_PARTS[part];
-  if (part === 'color') return t.color === M.serie ? 0 : Math.round(P.price * M.k / 1000) * 1000;
+  if (part === 'color') return typeof t.color === 'string' || t.color === M.serie ? 0 : Math.round(P.price * M.k / 1000) * 1000;
   if (!P.opts) return 0;
   const o = P.opts[t[part]]; if (!o) return 0;
   return part === 'neon' ? o[1] : Math.round(o[1] * M.k / 1000) * 1000;
