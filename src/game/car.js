@@ -91,23 +91,24 @@ VR.drawCarBase = (pal, t = {}) => VR.vbase(16, 30, (T) => {
 }, () => VR.OBL.car(VR.OBL.MITA, pal, t));
 // Motos y vehículos de dos (y tres) ruedas, vistos desde arriba mirando hacia arriba. Diseños propios por
 // categoría (sin marcas ni modelos reales): moto "cub", mini moto, moto de calle 150, motocarga y patineta.
-VR.drawMotoCub = (pal, t = {}) => VR.vbase(10, 21, (T) => { // escudo delantero ancho, piso bajo, asiento largo
+VR.drawMotoCub = (pal, t = {}) => VR.vbase(10, 21, (T) => { // rehecha el 13/11/2026 con fotos de una moto cub: ruedas grandes, escudo delantero, piso bajo, asiento largo
   const [C, D, L] = pal, S2 = VR.tunePal ? VR.tunePal(t.color2 ?? 11)[0] : '#fff', HL = t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0';
-  T.tire(4.1, 0.1, 1.8, 5.2); T.tire(4.1, 15.6, 1.8, 5.3);
-  T.rr(3.9, 2.6, 2.2, 1.6, 0.6, C);                                                       // guardabarros
-  T.rr(3.6, 0.9, 2.8, 1.3, 0.6, HL);                                                    // faro
-  T.line(0.7, 4.7, 9.3, 4.7, 0.75, '#2a2a2e'); T.line(0.7, 4.7, 1.8, 4.7, 0.9, '#55555c'); T.line(8.2, 4.7, 9.3, 4.7, 0.9, '#55555c');
-  T.line(2.1, 4.5, 1.4, 2.7, 0.3, CHR[0]); T.line(7.9, 4.5, 8.6, 2.7, 0.3, CHR[0]); T.ell(1.4, 2.6, 0.7, 0.5, CHR[1]); T.ell(8.6, 2.6, 0.7, 0.5, CHR[1]); // espejos
-  T.poly([[2.6, 5.2], [7.4, 5.2], [8.7, 8.8], [1.3, 8.8]], T.hg(1.3, 8.7, [L, C, C, D]));  // escudo
-  T.ell(4, 6.4, 1, 0.5, 'rgba(255,255,255,.35)');
-  T.rr(3.2, 8.8, 3.6, 2, 0.4, '#3a3a40'); for (let x = 3.6; x < 6.6; x += 0.7) T.rr(x, 9, 0.3, 1.6, 0, '#2a2a2e'); // piso con estrías
-  T.rr(2, 11.2, 6, 5.8, 1.2, T.hg(2, 8, [L, C, D]));                                     // tapas laterales
-  if (t.franja && t.franja !== 'no') { T.rr(2.1, 12, 0.6, 4.4, 0.2, S2); T.rr(7.3, 12, 0.6, 4.4, 0.2, S2); T.rr(4.2, 5.4, 1.6, 3.2, 0.3, S2); }
-  T.rr(3, 10.6, 4, 6.6, 1.6, T.hg(3, 7, ['#3a3a40', '#26262a', '#1a1a1e']));               // asiento largo
-  T.line(5, 11.2, 5, 16.6, 0.15, '#4a4a52');
-  T.rr(3.2, 17, 3.6, 1.4, 0.6, C); T.rr(4, 18.1, 2, 0.6, 0.3, '#e8302a');                 // cola y luz
-  T.rr(7.6, 12.6, t.escape === 'deportivo' ? 1.4 : 1, t.escape === 'deportivo' ? 7.4 : 5.8, 0.6, T.hg(7.6, 9, CHR));  // escape
-}, () => VR.OBL.moto('cub', pal));
+  T.tire(4.4, 0.1, 1.2, 6.2); T.tire(4.4, 14.2, 1.2, 6.2);
+  T.rr(3.8, 0.9, 2.4, 5, 1, C); T.rr(4.1, 1.2, 0.6, 3.6, 0.3, L);                                    // guardabarros delantero
+  T.poly([[3.2, 5.7], [6.8, 5.7], [7.6, 9.4], [6.2, 10.4], [3.8, 10.4], [2.4, 9.4]], T.hg(2.4, 7.6, [L, C, C, D]));  // escudo
+  T.rr(3.5, 6.1, 3, 1.5, 0.7, HL); T.ell(5, 6.9, 0.9, 0.4, 'rgba(255,255,255,.4)');                     // faro
+  T.ell(3.2, 6.2, 0.35, 0.3, '#f0a020'); T.ell(6.8, 6.2, 0.35, 0.3, '#f0a020');                       // luces de giro
+  T.line(0.8, 7.05, 9.2, 7.05, 0.75, '#2a2a2e'); T.line(0.8, 7.05, 1.8, 7.05, 0.9, '#55555c'); T.line(8.2, 7.05, 9.2, 7.05, 0.9, '#55555c'); // manubrio y puños
+  T.line(1.8, 6.9, 1.2, 7.7, 0.3, CHR[0]); T.line(8.2, 6.9, 8.8, 7.7, 0.3, CHR[0]); T.ell(1.2, 7.7, 0.55, 0.8, CHR[1]); T.ell(8.8, 7.7, 0.55, 0.8, CHR[1]); // espejos
+  T.rr(4.1, 7.8, 1.8, 1.2, 0.4, '#1a2230');                                                          // tablero
+  T.rr(3.2, 10.4, 3.6, 1.6, 0.4, '#3a3a40'); for (let x = 3.6; x < 6.6; x += 0.7) T.rr(x, 10.55, 0.3, 1.3, 0, '#2a2a2e'); // piso con estrías
+  T.rr(3, 11.8, 4, 7, 1.2, T.hg(3, 7, [L, C, D]));                                                   // tapas laterales
+  if (t.franja && t.franja !== 'no') { T.rr(3.1, 12.6, 0.5, 4.6, 0.2, S2); T.rr(6.4, 12.6, 0.5, 4.6, 0.2, S2); T.rr(4.3, 6.8, 1.4, 2.6, 0.3, S2); }
+  T.rr(3.1, 10.8, 3.8, 8.5, 1.6, T.hg(3.1, 6.9, ['#3a3a40', '#26262a', '#1a1a1e']));              // asiento largo
+  T.line(5, 11.4, 5, 19, 0.15, '#4a4a52');
+  T.rr(3.2, 19, 3.6, 1.6, 0.6, C); T.rr(4, 20.2, 2, 0.6, 0.3, '#e8302a');                           // cola y luz
+  T.rr(6.9, t.escape === 'deportivo' ? 14 : 14.8, 0.7, t.escape === 'deportivo' ? 6.4 : 5.6, 0.35, T.hg(6.9, 7.6, CHR));  // escape
+}, () => VR.OBL.moto('cub', pal, t));
 VR.drawMotoMini = (pal, t = {}) => VR.vbase(10, 17, (T) => { // ruedas gordas, faro redondo, corta y ancha
   const [C, D, L] = pal, S2 = VR.tunePal ? VR.tunePal(t.color2 ?? 11)[0] : '#fff', HL = t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0';
   T.tire(2.9, 0, 4.2, 4.2); T.tire(2.9, 12.8, 4.2, 4.2);
@@ -268,7 +269,7 @@ VR.drawRiderTop = (L0, geo = {}) => VR.OBL.parts(['legs', 'body', 'head'], geo, 
   } else T.ell(X(-0.5), Y(head - 0.4), 0.7, 0.5, 'rgba(255,255,255,.3)');
 }));
 // geometría del pasajero según la del conductor de esa moto (cub: puños en gy -5.8): manos a la cintura de quien maneja, rodillas abiertas
-VR.pasGeo = (g = {}) => ({ pas: true, gy: -3.7, gx: 3.1, hip: 3.4, kx: 3.6 });
+VR.pasGeo = (g = {}) => ({ pas: true, gy: -3.7, gx: 3.1, hip: 3.4, kx: 3.6, zoff: g.zoff || 0 });
 VR.riderTopFrames = (() => {
   const cache = new Map();
   return (L, geo) => {
@@ -357,7 +358,7 @@ VR.VSPEC = {
 };
 VR.PATI_COLORS = [['#2c2c32', '#16161a', '#55555e'], ['#e8e6e0', '#a9a69e', '#ffffff'], ['#2f5fa8', '#1e3f74', '#5c8ad0']];
 VR.MOTO_MODELS = {
-  cub: { rider: { gy: -5.8, gx: 4.3, hip: 3 }, name: 'Mbojoaju 125', desc: 'La moto de todos los días: liviana, económica y con lugar para dos.', side: 'cub' },
+  cub: { rider: { gy: -3.5, gx: 4.2, hip: 3.4, zoff: 2.3 }, name: 'Mbojoaju 125', desc: 'La moto de todos los días: liviana, económica y con lugar para dos.', side: 'cub' },
   mini: { rider: { gy: -4.1, gx: 3.8, hip: 2.4 }, len: 16, wid: 9, S: 22, base: VR.drawMotoMini, acc: 205, turn: 4.1, max: { road: 200, stone: 175, dirt: 170, side: 150, grass: 125 },
     name: 'Tatu 110', desc: 'Mini moto de ruedas gordas: chiquita, divertida y dobla en un pañuelo.', side: 'mini' },
   calle: { rider: { gy: -5.6, gx: 4.6, hip: 2.6 }, len: 21, wid: 8, S: 26, base: VR.drawMotoCalle, acc: 265, turn: 3.2, max: { road: 290, stone: 240, dirt: 215, side: 160, grass: 140 },

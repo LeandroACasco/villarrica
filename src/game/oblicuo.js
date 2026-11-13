@@ -292,32 +292,85 @@
       } };
   };
 
+
+  // Mbojoaju 125 (cub): perfil rehecho el 13/11/2026 con fotos de una moto de ese tipo (Leandro): ruedas grandes de 17", guardabarros
+  // sobre la rueda, horquilla inclinada, escudo delantero que sube hasta el manubrio con faro y espejos, piso bajo (paso libre),
+  // motor a la vista, asiento largo que sube hacia atrás, cola con luz y caño de escape cromado. Alturas en unidades del mundo.
+  const pl = (pts, y) => { if (y <= pts[0][0]) return pts[0][1]; for (let i = 1; i < pts.length; i++) if (y <= pts[i][0]) { const [y0, v0] = pts[i - 1], [y1, v1] = pts[i]; return v0 + (v1 - v0) * (y - y0) / (y1 - y0); } return pts[pts.length - 1][1]; };
+  const slices = (y0, y1, bot, top, col, ins, st = 0.35) => { const o = []; for (let y = y0; y < y1 - 1e-6; y += st) { const ye = Math.min(y1, y + st), ym = (y + ye) / 2, f = (q, y2) => typeof q === 'function' ? q(y2) : typeof q === 'number' ? q : pl(q, y2); o.push([y, ye, Math.min(f(bot, y), f(bot, ye)), Math.max(f(top, y), f(top, ye)), col, ins]); } return o; };
+  const cubSegs = (C, t = {}) => {
+    const DK = '#26262a', SEAT = '#1e1e22', ENG = '#4a4e56', CH = CHR[1], GR = '#3a3a40', sp = 0;
+    const fk = (y) => 3.1 + (y - 3.2) * 2.2;                                        // horquilla inclinada
+    return [
+      ...slices(0.9, 5.9, 6.0, (y) => 6.6 + 0.95 * Math.sqrt(Math.max(0, 1 - Math.pow((y - 3.4) / 2.5, 2))), C, 3.8),   // guardabarros
+      ...slices(3.4, 6.9, (y) => fk(y) - 0.35, (y) => fk(y + 0.35) + 0.3, '#5c6068', 4.2),                                  // horquilla
+      ...slices(5.6, 10.4, [[5.6, 5.4], [9, 4.2], [10.4, 4]], [[5.6, 8.4], [6.4, 9.6], [7.2, 10.3], [7.9, 9.6], [8.6, 8.3], [9.4, 7], [10.4, 6.3]], C, 2.7), // escudo
+      [6, 8.2, 9.4, 11.3, C, 3.3],                                                  // cabeza del manubrio y faro
+      [6.7, 7.4, 10.8, 11.5, DK, 0.8],                                              // manubrio
+      [7, 7.45, 11.5, 13.3, DK, -0.35], [7.2, 8.3, 13.3, 14.4, CH, -1],         // varillas y espejos
+      [8.8, 11.2, 5.4, 6.3, GR, 3.2],                                               // piso
+      [8.6, 13.2, 1.5, 4.6, ENG, 3.4], [8.8, 17, 3.7, 4.5, DK, 4],                 // motor y chasis
+      ...slices(10.8, 19.4, [[10.8, 7], [13, 7.4], [19.4, 7.6]], [[10.8, 8.3], [12, 8.9], [14, 9.3], [17, 9.5], [19, 9.4], [19.4, 8.8]], SEAT, 2.7), // asiento
+      [11.4, 18.8, 4.4, 7.2, C, 3],                                                 // tapas laterales
+      ...slices(17.8, 21, [[17.8, 6.4], [21, 7.6]], [[17.8, 7.6], [19.4, 8.2], [21, 9]], C, 3.3), // cola
+    ];
+  };
+  const cubPaint = (g, H, C, pal, t = {}) => {
+    const D = pal[1] || VR.shadeHex(C, 0.7), L = pal[2] || VR.shadeHex(C, 1.25), line = (y0, v0, y1, v1, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(y0, v0); g.lineTo(y1, v1); g.stroke(); };
+    const fill = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([y, v], i) => i ? g.lineTo(y, v) : g.moveTo(y, v)); g.closePath(); g.fill(); };
+    const S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null, rim = VR.RIMS ? VR.RIMS[t.llantas || 'serie'] : '#8a8e96';
+    // ruedas: neumático, llanta de aleación con rayos dobles, cubo; disco y pinza adelante
+    for (const [wy, r] of [[3.2, 3.1], [17.3, 3.1]]) {
+      H.disc(wy, r, r, '#17171a'); H.disc(wy, r, r * 0.8, '#2a2a30'); H.disc(wy, r, r * 0.74, rim);
+      g.fillStyle = '#26262a'; for (let k = 0; k < 7; k++) { const a = k / 7 * 6.283 + 0.3; g.beginPath(); g.moveTo(wy + Math.cos(a - 0.2) * r * 0.2, r + Math.sin(a - 0.2) * r * 0.2); g.lineTo(wy + Math.cos(a - 0.24) * r * 0.7, r + Math.sin(a - 0.24) * r * 0.7); g.lineTo(wy + Math.cos(a + 0.24) * r * 0.7, r + Math.sin(a + 0.24) * r * 0.7); g.lineTo(wy + Math.cos(a + 0.2) * r * 0.2, r + Math.sin(a + 0.2) * r * 0.2); g.closePath(); g.fill(); }
+      H.disc(wy, r, r * 0.2, '#3a3a40'); H.disc(wy, r, r * 0.09, '#d8dce4');
+    }
+    H.disc(3.2, 3.1, 1.25, 'rgba(190,196,206,.9)'); H.disc(3.2, 3.1, 0.95, '#26262a'); H.R(3.9, 2.4, 4.7, 3.7, '#d8302a');
+    // panel del escudo con brillo y borde oscuro; la franja, si hay
+    fill([[5.8, 6.2], [5.8, 8.2], [7.2, 10.1], [8.6, 8.1], [10.2, 6.4], [9, 6.2]], C); line(6, 8.1, 7.2, 9.9, 0.3, L); line(7.3, 9.9, 9.6, 6.9, 0.22, D);
+    if (S2) { line(6.6, 7.2, 8.8, 5.6, 0.7, S2); line(12.2, 5.6, 17.6, 6.9, 0.7, S2); }
+    // tapas laterales y cola con pliegues
+    line(11.6, 7.1, 18.6, 7.1, 0.2, D); line(11.6, 4.6, 18.4, 4.6, 0.2, D); line(18.6, 5, 18.6, 7.2, 0.2, D); line(17.9, 8.2, 20.9, 8.9, 0.25, L);
+    // piso, motor (tapa con círculo) y chasis
+    g.fillStyle = '#c8ccd4'; g.beginPath(); g.arc(11.2, 3, 1.05, 0, 7); g.fill(); g.fillStyle = '#6a6e76'; g.beginPath(); g.arc(11.2, 3, 0.6, 0, 7); g.fill(); line(9, 1.7, 12.9, 1.7, 0.25, '#2a2a2e');
+    line(9, 4.2, 16.5, 4.2, 0.35, '#1e1e22'); line(9.4, 1.7, 8.2, 1, 0.3, '#26262a');
+    // asiento (costuras y reborde)
+    line(11.2, 8.2, 19, 9.3, 0.18, '#3a3a42'); line(13.6, 7.6, 19, 7.8, 0.2, '#101012');
+    // escape: tubo cromado con brillo, sale de abajo del motor
+    line(13.4, 3.2, 15.4, 3.4, 0.5, '#8a8e96'); g.fillStyle = '#d8dce4'; const e0 = t.escape === 'deportivo' ? 14 : 14.8; g.beginPath(); g.roundRect(e0, 2.5, 20.8 - e0, 1.7, 0.8); g.fill(); line(e0 + 0.4, 3.8, 20.2, 3.8, 0.25, '#f4f6fa'); line(e0 + 0.4, 2.9, 20.2, 2.9, 0.25, '#8a8e96'); line(20.4, 3.35, 20.9, 3.35, 0.9, '#1a1a1a'); if (t.escape === 'deportivo') line(e0 + 2.4, 2.5, e0 + 2.4, 4.2, 0.25, '#4a4e56');
+    // horquilla (tubo cromado) y amortiguador trasero
+    line(3.3, 3.4, 6.9, 11.2, 0.55, '#b0b4bc'); line(3.5, 3.4, 7.1, 11.2, 0.15, '#f4f6fa'); line(15.4, 4.4, 17.6, 7.6, 0.45, '#3a3a40'); line(15.4, 4.4, 17.6, 7.6, 0.15, '#9aa0a8');
+    // faros: delantero y luz de giro / trasera roja
+    g.fillStyle = t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0'; g.beginPath(); g.ellipse(6.3, 9.9, 0.55, 0.9, 0, 0, 7); g.fill(); g.fillStyle = '#e8302a'; g.fillRect(20.55, 7.9, 0.45, 0.9); g.fillStyle = '#f0a020'; g.beginPath(); g.arc(6.1, 7.6, 0.35, 0, 7); g.fill();
+  };
+
   // Motos: tabla por modelo. w: ruedas [y, radio, medio ancho]; segs: [y0, y1, desde, hasta, color, angostamiento]
   const MOTO = {
-    cub: { W: 10, L: 21, w: [[2.7, 2.6, 1.1], [18.3, 2.65, 1.1]], segs: (C) => [[1.4, 4.2, 4.6, 5.6, C, 3.7], [4.3, 5.2, 7.7, 8.6, '#2a2a2e', 0], [5.3, 8.8, 2.6, 8.2, C, 1.2], [8.8, 10.7, 1.6, 3.6, '#3a3a40', 2.8], [9.4, 14, 1.4, 3.3, '#5c6068', 3], [10.7, 17.2, 3.1, 6.2, C, 1.8], [10.7, 17, 6.2, 7.1, '#1e1e22', 2.8], [17.2, 18.4, 5, 6, C, 3], [12.6, 19, 2.3, 3.4, CHR[1], 2.4]] },
+    cub: { W: 10, L: 21, lift: 9.4, w: [[3.2, 3.1, 0.6], [17.3, 3.1, 0.6]], segs: (C, t) => cubSegs(C, t), paint: cubPaint, ownWheels: true },
     mini: { W: 10, L: 17, w: [[2.1, 2.1, 2.2], [14.9, 2.1, 2.2]], segs: (C) => [[1, 4, 4.4, 6.2, C, 3], [4, 4.9, 6.6, 7.4, '#2a2a2e', 0], [5, 9.2, 2.6, 6.6, C, 1.9], [6, 12, 1.2, 3, '#5c6068', 3], [8.8, 13.4, 3, 5.6, '#1e1e22', 2.1], [13.2, 14.2, 4.2, 5, C, 3]] },
     calle: { W: 10, L: 22, w: [[2.65, 2.65, 1], [19.35, 2.65, 1.05]], segs: (C) => [[1.6, 4.8, 5.4, 7.6, '#1e1e22', 3.3], [5, 5.8, 8, 8.9, '#2a2a2e', 0], [6, 11.4, 3.4, 7.9, C, 1.7], [6.4, 13.4, 1.2, 3.6, '#5c6068', 3], [11.2, 17.2, 3.6, 6.7, '#1e1e22', 2.9], [17, 19.4, 5.6, 6.4, CHR[2], 3], [9, 20.4, 2.2, 3.3, CHR[1], 2.2]] },
     pati: { W: 6, L: 14, w: [[1.5, 1.5, 1.05], [12.5, 1.5, 1.05]], segs: (C) => [[2, 2.8, 8.6, 9.4, '#2a2a2e', 0], [2.6, 3.7, 1, 8.6, C, 2.4], [4, 12, 1, 2, '#3c3c44', 1]] },
     carga: { W: 18, L: 34, w: [[2.6, 2.6, 1.1], [27.3, 3.3, 9.2]], segs: (C) => [[4.9, 5.7, 7.8, 8.7, '#2a2a2e', 3.4], [5.8, 9.4, 3, 7.4, C, 5.8], [6.4, 13, 1.4, 3.4, '#5c6068', 7.4], [9, 13.4, 3.2, 6.6, '#1e1e22', 6], [13, 14, 3.2, 9.4, CHR[1], 3.4], [14, 34, 3.4, 9, C, 0.9], [14, 34, 8.2, 9, VR.shadeHex(C, 0.7), 0.9]] },
   };
-  O.moto = (m, pal) => {
-    const M = MOTO[m], C = pal[0], segs = M.segs(C), half = M.W / 2;
+  O.moto = (m, pal, t) => {
+    const M = MOTO[m], C = pal[0], segs = M.segs(C, t || {}), half = M.W / 2;
     const wAt = (y) => M.w.find(([wy, r]) => Math.abs(y - wy) <= r);
     let Hh = 0; for (const s of segs) Hh = Math.max(Hh, s[3]);
-    return { L: M.L, H: Hh, lift: Hh,
+    return { L: M.L, H: Hh, lift: M.lift || Hh,
       top(y) { let h = 0; const w = wAt(y); if (w) h = w[1] + Math.sqrt(Math.max(0, w[1] * w[1] - (y - w[0]) * (y - w[0]))); for (const s of segs) if (y >= s[0] && y < s[1]) h = Math.max(h, s[3]); return h; },
       bot(y) { if (wAt(y)) return 0; let b = 99; for (const s of segs) if (y >= s[0] && y < s[1]) b = Math.min(b, s[2]); return b === 99 ? 0 : b; },
       ins(y, v) { const w = wAt(y); let best = null; for (const s of segs) if (y >= s[0] && y < s[1] && v >= s[2] - 0.2 && v <= s[3] + 0.2) best = best === null ? s[5] : Math.min(best, s[5]); if (best !== null) return best; return w ? half - w[2] : half - 0.6; },
       side(g, H) {
-        for (const [wy, r] of M.w) H.wheel(wy, r, '#8a8e96');
+        if (!M.ownWheels) for (const [wy, r] of M.w) H.wheel(wy, r, '#8a8e96');
         for (const [y0, y1, v0, v1, col] of segs) { H.R(y0, v0, y1, v1, VR.shadeHex(col, 0.86)); H.R(y0, v1 - Math.min(0.5, (v1 - v0) * 0.3), y1, v1, col); }
+        if (M.paint) M.paint(g, H, C, pal, t || {});
       } };
   };
 
   // Conductor (y pasajero) de moto: tres capas del mismo dibujo (piernas, torso con brazos, cabeza), cada una a su altura
   O.parts = (names, geo, mk) => {
     const c = mk(null);
-    if (O.on) { const st = !!geo.stand, z = st ? [[1.6, 5.6], [8.6, 12], [12, 14.4]] : [[4.4, 6.4], [8.4, 11], [11, 13.4]]; c.prof = { L: 24, H: z[2][1], lift: z[2][1], layers: names.map((n, i) => ({ img: mk(n), z0: z[i][0], z1: z[i][1] })) }; }
+    if (O.on) { const st = !!geo.stand, zo = geo.zoff || 0, z = (st ? [[1.6, 5.6], [8.6, 12], [12, 14.4]] : [[4.4, 6.4], [8.4, 11], [11, 13.4]]).map(([a, b]) => [a + zo, b + zo]); c.prof = { L: 24, H: z[2][1], lift: z[2][1], layers: names.map((n, i) => ({ img: mk(n), z0: z[i][0], z1: z[i][1] })) }; }
     return c;
   };
 })();
