@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 7545c71d · 2026-11-13</div>
+  <div class="tVer">Versión dd831be3 · 2026-11-13</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 7545c71d · 2026-11-13</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión dd831be3 · 2026-11-13</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -8149,6 +8149,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
   const st = document.createElement('style'); st.textContent = CSS; document.head.append(st);
   const rr = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
   const colHex = (i) => typeof i === 'string' ? i : VR.TUNE_COLORS[i % 16][1], colName = (i) => typeof i === 'string' ? 'Original' : VR.TUNE_COLORS[i % 16][0];
+  const ELEV = 30 * Math.PI / 180, ELEV_KZ = Math.cos(ELEV) / Math.sin(ELEV), ELEV_S = Math.sin(ELEV); // cámara a 30° sobre el piso
   const NAMES = { color: 'Pintura', franja: 'Franjas', llantas: 'Llantas', polarizado: 'Vidrios', aleron: 'Alerón', techo: 'Techo', escape: 'Escape', faros: 'Faros', bajo: 'Suspensión', neon: 'Neón' };
   // ------------------------------------------------------------ iconos (se dibujan en 48×48 y se guardan a 96×96)
   const ICON = new Map();
@@ -8207,7 +8208,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
   // ------------------------------------------------------------ fondo del taller (vectorial, se guarda en un canvas por tamaño)
   // Vw×Vh: unidades virtuales; el piso siempre queda abajo y el centro (cx) es donde va el vehículo.
   const drawShop = (g, Vw, Vh) => {
-    const cx = Vw / 2, fy = Vh - 118; // fy: donde empieza el piso
+    const cx = Vw / 2, fy = Vh - 165; // fy: donde empieza el piso
     // pared: bloques
     let gr = g.createLinearGradient(0, 0, 0, fy); gr.addColorStop(0, '#2a2d33'); gr.addColorStop(1, '#434750'); g.fillStyle = gr; g.fillRect(0, 0, Vw, fy);
     for (let r = 0, y = 0; y < fy; r++, y += 14) for (let x = (r % 2 ? -18 : 0); x < Vw; x += 36) { const v = VR.hash(r * 31 + ((x + 100) / 36 | 0), 77) % 100; g.fillStyle = v < 30 ? 'rgba(255,255,255,.035)' : v < 55 ? 'rgba(0,0,0,.05)' : 'rgba(0,0,0,0)'; g.fillRect(x + 1, y + 1, 34, 12); g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 1; g.strokeRect(x + 0.5, y + 0.5, 36, 14); }
@@ -8220,7 +8221,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     g.fillStyle = '#c8c8d0'; g.font = '700 8px system-ui'; g.fillText('PINTURA · LLANTAS · NEÓN · CHAPA', cx, sy + 51); g.textAlign = 'left'; g.textBaseline = 'alphabetic';
     for (const x of [sx + 14, sx + sw - 14]) { g.strokeStyle = '#555'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, sy - 6); g.lineTo(x, sy); g.stroke(); }
     // reloj, matafuegos y afiche
-    { const ccx = cx + 196, ccy = Math.max(40, fy - 205); if (ccx < Vw - 20) { g.fillStyle = '#111'; g.beginPath(); g.arc(ccx, ccy, 17, 0, 7); g.fill(); g.fillStyle = '#f0ece0'; g.beginPath(); g.arc(ccx, ccy, 14.5, 0, 7); g.fill(); g.strokeStyle = '#222'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(ccx, ccy); g.lineTo(ccx + 2, ccy - 9); g.moveTo(ccx, ccy); g.lineTo(ccx + 6, ccy + 3); g.stroke(); for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283; g.fillStyle = '#555'; g.fillRect(ccx + Math.cos(a) * 12 - 0.7, ccy + Math.sin(a) * 12 - 0.7, 1.4, 1.4); } }
+    { const ccx = Math.min(cx + 196, Vw - 8 - Math.min(150, Vw - (cx + 175) - 8) - 30), ccy = Math.max(40, fy - 150); if (ccx < Vw - 20) { g.fillStyle = '#111'; g.beginPath(); g.arc(ccx, ccy, 17, 0, 7); g.fill(); g.fillStyle = '#f0ece0'; g.beginPath(); g.arc(ccx, ccy, 14.5, 0, 7); g.fill(); g.strokeStyle = '#222'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(ccx, ccy); g.lineTo(ccx + 2, ccy - 9); g.moveTo(ccx, ccy); g.lineTo(ccx + 6, ccy + 3); g.stroke(); for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283; g.fillStyle = '#555'; g.fillRect(ccx + Math.cos(a) * 12 - 0.7, ccy + Math.sin(a) * 12 - 0.7, 1.4, 1.4); } }
       if (Vw >= 560) { const ax = cx - 226, ay = fy - 205; g.fillStyle = '#e8e0c8'; g.fillRect(ax, ay, 40, 54); g.strokeStyle = '#3a2c18'; g.lineWidth = 2; g.strokeRect(ax, ay, 40, 54); g.fillStyle = '#c8322a'; g.fillRect(ax + 4, ay + 4, 32, 26); g.fillStyle = '#f2f0ea'; g.fillRect(ax + 9, ay + 14, 22, 7); g.fillStyle = '#222'; g.fillRect(ax + 12, ay + 21, 5, 4); g.fillRect(ax + 25, ay + 21, 5, 4); g.fillStyle = '#333'; g.font = '700 6px system-ui'; g.textAlign = 'center'; g.fillText('¡OFERTA!', ax + 20, ay + 42); g.fillText('LLANTAS', ax + 20, ay + 49); g.textAlign = 'left'; }
       const mx = cx + 150; g.fillStyle = '#b8322a'; rr(g, mx, fy - 98, 14, 38, 5); g.fill(); g.fillStyle = '#222'; g.fillRect(mx + 4, fy - 105, 6, 8); g.strokeStyle = '#222'; g.lineWidth = 2; g.beginPath(); g.moveTo(mx + 10, fy - 102); g.quadraticCurveTo(mx + 22, fy - 96, mx + 14, fy - 80); g.stroke(); g.fillStyle = '#f2f0ea'; g.fillRect(mx + 2, fy - 86, 10, 10); }
     // tablero de herramientas (izquierda)
@@ -8249,12 +8250,12 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     for (let i = -9; i <= 9; i++) { g.beginPath(); g.moveTo(cx + i * 22, fy); g.lineTo(cx + i * 100, Vh); g.stroke(); }
     for (let i = 0; i < 14; i++) { const x = VR.hash(i, 5) % Vw, y = fy + 10 + VR.hash(i, 9) % (Vh - fy - 12), w = 10 + VR.hash(i, 13) % 34; g.fillStyle = 'rgba(8,8,10,' + (0.12 + (VR.hash(i, 17) % 20) / 100) + ')'; g.beginPath(); g.ellipse(x, y, w, w * 0.28, 0, 0, 7); g.fill(); }
     // plataforma del elevador + línea de seguridad
-    const py = Vh - 52; g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(cx, py + 3, 205, 36, 0, 0, 7); g.fill(); g.fillStyle = '#34373d'; g.beginPath(); g.ellipse(cx, py, 200, 33, 0, 0, 7); g.fill(); g.strokeStyle = '#e6b422'; g.lineWidth = 3; g.setLineDash([14, 10]); g.beginPath(); g.ellipse(cx, py, 200, 33, 0, 0, 7); g.stroke(); g.setLineDash([]);
-    g.fillStyle = '#3f434a'; g.beginPath(); g.ellipse(cx, py, 176, 27, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 1; for (let i = -6; i <= 6; i++) { g.beginPath(); g.moveTo(cx + i * 26, py - 26); g.lineTo(cx + i * 26, py + 26); g.stroke(); }
+    const py = Vh - 82; g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(cx, py + 4, 196, 98, 0, 0, 7); g.fill(); g.fillStyle = '#34373d'; g.beginPath(); g.ellipse(cx, py, 190, 94, 0, 0, 7); g.fill(); g.strokeStyle = '#e6b422'; g.lineWidth = 3; g.setLineDash([14, 10]); g.beginPath(); g.ellipse(cx, py, 190, 94, 0, 0, 7); g.stroke(); g.setLineDash([]);
+    g.fillStyle = '#3f434a'; g.beginPath(); g.ellipse(cx, py, 168, 82, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 1; for (let i = -6; i <= 6; i++) { g.beginPath(); const hh = 82 * Math.sqrt(Math.max(0, 1 - Math.pow(i * 26 / 168, 2))); g.moveTo(cx + i * 26, py - hh); g.lineTo(cx + i * 26, py + hh); g.stroke(); }
     // lámparas colgantes y su luz en el piso
     for (const dx of [-120, 120]) { const lx = cx + dx; g.strokeStyle = '#111'; g.lineWidth = 2; g.beginPath(); g.moveTo(lx, 0); g.lineTo(lx, 26); g.stroke(); g.fillStyle = '#1b1d21'; g.beginPath(); g.moveTo(lx - 22, 38); g.lineTo(lx - 8, 22); g.lineTo(lx + 8, 22); g.lineTo(lx + 22, 38); g.closePath(); g.fill(); g.fillStyle = '#fff6cc'; g.beginPath(); g.ellipse(lx, 38, 18, 4, 0, 0, 7); g.fill();
       g.save(); g.globalCompositeOperation = 'lighter'; gr = g.createLinearGradient(0, 38, 0, fy + 40); gr.addColorStop(0, 'rgba(255,236,170,.30)'); gr.addColorStop(1, 'rgba(255,236,170,0)'); g.fillStyle = gr; g.beginPath(); g.moveTo(lx - 18, 38); g.lineTo(lx + 18, 38); g.lineTo(lx + 120, fy + 40); g.lineTo(lx - 120, fy + 40); g.closePath(); g.fill();
-      gr = g.createRadialGradient(lx, Vh - 52, 4, lx, Vh - 52, 150); gr.addColorStop(0, 'rgba(255,240,190,.22)'); gr.addColorStop(1, 'rgba(255,240,190,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(lx, Vh - 52, 160, 52, 0, 0, 7); g.fill(); g.restore(); }
+      gr = g.createRadialGradient(lx, Vh - 82, 4, lx, Vh - 82, 150); gr.addColorStop(0, 'rgba(255,240,190,.22)'); gr.addColorStop(1, 'rgba(255,240,190,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(lx, Vh - 82, 160, 80, 0, 0, 7); g.fill(); g.restore(); }
   };
   const drawFore = (g, Vw, Vh) => { // cosas que quedan delante del vehículo
     const cx = Vw / 2;
@@ -8323,7 +8324,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     // --------------------------------------------------- escena
     size() {
       const sc = this.d.querySelector('#garScene'), dpr = Math.min(2, window.devicePixelRatio || 1), cw = sc.clientWidth, ch = sc.clientHeight; if (!cw || !ch) return;
-      this.cv.width = Math.round(cw * dpr); this.cv.height = Math.round(ch * dpr); this.s = Math.min(this.cv.width / 460, this.cv.height / 330); this.Vw = this.cv.width / this.s; this.Vh = this.cv.height / this.s; this.bg = null;
+      this.cv.width = Math.round(cw * dpr); this.cv.height = Math.round(ch * dpr); this.s = Math.min(this.cv.width / 460, this.cv.height / 400); this.Vw = this.cv.width / this.s; this.Vh = this.cv.height / this.s; this.bg = null;
     }
     K() { return ((Math.round(this.ang / (Math.PI * 2) * 64) % 64) + 64) % 64; }
     turnImg() {
@@ -8331,8 +8332,9 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       const car = this.car, sp = VR.vspec(car.type, car.model), OB = VR.OBL;
       if (!this.base) { const v = VR.VSS; VR.VSS = v * 2; try { this.base = sp.base(VR.tunePal(this.t.color), this.t); } finally { VR.VSS = v; } } // dibujo base más grande que en el juego: más nítido
       const base = this.base; if (!base.prof || !OB || !OB.on) return null;
-      const S = sp.S + 2 * OB.extra(base), ss = base.ss || 1, B = Math.round(S * ss), a = this.K() / 64 * Math.PI * 2;
-      c = VR.gfx.softOutline(OB.render(base, a, B), 'rgba(18,16,20,.92)', ss * 0.8); this.fr.set(key, c);
+      const kz0 = OB.kz; OB.kz = ELEV_KZ; let S, ss, B, big; // cámara baja (como el fondo): más costado, el techo se aplasta después
+      try { S = sp.S + 2 * OB.extra(base); ss = base.ss || 1; B = Math.round(S * ss); big = OB.render(base, this.K() / 64 * Math.PI * 2, B); } finally { OB.kz = kz0; }
+      c = VR.gfx.softOutline(big, 'rgba(18,16,20,.92)', ss * 0.8); this.fr.set(key, c);
       if (this.fr.size > 96) this.fr.delete(this.fr.keys().next().value);
       return c;
     }
@@ -8344,15 +8346,15 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
         const f = this.fore = document.createElement('canvas'); f.width = b.width; f.height = b.height; const fg = f.getContext('2d'); fg.scale(s, s); drawFore(fg, Vw, Vh);
       }
       g.drawImage(this.bg, 0, 0); g.save(); g.scale(s, s); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-      const py = Vh - 52, neon = VR.NEON[this.t.neon];
-      if (neon) { g.save(); g.globalCompositeOperation = 'lighter'; const k = 0.85 + Math.sin(t * 3) * 0.08, gr = g.createRadialGradient(cx, py, 10, cx, py, 190); gr.addColorStop(0, 'rgba(' + neon + ',' + 0.55 * k + ')'); gr.addColorStop(0.6, 'rgba(' + neon + ',' + 0.22 * k + ')'); gr.addColorStop(1, 'rgba(' + neon + ',0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(cx, py, 215, 62, 0, 0, 7); g.fill(); g.restore(); }
+      const py = Vh - 82, neon = VR.NEON[this.t.neon];
+      if (neon) { g.save(); g.globalCompositeOperation = 'lighter'; const k = 0.85 + Math.sin(t * 3) * 0.08; g.translate(cx, py); g.scale(1, 0.52); const gr = g.createRadialGradient(0, 0, 10, 0, 0, 230); gr.addColorStop(0, 'rgba(' + neon + ',' + 0.55 * k + ')'); gr.addColorStop(0.6, 'rgba(' + neon + ',' + 0.22 * k + ')'); gr.addColorStop(1, 'rgba(' + neon + ',0)'); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 230, 0, 7); g.fill(); g.restore(); }
       const img = this.turnImg();
       if (img) {
         if (!this.fit) this.fit = {}; const m = this.model; let f = this.fit[m];
         if (!f) { const side = VR.vspec(this.car.type, m), SS = this.base.ss || 1; f = this.fit[m] = 1 / (Math.max(side.len, side.wid) * (VR.VK || 1) * SS * 0.8); }
-        const T = Math.min(268, Vw * 0.5) * (this.model === 'pati' ? 0.62 : 1), hk = Math.min(1, Math.min(Vh * 0.7, 235) / (img.height * f * T)), w = img.width * f * T * hk, h = img.height * f * T * hk, X = cx - w / 2, Y = py - h * 0.62 + (+this.t.bajo ? 5 : 0);
-        g.fillStyle = 'rgba(0,0,0,.42)'; g.beginPath(); g.ellipse(cx, py + 2, w * 0.36, h * 0.1, 0, 0, 7); g.fill();
-        g.save(); g.globalAlpha = 0.14; g.translate(0, 2 * (Y + h * 0.8)); g.scale(1, -1); g.drawImage(img, X, Y, w, h); g.restore(); // reflejo en el piso
+        const T = Math.min(300, Vw * 0.55) * (this.model === 'pati' ? 0.62 : 1), hk = Math.min(1, Math.min(Vh * 0.7, 300) / (img.height * f * T * ELEV_S)), w = img.width * f * T * hk, h = img.height * f * T * hk * ELEV_S, X = cx - w / 2, Y = py - h * 0.5 + (+this.t.bajo ? 3 : 0) - 6;
+        g.fillStyle = 'rgba(0,0,0,.42)'; g.beginPath(); g.ellipse(cx, py + 2, w * 0.32, h * 0.2, 0, 0, 7); g.fill();
+        g.save(); g.globalAlpha = 0.14; g.translate(0, 2 * (py + 4)); g.scale(1, -1); g.drawImage(img, X, Y, w, h); g.restore(); // reflejo en el piso
         if (this.fx && this.fx.t < 0.7 && this.fx.kind) { // destello blanco que recorre el vehículo
           const tmp = this.tmp || (this.tmp = document.createElement('canvas')); tmp.width = Math.ceil(w * s); tmp.height = Math.ceil(h * s); const q = tmp.getContext('2d'); q.clearRect(0, 0, tmp.width, tmp.height); q.imageSmoothingQuality = 'high'; q.drawImage(img, 0, 0, tmp.width, tmp.height);
           q.globalCompositeOperation = 'source-atop'; const p = this.fx.t / 0.7, gr = q.createLinearGradient(tmp.width * (p * 1.6 - 0.5), 0, tmp.width * (p * 1.6 - 0.2), 0); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, 'rgba(255,255,255,.75)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); q.fillStyle = gr; q.fillRect(0, 0, tmp.width, tmp.height);
@@ -8361,9 +8363,19 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
         if (this.fx && this.fx.t < 0.9) this.sparks(g, X, Y, w, h, py);
       } else { g.fillStyle = '#fff'; g.font = '14px system-ui'; g.textAlign = 'center'; g.fillText('Armando el vehículo…', cx, py - 40); g.textAlign = 'left'; }
       g.save(); g.globalCompositeOperation = 'lighter'; for (let i = 0; i < 26; i++) { const lx = cx + (i % 2 ? 120 : -120), u = (t * 0.03 + VR.hash(i, 31) % 100 / 100) % 1, x = lx + (VR.hash(i, 7) % 100 / 100 - 0.5) * (30 + u * 150) + Math.sin(t + i) * 4, y = 40 + u * (Vh - 130); g.fillStyle = 'rgba(255,240,200,' + (0.35 * Math.sin(u * 3.14)) + ')'; g.beginPath(); g.arc(x, y, 0.9 + (i % 3) * 0.4, 0, 7); g.fill(); } g.restore();
+      this.mecanico(g, cx, py + 72, t);
       g.restore(); g.drawImage(this.fore, 0, 0);
       // viñeta
       g.save(); g.scale(s, s); const vg = g.createRadialGradient(cx, Vh * 0.55, Vh * 0.35, cx, Vh * 0.55, Vw * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.45)'); g.fillStyle = vg; g.fillRect(0, 0, Vw, Vh); g.restore();
+    }
+    // el mecánico: camina despacio por delante del elevador, se frena un rato mirando el vehículo y vuelve
+    mecanico(g, cx, y, t) {
+      const L = this.mechLook || (this.mechLook = VR.av2Lazy({ gender: 'm', skin: 2, hair: 'corto', hairColor: 0, beard: 'no', top: 'remera', topColor: 13, bottom: 'jean', bottomColor: 3, shoes: 'zapatillas', shoesColor: 3, hat: 'gorra', hatColor: 0 }, 7));
+      const T = 18, p = (t % T) / T, R = Math.min(190, this.Vw * 0.4); let x, dir, walk = true;
+      if (p < 0.4) { x = -R + p / 0.4 * 2 * R; dir = 'right'; } else if (p < 0.5) { x = R; dir = 'down'; walk = false; } else if (p < 0.9) { x = R - (p - 0.5) / 0.4 * 2 * R; dir = 'left'; } else { x = -R; dir = 'down'; walk = false; }
+      const img = walk ? L.get(dir, 'walk', Math.floor(t * 8) % 8) : L.get(dir, 'idle', 0); if (!img) return; const X = cx + x, sc = 2.5;
+      const gr = g.createRadialGradient(X, y + 1, 1, X, y + 1, 14); gr.addColorStop(0, 'rgba(0,0,0,.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(X, y + 1, 14, 5, 0, 0, 7); g.fill();
+      g.drawImage(img, X - 8 * sc, y - 31.5 * sc, 16 * sc, 32 * sc);
     }
     sparks(g, X, Y, w, h, py) {
       const fx = this.fx, n = fx.kind === 'spray' ? 26 : 16; g.save(); g.globalCompositeOperation = 'lighter';

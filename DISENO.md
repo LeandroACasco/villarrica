@@ -488,4 +488,4 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 - Video de Leandro de la calle al oeste de la esquina noroeste de la plaza, de día (04/11/2026)
 - Hojas de personajes de Leandro, Sofía y Deisy generadas con Meta AI (04/11/2026), solo como referencia de ropa y peinados; dibujos de Sofía de Dina Run y Dina Beat (Cinthia, Nora) como referencia de look
 
-- 13/11/2026 (v1.58): Taller inmersivo: interior vectorial con el vehículo grande que gira (arrastrable, más nítido, con el color real del vehículo), reflejo, polvo, medidores de manejo, cambios en vivo y lista con iconos dibujados por categoría. Ver TECNICO.md.
+- 13/11/2026 (v1.58): Taller inmersivo: interior vectorial con el vehículo grande que gira (arrastrable, más nítido, con el color real; cámara baja a 30° como el fondo; con un mecánico que pasea), reflejo, polvo, medidores de manejo, cambios en vivo y lista con iconos dibujados por categoría. Ver TECNICO.md.

@@ -605,3 +605,4 @@ El vehículo se "apila": para cada altura se dibuja la silueta girada y corrida 
 - Para sumar otro uso: `world.nivelAt(px, py)` y, si es del mapa, mirar `nivel_arr` en el convertidor.
 - `VR.loadMap` baja el tamaño sugerido del descompresor a 58 MB (el mapa descomprimido ocupa 56,3 MB).
 Nitidez y color del taller: el vehículo se dibuja con `VR.VSS×2` solo en el taller (≈540 px por cuadro, caché de 96 cuadros). Si el vehículo no tiene tuneo, `tune.color` arranca con el color real como texto `#rrggbb` (`VR.tunePal` acepta índice o texto; aparece una muestra "Original"). Medidores de manejo salen de `VR.tuneSpec`.
+Cámara del taller: `OBL.kz` se cambia solo mientras se arma el cuadro (`ELEV_KZ = cot 30°`) y la imagen se dibuja aplastada en vertical por `sen 30°` (proyección oblicua real: piso aplastado y alturas ×cos). Así el vehículo se ve de costado y casa con el fondo. Cada ángulo ~35 ms (se guarda). El mecánico es `VR.av2Lazy` dibujado por delante del elevador.
