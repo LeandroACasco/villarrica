@@ -461,8 +461,7 @@
       for (const b of ['action', 'run']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden !== bt) el.hidden = bt; } }
     $('gearBtns').hidden = !(car && VR.drive === 'manual' && VR.input.source === 'touch') || !!VR.autoBox;
     dpanel.update(car, VR.input.source === 'touch');
-    if (car && VR.drive === 'manual') spd.hidden = true; // el minipanel ya muestra la velocidad
-    else if (car) { spd.hidden = false; spd.firstChild.textContent = car.kmh() + (car.gear ? ' · ' + (car.gear < 0 ? 'R' : car.gear + 'ª') + ' ' : ''); } else if (!spd.hidden) spd.hidden = true;
+    VR.Tab.update(car, !!(car && VR.drive === 'manual' && VR.input.source === 'touch')); // tablero (tablero.js); en manual táctil el minipanel muestra la velocidad
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
     $('dbg').hidden = false;

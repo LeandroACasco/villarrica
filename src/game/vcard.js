@@ -95,6 +95,6 @@ VR.showVehicleCard = (v) => {
   g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false;
   g.imageSmoothingEnabled = true; g.drawImage(VR.drawSideHD ? VR.drawSideHD(sp.side || 'cub', pal, v.tune || {}, cv.width, cv.height) : VR.drawSide(sp.side || 'cub', pal, v.tune || {}), 0, 0);
   el.querySelector('b').textContent = sp.name || '';
-  el.querySelector('span').textContent = sp.desc || '';
+  el.querySelector('span').textContent = (sp.desc || '') + (VR.fichaTxt && VR.fichaTxt(v) ? '\n' + VR.fichaTxt(v) : ''); el.querySelector('span').style.whiteSpace = 'pre-line';
   el.classList.add('show'); clearTimeout(el._h); el._h = setTimeout(() => el.classList.remove('show'), 4200);
 };
