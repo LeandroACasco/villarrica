@@ -39,6 +39,7 @@ VR.Weapons = class {
   }
 
   update(dt, player, car, input) {
+    player.holding = !!(this.enabled && !car);
     this.t += dt; if (this.cool > 0) this.cool -= dt; if (this.flash > 0) this.flash -= dt;
     let flaming = false;
     if (this.enabled && !car) {
@@ -136,20 +137,8 @@ VR.Weapons = class {
     const firing = VR.input.down('fire'), a = firing ? this.aim : ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
     if (player.dir === 'up' && !firing) return; // de espaldas no se ve
     const px0 = VR.lerp(player.px, player.x, al) - cx, py0 = VR.lerp(player.py, player.y, al) - cy, PS = VR.PS || 1;
-    const [hx, hy] = this.hand(px0, py0, a);
-    const Lk = player.lookData || {}, CAT = VR.AV2_CAT, skin = CAT ? CAT.skin[Lk.skin] || '#c98b5c' : '#c98b5c';
-    const sleeveless = Lk.top === 'musculosa' || Lk.top === 'top', short = Lk.top === 'remera' || Lk.top === 'polo' || Lk.top === 'camisaCorta' || Lk.top === 'camiseta';
-    const slv = sleeveless ? skin : (CAT && CAT.cloth[Lk.topColor]) || '#d8d4c8';
-    const shade = (c, f) => VR.av2Shade ? VR.av2Shade(c, f) : c;
-    // brazo: del hombro a la mano (manga arriba, antebrazo y mano abajo), con contorno oscuro
-    const sg = Math.sin(a) >= 0 ? 1 : -1, sideV = Math.abs(Math.sin(a)) > 0.6;
-    const sx = px0 + (sideV ? sg * 0.6 : 3 * PS * (Math.cos(a) < 0 ? 1 : 1)), sy = py0 - 21.5 * PS;
-    const ex = sx + (hx - sx) * 0.5 + (sideV ? 0 : 0.8 * sg), ey = sy + (hy - sy) * 0.5 + 1.6;
-    const limb = (x0, y0, x1, y1, w, col) => { const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0))); ctx.fillStyle = col; for (let i = 0; i <= n; i++) { const t = i / n; ctx.fillRect(Math.round(x0 + (x1 - x0) * t - w / 2), Math.round(y0 + (y1 - y0) * t - w / 2), w, w); } };
-    const armColors = () => {
-      limb(sx, sy, ex, ey, 3, shade(slv, 0.62)); limb(ex, ey, hx, hy, 3, shade(sleeveless || short ? skin : slv, 0.62)); // sombra/contorno suave
-      limb(sx, sy, ex, ey, 2, slv); if (!sleeveless && !short) limb(ex, ey, hx, hy, 2, slv); else limb(ex, ey, hx, hy, 2, skin);
-    };
+    const hnd = player._img && player._img.hand; // la mano sale del propio sprite (brazo levantado), así el arma siempre sale de SU brazo
+    const [hx, hy] = hnd ? [px0 - 8 * PS + hnd[0] * PS, py0 - 31 * PS + hnd[1] * PS] : this.hand(px0, py0, a);
     const wpn = () => {
       ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); // el largo hacia arriba o abajo se ve acortado (vista 3/4)
       if (this.cur === 'pistola') {
@@ -169,9 +158,7 @@ VR.Weapons = class {
       }
       ctx.restore();
     };
-    armColors(); wpn();
-    // la mano rodea la empuñadura (por encima del arma)
-    ctx.fillStyle = shade(skin, 0.55); ctx.fillRect(Math.round(hx - 1.5), Math.round(hy - 1.5), 3, 3); ctx.fillStyle = skin; ctx.fillRect(Math.round(hx - 1), Math.round(hy - 1), 2, 2); ctx.fillStyle = shade(skin, 0.8); ctx.fillRect(Math.round(hx - 1), Math.round(hy), 2, 1);
+    wpn();
     if (this.flash > 0 && this.cur === 'pistola') {
       const [mx, my] = this.muzzle({ x: VR.lerp(player.px, player.x, al), y: VR.lerp(player.py, player.y, al) });
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(mx - cx, my - cy, 0, mx - cx, my - cy, 6);

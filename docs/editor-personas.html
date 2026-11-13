@@ -177,7 +177,8 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
     }
     return tab[0].slice(1);
   };
-  function skeleton(L, dir, anim, ph) {
+  function skeleton(L, dir, anim0, ph) {
+    const aimOn = /\+aim$/.test(anim0), anim = anim0.replace('+aim', '');
     const fem = L.gender === 'f';
     const bd = { flaco: [0.9, 0.92], normal: [1, 1], fornido: [1.14, 1.06], panza: [1.06, 1.18] }[L.build] || [1, 1];
     const sw = bd[0] * (fem ? 0.84 : 1), ww = bd[1] * (fem ? 0.84 : 1), hipW = fem ? 1.18 : 1;
@@ -211,7 +212,8 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
       if (sit) return [22, 64]; // manos sobre las rodillas
       return [0, 6];
     };
-    const aN = armAt(ph), aF = armAt(ph + 0.5);
+    let aN = armAt(ph), aF = armAt(ph + 0.5);
+    if (aimOn && (dir === 'left' || dir === 'right')) aN = [84, 4]; // apuntando: el brazo cercano va estirado hacia adelante
     const lean = run ? 10 : walk ? 2 : 0;
     if (dir === 'left' || dir === 'right') {
       const lx = Math.sin(lean * D2R);
@@ -229,7 +231,7 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
         return [e, [e[0] + Math.sin(b2) * T.antebrazo, e[1] + Math.cos(b2) * T.antebrazo]];
       };
       const AN = arm(aN), AF = arm(aF);
-      S.elbN = AN[0]; S.wriN = AN[1]; S.elbF = AF[0]; S.wriF = AF[1];
+      S.elbN = AN[0]; S.wriN = AN[1]; S.elbF = AF[0]; S.wriF = AF[1]; S.aim = aimOn;
       S.hair = moving ? -bodyY * 0.4 : 0;
       return S;
     }
@@ -266,9 +268,10 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
       const w = [e[0] + (run ? -side * Math.sin(Math.max(0, a)) * 1.6 : out * 0.2), e[1] + Math.cos(b2) * T.antebrazo + Math.sin(b2) * T.antebrazo * 0.22 * toward];
       return [e, w];
     };
-    const aLeft = dir === 'down' ? aN : aF, aRight = dir === 'down' ? aF : aN; // brazo opuesto a la pierna del mismo lado
+    let aLeft = dir === 'down' ? aN : aF, aRight = dir === 'down' ? aF : aN; // brazo opuesto a la pierna del mismo lado
+    if (aimOn && !(dir === 'left' || dir === 'right')) aRight = dir === 'down' ? [62, 52] : [62, 40]; // apuntando de frente / de espaldas: el brazo derecho se levanta
     const EL = armF(-1, aLeft, S.sh[0]), ER = armF(1, aRight, S.sh[1]);
-    S.elb = [EL[0], ER[0]]; S.wri = [EL[1], ER[1]];
+    S.aim = aimOn; S.elb = [EL[0], ER[0]]; S.wri = [EL[1], ER[1]]; S.angs = [aLeft[0], aRight[0]];
     S.hair = moving ? -bodyY * 0.4 : 0;
     return S;
   }
@@ -415,11 +418,30 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
       const hasTop = L.top !== 'top';
       let topMask = null;
       const bulky = L.top === 'puffer' ? 0.6 : L.top === 'buzo' || OPEN ? 0.35 : L.top === 'sueter' ? 0.25 : 0;
+      // brazos: piel, manga encima, mano
+      const armPaint = (s0, e0, w0, right) => {
+        paint((g) => { cap(g, s0, e0, 1.95 * sw * GB, 1.6 * GB); cap(g, e0, w0, 1.6 * GB, 1.3 * GB); }, skin, { shade: skinD });
+        if (sleeveLen > 0) {
+          const end = sleeveLen >= 1 ? w0 : lerp(s0, e0, sleeveLen * 1.6);
+          paint((g) => { cap(g, s0, sleeveLen >= 1 ? e0 : end, (2.05 + bulky) * sw * GB, (1.85 + bulky) * GB); if (sleeveLen >= 1) cap(g, e0, w0, (1.7 + bulky) * GB, (1.5 + bulky) * GB); }, topC, { shade: SH(topC, 0.72) });
+          if (sleeveLen >= 1 && k >= 2) pix(w0[0] - 0.75, w0[1] - 0.2, SH(topC, 0.78), Math.round(1.5 * k), P); // puño
+          if (L.top === 'puffer' && k >= 2) for (let t = 0.2; t < 1; t += 0.22) { const q = lerp(s0, w0, t); pix(q[0] - 0.9, q[1], SH(topC, 0.62), Math.round(1.8 * k), P); }
+        }
+        paint((g) => { ell(g, w0[0], w0[1] + 0.8, 0.82, 0.95); }, skin, { shade: skinD });
+        if (L.reloj && !right && k >= 2) pix(w0[0] - 0.6, w0[1] - 0.15, '#2a2a30', Math.round(1.2 * k), Math.max(1, Math.round(0.45 * k)));
+        if (L.termo && right) {
+          paint((g) => { g.beginPath(); g.roundRect(w0[0] - 0.6, w0[1] - 1.6, 1.2, 3.6, 0.3); g.fill(); }, '#2e6fc8');
+          if (k >= 2) { pix(w0[0] - 0.6, w0[1] - 1.6, '#d8dce4', Math.round(1.2 * k), P); pix(w0[0] - 0.6, w0[1] + 1.3, '#d8dce4', Math.round(1.2 * k), P); }
+        }
+            };
+      // de espaldas, el brazo que va hacia adelante queda detrás del cuerpo (la mano no debe verse por la espalda)
+      const behind = back ? [S.angs[0] > 4, S.angs[1] > 4] : [false, false];
+      if (back) { if (behind[0]) armPaint(sL, eL, wL, false); if (behind[1]) armPaint(sR, eR, wR, true); }
       if (L.top === 'top') topMask = paint((g) => poly(g, [[8 - 2.7 * sw, 8.6 + S.bob], [8 + 2.7 * sw, 8.6 + S.bob], [8 + 2.5 * sw, 12 + S.bob], [8 - 2.5 * sw, 12 + S.bob]]), topC);
       else if (L.top === 'musculosa') topMask = paint((g) => { poly(g, torsoPts(0).map(([x, y], i) => i < 2 ? [8 + (x - 8) * 0.72, y + 0.3] : [x, y])); }, topC);
-      else topMask = paint((g) => { poly(g, torsoPts(OPEN ? 0 : bulky)); }, OPEN ? top2 : topC);
+      else topMask = paint((g) => { poly(g, torsoPts(OPEN ? 0 : bulky)); }, OPEN && !back ? top2 : topC);
       if (S.fem && front && k >= 2 && L.top !== 'top') { const y = 10.9 + S.bob; pix(8 - 2.0 * sw, y, SH(OPEN ? top2 : topC, 0.8), Math.round(1.5 * k), P); pix(8 + 0.5 * sw, y, SH(OPEN ? top2 : topC, 0.8), Math.round(1.5 * k), P); }
-      if (OPEN) { // campera abierta: dos paneles a los costados y lo de adentro en el medio
+      if (OPEN && !back) { // campera abierta (de espaldas está cerrada): dos paneles a los costados y lo de adentro en el medio
         const T = torsoPts(bulky), n = T.length, half = n / 2, gap = L.top === 'puffer' ? 0.8 : 0.95;
         const left = [], right = [];
         for (let i = 0; i < half; i++) left.push(T[i]);
@@ -467,22 +489,7 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
         else { paint((g) => { g.beginPath(); g.roundRect(8 - 2.4, 8.2 + S.bob, 4.8, 6.4, 0.9); g.fill(); }, packC); paint((g) => { g.beginPath(); g.roundRect(8 - 1.6, 11.6 + S.bob, 3.2, 2.2, 0.5); g.fill(); }, SH(packC, 0.85)); }
       }
       if (L.cadenita && front && L.top !== 'buzo') { for (let t = -1; t <= 1; t += 0.25) pix(8 + t * 1.1, 7.6 + Math.abs(t) * -0.5 + 0.9 + S.bob, '#e8c860', P, P); }
-      // brazos: piel, manga encima, mano
-      for (const [s0, e0, w0, right] of [[sL, eL, wL, false], [sR, eR, wR, true]]) {
-        paint((g) => { cap(g, s0, e0, 1.95 * sw * GB, 1.6 * GB); cap(g, e0, w0, 1.6 * GB, 1.3 * GB); }, skin, { shade: skinD });
-        if (sleeveLen > 0) {
-          const end = sleeveLen >= 1 ? w0 : lerp(s0, e0, sleeveLen * 1.6);
-          paint((g) => { cap(g, s0, sleeveLen >= 1 ? e0 : end, (2.05 + bulky) * sw * GB, (1.85 + bulky) * GB); if (sleeveLen >= 1) cap(g, e0, w0, (1.7 + bulky) * GB, (1.5 + bulky) * GB); }, topC, { shade: SH(topC, 0.72) });
-          if (sleeveLen >= 1 && k >= 2) pix(w0[0] - 0.75, w0[1] - 0.2, SH(topC, 0.78), Math.round(1.5 * k), P); // puño
-          if (L.top === 'puffer' && k >= 2) for (let t = 0.2; t < 1; t += 0.22) { const q = lerp(s0, w0, t); pix(q[0] - 0.9, q[1], SH(topC, 0.62), Math.round(1.8 * k), P); }
-        }
-        paint((g) => { ell(g, w0[0], w0[1] + 0.8, 0.82, 0.95); }, skin, { shade: skinD });
-        if (L.reloj && !right && k >= 2) pix(w0[0] - 0.6, w0[1] - 0.15, '#2a2a30', Math.round(1.2 * k), Math.max(1, Math.round(0.45 * k)));
-        if (L.termo && right) {
-          paint((g) => { g.beginPath(); g.roundRect(w0[0] - 0.6, w0[1] - 1.6, 1.2, 3.6, 0.3); g.fill(); }, '#2e6fc8');
-          if (k >= 2) { pix(w0[0] - 0.6, w0[1] - 1.6, '#d8dce4', Math.round(1.2 * k), P); pix(w0[0] - 0.6, w0[1] + 1.3, '#d8dce4', Math.round(1.2 * k), P); }
-        }
-      }
+      if (!(back && behind[0])) armPaint(sL, eL, wL, false); if (!(back && behind[1])) armPaint(sR, eR, wR, true);
       // cuello y cabeza
       paint((g) => g.fillRect(S.head[0] - 0.7, S.head[1] + 1.9, 1.4, Math.max(0.6, 7.6 + S.bob - S.head[1] - 1.9)), skinD, { light: false });
       const [hx, hy] = S.head;
@@ -667,6 +674,7 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
     }
     const res = document.createElement('canvas'); res.width = W; res.height = H;
     res.getContext('2d').putImageData(new ImageData(fin, W, H), 0, 0);
+    if (S.aim) { const w = side ? S.wriN : S.wri[1]; res.hand = [mirror ? 16 - w[0] : w[0], w[1]]; } // dónde queda la mano que sostiene el arma (unidades del sprite)
     return res;
   }
 
@@ -682,7 +690,7 @@ textarea { width: 100%; min-height: 110px; background: var(--well); color: var(-
     const L = Object.assign({}, VR.AV2_DEFAULT, look), c = new Map();
     return { n, look: L, get(d, a, i) {
       const key = d + a + i; let f = c.get(key);
-      if (!f) { f = render(L, d, a, i / n[a], k); c.set(key, f); }
+      if (!f) { f = render(L, d, a, i / n[a.replace('+aim', '')], k); c.set(key, f); }
       return f;
     } };
   };
