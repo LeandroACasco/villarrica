@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 0a76e245 · 2026-11-14</div>
+  <div class="tVer">Versión 3b5ad99f · 2026-11-14</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0a76e245 · 2026-11-14</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 3b5ad99f · 2026-11-14</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -7262,6 +7262,85 @@ VR.Peds = class {
   }
 };
 
+// ===== game/escena.js =====
+// Escena del accidente del sábado 14/11/2026 (pedido de Leandro, foto real): una moto chocó en el cruce de Prof. Juan Boggino
+// y Gral. Duarte (Lomas Valentinas). Hay una ambulancia con las luces prendidas y la camilla afuera, dos paramédicos de amarillo
+// atendiendo a la persona en el piso, dos policías con chaleco, gente mirando y la moto tirada.
+// Todo es decorado fijo (no se mueve ni reacciona). La posición sale del decal `accidente` que pone tools/osm_to_map.py
+// (OSM no trae el nombre "Boggino", se ubica por coordenadas); acá se busca el cruce real más cercano a ese punto.
+'use strict';
+VR.Escena = class {
+  constructor(world, cars) {
+    this.world = world; this.gente = []; this.camilla = null; this.flat = new Map();
+    const d = (world.decals || []).find((q) => q.kind === 'accidente'); if (!d) return;
+    const S = VR.TILE, T = VR.T, rd = (x, y) => { const t = world.get(x, y); return t === T.ROAD || t === T.STONE || t === T.DIRTROAD; };
+    // cruce real más cercano al punto del decal (cuatro brazos de calle de 3 baldosas)
+    let c = null;
+    for (let r = 0; r <= 12 && !c; r++) for (let dy = -r; dy <= r && !c; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const x = d.x + dx, y = d.y + dy;
+      if (rd(x, y) && rd(x - 3, y) && rd(x + 3, y) && rd(x, y - 3) && rd(x, y + 3)) { c = { x: (x + 0.5) * S, y: (y + 0.5) * S, tx: x, ty: y }; break; }
+    }
+    if (!c) return;
+    this.c = c;
+    // brazo donde queda la ambulancia: el primero con calle por 5 baldosas
+    let dir = null;
+    for (const q of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if ([2, 3, 4, 5].every((k) => rd(c.tx + q[0] * k, c.ty + q[1] * k))) { dir = q; break; }
+    dir = dir || [1, 0];
+    const A = [-dir[0], -dir[1]], B = [-A[1], A[0]]; // A: hacia el lado opuesto a la ambulancia; B: de costado
+    const P = (a, b) => ({ x: c.x + A[0] * a + B[0] * b, y: c.y + A[1] * a + B[1] * b });
+    const R = VR.rng(1411), look = (o) => VR.av2Lazy(Object.assign({}, o));
+    const face = (p, q) => { const dx = q.x - p.x, dy = q.y - p.y; return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); };
+
+    // ambulancia con las luces prendidas, la parte de atrás hacia la escena
+    const amb = P(-56, 6), heading = Math.atan2(dir[0], -dir[1]);
+    const ca = new VR.Car(world, amb.x, amb.y, heading, 0, 'car', 'ambulancia'); ca.siren = true; ca.escena = true; world.addBox(ca); cars.push(ca);
+    this.camilla = Object.assign(P(-27, 8), { horiz: dir[0] !== 0 });
+
+    // moto tirada de costado, a unos pasos de la víctima
+    const mp = P(14, 10), cm = new VR.Car(world, mp.x, mp.y, heading + Math.PI / 2 + 0.3, 1, 'moto', VR.pickMoto(R, true, world.nivelAt(mp.x, mp.y)));
+    cm.fallen = { t: 99, side: 1 }; cm.escena = true; cm.hp = 70; world.addBox(cm); cars.push(cm);
+
+    // gente
+    const v = P(0, 0), amarillo = { top: 'campera', topColor: 5, topColor2: 5, bottom: 'cargo', bottomColor: 5, shoes: 'botitas', shoesColor: 3, hair: 'corto' };
+    const poli = { top: 'camisa', topColor: 13, bottom: 'vestir', bottomColor: 13, shoes: 'zapatos', shoesColor: 3, hat: 'gorra', hatColor: 13 };
+    const poli2 = Object.assign({}, poli, { top: 'campera', topColor: 5, topColor2: 13, hatColor: 3 });
+    const add = (p, o, pose) => this.gente.push({ x: p.x, y: p.y, pose, dir: face(p, v), s: look(o) });
+    this.gente.push({ x: v.x, y: v.y, pose: 'piso', dir: 'down', s: look({ gender: 'm', top: 'remera', topColor: 3, bottom: 'jean', bottomColor: 0, shoes: 'zapatillas' }) });
+    add(P(-11, -5), amarillo, 'sit'); add(P(-9, 8), Object.assign({}, amarillo, { gender: 'f', hair: 'colita', hairColor: 1 }), 'sit');
+    add(P(22, -12), poli, 'de pie'); add(P(24, -3), poli2, 'de pie');
+    for (const [a, b] of [[8, -26], [20, -30], [-4, 26], [10, 30]]) { const L = VR.av2Random(R); L.hat = L.hat === 'casco' ? 'ninguno' : L.hat; L.mochila = false; add(P(a, b), L, 'de pie'); }
+  }
+
+  piso(s) { // sprite "acostado" (como peds.lying)
+    let c = this.flat.get(s);
+    if (!c) { const im = s.get('down', 'idle', 0), Rs = VR.RES; c = VR.canvas(34 * Rs, 18 * Rs); const g = c.getContext('2d'); g.scale(Rs, Rs); g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(im, -8 * VR.PS, -16 * VR.PS, 16 * VR.PS, 32 * VR.PS); this.flat.set(s, c); }
+    return c;
+  }
+
+  collect(camX, camY, sw, sh, out) {
+    if (!this.c) return;
+    if (Math.abs(this.c.x - camX - sw / 2) > sw / 2 + 140 || Math.abs(this.c.y - camY - sh / 2) > sh / 2 + 140) return;
+    const k = this.camilla;
+    if (k) out.push({ sy: k.y + 3, draw: (ctx) => { // camilla con ruedas, afuera de la ambulancia
+      const x = Math.round(k.x - camX), y = Math.round(k.y - camY), w = k.horiz ? 18 : 7, h = k.horiz ? 7 : 18;
+      ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(x - w / 2 + 1, y - h / 2 + 2, w, h);
+      ctx.fillStyle = '#9aa0aa'; ctx.fillRect(x - w / 2, y - h / 2 - 1, w, h); ctx.fillStyle = '#23262e'; ctx.fillRect(x - w / 2 + 1, y - h / 2, w - 2, h - 2);
+      ctx.fillStyle = '#d8dce4'; ctx.fillRect(k.horiz ? x - w / 2 + 2 : x - 2, k.horiz ? y - 2 : y - h / 2 + 2, 3, 3); // almohadilla
+    } });
+    for (const p of this.gente) {
+      const x = Math.round(p.x - camX), y = Math.round(p.y - camY);
+      if (x < -24 || y < -40 || x > sw + 24 || y > sh + 24) continue;
+      out.push({ sy: p.y + 2, draw: (ctx) => {
+        if (p.pose === 'piso') { VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28); ctx.drawImage(this.piso(p.s), x - 17, y - 12, 34, 18); return; }
+        const im = p.s.get(p.dir, p.pose === 'sit' ? 'sit' : 'idle', 0);
+        VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.24); VR.sun.cast(ctx, im, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.28);
+        ctx.drawImage(im, x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
+      } });
+    }
+  }
+};
+
 // ===== game/clima.js =====
 // Clima de Villarrica (13/11/2026, pedido de Leandro): calor, templado, frío, nublado y lluvia. Con "clima real" se lee de
 // Open-Meteo (API gratuita sin clave, CC BY 4.0: va en los créditos) desde el navegador de quien juega; el dato se guarda
@@ -7576,6 +7655,13 @@ VR.Night = class {
 VR.ALERTAS = ['¡Ahenoita 911!', '¡Pepete epytá!', '¡Mondaha!', '¡Policía, policía!', '¡Epytá upépe!', '¡Socorro!'];
 VR.POLI_DICE = ['¡Epytá upépe!', '¡Alto, Policía!', '¡Al suelo!', '¡Quieto ahí!'];
 
+// Sprite "acostado" de cualquier persona dibujada con av2Lazy (heridos y camilla), guardado por sprite
+VR.lyingCanvas = (spr) => {
+  const m = VR._lyc || (VR._lyc = new Map()); let c = m.get(spr);
+  if (!c) { const im = spr.get('down', 'idle', 0), R = VR.RES; c = VR.canvas(34 * R, 18 * R); const g = c.getContext('2d'); g.scale(R, R); g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(im, -8 * VR.PS, -16 * VR.PS, 16 * VR.PS, 32 * VR.PS); m.set(spr, c); }
+  return c;
+};
+
 // ---------- sirena ----------
 VR.Siren = class {
   constructor() { this.on = false; this.t = 0; }
@@ -7619,6 +7705,7 @@ VR.Emergency = class {
       poli: [0, 1, 2, 3].map((i) => VR.av2Lazy({ gender: i === 3 ? 'f' : 'm', skin: [1, 2, 3, 2][i], build: i === 1 ? 'fornido' : 'normal', hair: i === 3 ? 'colita' : 'corto', hairColor: 1, top: 'camisa', topColor: navy, bottom: 'cargo', bottomColor: black, shoes: 'botines', shoesColor: black, hat: 'gorra', hatColor: navy })),
       bombero: [0, 1, 2].map((i) => VR.av2Lazy({ gender: i === 2 ? 'f' : 'm', skin: [2, 1, 3][i], build: 'fornido', hair: 'corto', top: 'campera', topColor: yellow, topColor2: yellow, bottom: 'cargo', bottomColor: yellow, shoes: 'botines', shoesColor: black, hat: 'casco', hatColor: yellow })),
     };
+    VR.emer = this; // caidas.js le avisa cuando un motociclista queda herido
     VR.onCarHit = (c, imp, o) => this.damage(c, imp, o);
     VR.onPedHit = (p, speed) => this.pedHit(p, speed);
   }
@@ -7806,6 +7893,33 @@ VR.Emergency = class {
       u.crew.push(c); this.crew.push(c);
     }
   }
+  // Auxilio de la ambulancia (14/11/2026): dos paramédicos bajan, uno lleva la camilla, atienden al herido en el piso, lo suben
+  // a la camilla y lo llevan a la ambulancia. Fases u.ph: go → treat → load → close → done.
+  rescue(u, dt) {
+    const T = u.target, v = u.v, m0 = u.crew[0], m1 = u.crew[1];
+    const finish = () => { u.ph = 'done'; u.cam = null; u.pat = null; };
+    if (!T || !m0) return finish();
+    if (!u.cam) { const fx = Math.sin(v.a), fy = -Math.cos(v.a), L = v.LEN / 2 + 9; u.cam = { x: v.x - fx * L, y: v.y - fy * L, a: v.a }; u.rear = { x: u.cam.x, y: u.cam.y }; u.t = 0; u.ph = 'go'; }
+    const cam = u.cam, near = (a, b, r) => Math.hypot(a.x - b.x, a.y - b.y) < r, vec = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] };
+    const follow = (m) => { if (!m) return; const q = vec[m.dir] || [0, 1], k = Math.min(1, dt * 9); cam.x += (m.x + q[0] * 9 - cam.x) * k; cam.y += (m.y + q[1] * 9 - cam.y) * k; };
+    const face = (c, q) => { const dx = q.x - c.x, dy = q.y - c.y; c.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); c.moving = false; c.px = c.x; c.py = c.y; };
+    if (!T.rider && u.ph !== 'load' && u.ph !== 'close' && !this.peds.list.includes(T)) return finish(); // el peatón se fue o desapareció
+    if (u.ph === 'go') {
+      this.walk(m0, dt, T.x - 9, T.y + 3, 78); if (m1) { this.walk(m1, dt, T.x + 10, T.y + 4, 62); follow(m1); } else { cam.x += (T.x + 10 - cam.x) * Math.min(1, dt * 2); cam.y += (T.y + 4 - cam.y) * Math.min(1, dt * 2); }
+      if (near(m0, T, 14) && near(cam, T, 26)) { u.ph = 'treat'; u.t = 0; face(m0, T); if (m1) face(m1, T); m0.say = { text: '¡Tranquilo, ya estamos acá!', t: 2.2 }; }
+    } else if (u.ph === 'treat') {
+      u.t += dt; m0.kneel = true; face(m0, T); if (m1) face(m1, T);
+      if (u.t > 3.4) {
+        m0.kneel = false; if (m1) m1.say = { text: '¡A la una, a las dos, a las tres!', t: 2 };
+        const spr = T.rider ? T.spr : this.peds.sprites[T.pal]; u.pat = spr ? { spr } : null;
+        if (T.rider) T.hidden = true; else { const k = this.peds.list.indexOf(T); if (k >= 0) this.peds.list.splice(k, 1); }
+        T.injured = false; u.ph = 'load'; u.t = 0;
+      }
+    } else if (u.ph === 'load') { // camilla con el paciente hacia la parte de atrás de la ambulancia
+      this.walk(m0, dt, u.rear.x - 8, u.rear.y + 2, 48); if (m1) { this.walk(m1, dt, u.rear.x, u.rear.y, 48); follow(m1); }
+      u.t += dt; if (near(cam, u.rear, 12) || u.t > 14) { u.ph = 'close'; u.t = 0; if (m0) m0.say = { text: '¡Vamos, vamos!', t: 1.6 }; }
+    } else if (u.ph === 'close') { u.t += dt; if (u.t > 0.9) { if (T.rider) T.st = 'gone'; finish(); } }
+  }
   walk(c, dt, tx, ty, speed) {
     const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
     c.px = c.x; c.py = c.y; c.moving = d > 3;
@@ -7877,14 +7991,15 @@ VR.Emergency = class {
           if (car && d < v.LEN / 2 + car.LEN / 2 + 8 && Math.abs(car.v) < 14) { u.pin = (u.pin || 0) + dt; if (u.pin > 2.2) { this.busted(); return; } } else u.pin = 0;
         } else if (u.task === 'regroup') { this.halt(u, dt); if (!u.crew.length) u.task = 'leave'; }
       } else if (u.task === 'goto') {
-        const T = u.target, alive = T && (u.kind === 'bomberos' ? (T.burning || (T.wreck && T.smolder > 0)) : T.injured && this.peds.list.includes(T));
+        const T = u.target, alive = T && (u.kind === 'bomberos' ? (T.burning || (T.wreck && T.smolder > 0)) : T.injured && (T.rider || this.peds.list.includes(T)));
         if (!alive) { u.target = u.queue.shift() || null; if (!u.target) u.task = u.crew.length ? 'regroup' : 'leave'; continue; }
         const d = this.drive(u, dt, T.x, T.y, u.kind === 'bomberos' ? 95 : 50, false);
-        if (d < (u.kind === 'bomberos' ? 125 : 70) && Math.abs(v.v) < 30) { u.task = 'work'; this.spawnCrew(u, 'bombero', u.kind === 'bomberos' ? 2 : 1); }
+        if (d < (u.kind === 'bomberos' ? 125 : 70) && Math.abs(v.v) < 30) { u.task = 'work'; u.cam = null; u.ph = 'go'; if (!u.crew.length) this.spawnCrew(u, 'bombero', u.kind === 'policia' ? 1 : 2); }
       } else if (u.task === 'work') {
         this.halt(u, dt);
-        const T = u.target, done = !T || (u.kind === 'bomberos' ? !T.burning && !(T.wreck && T.smolder > 0) : !T.injured);
-        if (done) { u.target = u.queue.shift() || null; u.task = u.target ? 'goto' : 'regroup'; if (u.target && !u.crew.length) u.task = 'goto'; }
+        if (u.kind === 'ambulancia') this.rescue(u, dt);
+        const T = u.target, done = !T || (u.kind === 'bomberos' ? !T.burning && !(T.wreck && T.smolder > 0) : u.kind === 'ambulancia' ? u.ph === 'done' : !T.injured);
+        if (done) { u.cam = null; u.pat = null; u.target = u.queue.shift() || null; u.task = u.target ? 'goto' : 'regroup'; if (u.target && !u.crew.length) u.task = 'goto'; }
       } else if (u.task === 'regroup') { this.halt(u, dt); if (!u.crew.length) { u.task = 'leave'; } }
       if (u.task === 'leave') {
         v.siren = false;
@@ -7914,7 +8029,9 @@ VR.Emergency = class {
             if (c.t > (car ? 1.2 : 0.6)) { this.busted(); return; }
           }
         } else back();
-      } else { // bomberos y paramédicos
+      } else if (u.kind === 'ambulancia') { // paramédicos: los mueve rescue() mientras trabajan; después vuelven a la ambulancia
+        if (u.task !== 'work') { c.kneel = false; back(); }
+      } else { // bomberos
         const T = u.target;
         if ((u.task === 'work' || u.task === 'goto') && T) {
           const d = Math.hypot(T.x - c.x, T.y - c.y), stop = u.kind === 'bomberos' ? 28 : 15;
@@ -7963,11 +8080,19 @@ VR.Emergency = class {
 
   // ---------- dibujo ----------
   collect(cx, cy, sw, sh, al, out) {
+    for (const u of this.units) if (u.cam) {
+      const k = u.cam, x = Math.round(k.x - cx), y = Math.round(k.y - cy); if (x < -30 || y < -30 || x > sw + 30 || y > sh + 30) continue;
+      out.push({ sy: k.y + 3, draw: (ctx) => {
+        ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(x - 8, y - 1, 18, 7);
+        ctx.fillStyle = '#9aa0aa'; ctx.fillRect(x - 9, y - 4, 18, 7); ctx.fillStyle = '#23262e'; ctx.fillRect(x - 8, y - 3, 16, 5);
+        if (u.pat) ctx.drawImage(VR.lyingCanvas(u.pat.spr), x - 17, y - 11, 34, 18); else { ctx.fillStyle = '#d8dce4'; ctx.fillRect(x - 7, y - 2, 4, 3); }
+      } });
+    }
     for (const c of this.crew) {
       const x = Math.round(VR.lerp(c.px, c.x, al) - cx), y = Math.round(VR.lerp(c.py, c.y, al) - cy);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + cy, draw: (ctx) => {
-        const cim = c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, 'idle', 0);
+        const cim = c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, c.kneel ? 'sit' : 'idle', 0);
         VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.24); VR.sun.cast(ctx, cim, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.28);
         ctx.drawImage(cim, x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (c.say) VR.Player.prototype.drawBubble.call({ bubble: c.say, px: x + cx, x: x + cx, py: y + cy + 6, y: y + cy + 6 }, ctx, cx, cy, 1);
@@ -12449,7 +12574,16 @@ VR.Cisnes = class {
         if (r.st === 'rag') {
           r.rag.step(dt, r, this.world);
           if (r.rag.landed && r.t > 1.4) r.rag.rise();
-          if (r.rag.done) { r.st = 'angry'; r.t = 0; r.say = { text: pick(RETOS), t: 2.6 }; }
+          if (r.rag.done) {
+            if (!r.minor && VR.emer && VR.emer.dispatch) { r.st = 'hurt'; r.t = 0; r.injured = true; r.rider = true; r.say = { text: '¡Ay, ay, ay!', t: 2.4 }; VR.emer.dispatch('ambulancia', r); } // golpe grave: queda en el piso y viene la ambulancia (14/11/2026)
+            else { r.st = 'angry'; r.t = 0; r.say = { text: pick(RETOS), t: 2.6 }; }
+          }
+        } else if (r.st === 'hurt') {
+          if (r.say) { r.say.t -= dt; if (r.say.t <= 0) r.say = null; }
+          if (!r.say && Math.random() < dt * 0.15) r.say = { text: '¡Ay, mi pierna!', t: 2.2 };
+          if (r.t > 150) { r.injured = false; r.rider = false; r.st = 'leave'; r.t = 0; r.ax = Math.cos(Math.random() * 6.283); r.ay = Math.sin(Math.random() * 6.283); }
+        } else if (r.st === 'gone') { // la ambulancia se lo llevó: la moto queda un rato y se retira del tránsito
+          if (c.ai && this.traffic) this.traffic.release(c); this.riders.splice(i, 1); continue;
         } else if (r.st === 'angry') {
           if (r.say) { r.say.t -= dt; if (r.say.t <= 0) r.say = null; }
           const dx = player.x - r.x, dy = player.y - r.y; if (Math.hypot(dx, dy) < 220) r.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
@@ -12469,11 +12603,13 @@ VR.Cisnes = class {
       const PS = VR.PS, late = VR._late || (VR._late = []);
       for (const s of this.shouts) { const c = s.c, x = Math.round(c.x - camX), y = Math.round(c.y - camY); if (x < -30 || y < -30 || x > sw + 30 || y > sh + 30) continue; late.push({ bubble: { text: s.text, t: s.t }, px: c.x, x: c.x, py: c.y - 2, y: c.y - 2 }); }
       for (const r of this.riders) {
+        if (r.hidden) continue;
         const x = Math.round(VR.lerp(r.px, r.x, al) - camX), y = Math.round(VR.lerp(r.py, r.y, al) - camY);
         if (x < -30 || y < -40 || x > sw + 30 || y > sh + 20) continue;
         if (r.say) late.push({ bubble: r.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 });
         out.push({ sy: y + camY, draw: (g) => {
           if (r.st === 'rag') { r.rag.draw(g, r.spr, x, y); return; }
+          if (r.st === 'hurt') { g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, y - 1, 12, 3.5, 0, 0, Math.PI * 2); g.fill(); g.drawImage(VR.lyingCanvas(r.spr), x - 17, y - 12, 34, 18); return; }
           g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); g.fill();
           const moving = r.st === 'back' || r.st === 'leave', img = moving ? r.spr.get(r.dir, 'walk', Math.floor(r.anim) % 8) : r.spr.get(r.dir, 'idle', 0);
           g.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);
@@ -13945,6 +14081,7 @@ VR.Titulo = class {
   // ---------- autos estacionados (el primero, al lado del punto de partida) ----------
   const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 320, world.spawn);
   const cars = parked.cars;
+  const escena = prueba ? null : new VR.Escena(world, cars); // accidente del 14/11/2026 (escena.js)
   let car = null; // auto que estás manejando
   const WALK_BASE = 270, DRIVE_BASE = 420; // Leandro prefirió la cámara de antes (04/11/2026)
   // Zoom del juego (rueda, pellizco con dos dedos, teclas + y −): multiplica la base de cámara; se recuerda.
@@ -14313,6 +14450,7 @@ VR.Titulo = class {
     if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { player.draw(c, cx, cy, a); if (weapons && !player.rag) weapons.drawHeld(c, player, cx, cy, a); } });
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
+    if (escena) escena.collect(cx, cy, sw, sh, tall);
     if (estvida) estvida.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
     perros.collect(cx, cy, sw, sh, a, tall); calle.collect(cx, cy, sw, sh, a, tall); if (caidas) caidas.collect(cx, cy, sw, sh, a, tall);

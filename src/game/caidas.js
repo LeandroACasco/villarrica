@@ -72,7 +72,16 @@
         if (r.st === 'rag') {
           r.rag.step(dt, r, this.world);
           if (r.rag.landed && r.t > 1.4) r.rag.rise();
-          if (r.rag.done) { r.st = 'angry'; r.t = 0; r.say = { text: pick(RETOS), t: 2.6 }; }
+          if (r.rag.done) {
+            if (!r.minor && VR.emer && VR.emer.dispatch) { r.st = 'hurt'; r.t = 0; r.injured = true; r.rider = true; r.say = { text: '¡Ay, ay, ay!', t: 2.4 }; VR.emer.dispatch('ambulancia', r); } // golpe grave: queda en el piso y viene la ambulancia (14/11/2026)
+            else { r.st = 'angry'; r.t = 0; r.say = { text: pick(RETOS), t: 2.6 }; }
+          }
+        } else if (r.st === 'hurt') {
+          if (r.say) { r.say.t -= dt; if (r.say.t <= 0) r.say = null; }
+          if (!r.say && Math.random() < dt * 0.15) r.say = { text: '¡Ay, mi pierna!', t: 2.2 };
+          if (r.t > 150) { r.injured = false; r.rider = false; r.st = 'leave'; r.t = 0; r.ax = Math.cos(Math.random() * 6.283); r.ay = Math.sin(Math.random() * 6.283); }
+        } else if (r.st === 'gone') { // la ambulancia se lo llevó: la moto queda un rato y se retira del tránsito
+          if (c.ai && this.traffic) this.traffic.release(c); this.riders.splice(i, 1); continue;
         } else if (r.st === 'angry') {
           if (r.say) { r.say.t -= dt; if (r.say.t <= 0) r.say = null; }
           const dx = player.x - r.x, dy = player.y - r.y; if (Math.hypot(dx, dy) < 220) r.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
@@ -92,11 +101,13 @@
       const PS = VR.PS, late = VR._late || (VR._late = []);
       for (const s of this.shouts) { const c = s.c, x = Math.round(c.x - camX), y = Math.round(c.y - camY); if (x < -30 || y < -30 || x > sw + 30 || y > sh + 30) continue; late.push({ bubble: { text: s.text, t: s.t }, px: c.x, x: c.x, py: c.y - 2, y: c.y - 2 }); }
       for (const r of this.riders) {
+        if (r.hidden) continue;
         const x = Math.round(VR.lerp(r.px, r.x, al) - camX), y = Math.round(VR.lerp(r.py, r.y, al) - camY);
         if (x < -30 || y < -40 || x > sw + 30 || y > sh + 20) continue;
         if (r.say) late.push({ bubble: r.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 });
         out.push({ sy: y + camY, draw: (g) => {
           if (r.st === 'rag') { r.rag.draw(g, r.spr, x, y); return; }
+          if (r.st === 'hurt') { g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, y - 1, 12, 3.5, 0, 0, Math.PI * 2); g.fill(); g.drawImage(VR.lyingCanvas(r.spr), x - 17, y - 12, 34, 18); return; }
           g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x, y - 1, 5.5, 2.3, 0, 0, Math.PI * 2); g.fill();
           const moving = r.st === 'back' || r.st === 'leave', img = moving ? r.spr.get(r.dir, 'walk', Math.floor(r.anim) % 8) : r.spr.get(r.dir, 'idle', 0);
           g.drawImage(img, x - 8 * PS, y - 31 * PS, 16 * PS, 32 * PS);

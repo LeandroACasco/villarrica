@@ -1449,6 +1449,17 @@ def main(src, out, preview=None):
         est_n += 1; print('estación', nm_, (lx_, ly_), o_, round(best_[0], 1))
     print('Estaciones:', est_n)
 
+    # ---------- accidente del sábado 14/11/2026 ----------
+    # Pedido de Leandro: Prof. Juan Boggino y Gral. Duarte (Lomas Valentinas). OSM no trae el nombre "Boggino": se ubica por
+    # coordenadas (cruce sin nombre de Gral. Duarte) y el juego busca el cruce real más cercano. Si no es esta esquina, cambiar acá.
+    ACC = (-25.7859108, -56.4625911)
+    ACC_NODE = 1788323703  # nodo de OSM del cruce (Gral. Duarte con la calle sin nombre): place() solo es aproximado, el nodo es exacto
+    ax_, ay_ = T(final[ACC_NODE if ACC_NODE in final else str(ACC_NODE)]) if (ACC_NODE in final or str(ACC_NODE) in final) else T(place(*proj(*ACC)))
+    decals.append({'kind': 'accidente', 'x': int(ax_), 'y': int(ay_), 'w': 1, 'h': 1})
+    rd_ = lambda x, y: 0 <= y < tiles.shape[0] and 0 <= x < tiles.shape[1] and tiles[y, x] in (ROAD, STONE, DIRTROAD)
+    cr_ = [(int(ax_) + dx, int(ay_) + dy) for dy in range(-12, 13) for dx in range(-12, 13) if rd_(int(ax_) + dx, int(ay_) + dy) and all(rd_(int(ax_) + dx + a, int(ay_) + dy + b) for a, b in ((3, 0), (-3, 0), (0, 3), (0, -3)))]
+    print('Accidente: tile', (int(ax_), int(ay_)), '→ cruces cerca:', sorted(cr_, key=lambda q: (q[0] - ax_) ** 2 + (q[1] - ay_) ** 2)[:3] or 'NINGUNO')
+
     # ---------- empaquetar ----------
     roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'swidths': [ROADS[k][1] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
     meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'pois': {k: [int(v[0]), int(v[1])] for k, v in poi_pos.items()}, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,

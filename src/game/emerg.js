@@ -6,6 +6,13 @@
 VR.ALERTAS = ['¡Ahenoita 911!', '¡Pepete epytá!', '¡Mondaha!', '¡Policía, policía!', '¡Epytá upépe!', '¡Socorro!'];
 VR.POLI_DICE = ['¡Epytá upépe!', '¡Alto, Policía!', '¡Al suelo!', '¡Quieto ahí!'];
 
+// Sprite "acostado" de cualquier persona dibujada con av2Lazy (heridos y camilla), guardado por sprite
+VR.lyingCanvas = (spr) => {
+  const m = VR._lyc || (VR._lyc = new Map()); let c = m.get(spr);
+  if (!c) { const im = spr.get('down', 'idle', 0), R = VR.RES; c = VR.canvas(34 * R, 18 * R); const g = c.getContext('2d'); g.scale(R, R); g.translate(17, 9); g.rotate(Math.PI / 2); g.drawImage(im, -8 * VR.PS, -16 * VR.PS, 16 * VR.PS, 32 * VR.PS); m.set(spr, c); }
+  return c;
+};
+
 // ---------- sirena ----------
 VR.Siren = class {
   constructor() { this.on = false; this.t = 0; }
@@ -49,6 +56,7 @@ VR.Emergency = class {
       poli: [0, 1, 2, 3].map((i) => VR.av2Lazy({ gender: i === 3 ? 'f' : 'm', skin: [1, 2, 3, 2][i], build: i === 1 ? 'fornido' : 'normal', hair: i === 3 ? 'colita' : 'corto', hairColor: 1, top: 'camisa', topColor: navy, bottom: 'cargo', bottomColor: black, shoes: 'botines', shoesColor: black, hat: 'gorra', hatColor: navy })),
       bombero: [0, 1, 2].map((i) => VR.av2Lazy({ gender: i === 2 ? 'f' : 'm', skin: [2, 1, 3][i], build: 'fornido', hair: 'corto', top: 'campera', topColor: yellow, topColor2: yellow, bottom: 'cargo', bottomColor: yellow, shoes: 'botines', shoesColor: black, hat: 'casco', hatColor: yellow })),
     };
+    VR.emer = this; // caidas.js le avisa cuando un motociclista queda herido
     VR.onCarHit = (c, imp, o) => this.damage(c, imp, o);
     VR.onPedHit = (p, speed) => this.pedHit(p, speed);
   }
@@ -236,6 +244,33 @@ VR.Emergency = class {
       u.crew.push(c); this.crew.push(c);
     }
   }
+  // Auxilio de la ambulancia (14/11/2026): dos paramédicos bajan, uno lleva la camilla, atienden al herido en el piso, lo suben
+  // a la camilla y lo llevan a la ambulancia. Fases u.ph: go → treat → load → close → done.
+  rescue(u, dt) {
+    const T = u.target, v = u.v, m0 = u.crew[0], m1 = u.crew[1];
+    const finish = () => { u.ph = 'done'; u.cam = null; u.pat = null; };
+    if (!T || !m0) return finish();
+    if (!u.cam) { const fx = Math.sin(v.a), fy = -Math.cos(v.a), L = v.LEN / 2 + 9; u.cam = { x: v.x - fx * L, y: v.y - fy * L, a: v.a }; u.rear = { x: u.cam.x, y: u.cam.y }; u.t = 0; u.ph = 'go'; }
+    const cam = u.cam, near = (a, b, r) => Math.hypot(a.x - b.x, a.y - b.y) < r, vec = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] };
+    const follow = (m) => { if (!m) return; const q = vec[m.dir] || [0, 1], k = Math.min(1, dt * 9); cam.x += (m.x + q[0] * 9 - cam.x) * k; cam.y += (m.y + q[1] * 9 - cam.y) * k; };
+    const face = (c, q) => { const dx = q.x - c.x, dy = q.y - c.y; c.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); c.moving = false; c.px = c.x; c.py = c.y; };
+    if (!T.rider && u.ph !== 'load' && u.ph !== 'close' && !this.peds.list.includes(T)) return finish(); // el peatón se fue o desapareció
+    if (u.ph === 'go') {
+      this.walk(m0, dt, T.x - 9, T.y + 3, 78); if (m1) { this.walk(m1, dt, T.x + 10, T.y + 4, 62); follow(m1); } else { cam.x += (T.x + 10 - cam.x) * Math.min(1, dt * 2); cam.y += (T.y + 4 - cam.y) * Math.min(1, dt * 2); }
+      if (near(m0, T, 14) && near(cam, T, 26)) { u.ph = 'treat'; u.t = 0; face(m0, T); if (m1) face(m1, T); m0.say = { text: '¡Tranquilo, ya estamos acá!', t: 2.2 }; }
+    } else if (u.ph === 'treat') {
+      u.t += dt; m0.kneel = true; face(m0, T); if (m1) face(m1, T);
+      if (u.t > 3.4) {
+        m0.kneel = false; if (m1) m1.say = { text: '¡A la una, a las dos, a las tres!', t: 2 };
+        const spr = T.rider ? T.spr : this.peds.sprites[T.pal]; u.pat = spr ? { spr } : null;
+        if (T.rider) T.hidden = true; else { const k = this.peds.list.indexOf(T); if (k >= 0) this.peds.list.splice(k, 1); }
+        T.injured = false; u.ph = 'load'; u.t = 0;
+      }
+    } else if (u.ph === 'load') { // camilla con el paciente hacia la parte de atrás de la ambulancia
+      this.walk(m0, dt, u.rear.x - 8, u.rear.y + 2, 48); if (m1) { this.walk(m1, dt, u.rear.x, u.rear.y, 48); follow(m1); }
+      u.t += dt; if (near(cam, u.rear, 12) || u.t > 14) { u.ph = 'close'; u.t = 0; if (m0) m0.say = { text: '¡Vamos, vamos!', t: 1.6 }; }
+    } else if (u.ph === 'close') { u.t += dt; if (u.t > 0.9) { if (T.rider) T.st = 'gone'; finish(); } }
+  }
   walk(c, dt, tx, ty, speed) {
     const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
     c.px = c.x; c.py = c.y; c.moving = d > 3;
@@ -307,14 +342,15 @@ VR.Emergency = class {
           if (car && d < v.LEN / 2 + car.LEN / 2 + 8 && Math.abs(car.v) < 14) { u.pin = (u.pin || 0) + dt; if (u.pin > 2.2) { this.busted(); return; } } else u.pin = 0;
         } else if (u.task === 'regroup') { this.halt(u, dt); if (!u.crew.length) u.task = 'leave'; }
       } else if (u.task === 'goto') {
-        const T = u.target, alive = T && (u.kind === 'bomberos' ? (T.burning || (T.wreck && T.smolder > 0)) : T.injured && this.peds.list.includes(T));
+        const T = u.target, alive = T && (u.kind === 'bomberos' ? (T.burning || (T.wreck && T.smolder > 0)) : T.injured && (T.rider || this.peds.list.includes(T)));
         if (!alive) { u.target = u.queue.shift() || null; if (!u.target) u.task = u.crew.length ? 'regroup' : 'leave'; continue; }
         const d = this.drive(u, dt, T.x, T.y, u.kind === 'bomberos' ? 95 : 50, false);
-        if (d < (u.kind === 'bomberos' ? 125 : 70) && Math.abs(v.v) < 30) { u.task = 'work'; this.spawnCrew(u, 'bombero', u.kind === 'bomberos' ? 2 : 1); }
+        if (d < (u.kind === 'bomberos' ? 125 : 70) && Math.abs(v.v) < 30) { u.task = 'work'; u.cam = null; u.ph = 'go'; if (!u.crew.length) this.spawnCrew(u, 'bombero', u.kind === 'policia' ? 1 : 2); }
       } else if (u.task === 'work') {
         this.halt(u, dt);
-        const T = u.target, done = !T || (u.kind === 'bomberos' ? !T.burning && !(T.wreck && T.smolder > 0) : !T.injured);
-        if (done) { u.target = u.queue.shift() || null; u.task = u.target ? 'goto' : 'regroup'; if (u.target && !u.crew.length) u.task = 'goto'; }
+        if (u.kind === 'ambulancia') this.rescue(u, dt);
+        const T = u.target, done = !T || (u.kind === 'bomberos' ? !T.burning && !(T.wreck && T.smolder > 0) : u.kind === 'ambulancia' ? u.ph === 'done' : !T.injured);
+        if (done) { u.cam = null; u.pat = null; u.target = u.queue.shift() || null; u.task = u.target ? 'goto' : 'regroup'; if (u.target && !u.crew.length) u.task = 'goto'; }
       } else if (u.task === 'regroup') { this.halt(u, dt); if (!u.crew.length) { u.task = 'leave'; } }
       if (u.task === 'leave') {
         v.siren = false;
@@ -344,7 +380,9 @@ VR.Emergency = class {
             if (c.t > (car ? 1.2 : 0.6)) { this.busted(); return; }
           }
         } else back();
-      } else { // bomberos y paramédicos
+      } else if (u.kind === 'ambulancia') { // paramédicos: los mueve rescue() mientras trabajan; después vuelven a la ambulancia
+        if (u.task !== 'work') { c.kneel = false; back(); }
+      } else { // bomberos
         const T = u.target;
         if ((u.task === 'work' || u.task === 'goto') && T) {
           const d = Math.hypot(T.x - c.x, T.y - c.y), stop = u.kind === 'bomberos' ? 28 : 15;
@@ -393,11 +431,19 @@ VR.Emergency = class {
 
   // ---------- dibujo ----------
   collect(cx, cy, sw, sh, al, out) {
+    for (const u of this.units) if (u.cam) {
+      const k = u.cam, x = Math.round(k.x - cx), y = Math.round(k.y - cy); if (x < -30 || y < -30 || x > sw + 30 || y > sh + 30) continue;
+      out.push({ sy: k.y + 3, draw: (ctx) => {
+        ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(x - 8, y - 1, 18, 7);
+        ctx.fillStyle = '#9aa0aa'; ctx.fillRect(x - 9, y - 4, 18, 7); ctx.fillStyle = '#23262e'; ctx.fillRect(x - 8, y - 3, 16, 5);
+        if (u.pat) ctx.drawImage(VR.lyingCanvas(u.pat.spr), x - 17, y - 11, 34, 18); else { ctx.fillStyle = '#d8dce4'; ctx.fillRect(x - 7, y - 2, 4, 3); }
+      } });
+    }
     for (const c of this.crew) {
       const x = Math.round(VR.lerp(c.px, c.x, al) - cx), y = Math.round(VR.lerp(c.py, c.y, al) - cy);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + cy, draw: (ctx) => {
-        const cim = c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, 'idle', 0);
+        const cim = c.moving ? c.look.get(c.dir, c.role === 'poli' ? 'run' : 'walk', Math.floor(c.anim) % 8) : c.look.get(c.dir, c.kneel ? 'sit' : 'idle', 0);
         VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.24); VR.sun.cast(ctx, cim, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.28);
         ctx.drawImage(cim, x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
         if (c.say) VR.Player.prototype.drawBubble.call({ bubble: c.say, px: x + cx, x: x + cx, py: y + cy + 6, y: y + cy + 6 }, ctx, cx, cy, 1);
