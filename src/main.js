@@ -359,11 +359,12 @@
       if (nn) { hint = (VR.input.source === 'touch' ? '💬 ' : VR.input.source === 'pad' ? '💬 A: ' : '💬 Espacio: ') + nn.nombre; hintCar = { x: nn.x, y: nn.y - 14 }; }
       const nv = !nc && !nsw && !nn ? calle.near(player) : null; if (nv) { hint = (VR.input.source === 'touch' ? 'ACCIÓN: ' : 'Espacio: ') + (nv.stock > 0 ? nv.K.label.replace(/ · .*/, '') + ' · ' + VR.fmtGs(nv.K.price) : 'sin stock'); hintCar = { x: nv.x, y: nv.y + 52 }; }
       const np = puestoL && !nc && !nsw && !nv ? puestoL.near(player) : null; if (np) { hint = (VR.input.source === 'touch' ? '🛒 ACCIÓN: despensa' : '🛒 Espacio: despensa'); hintCar = { x: np.x, y: np.y - 14 }; }
+      const nme = !nc && !nsw && !nv && !np ? mercL.near(player) : null; if (nme) { hint = (VR.input.source === 'touch' ? '🧺 ACCIÓN: mercado' : '🧺 Espacio: mercado'); hintCar = { x: nme.x, y: nme.y - 14 }; }
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) { const no = noRobar(nc); if (no) toast(no); else enterCar(nc); } else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (np) { VR.despensa.entrar(); return; } if (ns) { VR.tienda.entrar(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (np) { VR.despensa.entrar(); return; } if (nme) { VR.mercado.entrar(); return; } if (ns) { VR.tienda.entrar(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
@@ -788,6 +789,8 @@
     llevar: (d) => { const f = $('celFade'); f.textContent = '🛵 En viaje…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); if (mis) mis.emit('jaha', { dest: d }); setTimeout(() => f.classList.remove('on'), 300); }, 900); } })
     : { riding: false, activo: false, r: null, v: null, saltear() {}, update() {}, rideTick() {}, cancelar() {}, pedir() { return false; }, texto() { return ''; } };
   if (mis) VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => mis.dialogo(VR.despensaCompra(mis)) }); // despensa Ñande Róga por dentro
+  VR.mercado = VR.crearMercado({ player, busy: () => false, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
+    come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍽 ' + n + ' · −' + VR.fmtGs(p)); } } }); // Mercado Municipal por dentro (13/11/2026)
   let puestoL = null; // en Libre no hay misiones, pero la despensa sí está (puesto en la vereda al sudeste de la plaza + el interior)
   if (!mis) {
     const lug = new VR.Lugares(world), D = VR.PUNTOS.despensa; VR.PUNTOS_LIBRE = true;
@@ -799,11 +802,13 @@
   }
   // ---------- lugares donde se puede entrar: marcador siempre visible en la calle, minimapa y mapa grande ----------
   const lugE = mis ? mis.lug : new VR.Lugares(world);
+  const mercL = { pts: () => ['mercado1', 'mercado2'].map((k) => lugE.get(k)).filter(Boolean), near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 46) return p; return null; } };
   const entradas = () => { const o = [];
     if (shopDoor) o.push({ x: shopDoor.x, y: shopDoor.y - 6, ico: '👕', c: '#ff9ed0', name: 'Tienda Ao Porã' });
     if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro' });
     const C = { despensa: '#9fe0a0', pieza: '#ffd84a', cajero: '#7fd8ff', cajero2: '#7fd8ff', financiera: '#ffb36b', celulares: '#c9a0ff' };
     for (const d of (world.decals || [])) if (d.kind === 'estacion') { const k = VR.Estaciones.lay(d).canopy; o.push({ x: k[0] + k[2] / 2, y: k[1] + k[3] / 2, ico: '⛽', c: '#ff8f6b', name: d.name }); }
+    for (const p of mercL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🧺', c: '#ffcf6b', name: p.name });
     if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
     if (mbh.activo && mbh.v && !mbh.riding) o.push({ x: mbh.v.x, y: mbh.v.y, ico: mbh.r.tipo === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: 'Tu Mbohasa' }); // el conductor, siempre visible en el minimapa y el mapa grande (12/11/2026)
     const ks = mis ? Object.keys(VR.PUNTOS) : ['despensa'];

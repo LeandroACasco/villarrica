@@ -496,6 +496,8 @@ Se probaron postes de luz con cables (6.600 postes sobre la red de calles) y Lea
 
 `VR.crearDespensa` (también en `salon.js`): la despensa Ñande Róga por dentro (estantes con mercadería, heladera de gaseosas, cajones de verdura, góndolas, mostrador con la dueña, balanza y caja, un cliente que camina). El puesto de la vereda sigue igual y su menú ofrece «Entrar a la despensa»; en el mostrador se abre el menú de compra de siempre (`VR.despensaCompra`).
 
+`VR.crearMercado` (`src/game/mercado.js`, 13/11/2026): Mercado Municipal por dentro con `VR.Salon` (320×248). Tabla `ST` de 7 puestos (`id, row, x, w, nombre, quien, hi[], b[[nombre, Gs, hambre, cura?]]`); fila 0 arriba (4 puestos de 64) y fila 1 abajo (3 de 84); `stall()` dibuja toldo a rayas, mostrador, cartel en el frente y la mercadería según el rubro; los vendedores se dibujan con `me.figura` y 4 clientes caminan solos. El menú se arma con `menu(sd)` y se muestra con `o.menu(lista)` (en `main.js`: `mis.dialogo` en la Historia o `VR.Dialogo.show` en Libre); las compras llaman `o.come(precio, hambre, nombre, cura)`. Puertas: `Lugares.base` suma `mercado1` y `mercado2` (etiquetas de OSM «Mercado 1/2», +24 px) y `main.js` las trata con `mercL` (ACCIÓN a <46 px, marcador 🧺 en `entradas()`). `VR.mercado.entrar()` / `.salir()`.
+
 El **Teatro Municipal** por dentro también se redibujó en alta (11/11/2026): `Teatro.buildHQ()` arma dos lienzos a 3× (fondo: alfombra con dibujo, pasillos con luces, paredes de listones con apliques, escenario con telón de terciopelo, piso lustrado con luces de color, truss con reflectores y butacas con almohadón; frente: palco blanco curvo, puertas de vidrio y cartel de SALIDA) y `draw` solo los pega; la gente y el video siguen como antes.
 
 ## Despensa en modo Libre
