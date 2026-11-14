@@ -59,8 +59,8 @@ VR.Lugares = class {
       case 'boli_blue': return L(/^Blú Karaoque/, 24);
       case 'boli_estacion': return L(/^La Re-Estaci/, 24);
       case 'boli_gleu': { const d = (W.decals || []).find((x) => x.kind === 'frente' && x.style === 'gleu'); return d && { x: (d.x + 1) * VR.TILE, y: (d.y + d.h / 2) * VR.TILE }; } // el pub gris del frente oeste de la plaza
-      case 'super_ligero': return L(/^Súper Expreso Lento/, 24);
-      case 'super_lucero': return L(/^Súper Estrella Fugaz/, 24);
+      case 'super_ligero': return L(/^Súper Lento/, 24);
+      case 'super_lucero': return L(/^Súper Candente/, 24);
       case 'super_kuarahy': return L(/^Súper Herrumbre/, 24);
       case 'super_kuarahyGroup': return L(/^Herrumbre Group/, 24);
       case 'super_kuarahyNorte': return L(/^Herrumbre Norte/, 24);
@@ -81,7 +81,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Expreso Lento', super_lucero: 'Súper Estrella Fugaz', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
 
 // ---------------- barrios por historia ----------------

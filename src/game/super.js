@@ -5,8 +5,8 @@
   const H = VR.hash, pick = (a) => a[(Math.random() * a.length) | 0];
   // marcas: nombres inventados (referencias reales en la documentación); colores propios, sin logos
   const BR = {
-    ligero: { id: 'ligero', n: 'Súper Expreso Lento', c1: '#c8322a', c2: '#8f1e18', ti: 0 },
-    lucero: { id: 'lucero', n: 'Súper Estrella Fugaz', c1: '#e8b830', c2: '#a87c10', ti: 5 },
+    ligero: { id: 'ligero', n: 'Súper Lento', c1: '#c8322a', c2: '#8f1e18', ti: 0 },
+    lucero: { id: 'lucero', n: 'Súper Candente', c1: '#e8b830', c2: '#a87c10', ti: 5 },
     kuarahy: { id: 'kuarahy', n: 'Súper Herrumbre', c1: '#2e6fc8', c2: '#1e4a8a', ti: 2 },
     kuarahyGroup: { id: 'kuarahyGroup', n: 'Herrumbre Group', c1: '#1e3a6a', c2: '#12264a', ti: 13 },
     kuarahyNorte: { id: 'kuarahyNorte', n: 'Herrumbre Norte', c1: '#2e6fc8', c2: '#1e4a8a', ti: 2 },

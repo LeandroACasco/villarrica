@@ -647,10 +647,10 @@ def main(src, out, preview=None):
     POLI = {'floors': 1, 'roof': 'teja', 'roofc': 1, 'wallc': 9}
     SUPER = {'floors': 1, 'roof': 'chapa', 'roofc': 0, 'wallc': 4}
     # Nombres alternativos con humor (no se usan los reales). Referencia real de cada uno (solo para documentación):
-    #   Súper Expreso Lento = Super Express · Súper Estrella Fugaz = Super Estrella · Súper Herrumbre = Super Herrero · Herrumbre Group = Herrero Group
+    #   Súper Lento = Super Express · Súper Candente = Super Estrella · Súper Herrumbre = Super Herrero · Herrumbre Group = Herrero Group
     #   Herrumbre Norte = Super Herrero Norte · Hiper Bigote = Biggie · Súper Seis y Medio = Superseis
     #   Boliches: Bambú Buda = Bambuddha · Gluglú Pub = Gleu Pub · Blú Karaoque = Blue Karaoke · La Re-Estación = La Nueva Estación
-    SUPERS = [('super', 'Súper Expreso Lento', (-25.7846352, -56.4610337), dict(SUPER, brand='ligero')), ('super', 'Súper Estrella Fugaz', (-25.7786704, -56.4466731), dict(SUPER, brand='lucero')),
+    SUPERS = [('super', 'Súper Lento', (-25.7846352, -56.4610337), dict(SUPER, brand='ligero')), ('super', 'Súper Candente', (-25.7786704, -56.4466731), dict(SUPER, brand='lucero')),
               ('super', 'Herrumbre Group', (-25.7807572, -56.4446212), dict(SUPER, brand='kuarahyGroup')), ('super', 'Súper Herrumbre', (-25.7829744, -56.4502131), dict(SUPER, brand='kuarahy')),
               ('super', 'Herrumbre Norte', (-25.7749759, -56.4643161), dict(SUPER, brand='kuarahy')), ('super', 'Hiper Bigote', (-25.7752825, -56.4455092), dict(SUPER, brand='guasu')),
               ('super', 'Súper Seis y Medio', (-25.76727573, -56.44159752), dict(SUPER, brand='yvoty'))]

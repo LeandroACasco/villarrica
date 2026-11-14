@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 3e512c2b · 2026-11-14</div>
+  <div class="tVer">Versión 2b47ef6c · 2026-11-14</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 3e512c2b · 2026-11-14</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 2b47ef6c · 2026-11-14</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -9627,8 +9627,8 @@ VR.Lugares = class {
       case 'boli_blue': return L(/^Blú Karaoque/, 24);
       case 'boli_estacion': return L(/^La Re-Estaci/, 24);
       case 'boli_gleu': { const d = (W.decals || []).find((x) => x.kind === 'frente' && x.style === 'gleu'); return d && { x: (d.x + 1) * VR.TILE, y: (d.y + d.h / 2) * VR.TILE }; } // el pub gris del frente oeste de la plaza
-      case 'super_ligero': return L(/^Súper Expreso Lento/, 24);
-      case 'super_lucero': return L(/^Súper Estrella Fugaz/, 24);
+      case 'super_ligero': return L(/^Súper Lento/, 24);
+      case 'super_lucero': return L(/^Súper Candente/, 24);
       case 'super_kuarahy': return L(/^Súper Herrumbre/, 24);
       case 'super_kuarahyGroup': return L(/^Herrumbre Group/, 24);
       case 'super_kuarahyNorte': return L(/^Herrumbre Norte/, 24);
@@ -9649,7 +9649,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Expreso Lento', super_lucero: 'Súper Estrella Fugaz', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
 
 // ---------------- barrios por historia ----------------
@@ -13798,8 +13798,8 @@ VR.Chespis = class {
   const H = VR.hash, pick = (a) => a[(Math.random() * a.length) | 0];
   // marcas: nombres inventados (referencias reales en la documentación); colores propios, sin logos
   const BR = {
-    ligero: { id: 'ligero', n: 'Súper Expreso Lento', c1: '#c8322a', c2: '#8f1e18', ti: 0 },
-    lucero: { id: 'lucero', n: 'Súper Estrella Fugaz', c1: '#e8b830', c2: '#a87c10', ti: 5 },
+    ligero: { id: 'ligero', n: 'Súper Lento', c1: '#c8322a', c2: '#8f1e18', ti: 0 },
+    lucero: { id: 'lucero', n: 'Súper Candente', c1: '#e8b830', c2: '#a87c10', ti: 5 },
     kuarahy: { id: 'kuarahy', n: 'Súper Herrumbre', c1: '#2e6fc8', c2: '#1e4a8a', ti: 2 },
     kuarahyGroup: { id: 'kuarahyGroup', n: 'Herrumbre Group', c1: '#1e3a6a', c2: '#12264a', ti: 13 },
     kuarahyNorte: { id: 'kuarahyNorte', n: 'Herrumbre Norte', c1: '#2e6fc8', c2: '#1e4a8a', ti: 2 },
