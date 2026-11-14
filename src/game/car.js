@@ -650,7 +650,7 @@ VR.Car = class {
         if (o.vx === undefined) { o.vx = Math.sin(o.a) * o.v; o.vy = -Math.cos(o.a) * o.v; o.w = 0; }
         const rvn = (this.vx - o.vx) * nnx + (this.vy - o.vy) * nny;
         if (rvn < 0) {
-          const e = 0.55, J = -(1 + e) * rvn / (1 / this.mass + 1 / o.mass);
+          const e = 0.4, J = -(1 + e) * rvn / (1 / this.mass + 1 / o.mass);
           this.vx += J / this.mass * nnx; this.vy += J / this.mass * nny;
           o.vx -= J / o.mass * nnx; o.vy -= J / o.mass * nny;
           // giro de los dos según dónde fue el golpe
@@ -664,7 +664,7 @@ VR.Car = class {
       } else {
         const vn = this.vx * nnx + this.vy * nny;
         if (vn < 0) {
-          const e = 0.5;   // rebote (13/11/2026): antes 0,3 y con la normal torcida: el auto se quedaba pegado a la pared
+          const e = 0.35;   // rebote (13/11/2026): antes 0,3 y con la normal torcida: el auto se quedaba pegado a la pared
           this.vx -= (1 + e) * vn * nnx; this.vy -= (1 + e) * vn * nny;
           // roce: pierde algo de la velocidad que va a lo largo de la pared
           const tx = this.vx - (this.vx * nnx + this.vy * nny) * nnx, ty = this.vy - (this.vx * nnx + this.vy * nny) * nny;
@@ -684,6 +684,11 @@ VR.Car = class {
         if (c2 && !c2.other) { this.x = ox0; this.y = oy0; }                    // ahí hay una pared: no se corre
         else { const vt = this.vx * tx + this.vy * ty; if (vt < 40) { this.vx += tx * (40 - vt); this.vy += ty * (40 - vt); } }   // y sigue deslizándose hacia afuera
       }
+      // en el substep del choque ya no se pierde todo el avance: prueba seguir con la velocidad de después del rebote,
+      // y si igual choca, solo con la parte que va a lo largo de lo que tocó (resbala en vez de pegarse)
+      { const a0 = this.a, vn2 = this.vx * nnx + this.vy * nny, tvx = this.vx - vn2 * nnx, tvy = this.vy - vn2 * nny;
+        const tries = [[this.vx, this.vy, na], [this.vx, this.vy, a0], [tvx, tvy, na], [tvx, tvy, a0]];
+        for (const [sx, sy, sa] of tries) { const qx = this.x + sx * h, qy = this.y + sy * h; if (!this.contacts(qx, qy, sa)) { this.x = qx; this.y = qy; this.a = sa; break; } } }
       if (this.driven && impact > 45) this.bounceT = Math.min(0.4, 0.1 + impact / 600);   // tras un golpe fuerte el motor «suelta» un instante: el auto rebota en vez de empujarse contra lo que chocó
       if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); if (this.driven && this.type === 'moto' && impact > 140 && VR.onEject) VR.onEject(this, impact); else if (this.ai && this.type === 'moto' && impact > 110 && VR.caidas) VR.caidas.motoDown(this, impact); if (impact > 55 && VR.addDent) { VR.addDent(this, mx, my, impact); if (o) VR.addDent(o, mx, my, impact * 0.8); } }
       // no se mete en la pared: si el giro solo ya lo traba, no gira; y si quedó pegado, se separa un poco
