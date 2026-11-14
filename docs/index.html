@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 3b5ad99f · 2026-11-14</div>
+  <div class="tVer">Versión ec5f055a · 2026-11-14</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 3b5ad99f · 2026-11-14</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión ec5f055a · 2026-11-14</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -5194,7 +5194,7 @@ VR.Car = class {
     }
     if (this.taxi) { ctx.save(); ctx.translate(x + shake, y - lift); ctx.rotate(a); ctx.fillStyle = '#1a1a1e'; ctx.fillRect(-4, -2.5, 8, 5); ctx.fillStyle = '#ffd23a'; ctx.fillRect(-3.5, -2, 7, 4); ctx.fillStyle = '#1a1a1e'; for (let i = -3; i < 3; i += 2) ctx.fillRect(i, -0.5, 1, 1); ctx.restore(); }
     if (this.siren && this.spec.lights) { // barra de luces titilando
-      const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : this.model === 'ambulancia' ? this.LEN * 0.22 : this.LEN * 0.1;
+      const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : (this.model === 'ambulancia' || this.model === 'seme') ? this.LEN * 0.22 : this.LEN * 0.1;
       const bx = x + Math.sin(a) * f, by = y - Math.cos(a) * f - lift, rx = Math.cos(a) * 3.5, ry = Math.sin(a) * 3.5;
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       for (const [s, col] of [[-1, L[on]], [1, L[1 - on]]]) { const gx = bx + rx * s, gy = by + ry * s, gr = ctx.createRadialGradient(gx, gy, 0, gx, gy, 9); gr.addColorStop(0, `rgba(${col},.95)`); gr.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = gr; ctx.fillRect(gx - 9, gy - 9, 18, 18); }
@@ -5300,7 +5300,7 @@ VR.parkCars = (world, n, near) => {
   for (const d of world.decals || []) {
     if (d.kind !== 'cuartel') continue;
     const X = (d.x + 3) * S, Y = d.y * S;
-    for (const ox of [26, 70]) { const c = add(X + ox, Y + d.h * S - 34, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; }
+    for (const ox of [26, 70]) { const c = add(X + ox, Y + d.h * S - 34, Math.PI, 0, 'car', ox === 70 ? 'ambulancia' : 'bomba'); c.firehouse = true; }
     (world.parkingDemo = world.parkingDemo || []).push({ x0: X - 20, x1: (d.x + d.w) * S + 20, y0: Y - 20, y1: (d.ry + 4) * S });
   }
 
@@ -5327,7 +5327,7 @@ VR.parkCars = (world, n, near) => {
     const fill = (cx, cy, R, models, gap) => { const put = []; for (const q of spots(cx, cy, R)) { if (put.length >= models.length) break; if (put.some((o) => Math.hypot(o.x - q.x, o.y - q.y) < gap) || world.boxOverlap(q.x - 40, q.y - 40, q.x + 40, q.y + 40)) continue; put.push(q); add(q.x, q.y, q.a, (rnd() * 4) | 0, 'car', models[put.length - 1]); } return put; };
     if (tl) fill(tl.x, tl.y + 40, 18, ['guairena', 'indep', 'guairena', 'indep', 'guairena'], 88);
     const hs = P['Hospital Regional'];
-    if (hs) { const cx = (hs[0] + 0.5) * S, cy = (hs[1] + 0.5) * S, f = foot(cx, cy + 60); world.hospital = { x: f.x, y: f.y, cx, cy }; fill(cx, cy, 40, ['ambulancia', 'ambulancia'], 60); }
+    if (hs) { const cx = (hs[0] + 0.5) * S, cy = (hs[1] + 0.5) * S, f = foot(cx, cy + 60); world.hospital = { x: f.x, y: f.y, cx, cy }; fill(cx, cy, 40, ['seme', 'seme'], 60); }
     world.comisarias = [];
     for (const k in P) if (/^Comisar|^Jefatura/.test(k)) { const cx = (P[k][0] + 0.5) * S, cy = (P[k][1] + 0.5) * S, f = foot(cx, cy + 40); world.comisarias.push({ name: k, x: f.x, y: f.y, cx, cy }); fill(cx, cy, 14, ['patrulla'], 60); }
   }
@@ -5660,7 +5660,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
       name: 'Camioneta de la Policía', desc: 'Doble cabina de la Policía: la que más patrulla la ciudad.', side: 'policam',
       base: VR.drawAuto({ L: 41, W: 18, hood: 9.6, ws: 3.6, roof: 9.6, rg: 1.4, fa: 0.19, ra: 0.77, box: true, bed: true, rollbar: true, tireL: 6.4, grille: '#3a3a40', bar: ['#d8302a', '#2a5ad8'], stripe: '#1e3a8a' }) },
     ambulancia: { len: 39, wid: 17, S: 44, acc: 170, rev: 60, turn: 2.4, brake: 400, mass: 1.4, max: { road: 235, stone: 205, dirt: 180, side: 140, grass: 140 }, colors: ORANGE, emer: 'ambulancia', lights: ['60,255,120', '255,40,40'],
-      name: 'Ambulancia', desc: 'Furgón de los bomberos voluntarios. Con la sirena te abren paso.', side: 'ambulancia',
+      name: 'Ambulancia de bomberos', desc: 'Furgón de los bomberos voluntarios, amarillo. Sale del cuartel. Con la sirena te abren paso.', side: 'ambulancia',
       base: VR.drawAuto({ hz: [9, 17], L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#c8241a', tireL: 6 }),
       sideShape: { body: [[3, 27], [3, 6], [5, 4], [44, 4], [52, 12], [60, 15], [61, 26], [55, 27], [53, 22], [43, 22], [41, 27], [20, 27], [18, 22], [8, 22], [6, 27]],
         win: [[[45, 6], [47, 6], [51, 12.5], [45, 12.5]], [[34, 6], [42, 6], [42, 12.5], [34, 12.5]]], pillars: [43], yr: 4, rx0: 5, rx1: 44, belt: 12.5, sill: 27, doors: [43, 33], tailx: 3, tailTop: 7, nose: 61, hood: [52, 12], wheels: [13, 48], wr: 5 } },
@@ -5668,6 +5668,10 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
       name: 'Camión de bomberos', desc: 'Camión bomba: largo, pesado y con cañón de agua. Mantené ACCIÓN para mojar.', side: 'bomba', base: VR.drawBomba },
   });
   VR.CAR_MODELS.patrulla.sideShape = { ...VR.CAR_MODELS.sedan.sideShape };
+  // Ambulancia del Hospital Regional (SEME 141, 14/11/2026, foto de Leandro): blanca con franja verde. Las amarillas son de los bomberos voluntarios.
+  { const A = VR.CAR_MODELS.ambulancia;
+    VR.CAR_MODELS.seme = { ...A, colors: WHITE, name: 'Ambulancia del Hospital (SEME)', desc: 'Ambulancia blanca con franja verde del SEME 141 y el Hospital Regional. Sale del hospital.',
+      base: VR.drawAuto({ hz: [9, 17], L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#1f9d55', tireL: 6 }) }; }
   VR.CAR_MODELS.policam.sideShape = { ...VR.CAR_MODELS.pickup.sideShape };
 
   // ---------- Colectivos (10/11/2026, pedido de Leandro con fotos) ----------
@@ -7804,16 +7808,19 @@ VR.Emergency = class {
     return null;
   }
   dispatch(model, target) {
-    const kind = model === 'bomba' ? 'bomberos' : model === 'ambulancia' ? 'ambulancia' : 'policia';
+    const kind = model === 'bomba' ? 'bomberos' : (model === 'ambulancia' || model === 'seme') ? 'ambulancia' : 'policia';
     if (kind !== 'policia' && this.units.some((u) => u.kind === kind && !u.dead && u.task !== 'leave')) { const u = this.units.find((q) => q.kind === kind && q.task !== 'leave'); if (u && !u.queue.includes(target)) u.queue.push(target); return; }
     // los bomberos salen del cuartel de la Plaza Pettirossi si el fuego no queda demasiado lejos (05/11/2026)
-    const fh = this.world.firehouse, fromHouse = kind === 'bomberos' && fh && target && Math.hypot(target.x - fh.x, target.y - fh.y) < 9000 && !this.world.boxOverlap(fh.x - 34, fh.y - 14, fh.x + 34, fh.y + 14);
+    // la ambulancia sale del cuartel (amarilla, bomberos voluntarios) o del hospital (blanca, SEME), la que quede más cerca (14/11/2026)
+    const fh = this.world.firehouse, hsp = this.world.hospital, dF = fh && target ? Math.hypot(target.x - fh.x, target.y - fh.y) : Infinity, dH = hsp && target ? Math.hypot(target.x - hsp.x, target.y - hsp.y) : Infinity;
+    const fromHouse = !!(fh && target && dF < 9000 && (kind === 'bomberos' || (kind === 'ambulancia' && dF < dH)) && !this.world.boxOverlap(fh.x - 34, fh.y - 14, fh.x + 34, fh.y + 14));
     // la ambulancia sale del Hospital Regional y la patrulla de la comisaría más cercana si quedan cerca de donde pasa algo (la patrulla, a menos de 1300 px de vos) (11/11/2026)
     const hq = kind === 'ambulancia' ? this.world.hospital && [this.world.hospital] : kind === 'policia' ? this.world.comisarias : null;
     let base = null, tg = target || this.focus; if (hq && tg && !fromHouse) for (const c of hq) { const d = Math.hypot(c.x - tg.x, c.y - tg.y); if (d < (kind === 'policia' ? 1300 : 9000) && (!base || d < base.d) && !this.world.boxOverlap(c.x - 34, c.y - 14, c.x + 34, c.y + 14)) base = { c, d }; }
     const p = fromHouse ? [fh.x, fh.y] : base ? [base.c.x, base.c.y] : this.spawnPoint(); if (!p) return null;
     const ang = fromHouse ? (target.x >= fh.x ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(this.focus.x - p[0], -(this.focus.y - p[1]));
-    if (fromHouse && Math.hypot(this.focus.x - fh.x, this.focus.y - fh.y) < 600) this.toast('🚒 Salen los bomberos del cuartel');
+    if (fromHouse && kind === 'bomberos' && Math.hypot(this.focus.x - fh.x, this.focus.y - fh.y) < 600) this.toast('🚒 Salen los bomberos del cuartel');
+    if (kind === 'ambulancia') model = fromHouse ? 'ambulancia' : 'seme';
     const v = new VR.Car(this.world, p[0], p[1], ang, 0, 'car', model);
     v.siren = true; v.hp = 140;
     const u = { v, kind, model, task: kind === 'policia' ? 'chase' : 'goto', target, queue: [], path: null, pi: 0, repath: this.rnd() * 0.5, stuck: 0, rev: 0, crew: [], wait: 0, age: 0 };

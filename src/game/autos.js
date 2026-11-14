@@ -240,7 +240,7 @@
       name: 'Camioneta de la Policía', desc: 'Doble cabina de la Policía: la que más patrulla la ciudad.', side: 'policam',
       base: VR.drawAuto({ L: 41, W: 18, hood: 9.6, ws: 3.6, roof: 9.6, rg: 1.4, fa: 0.19, ra: 0.77, box: true, bed: true, rollbar: true, tireL: 6.4, grille: '#3a3a40', bar: ['#d8302a', '#2a5ad8'], stripe: '#1e3a8a' }) },
     ambulancia: { len: 39, wid: 17, S: 44, acc: 170, rev: 60, turn: 2.4, brake: 400, mass: 1.4, max: { road: 235, stone: 205, dirt: 180, side: 140, grass: 140 }, colors: ORANGE, emer: 'ambulancia', lights: ['60,255,120', '255,40,40'],
-      name: 'Ambulancia', desc: 'Furgón de los bomberos voluntarios. Con la sirena te abren paso.', side: 'ambulancia',
+      name: 'Ambulancia de bomberos', desc: 'Furgón de los bomberos voluntarios, amarillo. Sale del cuartel. Con la sirena te abren paso.', side: 'ambulancia',
       base: VR.drawAuto({ hz: [9, 17], L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#c8241a', tireL: 6 }),
       sideShape: { body: [[3, 27], [3, 6], [5, 4], [44, 4], [52, 12], [60, 15], [61, 26], [55, 27], [53, 22], [43, 22], [41, 27], [20, 27], [18, 22], [8, 22], [6, 27]],
         win: [[[45, 6], [47, 6], [51, 12.5], [45, 12.5]], [[34, 6], [42, 6], [42, 12.5], [34, 12.5]]], pillars: [43], yr: 4, rx0: 5, rx1: 44, belt: 12.5, sill: 27, doors: [43, 33], tailx: 3, tailTop: 7, nose: 61, hood: [52, 12], wheels: [13, 48], wr: 5 } },
@@ -248,6 +248,10 @@
       name: 'Camión de bomberos', desc: 'Camión bomba: largo, pesado y con cañón de agua. Mantené ACCIÓN para mojar.', side: 'bomba', base: VR.drawBomba },
   });
   VR.CAR_MODELS.patrulla.sideShape = { ...VR.CAR_MODELS.sedan.sideShape };
+  // Ambulancia del Hospital Regional (SEME 141, 14/11/2026, foto de Leandro): blanca con franja verde. Las amarillas son de los bomberos voluntarios.
+  { const A = VR.CAR_MODELS.ambulancia;
+    VR.CAR_MODELS.seme = { ...A, colors: WHITE, name: 'Ambulancia del Hospital (SEME)', desc: 'Ambulancia blanca con franja verde del SEME 141 y el Hospital Regional. Sale del hospital.',
+      base: VR.drawAuto({ hz: [9, 17], L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#1f9d55', tireL: 6 }) }; }
   VR.CAR_MODELS.policam.sideShape = { ...VR.CAR_MODELS.pickup.sideShape };
 
   // ---------- Colectivos (10/11/2026, pedido de Leandro con fotos) ----------

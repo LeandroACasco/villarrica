@@ -730,7 +730,7 @@ VR.Car = class {
     }
     if (this.taxi) { ctx.save(); ctx.translate(x + shake, y - lift); ctx.rotate(a); ctx.fillStyle = '#1a1a1e'; ctx.fillRect(-4, -2.5, 8, 5); ctx.fillStyle = '#ffd23a'; ctx.fillRect(-3.5, -2, 7, 4); ctx.fillStyle = '#1a1a1e'; for (let i = -3; i < 3; i += 2) ctx.fillRect(i, -0.5, 1, 1); ctx.restore(); }
     if (this.siren && this.spec.lights) { // barra de luces titilando
-      const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : this.model === 'ambulancia' ? this.LEN * 0.22 : this.LEN * 0.1;
+      const on = ((performance.now() / 130) | 0) % 2, L = this.spec.lights, f = this.model === 'bomba' ? this.LEN * 0.33 : (this.model === 'ambulancia' || this.model === 'seme') ? this.LEN * 0.22 : this.LEN * 0.1;
       const bx = x + Math.sin(a) * f, by = y - Math.cos(a) * f - lift, rx = Math.cos(a) * 3.5, ry = Math.sin(a) * 3.5;
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       for (const [s, col] of [[-1, L[on]], [1, L[1 - on]]]) { const gx = bx + rx * s, gy = by + ry * s, gr = ctx.createRadialGradient(gx, gy, 0, gx, gy, 9); gr.addColorStop(0, `rgba(${col},.95)`); gr.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = gr; ctx.fillRect(gx - 9, gy - 9, 18, 18); }
@@ -836,7 +836,7 @@ VR.parkCars = (world, n, near) => {
   for (const d of world.decals || []) {
     if (d.kind !== 'cuartel') continue;
     const X = (d.x + 3) * S, Y = d.y * S;
-    for (const ox of [26, 70]) { const c = add(X + ox, Y + d.h * S - 34, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; }
+    for (const ox of [26, 70]) { const c = add(X + ox, Y + d.h * S - 34, Math.PI, 0, 'car', ox === 70 ? 'ambulancia' : 'bomba'); c.firehouse = true; }
     (world.parkingDemo = world.parkingDemo || []).push({ x0: X - 20, x1: (d.x + d.w) * S + 20, y0: Y - 20, y1: (d.ry + 4) * S });
   }
 
@@ -863,7 +863,7 @@ VR.parkCars = (world, n, near) => {
     const fill = (cx, cy, R, models, gap) => { const put = []; for (const q of spots(cx, cy, R)) { if (put.length >= models.length) break; if (put.some((o) => Math.hypot(o.x - q.x, o.y - q.y) < gap) || world.boxOverlap(q.x - 40, q.y - 40, q.x + 40, q.y + 40)) continue; put.push(q); add(q.x, q.y, q.a, (rnd() * 4) | 0, 'car', models[put.length - 1]); } return put; };
     if (tl) fill(tl.x, tl.y + 40, 18, ['guairena', 'indep', 'guairena', 'indep', 'guairena'], 88);
     const hs = P['Hospital Regional'];
-    if (hs) { const cx = (hs[0] + 0.5) * S, cy = (hs[1] + 0.5) * S, f = foot(cx, cy + 60); world.hospital = { x: f.x, y: f.y, cx, cy }; fill(cx, cy, 40, ['ambulancia', 'ambulancia'], 60); }
+    if (hs) { const cx = (hs[0] + 0.5) * S, cy = (hs[1] + 0.5) * S, f = foot(cx, cy + 60); world.hospital = { x: f.x, y: f.y, cx, cy }; fill(cx, cy, 40, ['seme', 'seme'], 60); }
     world.comisarias = [];
     for (const k in P) if (/^Comisar|^Jefatura/.test(k)) { const cx = (P[k][0] + 0.5) * S, cy = (P[k][1] + 0.5) * S, f = foot(cx, cy + 40); world.comisarias.push({ name: k, x: f.x, y: f.y, cx, cy }); fill(cx, cy, 14, ['patrulla'], 60); }
   }
