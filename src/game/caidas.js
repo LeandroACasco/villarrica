@@ -7,8 +7,8 @@
 'use strict';
 (() => {
   const rnd = (a, b) => a + Math.random() * (b - a), pick = (a) => a[(Math.random() * a.length) | 0];
-  const RETOS = ['¡Fijate por dónde andás, loco!', '¡Mba\'e piko, casi me matás!', '¡Qué hacés, bestia!', '¡Aprendé a manejar, che!', '¡Mirá lo que hiciste con mi moto!'];
-  const BOCINA = ['¡Pero fijate, che!', '¡Se cruzó de golpe!', '¡Ay, no, no, no!', '¡Mirá por dónde caminás!'];
+  const RETOS = ['¡Fijate por dónde andás, loco!', '¡Mba\'e piko, casi me matás!', '¡Qué hacés, bestia!', '¡Aprendé a manejar, nde!', '¡Mirá lo que hiciste con mi moto!'];
+  const BOCINA = ['¡Pero fijate, po!', '¡Se cruzó de golpe!', '¡Ay, no, no, no!', '¡Mirá por dónde caminás!'];
 
   // abolladura en el vehículo: posición local (derecha / adelante) respecto de su centro. Se mete hacia adentro de la chapa
   // (no queda pegada al borde, que se vería como una defensa) y los golpes cercanos se juntan en una sola abolladura más fea.

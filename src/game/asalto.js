@@ -22,7 +22,7 @@ VR.Asalto = class {
       p.mode = 'idle'; p.armed = true; p.t = 99; p.vx = p.vy = 0; p.jt = 0; p.shotT = 0.7 + R() * 0.4;
       p.say = { text: ['¡Devolveme el auto, ladrón!', '¡Eso es mío, desgraciado!', '¡Bajate de ahí!'][(R() * 3) | 0], t: 2.4 };
       this.armed.push(p);
-    } else p.say = { text: ['¡Mi auto! ¡Ladrón!', '¡Socorro, me robaron!', '¡Policía, policía!', '¡Che auto, ladrón!', '¡Ayudaaa!'][(R() * 5) | 0], t: 2.4 };
+    } else p.say = { text: ['¡Mi auto! ¡Ladrón!', '¡Socorro, me robaron!', '¡Policía, policía!', '¡Ladrón, devolvé el auto!', '¡Ayudaaa!'][(R() * 5) | 0], t: 2.4 };
     P.list.push(p);
     return p;
   }

@@ -55,7 +55,7 @@
     perchero: ['👕 Remeras, camisas, camperas. Todo con etiqueta de «oferta» que dice lo mismo que la de ayer.', '👗 Una pollera te guiña el ojo. Es la percha, pero igual.', '🧥 Una campera pesa como un ñandutí mojado.'],
     mesa: ['👚 Remeras dobladas con precisión de cirujano. No las toques o te mira la dueña.', '🏷 «2x1» en letra grande. Abajo, en letra chiquita: «en la segunda, ni a palos».', '👕 Una pila perfecta. Tocás la de abajo y se viene el mundo.'],
     mani: ['🗿 El maniquí te mira con juicio. Tiene mejor ropa que vos y lo sabe.', '🗿 Le hablás. No contesta. Qué educado.', '🗿 Tiene la misma postura que tu tío en las fotos de casamiento.'],
-    mostrador: ['🧾 «¿Te lo envuelvo?» «No, me lo llevo puesto.» «Pagame primero, che.»', '🛍 La dependienta suspira: «Hoy no vendí ni un calcetín».', '💳 Cartelito: «Solo efectivo». Otro: «Hay Pix». Los dos son ciertos según el humor del día.'],
+    mostrador: ['🧾 «¿Te lo envuelvo?» «No, me lo llevo puesto.» «Pagame primero, po.»', '🛍 La dependienta suspira: «Hoy no vendí ni un calcetín».', '💳 Cartelito: «Solo efectivo». Otro: «Hay Pix». Los dos son ciertos según el humor del día.'],
     estante: ['📦 Cajas de zapatos hasta el techo. Ninguna tiene tu número.', '🧢 Gorras apiladas como platos. La de arriba te mira.'],
   };
   const pick = (a) => a[(Math.random() * a.length) | 0];

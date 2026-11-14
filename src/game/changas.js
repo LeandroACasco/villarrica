@@ -77,8 +77,8 @@ VR.Changas = class {
     if (eq && VR.vida.s.stock <= 0) { this.toast('🧺 El canasto está vacío: reponé chipa con Doña Chela (plaza)'); return true; }
     if (!this.job || this.job.k !== 'chipa') this.job = { k: 'chipa', stage: 0, t: 0, n: 0, eq: true };
     const q = this.peds.greet(player.x, player.y); if (!q) { player.say('¡Chipa, chipa calentita!', 1.5); return true; }
-    if (q.chipa) { q.say = { text: 'Ya te compré, che', t: 1.6 }; return true; }
-    if (VR.mis && !VR.Barrios.enPunto(this.world, player.x, player.y)) { q.say = { text: 'Ndaikuaái ndéve, che...', t: 1.6 }; return true; }
+    if (q.chipa) { q.say = { text: 'Ya te compré, po', t: 1.6 }; return true; }
+    if (VR.mis && !VR.Barrios.enPunto(this.world, player.x, player.y)) { q.say = { text: 'Ndaikuaái ndéve...', t: 1.6 }; return true; }
     q.chipa = true; const V = VR.vida;
     if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; if (V) V.s.stock--; this.pay(5000, V ? 'chipa (quedan ' + V.s.stock + ')' : 'chipa ' + this.job.n + '/10', true); if (VR.mis) VR.mis.emit('venta', { que: 'chipa' }); if (V && V.s.stock <= 0) { this.end('🧺 ¡Se terminó la chipa! Reponé con Doña Chela'); return true; } if (!V && this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
     else q.say = { text: ['Nahániri', 'Otro día', 'Ya comí'][(this.rnd() * 3) | 0], t: 1.6 };

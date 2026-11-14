@@ -292,7 +292,7 @@
   };
 
   // ---------- lógica ----------
-  const SALUDOS = ["¡Mba'éichapa!", "¡Mba'e la porte!", 'Haku la ára, che...', "¡Jaha jaha!", '¡Ára porã!'];
+  const SALUDOS = ["¡Mba'éichapa!", "¡Mba'e la porte!", 'Haku la ára, nde...', "¡Jaha jaha!", '¡Ára porã!'];
   const BOCINAS = ['¡Pi pííí!', '¡Pííp!', '¡Pi pi!'];
   const btnCarT = document.querySelector('.tb[data-b="car"]'); let btnCarShow = true;
   let sayIdx = 0, hint = '', hintCar = null, holdT = 0;

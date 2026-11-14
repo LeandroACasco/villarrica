@@ -14,10 +14,10 @@
   const LANE = [1, 4, 7];                      // profundidad (baldosas desde el borde del techo del lado de la calle) de los tres carriles
   const ISL = [2.5, 5.5];                      // ...y de las dos islas
   const TALK = {
-    ask: ['¿Cuánto le pongo?', '¿Lleno, che?', '¿Nafta común?', '¿Cuánto va a ser?', '¿Le miro el aceite?'],
-    done: ['¡Listo, vuelva pronto!', 'Ya está, aguyje.', '¡Todo listo, don!', 'Ahí tiene, che.'],
-    me: ['¡Ahí le echo, che!', '¿Lleno, nomás?', '¡Ya le cargo!'],
-    meDone: ['¡Aguyje, vuelva pronto!', '¡Listo, che!', 'Todo en orden, don.'],
+    ask: ['¿Cuánto le pongo?', '¿Lleno, don?', '¿Nafta común?', '¿Cuánto va a ser?', '¿Le miro el aceite?'],
+    done: ['¡Listo, vuelva pronto!', 'Ya está, aguyje.', '¡Todo listo, don!', 'Ahí tiene, po.'],
+    me: ['¡Ahí le echo, po!', '¿Lleno, nomás?', '¡Ya le cargo!'],
+    meDone: ['¡Aguyje, vuelva pronto!', '¡Listo, aguyje!', 'Todo en orden, don.'],
   };
   const pick = (a, r) => a[(r() * a.length) | 0];
   const dist2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);

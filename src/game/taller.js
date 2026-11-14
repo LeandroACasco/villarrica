@@ -103,18 +103,18 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
   // ------------------------------------------------------------ Don Chicho, el mecánico: charla con cada cosa que elegís
   const CHICHO = { gender: 'm', skin: 2, build: 'panza', hair: 'peinadoAtras', hairColor: 5, beard: 'bigote', top: 'remera', topColor: 13, bottom: 'jean', bottomColor: 3, shoes: 'zapatillas', shoesColor: 3, hat: 'gorra', hatColor: 0 };
   const R = (a) => a[(Math.random() * a.length) | 0];
-  const COLOR_L = { Rojo: 'Rojo: dicen que corre más. Mentira, pero se ve lindo.', Bordó: 'Bordó, color de vino de domingo. Elegante, che.', Naranja: 'Naranja: te ven desde la Terminal, no hay forma de perderte.', Amarillo: 'Amarillo... te van a parar pensando que sos taxi. Jaja, pero queda bien.', Lima: 'Verde lima: grita «¡mírenme!» a todo volumen.', Verde: 'Verde, como la yerba. Un clásico bien paraguayo.', Turquesa: 'Turquesa, color de pileta. Me gusta.', Celeste: 'Celeste, tranquilo, como tarde de tereré.', Azul: 'Azul profundo. Serio, de persona que paga a tiempo.', Violeta: 'Violeta, qué atrevido. Me gusta que seas diferente.', Rosa: '¡Rosa! No cualquiera se anima. Te respeto.', Blanco: 'Blanco... ¿lo vas a lavar vos, no? Porque con el barro de acá...', Plateado: 'Plateado, brilla lindo y se le nota poco la tierra.', Gris: 'Gris, discreto. Pasás desapercibido, como ninja.', Negro: 'Negro: elegante, misterioso, y no se le nota la mugre.', Dorado: '¿Dorado? Parecés intendente en campaña.' };
+  const COLOR_L = { Rojo: 'Rojo: dicen que corre más. Mentira, pero se ve lindo.', Bordó: 'Bordó, color de vino de domingo. Elegante, po.', Naranja: 'Naranja: te ven desde la Terminal, no hay forma de perderte.', Amarillo: 'Amarillo... te van a parar pensando que sos taxi. Jaja, pero queda bien.', Lima: 'Verde lima: grita «¡mírenme!» a todo volumen.', Verde: 'Verde, como la yerba. Un clásico bien paraguayo.', Turquesa: 'Turquesa, color de pileta. Me gusta.', Celeste: 'Celeste, tranquilo, como tarde de tereré.', Azul: 'Azul profundo. Serio, de persona que paga a tiempo.', Violeta: 'Violeta, qué atrevido. Me gusta que seas diferente.', Rosa: '¡Rosa! No cualquiera se anima. Te respeto.', Blanco: 'Blanco... ¿lo vas a lavar vos, no? Porque con el barro de acá...', Plateado: 'Plateado, brilla lindo y se le nota poco la tierra.', Gris: 'Gris, discreto. Pasás desapercibido, como ninja.', Negro: 'Negro: elegante, misterioso, y no se le nota la mugre.', Dorado: '¿Dorado? Parecés intendente en campaña.' };
   const LINES = {
     color: (v) => COLOR_L[colName(v)] || 'Ese color le queda joya.',
-    color2: () => R(['Buen contraste, tenés ojo.', 'Con ese color de franjas se destaca de lejos.', 'Combina bien, che.']),
+    color2: () => R(['Buen contraste, tenés ojo.', 'Con ese color de franjas se destaca de lejos.', 'Combina bien, po.']),
     franja: { no: 'Sin franjas, limpio y serio.', carrera: 'Franjas de carrera: ahora sí parece que corre.', centro: 'Una ancha al medio, estilo campeón de domingo.', costado: 'A los costados, finitas, con clase.' },
     llantas: { serie: 'Las de fábrica: aburridas pero honestas.', deportivas: 'Deportivas: lindas de verdad, aunque sigas yendo a 40 por la calle.', cromadas: 'Cromadas: brillan tanto que van a darle señales al avión.', negras: 'Negras, estilo misterioso. Elegante.', doradas: '¿Llantas doradas? Ahora sí sos el patrón del barrio.' },
-    polarizado: { 0: 'Vidrios limpios: así saludás a la gente.', 1: 'Medio polarizado: te ven, pero no tanto.', 2: 'Polarizado total... ¿qué escondés, che? Jajaja, a mí no me contás.' },
+    polarizado: { 0: 'Vidrios limpios: así saludás a la gente.', 1: 'Medio polarizado: te ven, pero no tanto.', 2: 'Polarizado total... ¿qué escondés, nde? Jajaja, a mí no me contás.' },
     aleron: { no: 'Sin alerón, más aerodinámico. O eso dicen.', chico: 'Alerón chico: discreto, pero se nota.', grande: '¡Ese alerón es enorme! Con eso despegás en la ruta.' },
     techo: { serie: 'Techo del color del auto: prolijo.', negro: 'Techo negro, pinta de auto caro.', parrilla: '¡Parrilla! Ahí cargás de todo... hasta la heladera del vecino.' },
     escape: { serie: 'Escape de serie: silencio de biblioteca.', deportivo: '¡Doble escape! Vas a despertar a todo el barrio... y a la suegra.' },
     faros: { normal: 'Faros normales, los de siempre. Naranjitas y fieles.', xenon: '¡Xenón! Vas a encandilar hasta a los murciélagos.' },
-    bajo: { 0: 'Altura normal, para los lomos de burro de Villarrica.', 1: 'Bajito... ojo con los lomos de burro, che, que raspás.' },
+    bajo: { 0: 'Altura normal, para los lomos de burro de Villarrica.', 1: 'Bajito... ojo con los lomos de burro, nde, que raspás.' },
     neon: (k) => k === 'no' ? 'Sin neón: sencillo, como cena de domingo.' : 'Neón ' + (VR.TUNE_PARTS.neon.opts[k] || [''])[0].toLowerCase() + ': de noche vas a parecer una nave espacial.',
   };
   const EXP = { franja: 'feliz', llantas: 'feliz', aleron: 'sorpresa', escape: 'sorpresa', neon: 'sorpresa', faros: 'feliz', polarizado: 'duda', bajo: 'duda', techo: 'feliz', color: 'feliz', color2: 'feliz' };
@@ -193,10 +193,10 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       cv.onpointerup = cv.onpointercancel = () => { drag = null; cv.style.cursor = 'grab'; clearTimeout(this._at); this._at = setTimeout(() => { if (!drag) this.auto = true; }, 2500); };
       d.querySelector('#garOut').onclick = () => this.close();
       d.querySelector('#garBuy').onclick = () => this.buy();
-      d.querySelector('#garUndo').onclick = () => { this.t = { ...this.old }; this.base = null; this.fx = { t: 0, rgb: '255,255,255', kind: 'spark' }; this.build(); this.say(R(['Listo, todo borrado. Como si nada hubiera pasado, jajaja.', '¿Te arrepentiste? Pasa, che, pasa. Empezamos de nuevo.']), 'feliz', 5); };
+      d.querySelector('#garUndo').onclick = () => { this.t = { ...this.old }; this.base = null; this.fx = { t: 0, rgb: '255,255,255', kind: 'spark' }; this.build(); this.say(R(['Listo, todo borrado. Como si nada hubiera pasado, jajaja.', '¿Te arrepentiste? Pasa, nde, pasa. Empezamos de nuevo.']), 'feliz', 5); };
       d.querySelector('#garTank').onclick = () => { const r = VR.Tab.servicio(this.car); this.say(r.msg, r.bad ? 'triste' : r.n ? 'feliz' : 'duda', 6); if (r.n) { this.fx = { t: 0, rgb: '120,220,255', kind: 'spark' }; this.d.querySelector('#garMoney').textContent = '💰 ' + VR.fmtGs(VR.Wallet.get()); } };
       d.querySelector('#garFix').onclick = () => { // reparar: 1.500 Gs. por punto de vida
-        const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.say('Si está joya, ¿qué querés que le repare? Dejalo así, che.', 'duda', 5); return; }
+        const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.say('Si está joya, ¿qué querés que le repare? Dejalo así, po.', 'duda', 5); return; }
         const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.say('Reparar te sale ' + VR.fmtGs(n) + '. Y vos tenés ' + VR.fmtGs(VR.Wallet.get()) + '. Las cuentas no cierran, amigo.', 'triste', 7); return; }
         VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.say('¡Chapa y pintura! Quedó como recién salido de fábrica. Son ' + VR.fmtGs(n) + ', amigo.', 'feliz', 6); this.fx = { t: 0, rgb: '255,230,120', kind: 'spark' }; this.total(); };
       addEventListener('keydown', (e) => { if (!this.d.hidden && e.key === 'Escape') this.close(); });
@@ -217,12 +217,12 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       const c = this.chat; if (!c || !c.full) return; const p = this.d.querySelector('#garChat p'), el = this.d.querySelector('#garChat');
       if (c.n < c.full.length) { c.n = Math.min(c.full.length, Math.floor((now - c.t0) / 1000 * 50) + 1); p.textContent = c.full.slice(0, c.n); const o = Math.floor(now / 110) % 2 === 0 && /[a-záéíóúñü]/i.test(c.full[c.n - 1] || ''); if (o !== c.open) { c.open = o; this.face(o); } if (c.n >= c.full.length) { c.done = now; this.face(false); } }
       else if (now - c.done > c.hold * 1000) el.classList.add('off');
-      if (!this._idle || now - this._idle > 22000) { if (this._idle && c.n >= c.full.length && c.done && now - c.done > 4000) this.say(R(['Dale, elegí tranquilo. Yo me tomo un tereré mientras.', 'Esa pintura se ve mejor con sol, che. Pero bueno, acá estamos bajo techo.', 'Mirá que acá no hay apuro... bueno, un poquito, que viene otro cliente.', 'Si querés mi opinión: todo, pero cobrando, jaja.']), 'feliz', 5); this._idle = now; }
+      if (!this._idle || now - this._idle > 22000) { if (this._idle && c.n >= c.full.length && c.done && now - c.done > 4000) this.say(R(['Dale, elegí tranquilo. Yo me tomo un tereré mientras.', 'Esa pintura se ve mejor con sol, po. Pero bueno, acá estamos bajo techo.', 'Mirá que acá no hay apuro... bueno, un poquito, que viene otro cliente.', 'Si querés mi opinión: todo, pero cobrando, jaja.']), 'feliz', 5); this._idle = now; }
     }
     greet() {
       const car = this.car, m = this.model, moto = car.type === 'moto', pati = m === 'pati', hp = car.hp ?? 100;
       if (hp < 50) return this.say('¡Mba\'éichapa quedó ese vehículo! ¿Te chocaste con la Terminal? Primero reparalo con el botón, después lo hacemos lindo.', 'sorpresa', 9);
-      this.say(R(pati ? ['¿Una patineta? También la tuneamos, che. En Taller Pyahu nadie discrimina.'] : moto ? ['¡Una moto! Esto me lo hago entre mate y mate. ¿Qué le ponemos?', '¡Ha upéi! Linda moto. Elegí lo que quieras, que la dejo como nueva.'] : ['¡Ha upéi, che! Pasá nomás. ¿Qué le hacemos a esta belleza?', 'Uy, mirá qué tenemos acá. Tiene buenos huesos. ¿Qué le ponemos?']), 'feliz', 8);
+      this.say(R(pati ? ['¿Una patineta? También la tuneamos, nde. En Taller Pyahu nadie discrimina.'] : moto ? ['¡Una moto! Esto me lo hago entre mate y mate. ¿Qué le ponemos?', '¡Ha upéi! Linda moto. Elegí lo que quieras, que la dejo como nueva.'] : ['¡Ha upéi, nde! Pasá nomás. ¿Qué le hacemos a esta belleza?', 'Uy, mirá qué tenemos acá. Tiene buenos huesos. ¿Qué le ponemos?']), 'feliz', 8);
     }
     react(part, key) {
       const L = LINES[part]; let t = typeof L === 'function' ? L(key) : L && L[key]; if (!t) return;
@@ -315,7 +315,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       if (this.d.hidden) return; const now = performance.now(); if (this.auto) this.ang += 0.012; if (this.fx) { this.fx.t += Math.min(0.05, (now - (this._l || now)) / 1000); if (this.fx.t > 1) this.fx = null; } this._l = now; this.paint(now); this.chatTick(now); requestAnimationFrame(() => this.loop());
     }
     buy() {
-      const n = this.cost(); if (this.closing) return; if (n > VR.Wallet.get()) { this.say('No te alcanza la plata, che. Sacale algo o volvé con más billete.', 'triste', 7); return; }
+      const n = this.cost(); if (this.closing) return; if (n > VR.Wallet.get()) { this.say('No te alcanza la plata, po. Sacale algo o volvé con más billete.', 'triste', 7); return; }
       VR.Wallet.add(-n, 'Taller: tuneo'); const c = this.car; c.tune = { ...this.t };
       c.frames = VR.vframes(c.type, c.color, c.model, c.tune); c.spec = VR.tuneSpec(VR.vspec(c.type, c.model), c.tune);
       this.toast(n ? '🔧 ¡Quedó joya! ' + VR.fmtGs(n) : 'Sin cambios'); this.say(n ? R(['¡Listo! Quedó joya. Son ' + VR.fmtGs(n) + '. Llevalo con cuidado, ¿eh?', '¡Terminé! Ahora sí, que se vea quién manda en Villarrica. Son ' + VR.fmtGs(n) + '.']) : 'Nada que cobrar. Fácil, la tuya.', 'feliz', 3); this.closing = true; setTimeout(() => { this.closing = false; this.close(); }, 1900);
