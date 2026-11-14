@@ -15,12 +15,13 @@ VR.PED_TALK.fire = ['¡Tata!', '¡Ojapo tata!', '¡Fuego, fuego!', '¡Socorro!']
 VR.Weapons = class {
   constructor(world, opts) {
     this.world = world; this.peds = opts.peds; this.emer = opts.emer; this.night = opts.night; this.toast = opts.toast;
-    this.enabled = VR.store.get('dev:armas', false);
+    this.libre = VR.modo !== 'historia'; // en Historia no hay armas (14/11/2026): la bandera dev:armas es de Libre
+    this.enabled = this.libre && VR.store.get('dev:armas', false);
     this.noStars = VR.store.get('dev:sinEstrellas', false);
     this.cur = VR.store.get('dev:arma', 'pistola'); if (!VR.WEAPONS[this.cur]) this.cur = 'pistola';
     this.shots = []; this.cool = 0; this.flash = 0; this.flaming = false; this.rnd = VR.rng(4471); this.aim = Math.PI; this.t = 0;
   }
-  setEnabled(on) { this.enabled = on; VR.store.set('dev:armas', on); if (!on) { this.flaming = false; VR.audio.flame(false); } }
+  setEnabled(on) { if (!this.libre) return; this.enabled = on; VR.store.set('dev:armas', on); if (!on) { this.flaming = false; VR.audio.flame(false); } }
   select(k) { if (!VR.WEAPONS[k]) return; this.cur = k; VR.store.set('dev:arma', k); }
   next() { const L = VR.WEAPON_ORDER; this.select(L[(L.indexOf(this.cur) + 1) % L.length]); const W = VR.WEAPONS[this.cur]; this.toast(W.ico + ' ' + W.name); }
   get weapon() { return VR.WEAPONS[this.cur]; }
@@ -48,7 +49,7 @@ VR.Weapons = class {
       if (this.cur === 'pistola' && input.down('fire') && this.cool <= 0) { this.aim = this.aimAngle(player, input); this.shoot(player); this.cool = W.cool; }
       if (this.cur === 'lanzallamas' && input.down('fire')) { this.aim = this.aimAngle(player, input); flaming = true; this.flame(dt, player); }
       if (input.down('fire')) { player.dir = Math.abs(Math.sin(this.aim)) > Math.abs(Math.cos(this.aim)) ? (Math.sin(this.aim) > 0 ? 'right' : 'left') : (Math.cos(this.aim) > 0 ? 'up' : 'down'); }
-    } else if (input.pressed('weapon') && !this.enabled && !car) this.toast('Las armas están apagadas (Menú → Desarrollador)');
+    } else if (input.pressed('weapon') && !this.enabled && !car && this.libre) this.toast('Las armas están apagadas (Menú → Desarrollador)');
     if (flaming !== this.flaming) { this.flaming = flaming; VR.audio.flame(flaming); }
     this.updateShots(dt);
   }
