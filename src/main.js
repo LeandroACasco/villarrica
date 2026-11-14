@@ -101,6 +101,9 @@
   const perros = VR.perros = peds ? new VR.Perros(world, peds) : { update() {}, collect() {}, pet() { return false; } }; VR.toast = (m) => toast(m);   // perros callejeros (perros.js)
   const caidas = VR.caidas = traffic ? new VR.Caidas(world, traffic, peds) : null;   // caídas de motos y choques del tránsito (caidas.js)
   if (traffic) VR.traffic = traffic;
+  const chespis = VR.chespis = peds ? new VR.Chespis(world, peds, { player: () => player, busy: () => VR.Dialogo.abierto, toast: (m) => toast(m), menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
+    hurt: (dx, dy, n) => { player.knock(dx * 70, dy * 70, 0.35); if (VR.audio && VR.audio.ouch) VR.audio.ouch(player.x, player.y); hurtPlayer(n); },
+    anchors: () => Object.keys(VR.SUPERS).map((id) => lugE.get('super_' + id)).filter(Boolean) }) : null; // chespis: caminan, piden plata y pueden sacar un cuchillo (14/11/2026)
   const calle = VR.calle = peds ? new VR.Calle(world, peds, { toast: (m) => toast(m), heal: (n) => VR.heal && VR.heal(n), hambre: (n) => { if (vida && vida.s) vida.s.hambre = Math.min(100, vida.s.hambre + n); } }) : { update() {}, collect() {}, near() { return null; }, act() { return false; } };   // vendedores y gente de la calle (calle.js)
   const fauna = VR.fauna = new VR.Fauna(world); // carpinchos, patos, peces y palomas (fauna.js)
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
@@ -360,12 +363,14 @@
       if (nn) { hint = (VR.input.source === 'touch' ? '💬 ' : VR.input.source === 'pad' ? '💬 A: ' : '💬 Espacio: ') + nn.nombre; hintCar = { x: nn.x, y: nn.y - 14 }; }
       const nv = !nc && !nsw && !nn ? calle.near(player) : null; if (nv) { hint = (VR.input.source === 'touch' ? 'ACCIÓN: ' : 'Espacio: ') + (nv.stock > 0 ? nv.K.label.replace(/ · .*/, '') + ' · ' + VR.fmtGs(nv.K.price) : 'sin stock'); hintCar = { x: nv.x, y: nv.y + 52 }; }
       const np = puestoL && !nc && !nsw && !nv ? puestoL.near(player) : null; if (np) { hint = (VR.input.source === 'touch' ? '🛒 ACCIÓN: despensa' : '🛒 Espacio: despensa'); hintCar = { x: np.x, y: np.y - 14 }; }
-      const nme = !nc && !nsw && !nv && !np ? mercL.near(player) : null; if (nme) { hint = (VR.input.source === 'touch' ? '🧺 ACCIÓN: mercado' : '🧺 Espacio: mercado'); hintCar = { x: nme.x, y: nme.y - 14 }; }
+      const nch = !nc && !nsw && !nn && chespis ? chespis.near(player) : null; if (nch) { hint = (VR.input.source === 'touch' ? '🪙 ACCIÓN: hablar' : '🪙 Espacio: hablar'); hintCar = { x: nch.x, y: nch.y - 36 }; }
+      const nsu = !nc && !nsw && !nv && !np ? superL.near(player) : null; if (nsu) { hint = (VR.input.source === 'touch' ? '🛒 ACCIÓN: ' : '🛒 Espacio: ') + nsu.name; hintCar = { x: nsu.x, y: nsu.y - 14 }; }
+      const nme = !nc && !nsw && !nv && !np && !nsu ? mercL.near(player) : null; if (nme) { hint = (VR.input.source === 'touch' ? '🧺 ACCIÓN: mercado' : '🧺 Espacio: mercado'); hintCar = { x: nme.x, y: nme.y - 14 }; }
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) { const no = noRobar(nc); if (no) toast(no); else enterCar(nc); } else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (np) { VR.despensa.entrar(); return; } if (nme) { VR.mercado.entrar(); return; } if (ns) { VR.tienda.entrar(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (nch) { chespis.talk(nch); return; } if (np) { VR.despensa.entrar(); return; } if (nme) { VR.mercado.entrar(); return; } if (nsu) { VR.super.abrir(nsu.id); return; } if (ns) { VR.tienda.entrar(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
@@ -383,6 +388,7 @@
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
     if (peds && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
+    if (chespis && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; chespis.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
     if (asalto) asalto.update(dt);
     if (estvida && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; estvida.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car ? null : { x: player.x, y: player.y - 4 }, car); }
     { // fauna: lo que la asusta (vos, tu vehículo o tu cisne, el tránsito, la gente y los cisnes que andan)
@@ -427,6 +433,7 @@
     if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { player.draw(c, cx, cy, a); if (weapons && !player.rag) weapons.drawHeld(c, player, cx, cy, a); } });
     online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
+    if (chespis) chespis.collect(cx, cy, sw, sh, a, tall);
     if (escena) escena.collect(cx, cy, sw, sh, tall);
     if (estvida) estvida.collect(cx, cy, sw, sh, a, tall);
     fauna.collect(cx, cy, sw, sh, tall);
@@ -793,6 +800,8 @@
   if (mis) VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => mis.dialogo(VR.despensaCompra(mis)) }); // despensa Ñande Róga por dentro
   VR.mercado = VR.crearMercado({ player, busy: () => false, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍽 ' + n + ' · −' + VR.fmtGs(p)); } } }); // Mercado Municipal por dentro (13/11/2026)
+  VR.super = VR.crearSuper({ player, busy: () => false, toast: (m) => toast(m), menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
+    come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🛒 ' + n + ' · −' + VR.fmtGs(p)); } } }); // supermercados por dentro (14/11/2026)
   let puestoL = null; // en Libre no hay misiones, pero la despensa sí está (puesto en la vereda al sudeste de la plaza + el interior)
   if (!mis) {
     const lug = new VR.Lugares(world), D = VR.PUNTOS.despensa; VR.PUNTOS_LIBRE = true;
@@ -804,6 +813,7 @@
   }
   // ---------- lugares donde se puede entrar: marcador siempre visible en la calle, minimapa y mapa grande ----------
   const lugE = mis ? mis.lug : new VR.Lugares(world);
+  const superL = { pts: () => Object.keys(VR.SUPERS).map((id) => { const p = lugE.get('super_' + id); return p && { x: p.x, y: p.y, name: p.name, id }; }).filter(Boolean), near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 46) return p; return null; } };
   const mercL = { pts: () => ['mercado1', 'mercado2'].map((k) => lugE.get(k)).filter(Boolean), near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 46) return p; return null; } };
   const entradas = () => { const o = [];
     if (shopDoor) o.push({ x: shopDoor.x, y: shopDoor.y - 6, ico: '👕', c: '#ff9ed0', name: 'Tienda Ao Porã' });
@@ -811,6 +821,7 @@
     const C = { despensa: '#9fe0a0', pieza: '#ffd84a', cajero: '#7fd8ff', cajero2: '#7fd8ff', financiera: '#ffb36b', celulares: '#c9a0ff' };
     for (const d of (world.decals || [])) if (d.kind === 'estacion') { const k = VR.Estaciones.lay(d).canopy; o.push({ x: k[0] + k[2] / 2, y: k[1] + k[3] / 2, ico: '⛽', c: '#ff8f6b', name: d.name }); }
     for (const p of mercL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🧺', c: '#ffcf6b', name: p.name });
+    for (const p of superL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🛒', c: '#8fd0ff', name: p.name });
     if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
     if (mbh.activo && mbh.v && !mbh.riding) o.push({ x: mbh.v.x, y: mbh.v.y, ico: mbh.r.tipo === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: 'Tu Mbohasa' }); // el conductor, siempre visible en el minimapa y el mapa grande (12/11/2026)
     const ks = mis ? Object.keys(VR.PUNTOS) : ['despensa'];
