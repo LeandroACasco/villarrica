@@ -410,7 +410,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión a1ad7834 · 2026-11-14</div>
+  <div class="tVer">Versión 34f8ca97 · 2026-11-14</div>
 </div>
 <div id="fade"></div>
 
@@ -509,7 +509,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión a1ad7834 · 2026-11-14</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 34f8ca97 · 2026-11-14</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -2499,7 +2499,7 @@ VR.decorTop = {
   guirnaldas(d) { // luces colgadas en zigzag sobre las 4 calles que rodean la Plaza de los Héroes
     const S = VR.TILE, X0 = d.x * S, X1 = (d.x + d.w) * S, Y0 = d.y * S, Y1 = (d.y + d.h) * S;
     return [{ sy: Y1 + 400, draw(g) {
-      const tw = performance.now() / 500, V = d.dir === 'v';
+      const tw = performance.now() / 500, V = d.dir === 'v', lv = VR.night ? VR.night.level : 1, bulb = `rgb(${150 + 105 * lv | 0},${156 + 99 * lv | 0},${164 + 91 * lv | 0})`; // de día los focos están apagados (gris), de noche prenden (14/11/2026)
       if (d.dir === 'x') { // cruce: hilos en abanico desde cada esquina hacia los dos lados de enfrente (foto de Leandro, 13/11/2026)
         const C = [[X0, Y0], [X1, Y0], [X1, Y1], [X0, Y1]];
         for (let c = 0; c < 4; c++) { const [ax, ay] = C[c], [ox, oy] = C[(c + 2) % 4];
@@ -2507,8 +2507,8 @@ VR.decorTop = {
             const bx = hz ? ox : ax + (ox - ax) * f, by = hz ? ay + (oy - ay) * f : oy, n = Math.max(4, Math.round(Math.hypot(bx - ax, by - ay) / 11));
             g.strokeStyle = 'rgba(30,30,30,.5)'; g.lineWidth = 1; g.beginPath(); g.moveTo(ax, ay + 1); g.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + 7, bx, by + 1); g.stroke();
             for (let k = 1; k < n; k++) { const t = k / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t + Math.sin(t * Math.PI) * 3.5, on = 0.75 + 0.25 * Math.sin(tw + k * 1.7 + c * 2.3 + f * 9);
-              g.fillStyle = `rgba(236,242,255,${0.28 * on})`; g.fillRect(Math.round(x) - 2, Math.round(y) - 2, 5, 5);
-              g.fillStyle = '#ffffff'; g.fillRect(Math.round(x), Math.round(y), 2, 2);
+              g.fillStyle = `rgba(236,242,255,${0.28 * on * lv})`; g.fillRect(Math.round(x) - 2, Math.round(y) - 2, 5, 5);
+              g.fillStyle = bulb; g.fillRect(Math.round(x), Math.round(y), 2, 2);
               if (VR.night && k % 5 === 2) VR.night.add(x, y + 5, 22, '236,240,255', 0.3); } } }
         return;
       }
@@ -2521,8 +2521,8 @@ VR.decorTop = {
         for (let k = 0; k <= 12; k++) {
           const [x, yy] = pt(k), y = u;
           const on = 0.75 + 0.25 * Math.sin(tw + k * 1.7 + y);
-          g.fillStyle = `rgba(236,242,255,${0.28 * on})`; g.fillRect(Math.round(x) - 2, Math.round(yy) - 1, 5, 5);
-          g.fillStyle = '#ffffff'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
+          g.fillStyle = `rgba(236,242,255,${0.28 * on * lv})`; g.fillRect(Math.round(x) - 2, Math.round(yy) - 1, 5, 5);
+          g.fillStyle = bulb; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
           if (VR.night && k % 3 === 1) VR.night.add(x, yy + 6, 30, '236,240,255', 0.5);
         }
       }
