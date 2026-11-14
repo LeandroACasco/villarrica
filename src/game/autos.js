@@ -248,10 +248,13 @@
       name: 'Camión de bomberos', desc: 'Camión bomba: largo, pesado y con cañón de agua. Mantené ACCIÓN para mojar.', side: 'bomba', base: VR.drawBomba },
   });
   VR.CAR_MODELS.patrulla.sideShape = { ...VR.CAR_MODELS.sedan.sideShape };
-  // Ambulancia del Hospital Regional (SEME 141, 14/11/2026, foto de Leandro): blanca con franja verde. Las amarillas son de los bomberos voluntarios.
+  // Ambulancias del Hospital Regional (14/11/2026, fotos de Leandro): blancas con franja verde (furgón y 4x4). Las amarillas son de los bomberos voluntarios.
   { const A = VR.CAR_MODELS.ambulancia;
-    VR.CAR_MODELS.seme = { ...A, colors: WHITE, name: 'Ambulancia del Hospital (SEME)', desc: 'Ambulancia blanca con franja verde del SEME 141 y el Hospital Regional. Sale del hospital.',
-      base: VR.drawAuto({ hz: [9, 17], L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#1f9d55', tireL: 6 }) }; }
+    VR.CAR_MODELS.seme = { ...A, colors: WHITE, name: 'Ambulancia del Hospital', desc: 'Furgón blanco con franja verde del Hospital Regional. Recorre la ciudad y acude a los accidentes.',
+      base: VR.drawAuto({ hz: [9, 17], L: 39, W: 17, hood: 5.8, ws: 4.2, roof: 26, rg: 0, fa: 0.17, ra: 0.8, box: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#1f9d55', tireL: 6 }) };
+    const S = VR.CAR_MODELS.suv; // 4x4 con rueda de auxilio atrás (la camioneta de la foto)
+    VR.CAR_MODELS.ambu4x4 = { ...S, colors: WHITE, emer: 'ambulancia', lights: A.lights, name: 'Ambulancia 4x4', desc: 'Todoterreno blanco del Hospital Regional con franja verde. Recorre la ciudad y acude a los accidentes.',
+      base: VR.drawAuto({ L: 37, W: 18, hood: 8.6, ws: 3.6, roof: 17.4, rg: 1.8, fa: 0.2, ra: 0.76, box: true, spare: true, tireL: 6.4, flares: true, bar: ['#3ad86a', '#d8302a'], bar2: true, stripe: '#1f9d55' }) }; }
   VR.CAR_MODELS.policam.sideShape = { ...VR.CAR_MODELS.pickup.sideShape };
 
   // ---------- Colectivos (10/11/2026, pedido de Leandro con fotos) ----------
@@ -323,6 +326,7 @@
     const r = rnd();
     if (!parked && r < 0.025) return 'karumbe';
     if (!parked && r < 0.055) return rnd() < 0.7 ? 'policam' : 'patrulla'; // alguna patrullera recorriendo
+    if (!parked && r < 0.07) return ['seme', 'ambu4x4', 'ambulancia'][(rnd() * 3) | 0]; // ambulancias recorriendo: acuden si ven un accidente (emerg.js)
     const sp = rnd(); if (sp < 0.06) return sp < 0.03 ? 'rally' : 'coupe'; // deportivos: pocos
     const q = rnd();
     return q < 0.24 ? 'mita' : q < 0.42 ? 'sedan' : q < 0.56 ? 'mono' : q < 0.74 ? 'pickup' : q < 0.84 ? 'suv' : q < 0.93 ? 'suvmed' : 'suvchico';

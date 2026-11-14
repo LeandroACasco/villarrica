@@ -51,9 +51,12 @@ VR.Emergency = class {
     this.level = 0; this.lost = 0; this.cool = {}; this.flash = 0; this.t = 0; this.rnd = VR.rng(911);
     this.siren = new VR.Siren(); this.sound = true;
     const cloth = VR.AV2_CAT.cloth, idx = (h) => cloth.indexOf(h);
-    const navy = idx('#1e3a6a'), black = idx('#2c2c34'), yellow = idx('#e8b830');
+    const navy = idx('#1e3a6a'), black = idx('#2c2c34'), yellow = idx('#e8b830'), white = idx('#f2efe6');
     this.looks = {
       poli: [0, 1, 2, 3].map((i) => VR.av2Lazy({ gender: i === 3 ? 'f' : 'm', skin: [1, 2, 3, 2][i], build: i === 1 ? 'fornido' : 'normal', hair: i === 3 ? 'colita' : 'corto', hairColor: 1, top: 'camisa', topColor: navy, bottom: 'cargo', bottomColor: black, shoes: 'botines', shoesColor: black, hat: 'gorra', hatColor: navy })),
+      // ambulancieros del hospital (14/11/2026): camisa blanca y pantalón negro, sin amarillo; el médico de guardia con bata blanca
+      paramedico: [0, 1, 2].map((i) => VR.av2Lazy({ gender: i === 2 ? 'f' : 'm', skin: [2, 1, 3][i], build: 'normal', hair: i === 2 ? 'colita' : 'corto', hairColor: 1, top: 'camisa', topColor: white, bottom: 'vestir', bottomColor: black, shoes: 'zapatos', shoesColor: black })),
+      doctor: [0, 1].map((i) => VR.av2Lazy({ gender: i ? 'f' : 'm', skin: [1, 2][i], build: 'normal', hair: i ? 'rodete' : 'corto', hairColor: 1, top: 'campera', topColor: white, topColor2: white, bottom: 'vestir', bottomColor: black, shoes: 'zapatos', shoesColor: black, anteojos: i === 0 })),
       bombero: [0, 1, 2].map((i) => VR.av2Lazy({ gender: i === 2 ? 'f' : 'm', skin: [2, 1, 3][i], build: 'fornido', hair: 'corto', top: 'campera', topColor: yellow, topColor2: yellow, bottom: 'cargo', bottomColor: yellow, shoes: 'botines', shoesColor: black, hat: 'casco', hatColor: yellow })),
     };
     VR.emer = this; // caidas.js le avisa cuando un motociclista queda herido
@@ -157,6 +160,16 @@ VR.Emergency = class {
   dispatch(model, target) {
     const kind = model === 'bomba' ? 'bomberos' : (model === 'ambulancia' || model === 'seme') ? 'ambulancia' : 'policia';
     if (kind !== 'policia' && this.units.some((u) => u.kind === kind && !u.dead && u.task !== 'leave')) { const u = this.units.find((q) => q.kind === kind && q.task !== 'leave'); if (u && !u.queue.includes(target)) u.queue.push(target); return; }
+    // una ambulancia que anda por la calle (tránsito) y ve el accidente cerca se "activa": prende la sirena y va (14/11/2026)
+    if (kind === 'ambulancia' && this.traffic && target) {
+      let rv = null, rd = 1100;
+      for (const c of this.traffic.list) if (c.spec.emer === 'ambulancia' && c.ai && !c.unit && !c.wreck && !c.burning) { const d = Math.hypot(c.x - target.x, c.y - target.y); if (d < rd) { rd = d; rv = c; } }
+      if (rv) {
+        this.traffic.list.splice(this.traffic.list.indexOf(rv), 1); rv.ai = null; rv.siren = true; rv.hp = Math.max(rv.hp ?? 0, 140);
+        const u = { v: rv, kind, model: rv.model, task: 'goto', target, queue: [], path: null, pi: 0, repath: 0, stuck: 0, rev: 0, crew: [], wait: 0, age: 0 };
+        rv.unit = u; this.units.push(u); return u;
+      }
+    }
     // los bomberos salen del cuartel de la Plaza Pettirossi si el fuego no queda demasiado lejos (05/11/2026)
     // la ambulancia sale del cuartel (amarilla, bomberos voluntarios) o del hospital (blanca, SEME), la que quede más cerca (14/11/2026)
     const fh = this.world.firehouse, hsp = this.world.hospital, dF = fh && target ? Math.hypot(target.x - fh.x, target.y - fh.y) : Infinity, dH = hsp && target ? Math.hypot(target.x - hsp.x, target.y - hsp.y) : Infinity;
@@ -167,7 +180,7 @@ VR.Emergency = class {
     const p = fromHouse ? [fh.x, fh.y] : base ? [base.c.x, base.c.y] : this.spawnPoint(); if (!p) return null;
     const ang = fromHouse ? (target.x >= fh.x ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(this.focus.x - p[0], -(this.focus.y - p[1]));
     if (fromHouse && kind === 'bomberos' && Math.hypot(this.focus.x - fh.x, this.focus.y - fh.y) < 600) this.toast('🚒 Salen los bomberos del cuartel');
-    if (kind === 'ambulancia') model = fromHouse ? 'ambulancia' : 'seme';
+    if (kind === 'ambulancia') model = fromHouse ? 'ambulancia' : this.rnd() < 0.5 ? 'seme' : 'ambu4x4';
     const v = new VR.Car(this.world, p[0], p[1], ang, 0, 'car', model);
     v.siren = true; v.hp = 140;
     const u = { v, kind, model, task: kind === 'policia' ? 'chase' : 'goto', target, queue: [], path: null, pi: 0, repath: this.rnd() * 0.5, stuck: 0, rev: 0, crew: [], wait: 0, age: 0 };
@@ -250,7 +263,7 @@ VR.Emergency = class {
   // Auxilio de la ambulancia (14/11/2026): dos paramédicos bajan, uno lleva la camilla, atienden al herido en el piso, lo suben
   // a la camilla y lo llevan a la ambulancia. Fases u.ph: go → treat → load → close → done.
   rescue(u, dt) {
-    const T = u.target, v = u.v, m0 = u.crew[0], m1 = u.crew[1];
+    const T = u.target, v = u.v, meds = u.crew.filter((c) => c.role !== 'doctor'), m0 = meds[0], m1 = meds[1], doc = u.crew.find((c) => c.role === 'doctor');
     const finish = () => { u.ph = 'done'; u.cam = null; u.pat = null; };
     if (!T || !m0) return finish();
     if (!u.cam) { const fx = Math.sin(v.a), fy = -Math.cos(v.a), L = v.LEN / 2 + 9; u.cam = { x: v.x - fx * L, y: v.y - fy * L, a: v.a }; u.rear = { x: u.cam.x, y: u.cam.y }; u.t = 0; u.ph = 'go'; }
@@ -259,10 +272,11 @@ VR.Emergency = class {
     const face = (c, q) => { const dx = q.x - c.x, dy = q.y - c.y; c.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); c.moving = false; c.px = c.x; c.py = c.y; };
     if (!T.rider && u.ph !== 'load' && u.ph !== 'close' && !this.peds.list.includes(T)) return finish(); // el peatón se fue o desapareció
     if (u.ph === 'go') {
+      if (doc) this.walk(doc, dt, T.x + 3, T.y - 11, 70);
       this.walk(m0, dt, T.x - 9, T.y + 3, 78); if (m1) { this.walk(m1, dt, T.x + 10, T.y + 4, 62); follow(m1); } else { cam.x += (T.x + 10 - cam.x) * Math.min(1, dt * 2); cam.y += (T.y + 4 - cam.y) * Math.min(1, dt * 2); }
-      if (near(m0, T, 14) && near(cam, T, 26)) { u.ph = 'treat'; u.t = 0; face(m0, T); if (m1) face(m1, T); m0.say = { text: '¡Tranquilo, ya estamos acá!', t: 2.2 }; }
+      if (near(m0, T, 14) && near(cam, T, 26)) { u.ph = 'treat'; u.t = 0; face(m0, T); if (m1) face(m1, T); m0.say = { text: '¡Tranquilo, ya estamos acá!', t: 2.2 }; if (doc) { face(doc, T); doc.say = { text: '¿Me escucha? ¿Dónde le duele?', t: 2.6 }; } }
     } else if (u.ph === 'treat') {
-      u.t += dt; m0.kneel = true; face(m0, T); if (m1) face(m1, T);
+      u.t += dt; m0.kneel = true; face(m0, T); if (m1) face(m1, T); if (doc) face(doc, T);
       if (u.t > 3.4) {
         m0.kneel = false; if (m1) m1.say = { text: '¡A la una, a las dos, a las tres!', t: 2 };
         const spr = T.rider ? T.spr : this.peds.sprites[T.pal]; u.pat = spr ? { spr } : null;
@@ -270,6 +284,7 @@ VR.Emergency = class {
         T.injured = false; u.ph = 'load'; u.t = 0;
       }
     } else if (u.ph === 'load') { // camilla con el paciente hacia la parte de atrás de la ambulancia
+      if (doc) this.walk(doc, dt, u.rear.x + 9, u.rear.y - 8, 52);
       this.walk(m0, dt, u.rear.x - 8, u.rear.y + 2, 48); if (m1) { this.walk(m1, dt, u.rear.x, u.rear.y, 48); follow(m1); }
       u.t += dt; if (near(cam, u.rear, 12) || u.t > 14) { u.ph = 'close'; u.t = 0; if (m0) m0.say = { text: '¡Vamos, vamos!', t: 1.6 }; }
     } else if (u.ph === 'close') { u.t += dt; if (u.t > 0.9) { if (T.rider) T.st = 'gone'; finish(); } }
@@ -348,7 +363,7 @@ VR.Emergency = class {
         const T = u.target, alive = T && (u.kind === 'bomberos' ? (T.burning || (T.wreck && T.smolder > 0)) : T.injured && (T.rider || this.peds.list.includes(T)));
         if (!alive) { u.target = u.queue.shift() || null; if (!u.target) u.task = u.crew.length ? 'regroup' : 'leave'; continue; }
         const d = this.drive(u, dt, T.x, T.y, u.kind === 'bomberos' ? 95 : 50, false);
-        if (d < (u.kind === 'bomberos' ? 125 : 70) && Math.abs(v.v) < 30) { u.task = 'work'; u.cam = null; u.ph = 'go'; if (!u.crew.length) this.spawnCrew(u, 'bombero', u.kind === 'policia' ? 1 : 2); }
+        if (d < (u.kind === 'bomberos' ? 125 : 70) && Math.abs(v.v) < 30) { u.task = 'work'; u.cam = null; u.ph = 'go'; if (!u.crew.length) { if (u.kind === 'ambulancia' && u.model !== 'ambulancia') { this.spawnCrew(u, 'paramedico', 2); if (this.rnd() < 0.65) this.spawnCrew(u, 'doctor', 1); } else this.spawnCrew(u, 'bombero', 2); } }
       } else if (u.task === 'work') {
         this.halt(u, dt);
         if (u.kind === 'ambulancia') this.rescue(u, dt);
