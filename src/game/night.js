@@ -47,9 +47,10 @@ VR.Night = class {
         const L = Math.hypot(bx - ax, by - ay); if (L < 40) continue;
         const ux = (bx - ax) / L, uy = (by - ay) / L, off = R.widths[E[i + 2] & 15] * S / 2 + 4;
         const centro = W.barrioName(ax, ay) === 'Centro', col = centro ? LED : SODIO;
-        for (let s = 40, n = (i / 4) & 1; s < L - 20; s += 256, n++) {
+        // Centro (Leandro, 13/11/2026, con foto: "acá es re iluminado de noche"): faroles LED al doble de seguido y más potentes
+        for (let s = centro ? 24 : 40, n = (i / 4) & 1; s < L - (centro ? 8 : 20); s += centro ? 128 : 256, n++) {
           const sd = n & 1 ? 1 : -1;
-          this.put(ax + ux * s - uy * off * sd, ay + uy * s + ux * off * sd, 70, col, 0.85);
+          this.put(ax + ux * s - uy * off * sd, ay + uy * s + ux * off * sd, centro ? 104 : 70, col, centro ? 1 : 0.85);
         }
       }
     }
@@ -57,17 +58,23 @@ VR.Night = class {
     { const B = VR.T.BUILDING, w = W.w, tl = W.tiles;
       for (let ty = 0; ty < W.h - 1; ty++) for (let tx = 1; tx < w; tx += 2) {
         const i = ty * w + tx; if (tl[i] !== B || tl[i + w] === B) continue;
-        if (((Math.imul(tx, 73856093) ^ Math.imul(ty, 19349663)) >>> 0) % 5) continue;
-        this.put(tx * S + 8, (ty + 1) * S - 7, 13, (tx & 6) ? '255,206,120' : '220,232,255', 0.55);
+        const hsh = ((Math.imul(tx, 73856093) ^ Math.imul(ty, 19349663)) >>> 0) % 5, cen = W.barrio && W.barrios[W.barrio[i] - 1] === 'Centro';
+        if (cen ? hsh > 2 : hsh) continue;   // en el Centro, 3 de cada 5 (vidrieras y carteles prendidos)
+        this.put(tx * S + 8, (ty + 1) * S - 7, cen ? 24 : 13, (tx & 6) ? '255,206,120' : '220,232,255', cen ? 0.75 : 0.55);
       } }
+    // Plaza de los Héroes: columnas altas de LED en las esquinas y a lo largo de las veredas (foto de Leandro, 13/11/2026)
+    if (W.hero) { const h = W.hero, x0 = h.x0 * S, x1 = (h.x1 + 1) * S, y0 = h.y0 * S, y1 = (h.y1 + 1) * S;
+      for (const [x, y] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) this.put(x + (x === x0 ? 14 : -14), y + (y === y0 ? 14 : -14), 100, LED, 0.7);
+      for (let x = x0 + 110; x < x1 - 70; x += 110) { this.put(x, y0 + 12, 84, LED, 0.8); this.put(x, y1 - 12, 84, LED, 0.8); }
+      for (let y = y0 + 110; y < y1 - 70; y += 110) { this.put(x0 + 12, y, 84, LED, 0.8); this.put(x1 - 12, y, 84, LED, 0.8); } }
     // lugares dibujados a mano
     for (const d of W.decals) {
       const X = d.x * S, Y = d.y * S, w = d.w * S, h = d.h * S;
       if (d.kind === 'frente') {
         const col = { credito: '120,255,170', lila: '230,120,255', banco: '170,190,255', universitaria: LED }[d.style] || CALIDO;
-        for (let y = Y + 8; y < Y + h; y += 28) this.put(X + 8, y, 44, col, d.style === 'marimer' ? 1 : 0.8);
+        for (let y = Y + 8; y < Y + h; y += 28) this.put(X + 8, y, d.style === 'banco' ? 60 : 50, col, d.style === 'marimer' || d.style === 'banco' || d.style === 'credito' ? 1 : 0.85);
       }
-      else if (d.kind === 'cartel') for (let x = X + 12; x < X + w; x += 32) this.put(x, Y + S - 14, 40, d.style === 'banco' ? '170,190,255' : CALIDO, 0.9);
+      else if (d.kind === 'cartel') for (let x = X + 12; x < X + w; x += 32) { this.put(x, Y + S - 14, d.style === 'banco' ? 46 : 40, d.style === 'banco' ? '170,190,255' : CALIDO, 0.9); if (d.style === 'banco') this.put(x, Y + S + 6, 64, '236,244,255', 1); } // el banco: salón blanco prendido toda la noche
       else if (d.kind === 'mesas') this.put(X + w / 2, Y + 8, 50, CALIDO, 0.7);
       else if (d.kind === 'cuartel') { this.put((d.x + 5) * S, (d.y + d.h) * S - 10, 60, CALIDO, 0.9); this.put((d.x + 8) * S, (d.y + d.h) * S - 10, 60, CALIDO, 0.9); this.put((d.x + 1.4) * S, (d.y + 3) * S - 14, 26, CALIDO, 0.8); }
       else if (d.kind === 'taller') this.put(X + w / 2, Y + 10, 50, '255,230,170', 0.9);
@@ -119,7 +126,10 @@ VR.Night = class {
     if (m.width !== sw || m.height !== sh) { m.width = sw; m.height = sh; }
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
     g.clearRect(0, 0, sw, sh);
-    g.fillStyle = `rgba(10,14,38,${0.74 * lv})`; g.fillRect(0, 0, sw, sh);
+    // en el Centro la noche es menos cerrada (resplandor de la ciudad); cambia de a poco al entrar o salir del barrio
+    const cen = this.world.barrioName(cx + sw / 2, cy + sh / 2) === 'Centro' ? 1 : 0;
+    this.glow = this.glow === undefined ? cen : this.glow + VR.clamp(cen - this.glow, -0.012, 0.012);
+    g.fillStyle = `rgba(10,14,38,${(0.74 - 0.14 * this.glow) * lv})`; g.fillRect(0, 0, sw, sh);
     // juntar las luces visibles
     const vis = [], B = this.B;
     for (let by = Math.floor((cy - 100) / B); by <= Math.floor((cy + sh + 100) / B); by++)

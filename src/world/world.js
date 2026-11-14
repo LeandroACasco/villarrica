@@ -1070,6 +1070,18 @@ VR.decorTop = {
     const S = VR.TILE, X0 = d.x * S, X1 = (d.x + d.w) * S, Y0 = d.y * S, Y1 = (d.y + d.h) * S;
     return [{ sy: Y1 + 400, draw(g) {
       const tw = performance.now() / 500, V = d.dir === 'v';
+      if (d.dir === 'x') { // cruce: hilos en abanico desde cada esquina hacia los dos lados de enfrente (foto de Leandro, 13/11/2026)
+        const C = [[X0, Y0], [X1, Y0], [X1, Y1], [X0, Y1]];
+        for (let c = 0; c < 4; c++) { const [ax, ay] = C[c], [ox, oy] = C[(c + 2) % 4];
+          for (const f of [0.3, 0.65, 1]) for (const hz of [0, 1]) { if (f === 1 && (hz || c > 1)) continue;
+            const bx = hz ? ox : ax + (ox - ax) * f, by = hz ? ay + (oy - ay) * f : oy, n = Math.max(4, Math.round(Math.hypot(bx - ax, by - ay) / 11));
+            g.strokeStyle = 'rgba(30,30,30,.5)'; g.lineWidth = 1; g.beginPath(); g.moveTo(ax, ay + 1); g.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + 7, bx, by + 1); g.stroke();
+            for (let k = 1; k < n; k++) { const t = k / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t + Math.sin(t * Math.PI) * 3.5, on = 0.75 + 0.25 * Math.sin(tw + k * 1.7 + c * 2.3 + f * 9);
+              g.fillStyle = `rgba(236,242,255,${0.28 * on})`; g.fillRect(Math.round(x) - 2, Math.round(y) - 2, 5, 5);
+              g.fillStyle = '#ffffff'; g.fillRect(Math.round(x), Math.round(y), 2, 2);
+              if (VR.night && k % 5 === 2) VR.night.add(x, y + 5, 22, '236,240,255', 0.3); } } }
+        return;
+      }
       // 'v': cruzan una calle este-oeste (de norte a sur); si no, una calle norte-sur (de oeste a este)
       for (let u = V ? X0 : Y0; u < (V ? X1 : Y1); u += 48) {
         const pt = (k) => { const f = k / 12, sag = Math.sin(f * Math.PI) * 4; return V ? [u + 24 * f + sag, Y0 + (Y1 - Y0) * f] : [X0 + (X1 - X0) * f, u + 24 * f + sag]; };
@@ -1079,9 +1091,9 @@ VR.decorTop = {
         for (let k = 0; k <= 12; k++) {
           const [x, yy] = pt(k), y = u;
           const on = 0.75 + 0.25 * Math.sin(tw + k * 1.7 + y);
-          g.fillStyle = `rgba(255,236,170,${0.25 * on})`; g.fillRect(Math.round(x) - 2, Math.round(yy) - 1, 5, 5);
-          g.fillStyle = '#fff7d8'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
-          if (VR.night && k % 4 === 2) VR.night.add(x, yy + 6, 24, '255,224,150', 0.4);
+          g.fillStyle = `rgba(236,242,255,${0.28 * on})`; g.fillRect(Math.round(x) - 2, Math.round(yy) - 1, 5, 5);
+          g.fillStyle = '#ffffff'; g.fillRect(Math.round(x), Math.round(yy) + 1, 2, 2);
+          if (VR.night && k % 3 === 1) VR.night.add(x, yy + 6, 30, '236,240,255', 0.5);
         }
       }
     } }];
@@ -1310,6 +1322,11 @@ VR.loadMap = async (url) => {
   w.calSet = new Set(w.plazaSet); (meta.areas || []).forEach((n, i) => { if (/parque manuel ortiz/i.test(n)) w.calSet.add(i + 1); }); // troncos pintados con cal (plazas y parque Ortiz Guerrero)
   { const t = (meta.decals || []).find((d) => d.kind === 'tienda'), T = VR.T; // taller (05/11/2026): cerca del Centro, misma vereda que la tienda, hacia el oeste
     if (t) for (let x = t.x - 6; x > t.x - 120; x--) { let ok = true; for (let k = 0; k < 7 && ok; k++) ok = w.get(x - k, t.y) === T.SIDEWALK && w.get(x - k, t.y + 1) === T.BUILDING; if (ok) { meta.decals.push({ kind: 'taller', x: x - 6, y: t.y, w: 7, h: 1 }); break; } } }
+  { // cruces de las 4 esquinas de la Plaza de los Héroes (foto de Leandro, 13/11/2026): las guirnaldas también cruzan en abanico sobre cada esquina
+    const G = (meta.decals || []).filter((d) => d.kind === 'guirnaldas'), V = G.filter((d) => d.dir === 'v').sort((p, q) => p.y - q.y);
+    if (V.length === 2) { const N = V[0], So = V[1], x0 = N.x, x1 = N.x + N.w - 1, Wd = G.find((d) => !d.dir && d.x + d.w - 1 === x0), E = G.find((d) => !d.dir && d.x === x1 && d.w < 30);
+      w.hero = { x0, x1, y0: N.y + N.h - 1, y1: So.y };
+      for (const H of [Wd, E]) if (H) for (const K of [N, So]) meta.decals.push({ kind: 'guirnaldas', dir: 'x', x: H.x, y: K.y, w: H.w, h: K.h }); } }
   w.pois = meta.pois || {};
   w.streets = meta.streets; w.areas = meta.areas; w.barrios = meta.barrios || []; w.barrioLabels = meta.barrioLabels || []; w.labels = meta.labels; w.decals = meta.decals;
   w.spawn = meta.spawn; w.spawnName = 'la Plaza de los Héroes'; w.credit = meta.credit; w.id = 'villarrica-' + meta.w + 'x' + meta.h;
