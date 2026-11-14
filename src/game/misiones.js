@@ -55,17 +55,17 @@ VR.Lugares = class {
       case 'celulares': { const p = L(/Plaza de los H/); return p && { x: p.x - 420, y: p.y + 660 }; } // servicio técnico de celulares, en la vereda sur al sudoeste de la plaza (inventado)
       case 'mercado1': return L(/^Mercado 1/, 24);
       case 'mercado2': return L(/^Mercado 2/, 24);
-      case 'boli_bambuddha': return L(/^Bambuddha/, 24);
-      case 'boli_blue': return L(/^Blue Karaoke/, 24);
-      case 'boli_estacion': return L(/^La Nueva Estaci/, 24);
+      case 'boli_bambuddha': return L(/^Bambú Buda/, 24);
+      case 'boli_blue': return L(/^Blú Karaoque/, 24);
+      case 'boli_estacion': return L(/^La Re-Estaci/, 24);
       case 'boli_gleu': { const d = (W.decals || []).find((x) => x.kind === 'frente' && x.style === 'gleu'); return d && { x: (d.x + 1) * VR.TILE, y: (d.y + d.h / 2) * VR.TILE }; } // el pub gris del frente oeste de la plaza
-      case 'super_ligero': return L(/^Súper Ligero/, 24);
-      case 'super_lucero': return L(/^Súper Lucero/, 24);
-      case 'super_kuarahy': return L(/^Súper Kuarahy/, 24);
-      case 'super_kuarahyGroup': return L(/^Kuarahy Group/, 24);
-      case 'super_kuarahyNorte': return L(/^Kuarahy Norte/, 24);
-      case 'super_guasu': return L(/^Hiper Guasu/, 24);
-      case 'super_yvoty': return L(/^Súper Yvoty/, 24);
+      case 'super_ligero': return L(/^Súper Expreso Lento/, 24);
+      case 'super_lucero': return L(/^Súper Estrella Fugaz/, 24);
+      case 'super_kuarahy': return L(/^Súper Herrumbre/, 24);
+      case 'super_kuarahyGroup': return L(/^Herrumbre Group/, 24);
+      case 'super_kuarahyNorte': return L(/^Herrumbre Norte/, 24);
+      case 'super_guasu': return L(/^Hiper Bigote/, 24);
+      case 'super_yvoty': return L(/^Súper Seis y Medio/, 24);
       case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
     }
     return null;
@@ -81,7 +81,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambuddha', boli_blue: 'Blue Karaoke', boli_estacion: 'La Nueva Estación', boli_gleu: 'Gleu Pub', super_ligero: 'Súper Ligero', super_lucero: 'Súper Lucero', super_kuarahy: 'Súper Kuarahy', super_kuarahyGroup: 'Kuarahy Group', super_kuarahyNorte: 'Kuarahy Norte', super_guasu: 'Hiper Guasu', super_yvoty: 'Súper Yvoty', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Expreso Lento', super_lucero: 'Súper Estrella Fugaz', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
 
 // ---------------- barrios por historia ----------------

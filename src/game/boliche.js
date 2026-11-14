@@ -4,10 +4,10 @@
 (function () {
   const H = VR.hash, pick = (a) => a[(Math.random() * a.length) | 0];
   const LOCALES = {
-    bambuddha: { id: 'bambuddha', n: 'Bambuddha', neon: '#ff3fa8', rgb: '255,63,168', tipo: 'disco' },
-    gleu: { id: 'gleu', n: 'Gleu Pub', neon: '#3fd0ff', rgb: '63,208,255', tipo: 'pub' },
-    blue: { id: 'blue', n: 'Blue Karaoke', neon: '#4f7bff', rgb: '79,123,255', tipo: 'karaoke' },
-    estacion: { id: 'estacion', n: 'La Nueva Estación', neon: '#ffb03f', rgb: '255,176,63', tipo: 'pub' },
+    bambuddha: { id: 'bambuddha', n: 'Bambú Buda', neon: '#ff3fa8', rgb: '255,63,168', tipo: 'disco' },
+    gleu: { id: 'gleu', n: 'Gluglú Pub', neon: '#3fd0ff', rgb: '63,208,255', tipo: 'pub' },
+    blue: { id: 'blue', n: 'Blú Karaoque', neon: '#4f7bff', rgb: '79,123,255', tipo: 'karaoke' },
+    estacion: { id: 'estacion', n: 'La Re-Estación', neon: '#ffb03f', rgb: '255,176,63', tipo: 'pub' },
   };
   VR.BOLICHES = LOCALES;
   VR.bolicheAbierto = () => !!(VR.night && VR.night.level > 0.6);   // solo de noche

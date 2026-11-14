@@ -646,17 +646,18 @@ def main(src, out, preview=None):
     HOSP = {'floors': 2, 'roof': 'losa', 'roofc': 0, 'wallc': 4}
     POLI = {'floors': 1, 'roof': 'teja', 'roofc': 1, 'wallc': 9}
     SUPER = {'floors': 1, 'roof': 'chapa', 'roofc': 0, 'wallc': 4}
-    # Nombres alternativos (no se usan los reales). Referencia real de cada uno (solo para documentación):
-    #   Súper Ligero = Super Express · Súper Lucero = Super Estrella · Súper Kuarahy = Super Herrero · Kuarahy Group = Herrero Group
-    #   Kuarahy Norte = Super Herrero Norte · Hiper Guasu = Biggie · Súper Yvoty = Superseis
-    SUPERS = [('super', 'Súper Ligero', (-25.7846352, -56.4610337), dict(SUPER, brand='ligero')), ('super', 'Súper Lucero', (-25.7786704, -56.4466731), dict(SUPER, brand='lucero')),
-              ('super', 'Kuarahy Group', (-25.7807572, -56.4446212), dict(SUPER, brand='kuarahyGroup')), ('super', 'Súper Kuarahy', (-25.7829744, -56.4502131), dict(SUPER, brand='kuarahy')),
-              ('super', 'Kuarahy Norte', (-25.7749759, -56.4643161), dict(SUPER, brand='kuarahy')), ('super', 'Hiper Guasu', (-25.7752825, -56.4455092), dict(SUPER, brand='guasu')),
-              ('super', 'Súper Yvoty', (-25.76727573, -56.44159752), dict(SUPER, brand='yvoty'))]
+    # Nombres alternativos con humor (no se usan los reales). Referencia real de cada uno (solo para documentación):
+    #   Súper Expreso Lento = Super Express · Súper Estrella Fugaz = Super Estrella · Súper Herrumbre = Super Herrero · Herrumbre Group = Herrero Group
+    #   Herrumbre Norte = Super Herrero Norte · Hiper Bigote = Biggie · Súper Seis y Medio = Superseis
+    #   Boliches: Bambú Buda = Bambuddha · Gluglú Pub = Gleu Pub · Blú Karaoque = Blue Karaoke · La Re-Estación = La Nueva Estación
+    SUPERS = [('super', 'Súper Expreso Lento', (-25.7846352, -56.4610337), dict(SUPER, brand='ligero')), ('super', 'Súper Estrella Fugaz', (-25.7786704, -56.4466731), dict(SUPER, brand='lucero')),
+              ('super', 'Herrumbre Group', (-25.7807572, -56.4446212), dict(SUPER, brand='kuarahyGroup')), ('super', 'Súper Herrumbre', (-25.7829744, -56.4502131), dict(SUPER, brand='kuarahy')),
+              ('super', 'Herrumbre Norte', (-25.7749759, -56.4643161), dict(SUPER, brand='kuarahy')), ('super', 'Hiper Bigote', (-25.7752825, -56.4455092), dict(SUPER, brand='guasu')),
+              ('super', 'Súper Seis y Medio', (-25.76727573, -56.44159752), dict(SUPER, brand='yvoty'))]
     BOLI = {'floors': 1, 'roof': 'losa', 'roofc': 0, 'wallc': 11}   # boliches y pubs (14/11/2026): gris oscuro; solo abren de noche
-    BOLICHES = [('boliche', 'Bambuddha', (-25.76670, -56.44470), BOLI),            # Blvd. Río Apa c/ Angostura
-                ('boliche', 'Blue Karaoke', (-25.7682851, -56.4460310), BOLI),      # nodo de OSM
-                ('boliche', 'La Nueva Estación', (-25.7891444, -56.4579818), BOLI)] # nodo de OSM (bar)
+    BOLICHES = [('boliche', 'Bambú Buda', (-25.76670, -56.44470), BOLI),            # Blvd. Río Apa c/ Angostura
+                ('boliche', 'Blú Karaoque', (-25.7682851, -56.4460310), BOLI),      # nodo de OSM
+                ('boliche', 'La Re-Estación', (-25.7891444, -56.4579818), BOLI)] # nodo de OSM (bar)
     POIS = [('hospital', 'Hospital Regional', (-25.7771, -25.7760, -56.4623, -56.4609), HOSP),
             ('sanatorio', 'Sanatorio Modelo', (-25.7826581, -56.448532), HOSP),
             ('comisaria', 'Comisaría 3ª', (-25.7825242, -56.4476626), POLI), ('comisaria', 'Comisaría 2ª', (-25.790715, -56.4498238), POLI),
@@ -725,7 +726,7 @@ def main(src, out, preview=None):
     # De sur a norte: tienda de deportes, pub, Heladería y Cafetería Marimer, Cooperativa Universitaria y farmacia.
     # Las fachadas miran al este (a la plaza): se ven desde arriba como toldo/cartel sobre la vereda y con el nombre.
     # (latitudes: orden del video y posiciones de Google Maps; OSM tiene la heladería un poco más al sur)
-    FRENTE = [('Antana Deportes', -25.78092, 'antana', 2, 4), ('Gleu Pub', -25.78085, 'gleu', 2, 11),
+    FRENTE = [('Antana Deportes', -25.78092, 'antana', 2, 4), ('Gluglú Pub', -25.78085, 'gleu', 2, 11),
               ('Heladería Marimer', -25.78078, 'marimer', 2, 4), ('Cooperativa Universitaria', -25.78068, 'universitaria', 3, 12),
               ('Farmacia', -25.78058, 'farma', 2, 4)]
     hero = area_names.index('Plaza de los Héroes') + 1 if 'Plaza de los Héroes' in area_names else 0
