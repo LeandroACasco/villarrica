@@ -59,13 +59,13 @@ VR.Lugares = class {
       case 'boli_blue': return L(/^Blue Karaoke/, 24);
       case 'boli_estacion': return L(/^La Nueva Estaci/, 24);
       case 'boli_gleu': { const d = (W.decals || []).find((x) => x.kind === 'frente' && x.style === 'gleu'); return d && { x: (d.x + 1) * VR.TILE, y: (d.y + d.h / 2) * VR.TILE }; } // el pub gris del frente oeste de la plaza
-      case 'super_express': return L(/^Super Express/, 24);
-      case 'super_estrella': return L(/^Super Estrella/, 24);
-      case 'super_herrero': return L(/^Super Herrero$/, 24);
-      case 'super_herreroGroup': return L(/^Herrero Group/, 24);
-      case 'super_herreroNorte': return L(/^Super Herrero Norte/, 24);
-      case 'super_biggie': return L(/^Biggie/, 24);
-      case 'super_superseis': return L(/^Superseis/, 24);
+      case 'super_ligero': return L(/^Súper Ligero/, 24);
+      case 'super_lucero': return L(/^Súper Lucero/, 24);
+      case 'super_kuarahy': return L(/^Súper Kuarahy/, 24);
+      case 'super_kuarahyGroup': return L(/^Kuarahy Group/, 24);
+      case 'super_kuarahyNorte': return L(/^Kuarahy Norte/, 24);
+      case 'super_guasu': return L(/^Hiper Guasu/, 24);
+      case 'super_yvoty': return L(/^Súper Yvoty/, 24);
       case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
     }
     return null;
@@ -81,7 +81,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambuddha', boli_blue: 'Blue Karaoke', boli_estacion: 'La Nueva Estación', boli_gleu: 'Gleu Pub', super_express: 'Super Express', super_estrella: 'Super Estrella', super_herrero: 'Super Herrero', super_herreroGroup: 'Herrero Group', super_herreroNorte: 'Super Herrero Norte', super_biggie: 'Biggie', super_superseis: 'Superseis', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambuddha', boli_blue: 'Blue Karaoke', boli_estacion: 'La Nueva Estación', boli_gleu: 'Gleu Pub', super_ligero: 'Súper Ligero', super_lucero: 'Súper Lucero', super_kuarahy: 'Súper Kuarahy', super_kuarahyGroup: 'Kuarahy Group', super_kuarahyNorte: 'Kuarahy Norte', super_guasu: 'Hiper Guasu', super_yvoty: 'Súper Yvoty', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
 
 // ---------------- barrios por historia ----------------

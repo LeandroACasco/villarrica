@@ -3,15 +3,15 @@
 // Adentro hay niños siempre acompañados por un adulto (ambiente seguro: sin chespis, armas ni violencia). Todo el arte es propio.
 (function () {
   const H = VR.hash, pick = (a) => a[(Math.random() * a.length) | 0];
-  // marcas (los nombres son los de los súper reales del mapa; colores y cartel inventados, sin logos)
+  // marcas: nombres inventados (referencias reales en la documentación); colores propios, sin logos
   const BR = {
-    express: { id: 'express', n: 'Super Express', c1: '#c8322a', c2: '#8f1e18', ti: 0 },
-    estrella: { id: 'estrella', n: 'Super Estrella', c1: '#e8b830', c2: '#a87c10', ti: 5 },
-    herrero: { id: 'herrero', n: 'Super Herrero', c1: '#2e6fc8', c2: '#1e4a8a', ti: 2 },
-    herreroGroup: { id: 'herreroGroup', n: 'Herrero Group', c1: '#1e3a6a', c2: '#12264a', ti: 13 },
-    herreroNorte: { id: 'herreroNorte', n: 'Super Herrero Norte', c1: '#2e6fc8', c2: '#1e4a8a', ti: 2 },
-    biggie: { id: 'biggie', n: 'Biggie', c1: '#e87a2a', c2: '#b05410', ti: 8 },
-    superseis: { id: 'superseis', n: 'Superseis', c1: '#3b9a5a', c2: '#26703c', ti: 4 },
+    ligero: { id: 'ligero', n: 'Súper Ligero', c1: '#c8322a', c2: '#8f1e18', ti: 0 },
+    lucero: { id: 'lucero', n: 'Súper Lucero', c1: '#e8b830', c2: '#a87c10', ti: 5 },
+    kuarahy: { id: 'kuarahy', n: 'Súper Kuarahy', c1: '#2e6fc8', c2: '#1e4a8a', ti: 2 },
+    kuarahyGroup: { id: 'kuarahyGroup', n: 'Kuarahy Group', c1: '#1e3a6a', c2: '#12264a', ti: 13 },
+    kuarahyNorte: { id: 'kuarahyNorte', n: 'Kuarahy Norte', c1: '#2e6fc8', c2: '#1e4a8a', ti: 2 },
+    guasu: { id: 'guasu', n: 'Hiper Guasu', c1: '#e87a2a', c2: '#b05410', ti: 8 },
+    yvoty: { id: 'yvoty', n: 'Súper Yvoty', c1: '#3b9a5a', c2: '#26703c', ti: 4 },
   };
   VR.SUPERS = BR;
   const W = 512, HH = 352, NL = 5;                        // tamaño de la escena y cantidad de cajas
@@ -218,8 +218,8 @@
         if (q.items.length && o.menu) o.menu(menuCat(q)); else me.decir(pick(q.frase));
       },
     }, { player: o.player, busy: o.busy });
-    S.cart = []; S.marca = BR.express;
-    S.abrir = (id) => { S.marca = BR[id] || BR.express; S.entrar(); };
+    S.cart = []; S.marca = BR.ligero;
+    S.abrir = (id) => { S.marca = BR[id] || BR.ligero; S.entrar(); };
     return S;
   };
 })();

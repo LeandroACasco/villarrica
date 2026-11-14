@@ -769,6 +769,44 @@ VR.decor = {
 VR.MUNI = { SAL: '#eeece6', SAL_D: '#c9c5bc', SAL_L: '#ffffff', CREAM: '#ffffff', CREAM_D: '#d6d2c8', TEJA: '#b5573c', TEJA_D: '#8e3f2b', GLASS: '#3a3f4c' };
 VR.MUNI_OLD = { SAL: '#e99c82', SAL_D: '#c97a62', SAL_L: '#f4b8a0', CREAM: '#f2deae', CREAM_D: '#cdb582' };
 VR.decorOver = {
+  // supermercado genérico (14/11/2026, pedido de Leandro): techo con borde y cartel del color de la marca, claraboyas,
+  // aires; fachada con friso del nombre, vidriera grande, puertas automáticas y toldo a rayas. Nombres y colores inventados.
+  super(g, d) {
+    const S = VR.TILE, C = { ligero: ['#c8322a', '#8f1e18'], lucero: ['#e8b830', '#a87c10'], kuarahy: ['#2e6fc8', '#1e4a8a'], kuarahyGroup: ['#1e3a6a', '#12264a'],
+      guasu: ['#e87a2a', '#b05410'], yvoty: ['#3b9a5a', '#26703c'] }[d.style] || ['#888', '#444'];
+    const X0 = d.x * S, X1 = (d.x + d.w) * S, Yt = d.y * S, Yb = (d.y + d.h) * S, FH = 20, RE = Yb - FH, W = X1 - X0;
+    if (RE - Yt < 8 || W < 40) return;
+    // techo: borde de pretil de color, franja y claraboyas
+    g.fillStyle = C[0]; g.fillRect(X0, Yt, W, 3); g.fillRect(X0, Yt, 3, RE - Yt); g.fillRect(X1 - 3, Yt, 3, RE - Yt);
+    g.fillStyle = C[1]; g.fillRect(X0 + 3, Yt + 3, W - 6, 1); g.fillRect(X0, RE - 3, W, 3);
+    const nsk = Math.max(2, Math.floor((W - 24) / 34));
+    for (let k = 0; k < nsk; k++) { const sx = X0 + 12 + k * ((W - 24) / nsk), sy = Yt + 8;
+      g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(sx + 1.5, sy + 1.5, 20, 9); g.fillStyle = '#a8cfe6'; g.fillRect(sx, sy, 20, 9); g.fillStyle = '#d6ecf8'; g.fillRect(sx + 1, sy + 1, 8, 3);
+      g.fillStyle = '#5d8aa6'; g.fillRect(sx + 10, sy, 0.7, 9); g.fillRect(sx, sy + 4.5, 20, 0.7); }
+    for (let k = 0; k < 2; k++) { const ax = X0 + 14 + k * (W - 44), ay = RE - 17; // aires acondicionados
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(ax + 1.5, ay + 1.5, 14, 9); g.fillStyle = '#d8d8d2'; g.fillRect(ax, ay, 14, 9); g.fillStyle = '#9a9a96'; g.beginPath(); g.arc(ax + 4.5, ay + 4.5, 3, 0, 7); g.arc(ax + 10, ay + 4.5, 3, 0, 7); g.fill(); }
+    const name = d.name || ''; g.textAlign = 'center'; g.textBaseline = 'middle';
+    let fs = 9; g.font = 'bold ' + fs + 'px sans-serif'; while (fs > 5 && g.measureText(name).width > W - 24) { fs -= 0.5; g.font = 'bold ' + fs + 'px sans-serif'; }
+    const cx = (X0 + X1) / 2, cy = (Yt + RE) / 2 + 2; // cartel pintado sobre el techo (solo si el techo es grande)
+    if (RE - Yt > 44 && W > 100) { fs = 11; g.font = 'bold ' + fs + 'px sans-serif'; g.fillStyle = 'rgba(0,0,0,.3)'; g.fillText(name, cx + 0.8, cy + 0.8); g.fillStyle = '#ffffff'; g.fillText(name, cx, cy); }
+    // fachada (mira al sur)
+    g.fillStyle = '#ece8de'; g.fillRect(X0, RE, W, FH);
+    g.fillStyle = C[0]; g.fillRect(X0, RE, W, 7); g.fillStyle = C[1]; g.fillRect(X0, RE + 7, W, 1);
+    fs = 6; g.font = 'bold ' + fs + 'px sans-serif'; while (fs > 3.5 && g.measureText(name).width > W - 20) { fs -= 0.5; g.font = 'bold ' + fs + 'px sans-serif'; }
+    g.fillStyle = d.style === 'lucero' ? '#3a2a06' : '#ffffff'; g.fillText(name, cx, RE + 3.8);
+    const gy = RE + 9, gh = FH - 9;
+    g.fillStyle = '#2b3f56'; g.fillRect(X0 + 3, gy, W - 6, gh);
+    for (let x = X0 + 5; x < X1 - 8; x += 12) { g.fillStyle = 'rgba(190,225,245,.5)'; g.fillRect(x, gy + 1, 3, gh - 2); g.fillRect(x + 4, gy + 1, 1.2, gh - 2); }
+    for (let x = X0 + 3; x < X1 - 3; x += 26) { g.fillStyle = '#c9c6bc'; g.fillRect(x, gy, 1.5, gh); } // parantes
+    g.fillStyle = '#c9c6bc'; g.fillRect(X0 + 3, gy, W - 6, 1);
+    const dx = cx - 9; g.fillStyle = '#10202e'; g.fillRect(dx - 1, gy, 20, gh); g.fillStyle = '#9fd0ea'; g.fillRect(dx, gy + 1, 8.5, gh - 1); g.fillRect(dx + 9.5, gy + 1, 8.5, gh - 1);
+    g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(dx + 1, gy + 2, 2, gh - 4); g.fillRect(dx + 10.5, gy + 2, 2, gh - 4);
+    g.fillStyle = '#4a4a4a'; g.fillRect(dx - 3, Yb - 1.5, 24, 1.5);                      // felpudo
+    for (let x = X0; x < X1; x += 6) { g.fillStyle = (((x - X0) / 6) | 0) % 2 ? '#ffffff' : C[0]; g.fillRect(x, gy - 1, Math.min(6, X1 - x), 3); } // toldo a rayas
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(X0, gy + 2, W, 1.5);
+    g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(X0, Yb, W, 2);                           // sombra en la vereda
+    g.textAlign = 'start'; g.textBaseline = 'alphabetic';
+  },
   cruz(g, d) { // cruz roja sobre el techo (hospital y sanatorio): placa blanca con cruz
     const S = VR.TILE, cx = (d.x + 1.5) * S, cy = (d.y + 1.5) * S;
     g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(cx - 14, cy - 12, 30, 30); g.fillStyle = '#f6f6f2'; g.fillRect(cx - 16, cy - 16, 32, 32);

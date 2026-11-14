@@ -646,10 +646,13 @@ def main(src, out, preview=None):
     HOSP = {'floors': 2, 'roof': 'losa', 'roofc': 0, 'wallc': 4}
     POLI = {'floors': 1, 'roof': 'teja', 'roofc': 1, 'wallc': 9}
     SUPER = {'floors': 1, 'roof': 'chapa', 'roofc': 0, 'wallc': 4}
-    SUPERS = [('super', 'Super Express', (-25.7846352, -56.4610337), SUPER), ('super', 'Super Estrella', (-25.7786704, -56.4466731), SUPER),
-              ('super', 'Herrero Group', (-25.7807572, -56.4446212), SUPER), ('super', 'Super Herrero', (-25.7829744, -56.4502131), SUPER),
-              ('super', 'Super Herrero Norte', (-25.7749759, -56.4643161), SUPER), ('super', 'Biggie', (-25.7752825, -56.4455092), SUPER),
-              ('super', 'Superseis', (-25.76727573, -56.44159752), SUPER)]
+    # Nombres alternativos (no se usan los reales). Referencia real de cada uno (solo para documentación):
+    #   Súper Ligero = Super Express · Súper Lucero = Super Estrella · Súper Kuarahy = Super Herrero · Kuarahy Group = Herrero Group
+    #   Kuarahy Norte = Super Herrero Norte · Hiper Guasu = Biggie · Súper Yvoty = Superseis
+    SUPERS = [('super', 'Súper Ligero', (-25.7846352, -56.4610337), dict(SUPER, brand='ligero')), ('super', 'Súper Lucero', (-25.7786704, -56.4466731), dict(SUPER, brand='lucero')),
+              ('super', 'Kuarahy Group', (-25.7807572, -56.4446212), dict(SUPER, brand='kuarahyGroup')), ('super', 'Súper Kuarahy', (-25.7829744, -56.4502131), dict(SUPER, brand='kuarahy')),
+              ('super', 'Kuarahy Norte', (-25.7749759, -56.4643161), dict(SUPER, brand='kuarahy')), ('super', 'Hiper Guasu', (-25.7752825, -56.4455092), dict(SUPER, brand='guasu')),
+              ('super', 'Súper Yvoty', (-25.76727573, -56.44159752), dict(SUPER, brand='yvoty'))]
     BOLI = {'floors': 1, 'roof': 'losa', 'roofc': 0, 'wallc': 11}   # boliches y pubs (14/11/2026): gris oscuro; solo abren de noche
     BOLICHES = [('boliche', 'Bambuddha', (-25.76670, -56.44470), BOLI),            # Blvd. Río Apa c/ Angostura
                 ('boliche', 'Blue Karaoke', (-25.7682851, -56.4460310), BOLI),      # nodo de OSM
@@ -693,6 +696,8 @@ def main(src, out, preview=None):
         if lm:
             floors, rt, rc, wc, shop = lm['floors'], ROOF_TYPES.index(lm['roof']), N_ROOFS + lm['roofc'], lm['wallc'], lm.get('shop', 0)
             if lm.get('label'): labels.append({'text': lm['label'], 'x': int(xm * 16 + 8), 'y': int(ymin[new_id] * 16 - 12)})
+            if lm.get('label') and lm.get('kind') == 'super':  # diseño genérico de súper: techo, cartel y fachada con el color de la marca
+                decals.append({'kind': 'super', 'style': lm['brand'], 'name': lm['label'], 'x': int(xmin[new_id]), 'y': int(ymin[new_id]), 'w': int(xmax[new_id] - xmin[new_id] + 1), 'h': int(ymax[new_id] - ymin[new_id] + 1)})
             if lm.get('label') and lm.get('kind') in ('hospital', 'sanatorio', 'comisaria', 'jefatura'):  # cruz roja / escudo azul sobre el techo
                 decals.append({'kind': 'cruz' if lm['kind'] in ('hospital', 'sanatorio') else 'escudo', 'x': xm - 1, 'y': int((ymin[new_id] + ymax[new_id]) // 2) - 1, 'w': 3, 'h': 3})
         else:
