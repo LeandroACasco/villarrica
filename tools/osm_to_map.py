@@ -650,6 +650,10 @@ def main(src, out, preview=None):
               ('super', 'Herrero Group', (-25.7807572, -56.4446212), SUPER), ('super', 'Super Herrero', (-25.7829744, -56.4502131), SUPER),
               ('super', 'Super Herrero Norte', (-25.7749759, -56.4643161), SUPER), ('super', 'Biggie', (-25.7752825, -56.4455092), SUPER),
               ('super', 'Superseis', (-25.76727573, -56.44159752), SUPER)]
+    BOLI = {'floors': 1, 'roof': 'losa', 'roofc': 0, 'wallc': 11}   # boliches y pubs (14/11/2026): gris oscuro; solo abren de noche
+    BOLICHES = [('boliche', 'Bambuddha', (-25.76670, -56.44470), BOLI),            # Blvd. Río Apa c/ Angostura
+                ('boliche', 'Blue Karaoke', (-25.7682851, -56.4460310), BOLI),      # nodo de OSM
+                ('boliche', 'La Nueva Estación', (-25.7891444, -56.4579818), BOLI)] # nodo de OSM (bar)
     POIS = [('hospital', 'Hospital Regional', (-25.7771, -25.7760, -56.4623, -56.4609), HOSP),
             ('sanatorio', 'Sanatorio Modelo', (-25.7826581, -56.448532), HOSP),
             ('comisaria', 'Comisaría 3ª', (-25.7825242, -56.4476626), POLI), ('comisaria', 'Comisaría 2ª', (-25.790715, -56.4498238), POLI),
@@ -658,7 +662,7 @@ def main(src, out, preview=None):
             ('comisaria', 'Comisaría 26', (-25.7786781, -56.4727953), POLI), ('comisaria', 'Comisaría 32', (-25.7954947, -56.4378973), POLI),
             ('jefatura', 'Jefatura de Policía', (-25.7839495, -56.4315364), POLI)]
     poi_lm, poi_pos = {}, {}
-    for kind_, text_, where_, st_ in POIS + SUPERS:
+    for kind_, text_, where_, st_ in POIS + SUPERS + BOLICHES:
         pts_ = [(where_[0], where_[2]), (where_[1], where_[3])] if len(where_) == 4 else [(where_[0] + 0.00006, where_[1] - 0.00006), (where_[0] - 0.00006, where_[1] + 0.00006)]
         (ax_, ay_), (bx_, by_) = [T(place(*proj(la_, lo_))) for la_, lo_ in pts_]
         tx0_, tx1_, ty0_, ty1_ = int(min(ax_, bx_)), int(max(ax_, bx_)), int(min(ay_, by_)), int(max(ay_, by_))

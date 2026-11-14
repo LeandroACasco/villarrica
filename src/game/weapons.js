@@ -66,7 +66,7 @@ VR.Weapons = class {
     if (VR.onlineEv) VR.onlineEv({ e: 'shot', x: Math.round(x), y: Math.round(y), a: +a.toFixed(3) });
     this.flash = 0.06; VR.audio.shot(x, y); if (VR.input.buzz) VR.input.buzz(12);
     this.scare(x, y, 170, 'shots');
-    this.crime('disparo', x, y);
+    if (!(VR.chespis && VR.chespis.list.some((q) => q.mode === 'knife' && Math.hypot(q.x - x, q.y - y) < 220))) this.crime('disparo', x, y); // contra un chespi con cuchillo es legítima defensa: sin estrellas
   }
   updateShots(dt) {
     const W = VR.WEAPONS.pistola;
@@ -80,6 +80,7 @@ VR.Weapons = class {
         const c = this.world.boxAt(s.x, s.y, null);
         if (c && !c.driven) { this.hitCar(c, W.carDmg, s.vx, s.vy); this.spark(s.x, s.y); gone = true; break; }
         if (this.peds) for (const p of this.peds.list) if (p.mode !== 'down' && Math.abs(p.x - s.x) < 5 && s.y > p.y - 26 && s.y < p.y + 2) { this.hurtPed(p, s.vx, s.vy, 'shot'); gone = true; break; }
+        if (!gone && VR.chespis) for (const p of VR.chespis.list) if (p.mode !== 'down' && Math.abs(p.x - s.x) < 5 && s.y > p.y - 26 && s.y < p.y + 2) { this.hurtChespi(p, s.vx, s.vy, 'shot'); gone = true; break; }
         if (!gone && this.world.hits(s.x - 1, s.y - 1, s.x + 1, s.y + 1)) { this.spark(s.x, s.y); gone = true; }
       }
       if (gone) this.shots.splice(i, 1);
@@ -98,10 +99,11 @@ VR.Weapons = class {
     if (this.night) this.night.add(x + Math.sin(a) * 30, y - Math.cos(a) * 30, 60, '255,150,50', 0.9);
     const inCone = (px, py, extra = 0) => { const d = Math.hypot(px - x, py - y); if (d > W.range + extra) return false; let da = Math.atan2(px - x, -(py - y)) - a; da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da))); return da < W.cone * 0.75 || d < 10 + extra; };
     if (this.peds) for (const p of this.peds.list) if (p.mode !== 'down' && inCone(p.x, p.y - 10)) this.hurtPed(p, Math.sin(a) * 60, -Math.cos(a) * 60, 'fire');
+    if (VR.chespis) for (const p of VR.chespis.list) if (p.mode !== 'down' && inCone(p.x, p.y - 10)) this.hurtChespi(p, Math.sin(a) * 60, -Math.cos(a) * 60, 'fire');
     for (const c of this.world.carsIn(x - W.range - 20, y - W.range - 20, x + W.range + 20, y + W.range + 20, [])) if (!c.wreck && !c.driven && inCone(c.x, c.y, Math.min(c.LEN, c.WID) / 2)) this.hitCar(c, W.carDmg * dt, 0, 0, true);
     if (this.rnd() < dt * 3) this.world.mark(x + Math.sin(a) * W.range * 0.6, y - Math.cos(a) * W.range * 0.6, 'rgba(30,24,20,.5)');
     this.scare(x, y, 140, 'fire');
-    this.crime('fuego', x, y);
+    if (!(VR.chespis && VR.chespis.list.some((q) => q.mode === 'knife' && Math.hypot(q.x - x, q.y - y) < 220))) this.crime('fuego', x, y);
   }
 
   // ---------- efectos sobre la gente y los vehículos ----------
@@ -110,6 +112,12 @@ VR.Weapons = class {
     VR.audio.ouch(p.x, p.y);
     if (how === 'fire' && this.emer) for (let i = 0; i < 6; i++) this.emer.fx.push({ k: 'smoke', x: p.x + (this.rnd() - 0.5) * 10, y: p.y - 6, vx: (this.rnd() - 0.5) * 10, vy: -18, life: 1.4, max: 1.4, r: 3 + this.rnd() * 2 });
     if (this.emer) this.emer.dispatch('ambulancia', p);
+  }
+  // chespis (14/11/2026): si te amenaza con el cuchillo es legítima defensa (sin estrellas); si te estaba pidiendo, es un crimen como cualquier otro
+  hurtChespi(p, vx, vy, how) {
+    const defensa = p.mode === 'knife'; this.hurtPed(p, vx, vy, how); p.armed = false; p.rag = null;
+    if (defensa && this.toast && !this.remote) this.toast('🛡 Legítima defensa: te atacaba con un cuchillo');
+    if (this.peds) this.peds.scatter(p.x, p.y, 120);
   }
   hitCar(c, dmg, vx, vy, burn) {
     if (c.spec.noFire) { if (!c.horseT || c.horseT < this.t) { c.horseT = this.t + 2; if (this.peds) { c.honkT = 1.4; c.honkTxt = '¡Hiiii!'; } } return; } // el caballo se asusta, pero no se prende

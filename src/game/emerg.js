@@ -270,7 +270,7 @@ VR.Emergency = class {
     const cam = u.cam, near = (a, b, r) => Math.hypot(a.x - b.x, a.y - b.y) < r, vec = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] };
     const follow = (m) => { if (!m) return; const q = vec[m.dir] || [0, 1], k = Math.min(1, dt * 9); cam.x += (m.x + q[0] * 9 - cam.x) * k; cam.y += (m.y + q[1] * 9 - cam.y) * k; };
     const face = (c, q) => { const dx = q.x - c.x, dy = q.y - c.y; c.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); c.moving = false; c.px = c.x; c.py = c.y; };
-    if (!T.rider && u.ph !== 'load' && u.ph !== 'close' && !this.peds.list.includes(T)) return finish(); // el peatón se fue o desapareció
+    if (!T.rider && u.ph !== 'load' && u.ph !== 'close' && !this.peds.list.includes(T) && !(VR.chespis && VR.chespis.list.includes(T))) return finish(); // el peatón se fue o desapareció
     if (u.ph === 'go') {
       if (doc) this.walk(doc, dt, T.x + 3, T.y - 11, 70);
       this.walk(m0, dt, T.x - 9, T.y + 3, 78); if (m1) { this.walk(m1, dt, T.x + 10, T.y + 4, 62); follow(m1); } else { cam.x += (T.x + 10 - cam.x) * Math.min(1, dt * 2); cam.y += (T.y + 4 - cam.y) * Math.min(1, dt * 2); }
@@ -360,7 +360,7 @@ VR.Emergency = class {
           if (car && d < v.LEN / 2 + car.LEN / 2 + 8 && Math.abs(car.v) < 14) { u.pin = (u.pin || 0) + dt; if (u.pin > 2.2) { this.busted(); return; } } else u.pin = 0;
         } else if (u.task === 'regroup') { this.halt(u, dt); if (!u.crew.length) u.task = 'leave'; }
       } else if (u.task === 'goto') {
-        const T = u.target, alive = T && (u.kind === 'bomberos' ? (T.burning || (T.wreck && T.smolder > 0)) : T.injured && (T.rider || this.peds.list.includes(T)));
+        const T = u.target, alive = T && (u.kind === 'bomberos' ? (T.burning || (T.wreck && T.smolder > 0)) : T.injured && (T.rider || this.peds.list.includes(T) || (VR.chespis && VR.chespis.list.includes(T))));
         if (!alive) { u.target = u.queue.shift() || null; if (!u.target) u.task = u.crew.length ? 'regroup' : 'leave'; continue; }
         const d = this.drive(u, dt, T.x, T.y, u.kind === 'bomberos' ? 95 : 50, false);
         if (d < (u.kind === 'bomberos' ? 125 : 70) && Math.abs(v.v) < 30) { u.task = 'work'; u.cam = null; u.ph = 'go'; if (!u.crew.length) { if (u.kind === 'ambulancia' && u.model !== 'ambulancia') { this.spawnCrew(u, 'paramedico', 2); if (this.rnd() < 0.65) this.spawnCrew(u, 'doctor', 1); } else this.spawnCrew(u, 'bombero', 2); } }
