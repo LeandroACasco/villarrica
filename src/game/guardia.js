@@ -65,7 +65,7 @@ VR.Guardia = class {
           this.dest(A.x, A.y, 'Incendio en el parque');
           if (A.est === 'ir') { hud = '🔥 10-70 · Andá al parque (sirena: tocá ACCIÓN)'; if (d < 260) { A.est = 'apagar'; this.toast('🔥 ¡Mantené ACCIÓN para el cañón de agua!'); } }
           if (A.est === 'apagar') {
-            hud = '🔥 ¡Apagá el fuego! Mantené ACCIÓN · focos: ' + pz.ardiendo + ' · no dejes que llegue a la glorieta';
+            hud = '🔥 ¡Apagá el fuego! Mantené ACCIÓN · focos: ' + pz.ardiendo + ' · no lo dejes extenderse';
             if (pz.enGlorieta()) this.cierra(false, 'El fuego llegó a la glorieta'); else if (pz.quemadas > pz.limite) this.cierra(false, 'Se quemó medio parque'); else if (pz.ardiendo === 0) this.cierra(true, '¡Apagaste el incendio!');
           }
         } else if (A.tipo === 'gato') {

@@ -546,3 +546,6 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 - Se abre al terminar M3 (📋 Changas → 🚒 Guardia). Un turno por día del juego; hay que presentarse en el cuartel.
 - 3 avisos por radio en orden al azar, con códigos 10: **10-70** pastizal (camión bomba + cañón, 36.000), **10-50/10-52** herido (ambulancia: frenás al lado, se carga la camilla, al Hospital Regional, 34.000 × estado del herido, mín. 50%), asistencia por gato en el árbol (camión, frená al lado, 10.000). Vehículos prestados (sin estrellas).
 - Se cobra al volver al cuartel (10-8): lo ganado menos 1.500 por punto de daño (máx. 40%), efectivo de Benítez + mensaje en el buzón. Dejar la changa o empezar una misión corta el turno.
+
+### v1.77 — Fix: el fuego nace donde el camión puede entrar
+- Reporte de Leandro: el incendio de M3 caía en un sector de árboles (trama cada 2 baldosas) y el camión no entraba. Ahora el origen se elige por alcanzabilidad desde las calles (campo de pasto abierto al sur del parque, junto a la avenida); aplica también a la guardia. Límite de derrota 230 celdas; el fuego casi no crece mientras viajás.

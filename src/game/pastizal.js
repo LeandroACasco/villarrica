@@ -4,18 +4,27 @@
 VR.Pastizal = class {
   // o: { world, hurt(n), toast }
   constructor(o) {
-    Object.assign(this, o); this.cells = new Map(); this.ash = new Map(); this.activo = false; this.t = 0; this.acc = 0; this.quemadas = 0; this.limite = 140; this.o = null;
+    Object.assign(this, o); this.cells = new Map(); this.ash = new Map(); this.activo = false; this.t = 0; this.acc = 0; this.quemadas = 0; this.limite = 230; this.o = null;
     this.viento = { x: -0.55, y: 0.1 }; this.origenPx = null; this.glo = null;
   }
   ardible(tx, ty) { const t = this.world.get(tx, ty); return t === VR.T.GRASS || t === VR.T.TREE; }
-  // un punto de pasto del lado este de la laguna, a ~18 tiles de la glorieta, rodeado de pasto
+  // Un punto de pasto abierto (sin trama de árboles) al que el camión llega de verdad: se recorre desde las calles por baldosas con
+  // 3x3 libres (el camión mide ~2,5 x 1 baldosas) y el fuego nace a ~15–30 baldosas de la glorieta, del lado este de la laguna.
   origen() {
     const W = this.world, T = VR.T, S = VR.TILE, g = (W.decals || []).find((d) => d.kind === 'glorieta'); if (!g) return null;
     const gx = g.x + g.w / 2, gy = g.y + g.h / 2; this.glo = { x: gx * S, y: gy * S, r: Math.min(g.w, g.h) * S / 2 + 4 };
+    const x0 = Math.floor(gx) - 4, x1 = Math.floor(gx) + 70, y0 = Math.floor(gy) - 40, y1 = Math.floor(gy) + 50, w = x1 - x0 + 1, h = y1 - y0 + 1, I = (x, y) => (y - y0) * w + (x - x0);
+    const libre = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (W.solid(x + dx, y + dy)) return false; return true; };
+    const dist = new Int16Array(w * h).fill(-1), q = [];
+    for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) if (VR.ROADLIKE[W.get(x, y)] && libre(x, y)) { dist[I(x, y)] = 0; q.push(x, y); }
+    for (let k = 0; k < q.length; k += 2) { const x = q[k], y = q[k + 1], d = dist[I(x, y)]; if (d >= 40) continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx <= x0 || ny <= y0 || nx >= x1 || ny >= y1 || dist[I(nx, ny)] >= 0 || !libre(nx, ny)) continue; dist[I(nx, ny)] = d + 1; q.push(nx, ny); } }
     let best = null, bs = 1e9;
-    for (let ty = Math.floor(gy) - 22; ty <= gy + 22; ty++) for (let tx = Math.floor(gx) + 8; tx <= gx + 60; tx++) {
-      if (W.get(tx, ty) !== T.GRASS) continue; let n = 0; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (W.get(tx + dx, ty + dy) === T.GRASS) n++;
-      if (n < 22) continue; const sc = Math.abs(Math.hypot(tx - gx, ty - gy) - 26) + (25 - n) * 0.5; if (sc < bs) { bs = sc; best = { tx, ty }; }
+    for (let ty = y0 + 3; ty < y1 - 3; ty++) for (let tx = Math.floor(gx) + 14; tx < x1 - 3; tx++) {
+      if (W.get(tx, ty) !== T.GRASS || dist[I(tx, ty)] < 0) continue; let n = 0, ar = 0;
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const t = W.get(tx + dx, ty + dy); if (t === T.GRASS) n++; if (!W.solid(tx + dx, ty + dy)) ar++; }
+      if (n < 22 || ar < 40) continue; const d = Math.hypot(tx - gx, ty - gy); if (d < 14 || d > 45) continue;
+      const sc = Math.abs(d - 24) + dist[I(tx, ty)] * 0.3 + (49 - n) * 0.15; if (sc < bs) { bs = sc; best = { tx, ty }; }
     }
     return best && { x: (best.tx + 0.5) * S, y: (best.ty + 0.5) * S };
   }
@@ -41,12 +50,12 @@ VR.Pastizal = class {
   }
   update(dt, player, car) {
     if (!this.activo) return; this.t += dt; this.acc += dt; const S = VR.TILE;
-    // lejos del fuego se propaga despacio, así llegás con el fuego chico (el camión tarda en cruzar la ciudad)
-    const f = car || player, o = this.origenPx, lejos = o && Math.hypot(f.x - o.x, f.y - o.y) > 1800 ? 0.18 : 1;
+    // lejos del fuego se propaga muy despacio, así llegás con el fuego chico (el camión tarda en cruzar la ciudad)
+    const f = car || player, o = this.origenPx, lejos = (() => { const d = o ? Math.hypot(f.x - o.x, f.y - o.y) : 0; return d > 2200 ? 0.08 : d > 900 ? 0.35 : 1; })();
     for (const [k, c] of this.cells) { c.edad += dt; c.vida -= dt * lejos; if (c.vida <= 0) { this.cells.delete(k); this.ash.set(k, { tx: c.tx, ty: c.ty }); } }
     if (this.acc >= 0.5) { this.acc = 0; const nuevos = [];
       for (const c of this.cells.values()) { if (c.edad < 1.2) continue;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const w = 1 + 0.9 * (dx * this.viento.x + dy * this.viento.y) / 0.55; if (Math.random() < 0.125 * Math.max(0.25, w) * lejos) nuevos.push([c.tx + dx, c.ty + dy]); } }
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const w = 1 + 0.9 * (dx * this.viento.x + dy * this.viento.y) / 0.55; if (Math.random() < 0.10 * Math.max(0.25, w) * lejos) nuevos.push([c.tx + dx, c.ty + dy]); } }
       for (const [x, y] of nuevos) this.prende(x, y);
     }
     // el fuego quema lo que toca: a pie te hace daño y el camión se va dañando
