@@ -380,7 +380,7 @@
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
-    if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
+    if (vida) player.setCasco(vida.cascoPuesto); if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
     syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
@@ -597,6 +597,7 @@
     autoR: { n: 'Auto rápido', ico: '🏎', tipo: 'auto', modelo: 'coupe', base: 20000, km: 7000, kv: 1.3, v: 165, d: 'Llegás antes... si no te mareás. Más caro.' },
   };
   if (vida) $('btnCel').hidden = false;
+  const pj = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => openCel('mochila') }) : null;
   $('btnCel').onclick = () => openCel();
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
