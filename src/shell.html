@@ -70,6 +70,13 @@
   .pjEst { display: flex; flex-wrap: wrap; gap: 6px; } .pjEst span { background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; font-size: 13px; } .pjEst .mal { background: #6b2430; }
   .pjSlot { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px; margin-bottom: 6px; } .pjSlot i { font-style: normal; font-size: 24px; } .pjSlot div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; } .pjSlot small { opacity: .6; } .pjSlot em { font-style: normal; opacity: .85; font-size: 12px; }
   #pjMoch { margin-top: 6px; width: 100%; }
+  /* Configuración en pestañas */
+  .mtBar { display: flex; gap: 4px; overflow-x: auto; margin: 4px 0 10px; padding-bottom: 4px; position: sticky; top: 0; background: inherit; z-index: 2; }
+  .mtBar button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: inherit; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .mtBar button i { font-style: normal; font-size: 20px; } .mtBar button.on { background: #2f6fd6; border-color: #7fb0ff; color: #fff; }
+  .mtPan[hidden] { display: none; }
+  /* Pausa: botones grandes en grilla */
+  #pause .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; } #pause .row .btn { padding: 12px 8px; }
   #celDlg::backdrop { background: rgba(0,0,0,.45); }
   .celTop { display: flex; justify-content: space-between; padding: 10px 18px 4px; font: 700 12px system-ui; color: #cfe0f5; }
   #celBody { flex: 1; overflow: auto; padding: 8px 14px; }
@@ -429,7 +436,7 @@
     <h2>Pausa</h2>
     <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
     <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
-    <div class="row" id="pHist"><button class="btn" id="pCel">📱 Celular</button><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
+    <div class="row" id="pHist"><button class="btn" id="pPj">🧍 Personaje</button><button class="btn" id="pCel">📱 Celular</button><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
     <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
   </div>
 </dialog>

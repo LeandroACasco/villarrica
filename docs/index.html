@@ -70,6 +70,13 @@
   .pjEst { display: flex; flex-wrap: wrap; gap: 6px; } .pjEst span { background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; font-size: 13px; } .pjEst .mal { background: #6b2430; }
   .pjSlot { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px; margin-bottom: 6px; } .pjSlot i { font-style: normal; font-size: 24px; } .pjSlot div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; } .pjSlot small { opacity: .6; } .pjSlot em { font-style: normal; opacity: .85; font-size: 12px; }
   #pjMoch { margin-top: 6px; width: 100%; }
+  /* Configuración en pestañas */
+  .mtBar { display: flex; gap: 4px; overflow-x: auto; margin: 4px 0 10px; padding-bottom: 4px; position: sticky; top: 0; background: inherit; z-index: 2; }
+  .mtBar button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: inherit; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .mtBar button i { font-style: normal; font-size: 20px; } .mtBar button.on { background: #2f6fd6; border-color: #7fb0ff; color: #fff; }
+  .mtPan[hidden] { display: none; }
+  /* Pausa: botones grandes en grilla */
+  #pause .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; } #pause .row .btn { padding: 12px 8px; }
   #celDlg::backdrop { background: rgba(0,0,0,.45); }
   .celTop { display: flex; justify-content: space-between; padding: 10px 18px 4px; font: 700 12px system-ui; color: #cfe0f5; }
   #celBody { flex: 1; overflow: auto; padding: 8px 14px; }
@@ -423,7 +430,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 499c20fc · 2026-11-15</div>
+  <div class="tVer">Versión 77e571e4 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -432,7 +439,7 @@
     <h2>Pausa</h2>
     <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
     <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
-    <div class="row" id="pHist"><button class="btn" id="pCel">📱 Celular</button><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
+    <div class="row" id="pHist"><button class="btn" id="pPj">🧍 Personaje</button><button class="btn" id="pCel">📱 Celular</button><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
     <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
   </div>
 </dialog>
@@ -536,7 +543,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 499c20fc · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 77e571e4 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -14804,6 +14811,26 @@ VR.Personaje = class {
   }
 };
 
+// ===== game/menutabs.js =====
+// Menú de Configuración en pestañas: agrupa las secciones (cada <h3> y lo que le sigue) sin mover ni renombrar ningún control.
+VR.menuTabs = () => {
+  const dlg = document.querySelector('#menu .dlg'); if (!dlg || dlg.dataset.tabs) return; dlg.dataset.tabs = '1';
+  const TABS = [['juego', '🎮', 'Juego'], ['partida', '💾', 'Partida'], ['pers', '🧍', 'Personaje'], ['ctrl', '🎛', 'Controles'], ['avz', '🛠', 'Avanzado']];
+  const DE = { 'Manejo': 'juego', 'Hora del día': 'juego', 'Clima': 'juego', 'Calidad de dibujo': 'juego', 'Opciones': 'juego', 'Modo Historia': 'partida', 'Pasar la Historia a otro dispositivo': 'partida',
+    '☁ Partida en la nube (cuenta de Google)': 'partida', 'Personaje': 'pers', 'Online (jugar con amigos)': 'pers', 'Controles táctiles': 'ctrl', 'Teclado (PC)': 'ctrl', 'Control de consola': 'ctrl', 'Fondo del menú principal': 'avz', 'Desarrollador': 'avz' };
+  const kids = Array.from(dlg.children), h2 = kids.find((e) => e.tagName === 'H2'), pie = kids.slice(-2); // el crédito y el botón Cerrar quedan abajo, fuera de las pestañas
+  const cuerpo = kids.slice(kids.indexOf(h2) + 1, kids.length - 2), pan = {}; let cur = null;
+  const bar = document.createElement('div'); bar.className = 'mtBar';
+  for (const [k, i, n] of TABS) { const p = document.createElement('div'); p.className = 'mtPan'; p.dataset.t = k; pan[k] = p; const b = document.createElement('button'); b.dataset.t = k; b.innerHTML = '<i>' + i + '</i><span>' + n + '</span>'; bar.append(b); }
+  for (const e of cuerpo) { if (e.tagName === 'H3') cur = pan[DE[e.textContent.trim()] || 'avz']; (cur || pan.juego).append(e); }
+  const cont = document.createElement('div'); cont.className = 'mtCont'; for (const k in pan) cont.append(pan[k]);
+  h2.after(bar, cont); dlg.append(...pie);
+  const ir = (k) => { for (const b of bar.children) b.classList.toggle('on', b.dataset.t === k); for (const k2 in pan) pan[k2].hidden = k2 !== k; try { sessionStorage.setItem('villarrica:mt', k); } catch (e) { /* sin storage */ } };
+  bar.onclick = (e) => { const b = e.target.closest('button'); if (b) ir(b.dataset.t); };
+  let ini = 'juego'; try { ini = sessionStorage.getItem('villarrica:mt') || 'juego'; } catch (e) { /* sin storage */ } ir(pan[ini] ? ini : 'juego');
+  VR.menuTab = ir;
+};
+
 // ===== game/controles.js =====
 // Controles de tránsito de la Policía Municipal (J4, 15/11/2026). Solo en Historia.
 // Hay unos pocos puestos fijos (conos y una camioneta con luces) en el Centro. Se ven de lejos: si das la vuelta antes, no pasa nada.
@@ -15564,6 +15591,7 @@ VR.Titulo = class {
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
+  $('pPj').onclick = () => pauseThen(() => { if (pj) pj.abrir(); });
   // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
   const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', celStop = null;
   // Opciones de viaje (12/11/2026): tipo de vehículo, modelo, ritmo (kv × velocidad de crucero), precio y velocidad estimada (px/s) para mostrar el tiempo
@@ -15573,6 +15601,7 @@ VR.Titulo = class {
     auto: { n: 'Auto', ico: '🚗', tipo: 'auto', modelo: 'sedan', base: 15000, km: 5000, kv: 0.95, v: 125, d: 'Ritmo normal, cómodo y seguro.' },
     autoR: { n: 'Auto rápido', ico: '🏎', tipo: 'auto', modelo: 'coupe', base: 20000, km: 7000, kv: 1.3, v: 165, d: 'Llegás antes... si no te mareás. Más caro.' },
   };
+  VR.menuTabs();
   if (vida) $('btnCel').hidden = false;
   const pj = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => openCel('mochila') }) : null;
   $('btnCel').onclick = () => openCel();

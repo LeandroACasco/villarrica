@@ -587,6 +587,7 @@
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
+  $('pPj').onclick = () => pauseThen(() => { if (pj) pj.abrir(); });
   // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
   const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', celStop = null;
   // Opciones de viaje (12/11/2026): tipo de vehículo, modelo, ritmo (kv × velocidad de crucero), precio y velocidad estimada (px/s) para mostrar el tiempo
@@ -596,6 +597,7 @@
     auto: { n: 'Auto', ico: '🚗', tipo: 'auto', modelo: 'sedan', base: 15000, km: 5000, kv: 0.95, v: 125, d: 'Ritmo normal, cómodo y seguro.' },
     autoR: { n: 'Auto rápido', ico: '🏎', tipo: 'auto', modelo: 'coupe', base: 20000, km: 7000, kv: 1.3, v: 165, d: 'Llegás antes... si no te mareás. Más caro.' },
   };
+  VR.menuTabs();
   if (vida) $('btnCel').hidden = false;
   const pj = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => openCel('mochila') }) : null;
   $('btnCel').onclick = () => openCel();

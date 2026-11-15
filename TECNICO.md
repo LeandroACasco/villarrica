@@ -703,3 +703,6 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 
 ## Pantalla de personaje (v1.67)
 - `VR.Personaje({player,vida,$,toggleCasco,toggleEq,abrirMochila})`; markup `#pjDlg` y botón `#btnPj` en shell.html. `Player.setCasco(on)` cambia a una hoja de sprites con `hat:"casco"` (se llama cada cuadro desde el loop de main.js).
+
+## Menú en pestañas (v1.68)
+- `VR.menuTabs()` (menutabs.js) reagrupa los `<h3>` de `#menu .dlg` en paneles según el mapa `DE` (título → pestaña); un título nuevo cae en Avanzado. El crédito y el botón Cerrar quedan fuera de las pestañas. Hat `motero` en avatar2.js (no está en CAT.hat).
