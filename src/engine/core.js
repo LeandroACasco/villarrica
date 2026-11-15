@@ -19,7 +19,7 @@ VR.store = {
   ns: '', PROG: /^(pos:|dest:|plata$|ropa:mia$|look:propio$|pj$|vida$|mis$)/,
   key(k) { return 'villarrica:' + (this.ns && this.PROG.test(k) ? this.ns : '') + k; },
   get(k, d) { try { const v = localStorage.getItem(this.key(k)); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem(this.key(k), JSON.stringify(v)); } catch (e) {} },
+  set(k, v) { try { localStorage.setItem(this.key(k), JSON.stringify(v)); if (this.ns && this.PROG.test(k) && !VR.wiped) localStorage.setItem('villarrica:' + this.ns + '_t', String(Date.now())); } catch (e) {} },
   del(k) { try { localStorage.removeItem(this.key(k)); } catch (e) {} },
   // ¿hay una partida de Historia guardada? (se mira sin cambiar de modo)
   hasHistoria() { try { return localStorage.getItem('villarrica:h:vida') !== null; } catch (e) { return false; } },

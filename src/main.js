@@ -761,6 +761,7 @@
     VR.wiped = true; VR.store.wipeHistoria(); try { sessionStorage.removeItem('villarrica:onl'); } catch (e) {} try { online.stop(); } catch (e) {} bh.textContent = '🗑 Empezar la Historia de cero'; sure = 0;
     if (vida) { toast('🗑 Historia borrada: arrancá de nuevo'); try { sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) {} setTimeout(() => location.reload(), 600); } else { toast('🗑 Historia borrada'); tagHist(); }
   }; }
+  VR.Guardado.init({ toast, flush: () => { try { savePos(); } catch (e) {} if (vida) vida.save(); if (mis) mis.save(); } });
   $('menuClose').onclick = () => menu.close();
   menu.addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !/INPUT/.test(e.target.tagName)) menu.close(); });
   $('btnFull').onclick = () => {

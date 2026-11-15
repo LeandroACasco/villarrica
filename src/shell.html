@@ -364,6 +364,10 @@
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
 <div id="onHud" hidden></div>
+<dialog id="nbDlg"><div class="dlg"><h2>☁ ¿Qué partida conservás?</h2><p id="nbMotivo"></p>
+  <p><b>☁ Nube</b><br><span id="nbCloud"></span></p><p><b>📱 Este dispositivo</b><br><span id="nbLocal"></span></p>
+  <div class="row"><button class="btn primary" id="nbUsaNube">☁ Usar la de la nube</button><button class="btn" id="nbUsaLocal">📱 Usar la de este dispositivo</button></div>
+  <div class="row"><button class="btn" id="nbNada">Decidir después</button></div></div></dialog>
 <dialog id="onDlg"><h2>🌐 Online</h2><div id="onSlot"></div><div class="seg"><button id="onClose">Cerrar</button></div></dialog>
 <div id="chatLog"></div>
 <form id="chatBox" hidden><input id="chatIn" maxlength="80" placeholder="Escribí y apretá Enter" autocomplete="off"></form>
@@ -474,6 +478,17 @@
     <p class="hint">Alta dibuja autos, personas y calles con más detalle (en pantallas densas). Gasta más memoria y batería: si el juego se pone lento, volvé a Normal. Al cambiarla se reinicia el dibujo y volvés al menú principal.</p>
     <h3>Modo Historia</h3>
     <div class="row"><button class="btn" id="btnBorraH">🗑 Empezar la Historia de cero</button></div>
+    <h3>Pasar la Historia a otro dispositivo</h3>
+    <p class="hint">Guardá tu partida en un archivo o en un código y cargala en el otro teléfono o compu. Reemplaza la Historia del dispositivo donde la cargues.</p>
+    <div class="row"><button class="btn" id="gxArch">💾 Guardar en un archivo</button><label class="btn" style="text-align:center;cursor:pointer">📂 Cargar un archivo<input type="file" id="gxFile" accept=".json,application/json" hidden></label></div>
+    <textarea id="gxTxt" rows="3" placeholder="Código de la partida (VRH1.…)" style="width:100%;box-sizing:border-box;margin-top:6px;background:var(--key);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px;font:12px monospace"></textarea>
+    <div class="row"><button class="btn" id="gxCopia">📋 Copiar mi código</button><button class="btn" id="gxPega">📥 Cargar este código</button></div>
+    <h3>☁ Partida en la nube (cuenta de Google)</h3>
+    <p class="hint" id="nbEstado">☁ Sin conectar</p>
+    <div class="row"><button class="btn primary" id="nbIn">🔑 Iniciar sesión con Google</button><button class="btn" id="nbOut" style="display:none">Cerrar sesión</button></div>
+    <div class="row"><button class="btn" id="nbUp" style="display:none">⬆ Subir esta partida</button><button class="btn" id="nbDown" style="display:none">⬇ Traer la de la nube</button></div>
+    <label class="chk" id="nbAutoL" style="display:none"><input type="checkbox" id="nbAuto"> Subir los cambios solos (cada 2 min y al salir)</label>
+    <p class="hint" id="nbMsg"></p>
     <h3>Opciones</h3>
     <label class="chk"><input type="checkbox" id="optFps"> Mostrar FPS y posición</label>
     <label class="chk"><input type="checkbox" id="optSnd"> Sonido (sirenas)</label>
