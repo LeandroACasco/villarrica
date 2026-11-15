@@ -549,3 +549,6 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 
 ### v1.77 — Fix: el fuego nace donde el camión puede entrar
 - Reporte de Leandro: el incendio de M3 caía en un sector de árboles (trama cada 2 baldosas) y el camión no entraba. Ahora el origen se elige por alcanzabilidad desde las calles (campo de pasto abierto al sur del parque, junto a la avenida); aplica también a la guardia. Límite de derrota 230 celdas; el fuego casi no crece mientras viajás.
+
+### v1.78 — Tránsito que cede el paso de verdad a la sirena
+- Pedido de Leandro: con la sirena los autos solo se movían un poquito. Ahora reaccionan desde 260 px (antes 170), se hacen a un lado hasta 30 px usando vereda, pasto o tierra (antes ~10 px, solo hasta el cordón), avanzan lento hacia el costado y frenan del todo hasta que pasa la unidad. Si no hay lugar, siguen casi parando como antes. Vale para tu sirena y para las unidades de emergencia.
