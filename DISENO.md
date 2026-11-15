@@ -512,3 +512,5 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 
 
 - **v1.65 · Vehículos marcados y taxis del hospital:** en el mapa/minimapa se marcan tus vehículos (los `mio`, la moto de Kike y el último del que te bajaste). Afuera del Hospital hay una parada de taxis (PUNTO `taxihosp`, cartel TAXI + sedán amarillo): te llevan al Centro (Plaza de los Héroes), al destino marcado en el mapa o a donde dejaste tu vehículo; tarifa 10.000 + 3.000/km, si no alcanza queda como deuda.
+
+- **v1.65b:** la moto de Kike ahora sobrevive a recargar la página (se guarda en `mis.s.motoK` posición+día de alquiler; se descarta al cambiar el día).
