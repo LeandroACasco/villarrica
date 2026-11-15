@@ -717,7 +717,7 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 - Mismos `.tBtn[data-a]` y `ACT`/`titleNav` de antes (orden: historia, multi, libre, config, creditos). `tagHist()` arma el resumen leyendo `VR.Guardado.snapshot()`.
 
 ## v1.75 — Pastizal (M3)
-- `src/game/pastizal.js` `VR.Pastizal`: celdas = tiles GRASS/TREE; propagación cada 0.5 s (p=0.125 por vecino, sesgo de viento, x0.18 si el jugador está a >1800 px), cada celda arde 11–18 s y queda ceniza; `mojar(x,y,dt)` lo llama la partícula 'water' de emerg.js. `origen()` busca pasto denso ~26 tiles al este de la glorieta; `enGlorieta()` radio = min(w,h)*8+4.
+- `src/game/pastizal.js` `VR.Pastizal`: celdas = tiles GRASS/TREE; propagación cada 0.5 s (p=0.10 por vecino, sesgo de viento, x0.18 si el jugador está a >1800 px), cada celda arde 11–18 s y queda ceniza; `mojar(x,y,dt)` lo llama la partícula 'water' de emerg.js. `origen()` (v1.77) busca pasto abierto alcanzable por el camión (BFS desde las calles por baldosas con 3x3 libres, a 14–45 tiles de la glorieta); propagación p=0.10, x0.35 a >900 px y x0.08 a >2200 px del jugador; límite 230 celdas; `enGlorieta()` radio = min(w,h)*8+4.
 - `VR.MISIONES.m3`, `Misiones.accion/rifaAccion`, `mis.prestaCamion()` (marca `mio`+`prestada`; `emer.stolen` ignora `prestada`), Lugares.base `'fuego'`. Cadena de ACCIÓN en main.js: `mis.accion` antes de `changas.action`.
 
 ## v1.76 — Guardia

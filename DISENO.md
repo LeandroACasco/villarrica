@@ -539,8 +539,8 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 
 ### v1.75 — J5: M3 «Tata!» (rifas + incendio del parque)
 - Benítez (cuartel) te da 10 rifas a 20.000; las vendés a pie con ACCIÓN a la gente de la plaza, Marimer o parque (compra, regatea o rechaza; 2.000 de comisión por número).
-- Se entrega la plata, suena la alarma: pastizal en el parque Ykua Pytã (este de la laguna). Se maneja el camión bomba del cuartel (prestado: no da estrellas), cañón con ACCIÓN sostenida.
-- Si el fuego llega a la glorieta o se queman >140 celdas, falla (reintento en el checkpoint). Al devolver el camión al cuartel: 300.000 menos 4.000 por punto de daño (mín. 120.000). Abre el barrio Yvaroty.
+- Se entrega la plata, suena la alarma: pastizal abierto al sur del parque Ykua Pytã, junto a la avenida (v1.77). Se maneja el camión bomba del cuartel (prestado: no da estrellas), cañón con ACCIÓN sostenida.
+- Si el fuego llega a la glorieta o se queman >230 celdas, falla (reintento en el checkpoint). Al devolver el camión al cuartel: 300.000 menos 4.000 por punto de daño (mín. 120.000). Abre el barrio Yvaroty.
 
 ### v1.76 — J5: Guardia en el cuartel (changa de bomberos)
 - Se abre al terminar M3 (📋 Changas → 🚒 Guardia). Un turno por día del juego; hay que presentarse en el cuartel.
