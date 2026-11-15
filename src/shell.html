@@ -70,6 +70,15 @@
   .pjEst { display: flex; flex-wrap: wrap; gap: 6px; } .pjEst span { background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; font-size: 13px; } .pjEst .mal { background: #6b2430; }
   .pjSlot { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px; margin-bottom: 6px; } .pjSlot i { font-style: normal; font-size: 24px; } .pjSlot div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; } .pjSlot small { opacity: .6; } .pjSlot em { font-style: normal; opacity: .85; font-size: 12px; }
   #pjMoch { margin-top: 6px; width: 100%; }
+  /* retrato del personaje con barras de vida y hambre (estilo GTA), arriba a la izquierda */
+  #pjHud { position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: calc(env(safe-area-inset-left) + 8px); z-index: 5; width: 64px; cursor: pointer; }
+  #pjHud canvas { display: block; width: 64px; height: 64px; border-radius: 50%; border: 3px solid #f2c230; background: radial-gradient(circle at 50% 60%, #4a5f88, #1d2639); box-shadow: 0 2px 6px rgba(0,0,0,.6); image-rendering: pixelated; }
+  .pjBar { position: relative; height: 9px; margin-top: 4px; background: rgba(0,0,0,.65); border: 1px solid rgba(255,255,255,.35); border-radius: 5px; overflow: hidden; }
+  .pjBar i { display: block; height: 100%; width: 100%; transition: width .25s; } .pjBar.vida i { background: linear-gradient(#ff6b6b, #c92a3a); } .pjBar.ham i { background: linear-gradient(#ffc468, #e07b1a); }
+  .pjBar b { position: absolute; left: 2px; top: -3px; font-size: 9px; line-height: 14px; filter: drop-shadow(0 1px 0 #000); }
+  .pjBar.low { animation: pjParp .6s infinite alternate; } @keyframes pjParp { to { border-color: #ff3b3b; box-shadow: 0 0 6px #ff3b3b; } }
+  body.conPj #hud { left: calc(env(safe-area-inset-left) + 80px); }
+  body.adentro #pjHud { visibility: hidden; }
   #invDlg { width: min(520px, 94vw); max-height: 92vh; padding: 14px; border: 2px solid #2d3a55; border-radius: 18px; background: linear-gradient(160deg, #1e2a40, #121822); color: #fff; overflow: auto; } #invDlg::backdrop { background: rgba(0,0,0,.55); } #invDlg .pjTop .hint { font-size: 12px; opacity: .7; } #invPieza h4 { margin: 12px 0 6px; opacity: .8; } .pjChip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
   /* Configuración en pestañas */
   .mtBar { display: flex; gap: 4px; overflow-x: auto; margin: 4px 0 10px; padding-bottom: 4px; position: sticky; top: 0; background: inherit; z-index: 2; }
@@ -377,6 +386,7 @@
 <div id="banner"></div>
 <div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span><span id="gps" hidden></span><span id="plata"></span><span id="hpBar" hidden></span><span id="vVida" hidden></span><span id="vVida2" hidden></span><span id="vDeuda" hidden></span></div>
 <div id="dbg" hidden></div>
+<div id="pjHud" hidden title="Mi personaje"><canvas id="pjHudCv" width="56" height="56"></canvas><div class="pjBar vida"><i></i><b>❤</b></div><div class="pjBar ham"><i></i><b>🍽</b></div></div>
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
 <div id="onHud" hidden></div>
@@ -392,7 +402,6 @@
 <div id="topbar">
   <button class="icon-btn" id="btnJobs" title="Changas">📋</button>
   <button class="icon-btn" id="btnOnline" title="Online">🌐</button>
-  <button class="icon-btn" id="btnPj" title="Mi personaje" hidden><canvas id="btnPjCv" width="30" height="30"></canvas></button>
   <button class="icon-btn" id="btnCel" title="Celular (C)" hidden>📱</button>
   <button class="icon-btn" id="btnChat" title="Hablar / chat (C)">💬</button>
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>

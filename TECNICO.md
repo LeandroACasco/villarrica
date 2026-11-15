@@ -709,3 +709,6 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 
 ## Inventario (v1.69)
 - `VR.Inv` (add/quita/compra/come, datos en `vida.s.inv`) y `VR.Inventario` (UI `#invDlg`). El súper usa la opción `guarda` (si existe) en vez de `come`; calle.js usa `o.item`. Falta usar pulseras como accesorio equipable.
+
+## Avatar HUD (v1.70)
+- `#pjHud` (retrato + `.pjBar.vida/.ham`), `Personaje.barras(hp, ham)` se llama desde `hpShow()` y `vidaHud()`; `body.conPj` corre `#hud`. En Libre (sin vida) no se muestra.

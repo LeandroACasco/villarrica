@@ -190,7 +190,7 @@
   }
   // vida del jugador (11/11/2026): los golpes de vehículos la bajan, se recupera sola; en 0 te llevan al hospital
   let hp = 100, hpQuiet = 0; const hpEl = $('hpBar');
-  function hpShow() { hpEl.hidden = hp >= 99.5; hpEl.textContent = '❤ ' + Math.max(0, Math.round(hp)) + '%'; }
+  function hpShow() { if (VR.pjHud) VR.pjHud.barras(hp); hpEl.hidden = !!vida || hp >= 99.5; hpEl.textContent = '❤ ' + Math.max(0, Math.round(hp)) + '%'; }
   VR.shake = (t, amp) => { VR.shakeT = Math.max(VR.shakeT || 0, t); VR.shakeA = amp; };
   VR.heal = (n) => { hp = Math.min(100, hp + n); hpShow(); };
   function hurtPlayer(dmg) {
@@ -267,7 +267,7 @@
   const vV = $('vVida'), vV2 = $('vVida2'), vD = $('vDeuda'); let vT = 0;
   function vidaHud(dt, force) {
     if (!vida) return; vT -= dt; if (vT > 0 && !force) return; vT = 0.5;
-    vV.hidden = vV2.hidden = false; vV.textContent = vida.hudLinea1(); vV2.textContent = vida.hudLinea2(); vV.classList.toggle('low', vida.s.hambre < 25);
+    if (VR.pjHud) VR.pjHud.barras(hp, vida.s.hambre); vV.hidden = vV2.hidden = false; vV.textContent = vida.hudLinea1(); vV2.textContent = vida.hudLinea2(); vV.classList.toggle('low', vida.s.hambre < 25);
     const d = vida.deudaTotal(); vD.hidden = d <= 0; if (d > 0) vD.textContent = '⚠ Debés ' + VR.fmtGs(d);
   }
   if (vida) { vidaHud(0, true); VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()) + ' · 🏦 ' + VR.fmtGs(vida.s.banco); vidaHud(0, true); }; VR.Wallet.onChange(); const sy = vida.sync.bind(vida); vida.sync = () => { sy(); $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()) + ' · 🏦 ' + VR.fmtGs(vida.s.banco); }; }
@@ -380,7 +380,7 @@
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
-    if (vida) player.setCasco(vida.cascoPuesto); if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
+    if (vida) { player.setCasco(vida.cascoPuesto); if (pj && pj._cp !== vida.cascoPuesto) { pj._cp = vida.cascoPuesto; pj.icono(); } } if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
     syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
@@ -601,7 +601,7 @@
   VR.menuTabs();
   if (vida) $('btnCel').hidden = false;
   const inv = vida ? new VR.Inventario({ vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), hayMoto: () => !!(mis && mis.motoK) }) : null;
-  const pj = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => inv.abrir() }) : null;
+  const pj = VR.pjHud = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => inv.abrir() }) : null;
   $('btnCel').onclick = () => openCel();
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };

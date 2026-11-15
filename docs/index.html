@@ -70,6 +70,15 @@
   .pjEst { display: flex; flex-wrap: wrap; gap: 6px; } .pjEst span { background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; font-size: 13px; } .pjEst .mal { background: #6b2430; }
   .pjSlot { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px; margin-bottom: 6px; } .pjSlot i { font-style: normal; font-size: 24px; } .pjSlot div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; } .pjSlot small { opacity: .6; } .pjSlot em { font-style: normal; opacity: .85; font-size: 12px; }
   #pjMoch { margin-top: 6px; width: 100%; }
+  /* retrato del personaje con barras de vida y hambre (estilo GTA), arriba a la izquierda */
+  #pjHud { position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: calc(env(safe-area-inset-left) + 8px); z-index: 5; width: 64px; cursor: pointer; }
+  #pjHud canvas { display: block; width: 64px; height: 64px; border-radius: 50%; border: 3px solid #f2c230; background: radial-gradient(circle at 50% 60%, #4a5f88, #1d2639); box-shadow: 0 2px 6px rgba(0,0,0,.6); image-rendering: pixelated; }
+  .pjBar { position: relative; height: 9px; margin-top: 4px; background: rgba(0,0,0,.65); border: 1px solid rgba(255,255,255,.35); border-radius: 5px; overflow: hidden; }
+  .pjBar i { display: block; height: 100%; width: 100%; transition: width .25s; } .pjBar.vida i { background: linear-gradient(#ff6b6b, #c92a3a); } .pjBar.ham i { background: linear-gradient(#ffc468, #e07b1a); }
+  .pjBar b { position: absolute; left: 2px; top: -3px; font-size: 9px; line-height: 14px; filter: drop-shadow(0 1px 0 #000); }
+  .pjBar.low { animation: pjParp .6s infinite alternate; } @keyframes pjParp { to { border-color: #ff3b3b; box-shadow: 0 0 6px #ff3b3b; } }
+  body.conPj #hud { left: calc(env(safe-area-inset-left) + 80px); }
+  body.adentro #pjHud { visibility: hidden; }
   #invDlg { width: min(520px, 94vw); max-height: 92vh; padding: 14px; border: 2px solid #2d3a55; border-radius: 18px; background: linear-gradient(160deg, #1e2a40, #121822); color: #fff; overflow: auto; } #invDlg::backdrop { background: rgba(0,0,0,.55); } #invDlg .pjTop .hint { font-size: 12px; opacity: .7; } #invPieza h4 { margin: 12px 0 6px; opacity: .8; } .pjChip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
   /* Configuración en pestañas */
   .mtBar { display: flex; gap: 4px; overflow-x: auto; margin: 4px 0 10px; padding-bottom: 4px; position: sticky; top: 0; background: inherit; z-index: 2; }
@@ -380,6 +389,7 @@
 <div id="banner"></div>
 <div id="hud"><b id="hudTitle">VILLARRICA</b><span id="zone">Barrio de prueba</span><span id="gps" hidden></span><span id="plata"></span><span id="hpBar" hidden></span><span id="vVida" hidden></span><span id="vVida2" hidden></span><span id="vDeuda" hidden></span></div>
 <div id="dbg" hidden></div>
+<div id="pjHud" hidden title="Mi personaje"><canvas id="pjHudCv" width="56" height="56"></canvas><div class="pjBar vida"><i></i><b>❤</b></div><div class="pjBar ham"><i></i><b>🍽</b></div></div>
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
 <div id="onHud" hidden></div>
@@ -395,7 +405,6 @@
 <div id="topbar">
   <button class="icon-btn" id="btnJobs" title="Changas">📋</button>
   <button class="icon-btn" id="btnOnline" title="Online">🌐</button>
-  <button class="icon-btn" id="btnPj" title="Mi personaje" hidden><canvas id="btnPjCv" width="30" height="30"></canvas></button>
   <button class="icon-btn" id="btnCel" title="Celular (C)" hidden>📱</button>
   <button class="icon-btn" id="btnChat" title="Hablar / chat (C)">💬</button>
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
@@ -431,7 +440,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 29c3566c · 2026-11-15</div>
+  <div class="tVer">Versión 23fefe20 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -546,7 +555,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 29c3566c · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 23fefe20 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -14787,17 +14796,20 @@ VR.Buzon = {
 VR.Personaje = class {
   constructor(o) { Object.assign(this, o); // { player, vida, toggleCasco, toggleEq, abrirMochila, $ }
     this.dir = 'down'; this.anda = false; this.t = null; this.cache = new Map();
-    const $ = this.$; this.dlg = $('pjDlg'); this.cv = $('pjCv'); this.btn = $('btnPj'); this.ico = $('btnPjCv');
-    this.btn.hidden = false; this.btn.onclick = () => this.abrir();
+    const $ = this.$; this.dlg = $('pjDlg'); this.cv = $('pjCv'); this.btn = $('pjHud'); this.ico = $('pjHudCv');
+    this.btn.hidden = false; document.body.classList.add('conPj'); this.btn.onclick = () => this.abrir();
     $('pjClose').onclick = () => this.dlg.close();
     $('pjGira').onclick = () => { const O = ['down', 'right', 'up', 'left']; this.dir = O[(O.indexOf(this.dir) + 1) % 4]; this.pinta(); };
     $('pjAnda').onclick = () => { this.anda = !this.anda; this.pinta(); };
     this.dlg.addEventListener('close', () => { clearInterval(this.t); this.t = null; if (!this._keep) { VR.loop.paused = false; VR.input.enabled = true; } this._keep = false; });
-    this.icono();
+    this.icono(); this.barras(100, this.vida.s.hambre);
   }
   look() { const L = Object.assign({}, this.player.lookData); if (this.vida.cascoPuesto) { L.hat = 'motero'; L.hatColor = 1; } return L; }
   frame(d, a, i, k) { const L = this.look(), key = JSON.stringify(L) + d + a + i + k; let c = this.cache.get(key);
     if (!c) { c = VR.av2Render(Object.assign({}, VR.AV2_DEFAULT, L), d, a, i / 8, k); this.cache.set(key, c); if (this.cache.size > 300) this.cache.delete(this.cache.keys().next().value); } return c; }
+  barras(hp, ham) { const $ = this.$, v = $('pjHud').querySelector('.vida'), h = $('pjHud').querySelector('.ham');
+    if (hp !== undefined) { v.firstChild.style.width = Math.max(0, Math.min(100, hp)) + '%'; v.classList.toggle('low', hp < 30); }
+    if (ham !== undefined) { h.firstChild.style.width = Math.max(0, Math.min(100, ham)) + '%'; h.classList.toggle('low', ham < 25); } }
   icono() { try { const c = this.ico, g = c.getContext('2d'), im = this.frame('down', 'idle', 0, 4); g.clearRect(0, 0, c.width, c.height); g.imageSmoothingEnabled = false;
       const sw = im.width, sh = im.height * 0.42, s = Math.min(c.width / sw, c.height / sh); g.drawImage(im, 0, 0, sw, sh, (c.width - sw * s) / 2, 0, sw * s, sh * s); } catch (e) { /* sin retrato */ } }
   abrir() { if (this.dlg.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; this.anda = false; this.dir = 'down'; this.pinta(); this.dlg.showModal();
@@ -15240,7 +15252,7 @@ VR.Titulo = class {
   }
   // vida del jugador (11/11/2026): los golpes de vehículos la bajan, se recupera sola; en 0 te llevan al hospital
   let hp = 100, hpQuiet = 0; const hpEl = $('hpBar');
-  function hpShow() { hpEl.hidden = hp >= 99.5; hpEl.textContent = '❤ ' + Math.max(0, Math.round(hp)) + '%'; }
+  function hpShow() { if (VR.pjHud) VR.pjHud.barras(hp); hpEl.hidden = !!vida || hp >= 99.5; hpEl.textContent = '❤ ' + Math.max(0, Math.round(hp)) + '%'; }
   VR.shake = (t, amp) => { VR.shakeT = Math.max(VR.shakeT || 0, t); VR.shakeA = amp; };
   VR.heal = (n) => { hp = Math.min(100, hp + n); hpShow(); };
   function hurtPlayer(dmg) {
@@ -15317,7 +15329,7 @@ VR.Titulo = class {
   const vV = $('vVida'), vV2 = $('vVida2'), vD = $('vDeuda'); let vT = 0;
   function vidaHud(dt, force) {
     if (!vida) return; vT -= dt; if (vT > 0 && !force) return; vT = 0.5;
-    vV.hidden = vV2.hidden = false; vV.textContent = vida.hudLinea1(); vV2.textContent = vida.hudLinea2(); vV.classList.toggle('low', vida.s.hambre < 25);
+    if (VR.pjHud) VR.pjHud.barras(hp, vida.s.hambre); vV.hidden = vV2.hidden = false; vV.textContent = vida.hudLinea1(); vV2.textContent = vida.hudLinea2(); vV.classList.toggle('low', vida.s.hambre < 25);
     const d = vida.deudaTotal(); vD.hidden = d <= 0; if (d > 0) vD.textContent = '⚠ Debés ' + VR.fmtGs(d);
   }
   if (vida) { vidaHud(0, true); VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()) + ' · 🏦 ' + VR.fmtGs(vida.s.banco); vidaHud(0, true); }; VR.Wallet.onChange(); const sy = vida.sync.bind(vida); vida.sync = () => { sy(); $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()) + ' · 🏦 ' + VR.fmtGs(vida.s.banco); }; }
@@ -15430,7 +15442,7 @@ VR.Titulo = class {
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
-    if (vida) player.setCasco(vida.cascoPuesto); if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
+    if (vida) { player.setCasco(vida.cascoPuesto); if (pj && pj._cp !== vida.cascoPuesto) { pj._cp = vida.cascoPuesto; pj.icono(); } } if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
     syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
@@ -15651,7 +15663,7 @@ VR.Titulo = class {
   VR.menuTabs();
   if (vida) $('btnCel').hidden = false;
   const inv = vida ? new VR.Inventario({ vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), hayMoto: () => !!(mis && mis.motoK) }) : null;
-  const pj = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => inv.abrir() }) : null;
+  const pj = VR.pjHud = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => inv.abrir() }) : null;
   $('btnCel').onclick = () => openCel();
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
