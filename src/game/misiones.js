@@ -239,6 +239,14 @@ VR.Misiones = class {
     this.ox = 0;
   }
   save() { if (!VR.wiped) VR.store.set('mis', this.s); }
+  // al cambiar el día: Kike cobra otro día de alquiler (si seguís con la moto) y recuerda las deudas, todo por mensaje
+  chequeaDia() { const V = this.vida, B = VR.Buzon; if (!V || !B) return; const b = B.load();
+    if (!b.dia) { b.dia = V.dia; B.save(); return; } if (V.dia === b.dia) return;
+    if (VR.Stats) VR.Stats.inc('dias', V.dia - b.dia); b.dia = V.dia; B.save();
+    const k = this.motoK;
+    if (k && k.alq !== V.dia) { const n = V.dia - k.alq, fee = n * VR.PRECIOS.alquilerMoto; k.alq = V.dia; V.cobrarODeber(fee, 'Alquiler extra de la moto de Kike');
+      B.add('kike', 'Ey, pasó ' + (n > 1 ? n + ' días' : 'otro día') + ' y seguís con mi moto: te cobro ' + VR.fmtGs(fee) + ' más. Si ya no la querés, devolvémela acá y listo.', V); }
+    if (V.s.debe > 0) B.add('kike', 'Acordate que me debés ' + VR.fmtGs(V.s.debe) + ' Pasá por el taller cuando puedas, ¿ajépa?', V); }
   get act() { return this.s.act; }
   get mision() { return this.s.act && VR.MISIONES[this.s.act.id]; }
   get paso() { const m = this.mision; return m && m.pasos[this.s.act.paso]; }
@@ -329,7 +337,7 @@ VR.Misiones = class {
   }
   cumplida() {
     const a = this.s.act, M = this.mision, pr = M.premio || {}; this.s.act = null;
-    this.s.hechas.push(a.id);
+    this.s.hechas.push(a.id); if (VR.Stats) VR.Stats.inc('misiones');
     const out = [];
     if (pr.plata) { VR.Wallet.add(pr.plata, 'Misión «' + M.titulo + '»'); out.push('💵 +' + VR.fmtGs(pr.plata)); }
     for (const b of pr.barrios || []) if (VR.Barrios.abrir(b)) out.push('🗺 Barrio abierto: ' + b);
@@ -365,6 +373,7 @@ VR.Misiones = class {
   // ---- cada paso de lógica ----
   update(dt, player, car) {
     if (VR.Dialogo.abierto) return;
+    this.chequeaDia();
     if (this._dlgPend) { const f = this._dlgPend; this._dlgPend = null; f(); return; }
     if (this.bub) { this.bub.t -= dt; if (this.bub.t <= 0) this.bub = null; }
     const a = this.s.act, P = this.paso; if (!a || !P || a.fallo) { this.hud.hidden = true; return; }
@@ -372,7 +381,6 @@ VR.Misiones = class {
     if (P.dlg && !a.dlgOk) return;
     const f = car || player;
     if (P.tick) P.tick(this, dt, f, car); // J4: algo que corre cada cuadro durante el paso (la barra de derretido)
-    if (this.motoK && this.vida.dia !== this.motoK.alq && !this.motoK.driven && this.quitaMoto) this.quitaMoto(); // la moto de Kike se devuelve al amanecer
     if (P.limite && a.t > P.limite) { this.fallar('Se acabó el tiempo'); return; }
     if (P.ir && !P.hablar && !P.esperar && !P.cond) { const t = this.lug.get(P.ir); if (t && Math.hypot(f.x - t.x, f.y - t.y) < (P.r || 40)) { this.siguiente(); return; } }
     if (P.cond && P.cond(this, f)) { this.siguiente(); return; }
@@ -621,8 +629,9 @@ VR.menuKike = (M) => { const V = M.vida, P = VR.PRECIOS;
   if (!M.hecha('m2') && !(V.s.debe > 0)) return [['kike', 'Tengo una idea para hacernos ricos... después te cuento.']];
   const op = []; if (V.s.debe > 0) op.push(['Pagar mi deuda (' + VR.fmtGs(V.s.debe) + ')', () => { V.pagaDeuda(); return false; }]);
   if (!M.motoK) op.push(['Alquilar la moto · ' + VR.fmtGs(P.alquilerMoto) + ' por el día', () => { if (!V.s.casco) return [['kike', 'Sin casco no te la presto. Comprate uno en Ao Porã.']]; if (!V.gasta(P.alquilerMoto, 'Alquiler de la moto de Kike')) return false; if (M.prestaMoto) M.prestaMoto(); return [['kike', 'Está al lado mío. La devolvés al amanecer, ¿ajépa?']]; }]);
+  if (M.motoK) op.push(['Devolverle la moto', () => { if (M.getCar() === M.motoK) return [['kike', 'Bajate primero de la moto, amigo.']]; M.quitaMoto(); return [['kike', 'Listo, gracias. Cuando la necesites, ya sabés.']]; }]);
   op.push(['Nada, Kike', () => false]);
-  return [{ quien: 'kike', txt: M.motoK ? 'La moto la tenés vos hasta mañana. Ani rejapo tavy.' : "Ahí tengo mi moto, che ra'a. " + VR.fmtGs(P.alquilerMoto) + ' por el día.', op }];
+  return [{ quien: 'kike', txt: M.motoK ? 'La moto la tenés vos. Cada día que pasa te cobro ' + VR.fmtGs(P.alquilerMoto) + ' más. Ani rejapo tavy.' : "Ahí tengo mi moto, che ra'a. " + VR.fmtGs(P.alquilerMoto) + ' por el día.', op }];
 };
 VR.menuChela = (M) => { const V = M.vida, P = VR.PRECIOS, falta = P.canastoMax - V.s.stock, op = [];
   op.push(['Una chipa para comer · ' + VR.fmtGs(P.chipa), () => { V.come(P.chipa, 15, 'Chipa de Doña Chela'); return false; }]);

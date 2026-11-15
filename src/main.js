@@ -118,10 +118,11 @@
   VR.audio.setOn(VR.store.get('snd', true)); VR.audio.setVol(VR.store.get('vol', 0.6));
   if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
     vida.onMsg = (m) => toast(m);
-    vida.onDesmayo = () => { sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios), 'hospital'); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
+    vida.onDesmayo = () => { VR.Stats.inc('desmayos'); sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios), 'hospital'); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
   }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg, to) {
+    VR.Stats.inc(to === 'comisaria' ? 'comisaria' : 'hospital');
     if (car) { car.driven = false; car.siren = false; car.rider = null; car.v = 0; car = null; zoomPoke(); driveLabels(false); }
     let dest = world.spawn; // 11/11/2026: al hospital (Hospital Regional) o a la comisaría más cercana, si existen en el mapa
     if (to === 'hospital' && world.hospital) dest = world.hospital;
@@ -210,7 +211,7 @@
       const vx = o.vx !== undefined ? o.vx : Math.sin(o.a) * (o.v || 0), vy = o.vy !== undefined ? o.vy : -Math.cos(o.a) * (o.v || 0), sp = Math.hypot(vx, vy);
       if (sp < 35) continue;
       if (!VR.obbIn(VR.obb(o.x + vx * 0.03, o.y + vy * 0.03, o.a, o.spec.len / 2 + 1, o.spec.wid / 2 + 3), player.x, player.y - 4)) continue;
-      player.knock(vx * 0.9, vy * 0.9, sp / 160); VR.audio.ouch(player.x, player.y); toast('💥 ¡Te atropellaron!'); hurtPlayer(12 + sp / 5);
+      player.knock(vx * 0.9, vy * 0.9, sp / 160); VR.audio.ouch(player.x, player.y); toast('💥 ¡Te atropellaron!'); VR.Stats.inc('atropellado'); hurtPlayer(12 + sp / 5);
       if (o.vx !== undefined) { o.vx *= 0.85; o.vy *= 0.85; } o.hit = 0.15; if (VR.caidas) VR.caidas.aiHit(o, player, sp);
       if (VR.input.buzz) VR.input.buzz(40);
       return;
@@ -613,7 +614,7 @@
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
     if (celApp === 'home') {
-      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['metas', '📝', 'Notas', '#ffe27a', true],
+      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
@@ -661,6 +662,10 @@
       h = '<div class="camBox"><canvas id="camVf" width="320" height="180"></canvas><div id="camFl"></div><div id="camTxt"></div><div class="camBt"><button id="camShot" title="Sacar foto (F)"></button><button id="camGal" title="Galería">🖼</button></div></div>';
     } else if (celApp === 'culebra') {
       h = '';
+    } else if (celApp === 'msj') {
+      h = '<h3>💬 Mensajes</h3>' + VR.Buzon.html(); VR.Buzon.leerTodo();
+    } else if (celApp === 'stats') {
+      h = '<h3>📊 Estadísticas</h3>' + VR.Stats.html();
     } else if (celApp === 'mochila') {
       h = '<h3>🎒 Mochila</h3><div class="row2"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' chipas' : '—') + '</span></div>' +
         (s.canasto ? '<button class="cbtn" data-m="canasto">' + (s.equipo === 'canasto' ? 'Guardar el canasto' : 'Llevar el canasto en la mano') + '</button>' : '') +
@@ -798,9 +803,9 @@
     mis.prestaMoto = (r) => { if (mis.motoK) return mis.motoK; const k = r || mis.dondeEsta('kike'); if (!k) return null; const p = r ? { x: r.x, y: r.y } : mis.lug.libre(k.x + 34, k.y + 12), c = new VR.Car(world, p.x, p.y, 0, 4, 'moto', 'cub');
       c.prestada = true; c.mio = true; c.alq = vida.dia; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; if (r) c.a = c.pa = r.a || 0; else toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
     mis.destActual = () => dest; mis.vehiculoMio = () => { const c = (!car && lastCar) || cars.find((x) => x.mio); if (!c) return null; const p = mis.lug.libre(c.x + 22, c.y + 6); return { x: p.x, y: p.y, name: 'tu vehículo' }; };
-    mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
+    mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
     { const tp = mis.lug.get(VR.PUNTOS.taxihosp.lugar); if (tp) for (let i = 0; i < 2; i++) { const x = tp.x + i * 28 - 14, y = tp.y - 34, m = 'sedan', c = new VR.Car(world, x, y, Math.PI / 2, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); if (c.contacts && c.contacts(x, y, c.a)) continue; c.taxi = true; cars.push(c); world.addBox(c); } }
-    { const sm = mis.s.motoK; if (sm && sm.alq === vida.dia) { const c = mis.prestaMoto(sm); if (c) c.alq = sm.alq; } else if (sm) { delete mis.s.motoK; mis.save(); } // la moto de Kike sigue donde la dejaste aunque recargues
+    { const sm = mis.s.motoK; if (sm) { const c = mis.prestaMoto(sm); if (c) c.alq = sm.alq; } // la moto de Kike sigue donde la dejaste aunque recargues
       setInterval(() => { const c = mis.motoK; if (!c) return; const o = mis.s.motoK; if (!o || Math.abs(o.x - c.x) > 2 || Math.abs(o.y - c.y) > 2 || o.alq !== c.alq) { mis.s.motoK = { x: Math.round(c.x), y: Math.round(c.y), a: c.a, alq: c.alq }; mis.save(); } }, 1500); }
     mis.quitaMoto = () => { const c = mis.motoK; if (!c) return; mis.motoK = null; delete mis.s.motoK; mis.save(); world.removeBox(c); const i = cars.indexOf(c); if (i >= 0) cars.splice(i, 1); toast('🏍 Devolviste la moto de Kike'); };
   }
@@ -814,7 +819,7 @@
   }
   const mbh = vida && gpsNet ? new VR.Mbohasa({ world, gps: gpsNet, player, toast, dialogo: (l, f) => mis.dialogo(l, f), pagar: (p, t) => vida.pagaBanco(p, t), yo: (c) => me(c), tengoCasco: () => !!vida.s.casco, manejando: () => !!car, bajar: mbhBajar,
     fin: (r) => { if (mis) mis.emit('jaha', r); },
-    llevar: (d) => { const f = $('celFade'); f.textContent = '🛵 En viaje…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); if (mis) mis.emit('jaha', { dest: d }); setTimeout(() => f.classList.remove('on'), 300); }, 900); } })
+    llevar: (d) => { VR.Stats.inc('mbohasa'); const f = $('celFade'); f.textContent = '🛵 En viaje…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); if (mis) mis.emit('jaha', { dest: d }); setTimeout(() => f.classList.remove('on'), 300); }, 900); } })
     : { riding: false, activo: false, r: null, v: null, saltear() {}, update() {}, rideTick() {}, cancelar() {}, pedir() { return false; }, texto() { return ''; } };
   if (mis) VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => mis.dialogo(VR.despensaCompra(mis)) }); // despensa Ñande Róga por dentro
   VR.mercado = VR.crearMercado({ player, busy: () => false, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),

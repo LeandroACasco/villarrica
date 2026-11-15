@@ -20,7 +20,7 @@ VR.Controles = class {
     for (const p of this.puntos()) {
       if (Math.hypot(car.x - p.x, car.y - p.y) > 58 || (this.cool[p.id] || 0) > this.t) continue;
       this.cool[p.id] = this.t + 90;
-      this.vida.cobrarODeber(VR.PRECIOS.multaCasco, 'Multa de tránsito: sin casco');
+      if (VR.Stats) VR.Stats.inc('multas'); this.vida.cobrarODeber(VR.PRECIOS.multaCasco, 'Multa de tránsito: sin casco');
       this.toast('🚓 Control de tránsito: andás sin casco. Multa de ' + VR.fmtGs(VR.PRECIOS.multaCasco));
       if (VR.mis) VR.mis.emit('multa', { motivo: 'casco' });
     }

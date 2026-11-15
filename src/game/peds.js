@@ -116,7 +116,7 @@ VR.Peds = class {
           const o = hitBy.c, sp = hitBy.sp;
           p.mode = 'down'; p.t = 2.6 + Math.min(1, sp / 150);
           p.rag = new VR.Ragdoll(hitBy.vx, hitBy.vy, sp / 160, p.dir || 'down');
-          if (o.driven) { o.vx *= 0.82; o.vy *= 0.82; o.hit = 0.15; if (VR.onPedHit) VR.onPedHit(p, sp); }
+          if (o.driven) { o.vx *= 0.82; o.vy *= 0.82; o.hit = 0.15; if (VR.onPedHit) VR.onPedHit(p, sp); if (VR.Stats) VR.Stats.inc('peatones'); }
           else { if (VR.audio && VR.audio.ouch) VR.audio.ouch(p.x, p.y); if (VR.caidas) VR.caidas.aiHit(o, p, sp); }
           continue;
         }

@@ -73,6 +73,7 @@ VR.Vida = class {
   log(n, why) { const m = this.s.mov; m.unshift([this.dia, this.hhmm, Math.round(n), why || (n >= 0 ? 'Ingreso' : 'Gasto')]); if (m.length > 30) m.length = 30; }
   // movimiento de la billetera: de lo que cobrás, el 50 % va a la deuda hasta saldarla
   mueve(n, why) {
+    if (n < 0 && VR.Stats) VR.Stats.inc('gastado', -n);
     const W = VR.Wallet, s = this.s;
     if (n > 0 && s.debe > 0) { const p = Math.min(s.debe, Math.round(n / 2)); s.debe -= p; n -= p; this.log(-p, 'Pago de deuda (50 %)'); }
     W.set(W.get() + n); this.log(n, why);

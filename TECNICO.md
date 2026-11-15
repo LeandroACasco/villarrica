@@ -697,3 +697,6 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 ## Taxis del hospital y marcadores de vehículos (v1.65)
 - `entradas()` en main.js agrega marcadores 🏍/🚗 para `cars` con `c.mio` y `lastCar` (si no vas manejando).
 - `VR.PUNTOS.taxihosp` (lugar `{en:'hospital',dx:90,dy:50}`), `VR.menuTaxi(M)`; `Lugares.base('hospital')` = `world.hospital`. `mis.taxi(d,precio)` cobra con `vida.cobrarODeber` y hace fade + `teleport`. `mis.destActual`/`mis.vehiculoMio` los provee main.js. Taxis estacionados: `VR.Car` sedán con `c.taxi=true` en `cars`.
+
+## Buzón y estadísticas (v1.66)
+- `VR.Stats.inc(clave,n)` / `VR.Buzon.add(de,txt,vida)`; claves en `VR.STATS`, personajes en `VR.Buzon.PERS`. Se guardan en `VR.store` (`stats`, `buzon`). `Misiones.chequeaDia()` (cobro de Kike, aviso de deuda). Ganchos de stats en main.js (atropellado, sentTo, desmayo, taxi, Mbohasa), peds.js, controles.js, vida.mueve, misiones.cumplida.
