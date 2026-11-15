@@ -131,7 +131,7 @@
     toast(msg);
   }
   // así se ve el jugador arriba de la moto: su personaje (05/11/2026); casco = true se pone un casco (12/11/2026, Mbohasa)
-  const me = (casco) => { const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
+  const me = (casco) => { if (casco === undefined) casco = !!(vida && vida.s.casco); const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];
@@ -376,7 +376,7 @@
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
-    if (mis) mis.update(dt, player, car);
+    if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
     syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
@@ -432,7 +432,7 @@
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { player.draw(c, cx, cy, a); if (weapons && !player.rag) weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); if (ctrl) ctrl.collect(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (chespis) chespis.collect(cx, cy, sw, sh, a, tall);
     if (escena) escena.collect(cx, cy, sw, sh, tall);
@@ -788,6 +788,13 @@
   VR.myLook = () => player.lookData;
   const showBanner = (chico, grande, sub) => { const bn = $('banner'); bn.innerHTML = '<small>' + chico + '</small>' + grande + (sub ? '<small class="sub">' + sub + '</small>' : ''); bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2800); };
   const mis = VR.mis = vida ? new VR.Misiones({ world, player, toast, setDest, getCar: () => car, vida, changas, banner: showBanner }) : null;
+  // J4: la moto de Kike (prestada o alquilada) y los controles de tránsito
+  const ctrl = mis ? new VR.Controles({ world, lug: mis.lug, vida, toast }) : null;
+  if (mis) {
+    mis.prestaMoto = () => { if (mis.motoK) return mis.motoK; const k = mis.dondeEsta('kike'); if (!k) return null; const p = mis.lug.libre(k.x + 34, k.y + 12), c = new VR.Car(world, p.x, p.y, 0, 4, 'moto', 'cub');
+      c.prestada = true; c.alq = vida.dia; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
+    mis.quitaMoto = () => { const c = mis.motoK; if (!c) return; mis.motoK = null; world.removeBox(c); const i = cars.indexOf(c); if (i >= 0) cars.splice(i, 1); toast('🏍 Devolviste la moto de Kike'); };
+  }
   // Mbohasa de verdad (12/11/2026): viene un conductor en moto o auto, te subís y te lleva por las calles (src/game/mbohasa.js)
   function mbhBajar(c) {
     const a = c.a, rx = Math.cos(a), ry = Math.sin(a), fx = Math.sin(a), fy = -Math.cos(a), tries = [], w0 = c.WID / 2 + 6, l0 = c.LEN / 2 + 8;

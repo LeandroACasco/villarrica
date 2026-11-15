@@ -414,7 +414,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 005ff1a2 · 2026-11-15</div>
+  <div class="tVer">Versión 2d811848 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -524,7 +524,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 005ff1a2 · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 2d811848 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -8606,6 +8606,7 @@ VR.Weapons = class {
 
 VR.PRECIOS = { // en guaraníes (referencias de Leandro, 10/11/2026)
   pieza: 200000, // por semana
+  casco: 180000, multaCasco: 1287847, alquilerMoto: 20000, // J4 (M2): casco, multa de tránsito sin casco (11 jornales) y alquiler diario de la moto de Kike
   chipa: 5000, empanada: 6000, mbeju: 7000,
   plato: 15000, // plato del día, "a partir de"
   helado: 10000, // una porción; el kilo en la Marimer sale 45.000
@@ -8683,6 +8684,8 @@ VR.Vida = class {
   // cajero: pasar efectivo a la cuenta o sacar
   deposita(n) { n = Math.min(n, VR.Wallet.get()); if (n <= 0) return 0; VR.Wallet.set(VR.Wallet.get() - n); this.log(-n, 'Depósito en el cajero'); this.s.banco += n; this.log(n, '🏦 Depósito'); this.sync(); this.msg('🏧 Depositaste ' + VR.fmtGs(n)); return n; }
   retira(n) { n = Math.min(n, this.s.banco); if (n <= 0) return 0; this.s.banco -= n; this.log(-n, '🏦 Retiro'); VR.Wallet.set(VR.Wallet.get() + n); this.log(n, 'Retiro del cajero'); this.sync(); this.msg('🏧 Sacaste ' + VR.fmtGs(n)); return n; }
+  // casco (J4): se paga con la plata o, en la misión de Kike, queda como deuda con él
+  compraCasco(aDeuda) { const P = VR.PRECIOS.casco, s = this.s; if (s.casco) return true; if (aDeuda) { s.debe += P; this.log(0, 'Casco: lo adelantó Kike, quedó debiendo ' + VR.fmtGs(P)); } else if (!this.gasta(P, 'Casco')) return false; s.casco = true; this.save(); this.msg('🪖 ¡Casco nuevo!'); return true; }
   gasta(n, why) { if (VR.Wallet.get() < n) { this.msg('💸 No te alcanza: ' + VR.fmtGs(n)); return false; } this.mueve(-n, why); return true; }
   // ---- cosas de la vida ----
   come(precio, hambre, que) { if (!this.gasta(precio, que)) return false; this.s.hambre = Math.min(100, this.s.hambre + hambre); this.sync(); this.msg('🍽 ' + que + ' · −' + VR.fmtGs(precio)); if (VR.mis) VR.mis.emit('come', { que, precio }); return true; }
@@ -9649,6 +9652,7 @@ VR.Lugares = class {
       case 'super_kuarahyNorte': return L(/^Herrumbre Norte/, 24);
       case 'super_guasu': return L(/^Hiper Bigote/, 24);
       case 'super_yvoty': return L(/^Súper Seis y Medio/, 24);
+      case 'teatro': { const d = (W.decals || []).find((x) => x.kind === 'muni'); return d && { x: (d.bx + (d.tx || d.bw / 2)) * VR.TILE, y: (d.y + d.bh) * VR.TILE + 10 }; } // la puerta del Teatro Municipal (como en main.js)
       case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
     }
     return null;
@@ -9665,7 +9669,7 @@ VR.Lugares = class {
   }
 };
 VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
-  parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus' };
+  parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus', teatro: 'Teatro Municipal' };
 
 // ---------------- barrios por historia ----------------
 // Sin paredes: se puede ir a cualquier lado, pero en un barrio cerrado no hay changas ni misiones, el GPS no marca
@@ -9689,10 +9693,13 @@ VR.PERSONAJES = {
     charla: ['¿Ha upéi, mitã? Sábado pe che cobráta, ani nde resarái.', "Ko ára hakueterei, ¿nderehaʼúi piko tereré?"], menu: (M) => VR.menuRamona(M) },
   kike: { nombre: 'Kike', color: '#7fe08a', lugar: { en: 'plaza', dx: -150, dy: -60 }, dir: 'down',
     look: { gender: 'm', skin: 3, build: 'flaco', hair: 'corto', hairColor: 0, beard: 'bigote', top: 'musculosa', topColor: 2, bottom: 'bermuda', bottomColor: 3, shoes: 'chinelas', shoesColor: 3, hat: 'gorraAtras', hatColor: 0, termo: true },
-    charla: ['Tengo una idea para hacernos ricos... después te cuento.', "¿Jaha jaikutu peteĩ tereré? Ko termo ro'ysã porã."] },
+    charla: ['Tengo una idea para hacernos ricos... después te cuento.', "¿Jaha jaikutu peteĩ tereré? Ko termo ro'ysã porã."], menu: (M) => VR.menuKike(M) },
   chela: { nombre: 'Doña Chela', color: '#ffb36b', lugar: { en: 'plaza', dx: -130, dy: 90 }, dir: 'down',
     look: { gender: 'f', skin: 3, build: 'normal', hair: 'trenza', hairColor: 1, top: 'polo', topColor: 1, bottom: 'pollera', bottomColor: 10, shoes: 'chinelas', shoesColor: 1, hat: 'piri' },
     charla: ['¡Chipa, chipa calentita! Recién salida del tatakua.', "Ko'ãga ko'ãga ojehupi pyahu."], menu: (M) => VR.menuChela(M) },
+  mirta: { nombre: 'Mirta (Ao Porã)', color: '#ff9ccf', lugar: { en: 'aopora', dx: 34, dy: 6 }, dir: 'left',
+    look: { gender: 'f', skin: 2, build: 'normal', hair: 'colita', hairColor: 3, top: 'polo', topColor: 3, bottom: 'jean', bottomColor: 1, shoes: 'zapatillas', shoesColor: 1 },
+    charla: ['Pasá a ver la ropa, po.'], menu: (M) => VR.menuMirta(M) },
   lucas: { nombre: 'Lucas', color: '#8fd0ff', lugar: { en: 'marimer', dx: 0, dy: 8 }, dir: 'down',
     look: { gender: 'm', skin: 1, build: 'normal', hair: 'flequillo', hairColor: 2, top: 'polo', topColor: 9, bottom: 'jean', bottomColor: 1, shoes: 'zapatillas', shoesColor: 1, hat: 'gorra', hatColor: 9 },
     charla: ['Hoy hay mucho movimiento, po.'] },
@@ -9846,7 +9853,7 @@ VR.Misiones = class {
     const k = n.k, P = this.paso;
     if (n.punto) { this.dialogo(VR.PUNTOS[k].menu(this)); return; }
     const mk = this.marca(k);
-    if (mk === 'paso') { this.dialogo(P.charla || [], () => { if (P.esperar || P.cond) return; this.siguiente(); }); return; }
+    if (mk === 'paso') { this.dialogo(typeof P.charla === 'function' ? P.charla(this) : P.charla || [], () => { if (P.esperar || P.cond) return; this.siguiente(); }); return; }
     if (mk === 'oferta') { const id = this.disponibles().find((i) => VR.MISIONES[i].quien === k); this.ofrecer(id); return; }
     if (VR.PERSONAJES[k].menu) { this.dialogo(VR.PERSONAJES[k].menu(this)); return; }
     const ch = VR.PERSONAJES[k].charla || ['...']; this.bub = { k, text: ch[(this.ci = (this.ci || 0) + 1) % ch.length], t: 2.6 };
@@ -9947,6 +9954,8 @@ VR.Misiones = class {
     a.t += dt;
     if (P.dlg && !a.dlgOk) return;
     const f = car || player;
+    if (P.tick) P.tick(this, dt, f, car); // J4: algo que corre cada cuadro durante el paso (la barra de derretido)
+    if (this.motoK && this.vida.dia !== this.motoK.alq && !this.motoK.driven && this.quitaMoto) this.quitaMoto(); // la moto de Kike se devuelve al amanecer
     if (P.limite && a.t > P.limite) { this.fallar('Se acabó el tiempo'); return; }
     if (P.ir && !P.hablar && !P.esperar && !P.cond) { const t = this.lug.get(P.ir); if (t && Math.hypot(f.x - t.x, f.y - t.y) < (P.r || 40)) { this.siguiente(); return; } }
     if (P.cond && P.cond(this, f)) { this.siguiente(); return; }
@@ -10057,6 +10066,35 @@ VR.MISIONES = {
     ],
     premio: { changas: ['chipa'], texto: 'El canasto es tuyo: reponé chipa con Doña Chela y vendé cuando quieras (📋 Changas). Dormí en la pieza para guardar.' },
   },
+
+  // M2 «Helado de urgencia» (cap. 1 → 2, J4): Lucas, Kike y su moto, el casco de Ao Porã, la caja de helados que se derrite y el Teatro.
+  m2: {
+    titulo: 'Helado de urgencia', cap: 1, quien: 'lucas', req: { cap: 1, mis: ['m1'] }, desc: 'Lucas necesita llevar 20 potes de helado al Teatro ya. Hay que conseguir moto y casco.',
+    oferta: [['lucas', "¡Epa! Hoy hay función en el Teatro y me pidieron 20 potes de helado, pero se me fue el repartidor. Ndaipóri avave."],
+      ['yo', 'Yo te los llevo, Lucas. Pero no tengo moto.'],
+      ['lucas', "¿Ha casco? Ndaipóri avei, ¿ajépa? Hablá con Kike: él tiene una moto vieja que presta. Y rápido, que el helado no espera."]],
+    fallaSi: { hospital: 'Te llevaron al hospital', explota: 'La moto de Kike explotó' },
+    pasos: [
+      { id: 'kike', obj: 'Pedile la moto prestada a Kike (en la plaza)', hablar: 'kike', punto: true,
+        charla: [['yo', 'Kike, Lucas necesita un repartidor para el Teatro. ¿Me prestás tu moto?'],
+          ['kike', "¿Para Lucas? Dale, che ra'a: ko moto ndaha'éi mba'eve pero anda. Son " + VR.fmtGs(20000) + " por el día, me pagás al final."],
+          ['kike', "Eso sí: sin casco no te la doy. Ani rejapo tavy, la Municipal nde jopy ha upéi rehepyme'ẽ un millón. Comprate un casco en Ao Porã, ahí en la esquina."],
+          ['kike', 'La moto está al lado mío. Cuando tengas el casco, andá a la Marimer.']],
+        alTerminar: (M) => { if (M.prestaMoto) M.prestaMoto(); } },
+      { id: 'casco', obj: 'Comprá un casco en Ao Porã (hablá con Mirta)', hablar: 'mirta', cond: (M) => !!M.vida.s.casco, punto: true,
+        charla: (M) => VR.menuMirta(M) },
+      { id: 'caja', obj: 'Andá en la moto de Kike a la Marimer y retirá la caja de helados', ir: 'marimer', r: 52, punto: true, alEmpezar: (M) => { if (!M.motoK && M.prestaMoto) M.prestaMoto(); },
+        cond: (M, f) => { const c = M.getCar(), t = M.lug.get('marimer'); return !!(c && c.prestada && t && Math.hypot(f.x - t.x, f.y - t.y) < 52); } },
+      { id: 'entrega', obj: (M) => '🍦 Llevá la caja al Teatro (entrada sur) · derretido ' + Math.min(100, Math.round(M.vars.melt || 0)) + ' %', ir: 'teatro', r: 46, punto: true,
+        dlg: [['lucas', "Ahí van los 20 potes. Cuidalos, po: con el calor se derriten rapidísimo. Y ojo con los baches."]],
+        alEmpezar: (M) => { if (!M.motoK && !(M.getCar() && M.getCar().prestada) && M.prestaMoto) M.prestaMoto(); const v = M.vars, c = M.getCar(), t = M.lug.get('teatro'), f = c || M.player; if (v.lim == null) { v.melt = 0; v.hp = c ? (c.hp ?? 100) : 100; v.lim = Math.max(25, Math.round((t ? Math.hypot(f.x - t.x, f.y - t.y) : 600) * 1.4 / 130 * 1.7 + 10)); } },
+        tick: (M, dt, f, c) => { const v = M.vars; if (v.lim == null) return; v.melt += dt * 100 / v.lim; if (c && c.hp != null) { if (c.hp < v.hp) v.melt += (v.hp - c.hp) * 0.7; v.hp = c.hp; } if (v.melt >= 100 && !v.avisado) { v.avisado = 1; M.toast('🍦 ¡Se derritió media caja! Apurate igual'); } },
+        cond: (M, f) => { const c = M.getCar(), t = M.lug.get('teatro'); return !!(t && Math.hypot(f.x - t.x, f.y - t.y) < 46 && (!c || Math.abs(c.v) < 50)); },
+        alTerminar: (M) => { const V = M.vida, v = M.vars, medio = v.melt >= 100, pago = medio ? 60000 : 120000; V.mueve(pago, 'Entrega de helados en el Teatro' + (medio ? ' (medio derretido)' : '')); V.cobrarODeber(VR.PRECIOS.alquilerMoto, 'Alquiler de la moto de Kike');
+          M.toast(medio ? '🍦 Llegó medio derretido: te pagan la mitad' : '🍦 ¡Llegó perfecta! Pago completo'); const k = M.motoK; if (k) k.alq = V.dia; } },
+    ],
+    premio: { changas: ['delivery'], cap: 2, texto: 'Cobraste la entrega (menos los ' + VR.fmtGs(20000) + ' de la moto). Delivery de helados abierto (📋 Changas) y Kike te alquila su moto cuando quieras. Capítulo 2: Ñamopu\'ã.' },
+  },
 };
 
 // ---------------- J3: lugares para usar (despensa y pieza) y menús de Doña Chela y Ña Ramona ----------------
@@ -10127,6 +10165,21 @@ VR.PUNTOS = {
     } },
 };
 VR.despensaCompra = (M) => VR.PUNTOS.despensa._menu(M);
+
+// J4: casco en Ao Porã y alquiler de la moto de Kike
+VR.menuMirta = (M) => { const V = M.vida, P = VR.PRECIOS, op = [];
+  if (V.s.casco) return [['mirta', 'Ya tenés tu casco, po. Usalo siempre: la Municipal no perdona.']];
+  op.push(['Comprar el casco · ' + VR.fmtGs(P.casco), () => V.compraCasco(false) ? [['mirta', '¡Aguyje! Ko casco nde mba\'e. Abrochalo bien.']] : [['mirta', 'Sin plata no hay casco, che memby.']]]);
+  if (M.s.act && M.s.act.id === 'm2' && VR.Wallet.get() < P.casco) op.push(['Que Kike lo adelante (queda como deuda)', () => { V.compraCasco(true); return [['mirta', 'Ah, Kike siempre con sus cuentas. Tomá, el casco es tuyo.']]; }]);
+  op.push(['Solo miro', () => false]);
+  return [{ quien: 'mirta', txt: 'Los cascos están ahí. Uno integral con visor sale ' + VR.fmtGs(P.casco) + '. Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op }];
+};
+VR.menuKike = (M) => { const V = M.vida, P = VR.PRECIOS;
+  if (!M.hecha('m2')) return [['kike', 'Tengo una idea para hacernos ricos... después te cuento.']];
+  const op = []; if (!M.motoK) op.push(['Alquilar la moto · ' + VR.fmtGs(P.alquilerMoto) + ' por el día', () => { if (!V.s.casco) return [['kike', 'Sin casco no te la presto. Comprate uno en Ao Porã.']]; if (!V.gasta(P.alquilerMoto, 'Alquiler de la moto de Kike')) return false; if (M.prestaMoto) M.prestaMoto(); return [['kike', 'Está al lado mío. La devolvés al amanecer, ¿ajépa?']]; }]);
+  op.push(['Nada, Kike', () => false]);
+  return [{ quien: 'kike', txt: M.motoK ? 'La moto la tenés vos hasta mañana. Ani rejapo tavy.' : "Ahí tengo mi moto, che ra'a. " + VR.fmtGs(P.alquilerMoto) + ' por el día.', op }];
+};
 VR.menuChela = (M) => { const V = M.vida, P = VR.PRECIOS, falta = P.canastoMax - V.s.stock, op = [];
   op.push(['Una chipa para comer · ' + VR.fmtGs(P.chipa), () => { V.come(P.chipa, 15, 'Chipa de Doña Chela'); return false; }]);
   if (!V.s.canasto) op.push(['Comprar el canasto · ' + VR.fmtGs(P.canasto), () => { if (!V.gasta(P.canasto, 'Canasto de Doña Chela')) return false; V.s.canasto = true; return [['chela', '¡Ko canasto nde mba\'e! Llenalo y a vender.']]; }]);
@@ -14617,6 +14670,49 @@ VR.Guardado = {
   },
 };
 
+// ===== game/controles.js =====
+// Controles de tránsito de la Policía Municipal (J4, 15/11/2026). Solo en Historia.
+// Hay unos pocos puestos fijos (conos y una camioneta con luces) en el Centro. Se ven de lejos: si das la vuelta antes, no pasa nada.
+// Si pasás cerca en moto sin casco, te multan (11 jornales = 1.287.847 Gs.): se paga con lo que tengas y, si no alcanza, queda como deuda.
+// (La licencia de conducir y el contramano llegan en J6: hoy el único motivo de multa es el casco.)
+'use strict';
+VR.Controles = class {
+  // o: { world, lug, vida, toast }
+  constructor(o) { Object.assign(this, o); this.pts = null; this.cool = {}; this.t = 0; }
+  puntos() {
+    if (this.pts) return this.pts;
+    const L = this.lug, a = L.get('marimer'), b = L.get('teatro'), c = L.get({ en: 'catedral', dx: 0, dy: 0 }), out = [];
+    if (a && b) { const p = L.libre((a.x + b.x) / 2, (a.y + b.y) / 2); out.push({ id: 'c1', x: p.x, y: p.y }); }
+    if (c) out.push({ id: 'c2', x: c.x, y: c.y });
+    return (this.pts = out);
+  }
+  update(dt, player, car) {
+    this.t += dt;
+    if (!car || car.type !== 'moto' || Math.abs(car.v) < 12 || (this.vida.s.casco)) return;
+    for (const p of this.puntos()) {
+      if (Math.hypot(car.x - p.x, car.y - p.y) > 58 || (this.cool[p.id] || 0) > this.t) continue;
+      this.cool[p.id] = this.t + 90;
+      this.vida.cobrarODeber(VR.PRECIOS.multaCasco, 'Multa de tránsito: sin casco');
+      this.toast('🚓 Control de tránsito: andás sin casco. Multa de ' + VR.fmtGs(VR.PRECIOS.multaCasco));
+      if (VR.mis) VR.mis.emit('multa', { motivo: 'casco' });
+    }
+  }
+  collect(cx, cy, tall) {
+    for (const p of this.puntos()) {
+      const x = Math.round(p.x - cx), y = Math.round(p.y - cy); if (x < -50 || y < -50 || x > VR.screen.w + 50 || y > VR.screen.h + 50) continue;
+      const on = Math.floor(this.t * 3) % 2;
+      tall.push({ sy: p.y, draw: (g) => {
+        g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(x - 12, y - 1, 26, 4);
+        g.fillStyle = '#f4f4f4'; g.fillRect(x - 11, y - 13, 22, 12); g.fillStyle = '#1f4fa8'; g.fillRect(x - 11, y - 8, 22, 3); g.fillStyle = '#3a6ea8'; g.fillRect(x - 8, y - 12, 8, 4);
+        g.fillStyle = on ? '#ff3b3b' : '#7a1c1c'; g.fillRect(x - 6, y - 15, 5, 2); g.fillStyle = on ? '#2a4a8a' : '#4a7aff'; g.fillRect(x + 1, y - 15, 5, 2);
+        g.fillStyle = '#1b1b1f'; g.fillRect(x - 10, y - 2, 4, 3); g.fillRect(x + 6, y - 2, 4, 3);
+        for (let i = 0; i < 4; i++) { const cxn = x - 34 + i * 7, cyn = y - 4 + (i % 2) * 3; g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(cxn - 2, cyn, 5, 2); g.fillStyle = '#ff7a1a'; g.fillRect(cxn - 1, cyn - 5, 3, 5); g.fillStyle = '#fff'; g.fillRect(cxn - 1, cyn - 3, 3, 1); }
+        VR.gfx.text(g, 'CONTROL', x, y - 19, '#fff6d8', { center: true, shadow: '#1a1a1e', size: 6 });
+      } });
+    }
+  }
+};
+
 // ===== game/titulo.js =====
 // Pantalla de título (10/11/2026, etapa J0 de claude/menu-plan.md): el mundo de verdad corriendo detrás del menú,
 // con la cámara en travelling lento y sin jugador ni HUD.
@@ -14868,7 +14964,7 @@ VR.Titulo = class {
     toast(msg);
   }
   // así se ve el jugador arriba de la moto: su personaje (05/11/2026); casco = true se pone un casco (12/11/2026, Mbohasa)
-  const me = (casco) => { const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
+  const me = (casco) => { if (casco === undefined) casco = !!(vida && vida.s.casco); const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];
@@ -15113,7 +15209,7 @@ VR.Titulo = class {
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
-    if (mis) mis.update(dt, player, car);
+    if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
     syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
@@ -15169,7 +15265,7 @@ VR.Titulo = class {
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { player.draw(c, cx, cy, a); if (weapons && !player.rag) weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); if (ctrl) ctrl.collect(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (chespis) chespis.collect(cx, cy, sw, sh, a, tall);
     if (escena) escena.collect(cx, cy, sw, sh, tall);
@@ -15525,6 +15621,13 @@ VR.Titulo = class {
   VR.myLook = () => player.lookData;
   const showBanner = (chico, grande, sub) => { const bn = $('banner'); bn.innerHTML = '<small>' + chico + '</small>' + grande + (sub ? '<small class="sub">' + sub + '</small>' : ''); bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2800); };
   const mis = VR.mis = vida ? new VR.Misiones({ world, player, toast, setDest, getCar: () => car, vida, changas, banner: showBanner }) : null;
+  // J4: la moto de Kike (prestada o alquilada) y los controles de tránsito
+  const ctrl = mis ? new VR.Controles({ world, lug: mis.lug, vida, toast }) : null;
+  if (mis) {
+    mis.prestaMoto = () => { if (mis.motoK) return mis.motoK; const k = mis.dondeEsta('kike'); if (!k) return null; const p = mis.lug.libre(k.x + 34, k.y + 12), c = new VR.Car(world, p.x, p.y, 0, 4, 'moto', 'cub');
+      c.prestada = true; c.alq = vida.dia; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
+    mis.quitaMoto = () => { const c = mis.motoK; if (!c) return; mis.motoK = null; world.removeBox(c); const i = cars.indexOf(c); if (i >= 0) cars.splice(i, 1); toast('🏍 Devolviste la moto de Kike'); };
+  }
   // Mbohasa de verdad (12/11/2026): viene un conductor en moto o auto, te subís y te lleva por las calles (src/game/mbohasa.js)
   function mbhBajar(c) {
     const a = c.a, rx = Math.cos(a), ry = Math.sin(a), fx = Math.sin(a), fy = -Math.cos(a), tries = [], w0 = c.WID / 2 + 6, l0 = c.LEN / 2 + 8;
