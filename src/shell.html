@@ -77,9 +77,10 @@
   .pjBar i { display: block; height: 100%; width: 100%; transition: width .25s; } .pjBar.vida i { background: linear-gradient(#ff6b6b, #c92a3a); } .pjBar.ham i { background: linear-gradient(#ffc468, #e07b1a); }
   .pjBar b { position: absolute; left: 2px; top: -3px; font-size: 9px; line-height: 14px; filter: drop-shadow(0 1px 0 #000); }
   .pjBar.low { animation: pjParp .6s infinite alternate; } @keyframes pjParp { to { border-color: #ff3b3b; box-shadow: 0 0 6px #ff3b3b; } }
-  body.conPj #hud { left: calc(env(safe-area-inset-left) + 80px); max-width: calc(100vw - 80px - 140px); } body.conPj #hud b { letter-spacing: .03em; font-size: 14px; } body.conPj #hud #plata { white-space: normal; } body.conPj #hud > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.conPj #hud { left: calc(env(safe-area-inset-left) + 80px); max-width: calc(100vw - 80px - 190px); } body.conPj #hud b { letter-spacing: .03em; font-size: 14px; } body.conPj #hud #plata { white-space: normal; } body.conPj #hud > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body.adentro #pjHud { visibility: hidden; }
-  #invDlg { width: min(520px, 94vw); max-height: 92vh; padding: 14px; border: 2px solid #2d3a55; border-radius: 18px; background: linear-gradient(160deg, #1e2a40, #121822); color: #fff; overflow: auto; } #invDlg::backdrop { background: rgba(0,0,0,.55); } #invDlg .pjTop .hint { font-size: 12px; opacity: .7; } #invPieza h4 { margin: 12px 0 6px; opacity: .8; } .pjChip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
+  #btnInvCv { display: block; width: 28px; height: 28px; image-rendering: pixelated; }
+  #invDlg[open] { display: flex; flex-direction: column; } #invDlg > * { flex-shrink: 0; } #invDlg > #invLista { flex: 1 1 auto; min-height: 0; overflow: auto; } #invDlg { height: min(86vh, 600px); width: min(520px, 94vw); max-height: 92vh; padding: 14px; border: 2px solid #2d3a55; border-radius: 18px; background: linear-gradient(160deg, #1e2a40, #121822); color: #fff; overflow: auto; } #invDlg::backdrop { background: rgba(0,0,0,.55); } #invDlg .pjTop .hint { font-size: 12px; opacity: .7; } #invPieza h4 { margin: 12px 0 6px; opacity: .8; } .pjChip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
   /* Configuración en pestañas */
   .mtBar { display: flex; gap: 4px; overflow-x: auto; margin: 4px 0 10px; padding-bottom: 4px; position: sticky; top: 0; background: inherit; z-index: 2; }
   .mtBar button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: inherit; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
@@ -415,6 +416,7 @@
 <div id="topbar">
   <button class="icon-btn" id="btnJobs" title="Changas">📋</button>
   <button class="icon-btn" id="btnOnline" title="Online">🌐</button>
+  <button class="icon-btn" id="btnInv" title="Inventario (I)" hidden><canvas id="btnInvCv" width="16" height="16"></canvas></button>
   <button class="icon-btn" id="btnCel" title="Celular (C)" hidden>📱</button>
   <button class="icon-btn" id="btnChat" title="Hablar / chat (C)">💬</button>
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>

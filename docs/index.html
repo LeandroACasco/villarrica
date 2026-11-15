@@ -77,9 +77,10 @@
   .pjBar i { display: block; height: 100%; width: 100%; transition: width .25s; } .pjBar.vida i { background: linear-gradient(#ff6b6b, #c92a3a); } .pjBar.ham i { background: linear-gradient(#ffc468, #e07b1a); }
   .pjBar b { position: absolute; left: 2px; top: -3px; font-size: 9px; line-height: 14px; filter: drop-shadow(0 1px 0 #000); }
   .pjBar.low { animation: pjParp .6s infinite alternate; } @keyframes pjParp { to { border-color: #ff3b3b; box-shadow: 0 0 6px #ff3b3b; } }
-  body.conPj #hud { left: calc(env(safe-area-inset-left) + 80px); max-width: calc(100vw - 80px - 140px); } body.conPj #hud b { letter-spacing: .03em; font-size: 14px; } body.conPj #hud #plata { white-space: normal; } body.conPj #hud > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.conPj #hud { left: calc(env(safe-area-inset-left) + 80px); max-width: calc(100vw - 80px - 190px); } body.conPj #hud b { letter-spacing: .03em; font-size: 14px; } body.conPj #hud #plata { white-space: normal; } body.conPj #hud > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body.adentro #pjHud { visibility: hidden; }
-  #invDlg { width: min(520px, 94vw); max-height: 92vh; padding: 14px; border: 2px solid #2d3a55; border-radius: 18px; background: linear-gradient(160deg, #1e2a40, #121822); color: #fff; overflow: auto; } #invDlg::backdrop { background: rgba(0,0,0,.55); } #invDlg .pjTop .hint { font-size: 12px; opacity: .7; } #invPieza h4 { margin: 12px 0 6px; opacity: .8; } .pjChip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
+  #btnInvCv { display: block; width: 28px; height: 28px; image-rendering: pixelated; }
+  #invDlg[open] { display: flex; flex-direction: column; } #invDlg > * { flex-shrink: 0; } #invDlg > #invLista { flex: 1 1 auto; min-height: 0; overflow: auto; } #invDlg { height: min(86vh, 600px); width: min(520px, 94vw); max-height: 92vh; padding: 14px; border: 2px solid #2d3a55; border-radius: 18px; background: linear-gradient(160deg, #1e2a40, #121822); color: #fff; overflow: auto; } #invDlg::backdrop { background: rgba(0,0,0,.55); } #invDlg .pjTop .hint { font-size: 12px; opacity: .7; } #invPieza h4 { margin: 12px 0 6px; opacity: .8; } .pjChip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
   /* Configuración en pestañas */
   .mtBar { display: flex; gap: 4px; overflow-x: auto; margin: 4px 0 10px; padding-bottom: 4px; position: sticky; top: 0; background: inherit; z-index: 2; }
   .mtBar button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: inherit; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
@@ -418,6 +419,7 @@
 <div id="topbar">
   <button class="icon-btn" id="btnJobs" title="Changas">📋</button>
   <button class="icon-btn" id="btnOnline" title="Online">🌐</button>
+  <button class="icon-btn" id="btnInv" title="Inventario (I)" hidden><canvas id="btnInvCv" width="16" height="16"></canvas></button>
   <button class="icon-btn" id="btnCel" title="Celular (C)" hidden>📱</button>
   <button class="icon-btn" id="btnChat" title="Hablar / chat (C)">💬</button>
   <button class="icon-btn" id="btnMap" title="Mapa (M)">🗺</button>
@@ -458,7 +460,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 228ad7d4 · 2026-11-15</div>
+  <div class="tVer">Versión cc7e1f2b · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -573,7 +575,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 228ad7d4 · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión cc7e1f2b · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -4480,7 +4482,8 @@ VR.Player = class {
       else if (!dx) { for (const n of [-1, 1]) if (!box(this.x + n * 5, this.y + dy)) { this.x += n * Math.min(Math.abs(dy), 1); break; } }
     }
   }
-  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = this._spB = VR.av2Lazy(this.lookData); this._spC = null; this._cas = false; }
+  setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); if (VR.modo === 'historia') this.lookData = Object.assign({}, this.lookData, { mochila: true, packColor: this.lookData.mochila ? this.lookData.packColor : 4 }); // en la Historia siempre llevás mochila
+     this.sprites = this._spB = VR.av2Lazy(this.lookData); this._spC = null; this._cas = false; }
   // casco equipado: se ve también a pie (hoja de sprites aparte, se dibuja al usarla por primera vez)
   setCasco(on) { on = !!on; if (on === !!this._cas) return; this._cas = on; this.sprites = on ? (this._spC || (this._spC = VR.av2Lazy(Object.assign({}, this.lookData, { hat: 'motero', hatColor: 1 })))) : this._spB; }
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
@@ -14860,10 +14863,15 @@ VR.Inv = {
     for (const p of carro) this.add({ k: 'comida:' + p.n, n: p.n, ico: '🛒', tipo: 'comida', h: p.h, cu: p.cu || 0 }); V.msg('🎒 Guardaste ' + carro.length + ' cosas en el inventario'); return true; },
   come(k) { const V = this.vida, x = this.list().find((q) => q.k === k); if (!x) return false; this.quita(k, 1); V.s.hambre = Math.min(100, V.s.hambre + (x.h || 0)); V.sync(); V.save(); if (x.cu && VR.heal) VR.heal(x.cu); V.msg('🍽 Comiste: ' + x.n + (x.h ? ' · +' + x.h + '% de hambre' : '')); return true; },
 };
+// ícono de mochila en pixel art (16×16) para el botón del inventario
+VR.drawMochilaIcon = (cv) => { const g = cv.getContext('2d'); g.clearRect(0, 0, 16, 16); const r = (c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  r('#4a2a12', 6, 0, 4, 1); r('#4a2a12', 5, 1, 1, 2); r('#4a2a12', 10, 1, 1, 2); r('#3a2410', 1, 6, 1, 7); r('#3a2410', 14, 6, 1, 7);
+  r('#4a2a12', 2, 2, 12, 13); r('#c0773a', 3, 3, 10, 11); r('#a8602a', 3, 3, 10, 4); r('#7a4420', 3, 7, 10, 1); r('#e2a468', 4, 4, 3, 1);
+  r('#f2c230', 7, 6, 2, 3); r('#8a6a10', 7, 8, 2, 1); r('#d48a48', 4, 9, 8, 4); r('#7a4420', 4, 9, 8, 1); r('#8a5226', 4, 11, 8, 1); r('#f2c230', 7, 11, 2, 1); };
 VR.Inventario = class {
   constructor(o) { Object.assign(this, o); VR.Inv.vida = this.vida; // { vida, $, toggleCasco, toggleEq, hayMoto: () => bool, alCerrar }
     const $ = this.$; this.dlg = $('invDlg'); this.tab = 'todo';
-    $('invClose').onclick = () => this.dlg.close();
+    $('invClose').onclick = () => this.dlg.close(); VR.drawMochilaIcon($('btnInvCv')); $('btnInv').hidden = false; $('btnInv').onclick = () => this.abrir();
     $('invTabs').onclick = (e) => { const b = e.target.closest('button'); if (b) { this.tab = b.dataset.t; this.pinta(); } };
     this.dlg.addEventListener('close', () => { if (!this._keep) { VR.loop.paused = false; VR.input.enabled = true; } this._keep = false; });
     addEventListener('keydown', (e) => { if (e.code === 'KeyI' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName) && !document.querySelector('dialog[open]') && VR.loop && !VR.loop.paused) this.abrir(); });

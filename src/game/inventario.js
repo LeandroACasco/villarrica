@@ -12,10 +12,15 @@ VR.Inv = {
     for (const p of carro) this.add({ k: 'comida:' + p.n, n: p.n, ico: '🛒', tipo: 'comida', h: p.h, cu: p.cu || 0 }); V.msg('🎒 Guardaste ' + carro.length + ' cosas en el inventario'); return true; },
   come(k) { const V = this.vida, x = this.list().find((q) => q.k === k); if (!x) return false; this.quita(k, 1); V.s.hambre = Math.min(100, V.s.hambre + (x.h || 0)); V.sync(); V.save(); if (x.cu && VR.heal) VR.heal(x.cu); V.msg('🍽 Comiste: ' + x.n + (x.h ? ' · +' + x.h + '% de hambre' : '')); return true; },
 };
+// ícono de mochila en pixel art (16×16) para el botón del inventario
+VR.drawMochilaIcon = (cv) => { const g = cv.getContext('2d'); g.clearRect(0, 0, 16, 16); const r = (c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  r('#4a2a12', 6, 0, 4, 1); r('#4a2a12', 5, 1, 1, 2); r('#4a2a12', 10, 1, 1, 2); r('#3a2410', 1, 6, 1, 7); r('#3a2410', 14, 6, 1, 7);
+  r('#4a2a12', 2, 2, 12, 13); r('#c0773a', 3, 3, 10, 11); r('#a8602a', 3, 3, 10, 4); r('#7a4420', 3, 7, 10, 1); r('#e2a468', 4, 4, 3, 1);
+  r('#f2c230', 7, 6, 2, 3); r('#8a6a10', 7, 8, 2, 1); r('#d48a48', 4, 9, 8, 4); r('#7a4420', 4, 9, 8, 1); r('#8a5226', 4, 11, 8, 1); r('#f2c230', 7, 11, 2, 1); };
 VR.Inventario = class {
   constructor(o) { Object.assign(this, o); VR.Inv.vida = this.vida; // { vida, $, toggleCasco, toggleEq, hayMoto: () => bool, alCerrar }
     const $ = this.$; this.dlg = $('invDlg'); this.tab = 'todo';
-    $('invClose').onclick = () => this.dlg.close();
+    $('invClose').onclick = () => this.dlg.close(); VR.drawMochilaIcon($('btnInvCv')); $('btnInv').hidden = false; $('btnInv').onclick = () => this.abrir();
     $('invTabs').onclick = (e) => { const b = e.target.closest('button'); if (b) { this.tab = b.dataset.t; this.pinta(); } };
     this.dlg.addEventListener('close', () => { if (!this._keep) { VR.loop.paused = false; VR.input.enabled = true; } this._keep = false; });
     addEventListener('keydown', (e) => { if (e.code === 'KeyI' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName) && !document.querySelector('dialog[open]') && VR.loop && !VR.loop.paused) this.abrir(); });
