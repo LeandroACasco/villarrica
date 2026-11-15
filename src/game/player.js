@@ -148,7 +148,7 @@ VR.Player = class {
   }
   setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); this.sprites = this._spB = VR.av2Lazy(this.lookData); this._spC = null; this._cas = false; }
   // casco equipado: se ve también a pie (hoja de sprites aparte, se dibuja al usarla por primera vez)
-  setCasco(on) { on = !!on; if (on === !!this._cas) return; this._cas = on; this.sprites = on ? (this._spC || (this._spC = VR.av2Lazy(Object.assign({}, this.lookData, { hat: 'casco', hatColor: 1 })))) : this._spB; }
+  setCasco(on) { on = !!on; if (on === !!this._cas) return; this._cas = on; this.sprites = on ? (this._spC || (this._spC = VR.av2Lazy(Object.assign({}, this.lookData, { hat: 'motero', hatColor: 1 })))) : this._spB; }
   say(text, secs = 2.2) { this.bubble = { text, t: secs }; }
   draw(ctx, camX, camY, a) {
     const x = Math.round(VR.lerp(this.px, this.x, a) - camX), y = Math.round(VR.lerp(this.py, this.y, a) - camY);

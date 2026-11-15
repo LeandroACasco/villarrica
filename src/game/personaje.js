@@ -11,7 +11,7 @@ VR.Personaje = class {
     this.dlg.addEventListener('close', () => { clearInterval(this.t); this.t = null; if (!this._keep) { VR.loop.paused = false; VR.input.enabled = true; } this._keep = false; });
     this.icono();
   }
-  look() { const L = Object.assign({}, this.player.lookData); if (this.vida.cascoPuesto) { L.hat = 'casco'; L.hatColor = 1; } return L; }
+  look() { const L = Object.assign({}, this.player.lookData); if (this.vida.cascoPuesto) { L.hat = 'motero'; L.hatColor = 1; } return L; }
   frame(d, a, i, k) { const L = this.look(), key = JSON.stringify(L) + d + a + i + k; let c = this.cache.get(key);
     if (!c) { c = VR.av2Render(Object.assign({}, VR.AV2_DEFAULT, L), d, a, i / 8, k); this.cache.set(key, c); if (this.cache.size > 300) this.cache.delete(this.cache.keys().next().value); } return c; }
   icono() { try { const c = this.ico, g = c.getContext('2d'), im = this.frame('down', 'idle', 0, 4); g.clearRect(0, 0, c.width, c.height); g.imageSmoothingEnabled = false;
@@ -23,7 +23,7 @@ VR.Personaje = class {
   pinta() { const V = this.vida, s = V.s, g = VR.fmtGs, $ = this.$; this.dibuja(); this.icono();
     $('pjEst').innerHTML = '<span>🍽 ' + Math.round(s.hambre) + '%</span><span>💵 ' + g(VR.Wallet.get()) + '</span><span>🏦 ' + g(s.banco) + '</span>' + (s.debe > 0 ? '<span class="mal">⚠ Debés ' + g(s.debe) + '</span>' : '');
     const fila = (ico, zona, nombre, estado, boton, k) => '<div class="pjSlot"><i>' + ico + '</i><div><small>' + zona + '</small><b>' + nombre + '</b><em>' + estado + '</em></div>' + (boton ? '<button class="cbtn" data-pj="' + k + '">' + boton + '</button>' : '') + '</div>';
-    $('pjEq').innerHTML = fila('🪖', 'Cabeza', 'Casco integral', s.casco ? (V.cascoPuesto ? 'Puesto' : 'En la mochila') : 'No tenés uno (Ao Porã)', s.casco ? (V.cascoPuesto ? 'Sacar' : 'Poner') : '', 'casco') +
+    $('pjEq').innerHTML = fila('🪖', 'Cabeza', 'Casco de moto', s.casco ? (V.cascoPuesto ? 'Puesto' : 'En la mochila') : 'No tenés uno (Ao Porã)', s.casco ? (V.cascoPuesto ? 'Sacar' : 'Poner') : '', 'casco') +
       fila('🧺', 'Mano', 'Canasto de chipa', s.canasto ? (s.equipo === 'canasto' ? 'En la mano' : s.stock + ' chipas guardadas') : 'No tenés uno', s.canasto ? (s.equipo === 'canasto' ? 'Guardar' : 'Llevar') : '', 'canasto') +
       fila('🔧', 'Herramientas', 'Caja de herramientas', s.herr ? 'La tenés' : 'No tenés', '', '');
     $('pjEq').querySelectorAll('[data-pj]').forEach((b) => b.onclick = () => { if (b.dataset.pj === 'casco') this.toggleCasco(); else this.toggleEq(); this.pinta(); });

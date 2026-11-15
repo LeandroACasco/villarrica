@@ -563,6 +563,16 @@
         paint((g) => { g.beginPath(); g.ellipse(hx, hy - 0.5, sideV ? 3.0 : 2.75, sideV ? 0.6 : 0.65, 0, 0, 7); g.fill(); }, SH(hatC, 0.78), { light: false });
         paint((g) => { g.beginPath(); g.ellipse(hx + (sideV ? -0.1 : 0), hy - 0.85, 2.35, 2.3, 0, Math.PI, Math.PI * 2); g.fill(); g.fillRect(hx - 2.35, hy - 0.9, 4.7, 0.45); }, hatC, { shade: SH(hatC, 0.7) });
         if (k >= 2) { pix(hx - 0.1, hy - 3.0, SH(hatC, 1.25), P, Math.round(2.2 * k)); if (!back && !sideV) pix(hx - 0.55, hy - 2.0, '#f2efe6', Math.round(1.1 * k), Math.round(0.9 * k)); }
+      } else if (hat === 'motero') { // casco de moto integral: cáscara que cubre toda la cabeza, visera oscura y mentonera (solo para el casco equipado, no está en la tienda)
+        const dk = '#16202c';
+        paint((g) => { g.beginPath(); g.ellipse(hx + (sideV ? -0.1 : 0), hy + 0.35, sideV ? 2.75 : 2.7, 3.0, 0, 0, 7); g.fill(); }, hatC, { shade: SH(hatC, 0.7) });
+        if (!back) {
+          if (sideV) paint((g) => { g.beginPath(); g.ellipse(hx + 1.35, hy + 0.35, 1.55, 1.05, 0, 0, 7); g.fill(); }, dk, { light: false });
+          else paint((g) => { g.beginPath(); g.roundRect(hx - 2.15, hy - 0.25, 4.3, 1.45, 0.6); g.fill(); }, dk, { light: false });
+          paint((g) => g.fillRect(hx - (sideV ? 0.6 : 2.0), hy + 1.95, sideV ? 2.7 : 4.0, 0.55), SH(hatC, 0.8), { light: false }); // mentonera
+          if (k >= 2) pix(hx + (sideV ? 1.0 : -1.2), hy - 0.05, '#7fa6c8', Math.round(1.4 * k), Math.round(0.5 * k)); // brillo en la visera
+        } else if (k >= 2) pix(hx - 0.3, hy - 2.3, SH(hatC, 0.6), Math.round(0.7 * k), Math.round(3.2 * k)); // franja trasera
+        if (k >= 2) pix(hx - 1.5, hy - 2.1, SH(hatC, 1.25), P, Math.round(1.5 * k));
       } else if (hat === 'piri') { // sombrero de paja
         paint((g) => { g.beginPath(); g.ellipse(hx, hy - 0.55, sideV ? 3.4 : 3.3, sideV ? 0.55 : 0.7, 0, 0, 7); g.fill(); }, '#d8b870', { shade: '#a88a48' });
         paint((g) => { g.beginPath(); g.ellipse(hx, hy - 1.1, 1.9, 1.6, 0, Math.PI, Math.PI * 2); g.fill(); g.fillRect(hx - 1.9, hy - 1.15, 3.8, 0.55); }, '#e4c880', { shade: '#b09450' });
