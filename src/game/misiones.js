@@ -46,7 +46,7 @@ VR.Lugares = class {
       case 'aopora': return L(/Ao Por/, 26);
       case 'parque': return L(/Parque Manuel/);
       case 'cisnes': return L(/Paseo en cisne/);
-      case 'fuego': return VR.pastizal && VR.pastizal.centro(); // el pastizal que se prende en la misión M3
+      case 'fuego': return VR.pastizal && (VR.pastizal.centro() || VR.pastizal.origen()); // el pastizal que se prende en la misión M3
       case 'cuartel': return W.firehouse && { x: W.firehouse.x, y: W.firehouse.y + 20 };
       case 'catedral': return L(/^Catedral/, 30);
       case 'terminal': return L(/Terminal/);
@@ -395,6 +395,13 @@ VR.Misiones = class {
   update(dt, player, car) {
     if (VR.Dialogo.abierto) return;
     this.chequeaDia();
+    { // M3 después de recargar o de que te arresten: el fuego no se guarda y el camión pierde su marca de prestado; se recuperan solos
+      const a = this.s.act, pz = VR.pastizal, P = this.paso;
+      if (a && a.id === 'm3' && !a.fallo && P && pz) {
+        if ((P.id === 'fuego' || P.id === 'apagar') && !pz.activo) { pz.empezar(); this.toast('🔥 El incendio sigue: ¡al parque!'); }
+        if (['camion', 'fuego', 'apagar', 'volver'].includes(P.id)) { const c = this.getCar(); if (c && c.model === 'bomba' && c.firehouse && !c.prestada) { c.mio = true; c.prestada = true; this.camionK = c; } }
+      }
+    }
     if (this.camionK && !(this.s.act && this.s.act.id === 'm3')) { const c = this.camionK; c.mio = false; c.prestada = false; this.camionK = null; if (VR.pastizal) VR.pastizal.limpiar(); } // se acabó M3: el camión vuelve a ser de los bomberos
     if (this._dlgPend) { const f = this._dlgPend; this._dlgPend = null; f(); return; }
     if (this.bub) { this.bub.t -= dt; if (this.bub.t <= 0) this.bub = null; }
