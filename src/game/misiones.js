@@ -67,6 +67,8 @@ VR.Lugares = class {
       case 'super_guasu': return L(/^Hiper Bigote/, 24);
       case 'super_yvoty': return L(/^Súper Seis y Medio/, 24);
       case 'teatro': { const d = (W.decals || []).find((x) => x.kind === 'muni'); return d && { x: (d.bx + (d.tx || d.bw / 2)) * VR.TILE, y: (d.y + d.bh) * VR.TILE + 10 }; } // la puerta del Teatro Municipal (como en main.js)
+      case 'gom1': { const p = L(/Terminal/, 70); return p; } // gomería del Centro (inventada), junto a la terminal
+      case 'gom2': { const c = VR.vida && VR.vida.s.casa; return c && { x: c.x - 330, y: c.y + 14 }; } // gomería de Santa Lucía (inventada), cerca de tu pieza
       case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
     }
     return null;
@@ -83,7 +85,7 @@ VR.Lugares = class {
   }
 };
 VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
-  parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus', teatro: 'Teatro Municipal' };
+  parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus', teatro: 'Teatro Municipal', gom1: 'Gomería Aire Lindo', gom2: 'Gomería Pinchazo Feliz' };
 
 // ---------------- barrios por historia ----------------
 // Sin paredes: se puede ir a cualquier lado, pero en un barrio cerrado no hay changas ni misiones, el GPS no marca
@@ -548,7 +550,17 @@ VR.drawCelulares = (g, x, y) => { // puesto chico: mostrador azul, toldo celeste
   g.fillStyle = '#26262c'; g.fillRect(x - 15, y - 21, 31, 1);
   g.fillStyle = '#ff5a5a'; g.fillRect(x + 8, y - 17, 3, 3);
 };
+VR.drawGomeria = (g, x, y) => { // tinglado chico con pila de cubiertas, tacho de agua y cartel
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 17, y - 2, 36, 5);
+  g.fillStyle = '#6b6b72'; g.fillRect(x - 16, y - 14, 32, 13); g.fillStyle = '#4a4a52'; g.fillRect(x - 16, y - 4, 32, 3);
+  g.fillStyle = '#2b2b30'; g.fillRect(x - 13, y - 12, 12, 9); g.fillStyle = '#e8b830'; g.fillRect(x + 3, y - 12, 11, 9); g.fillStyle = '#1a1a1e'; g.fillRect(x + 5, y - 10, 7, 5);
+  for (let i = 0; i < 3; i++) { g.fillStyle = '#1b1b1f'; g.beginPath(); g.ellipse(x - 21, y - 4 - i * 4, 5, 2.3, 0, 0, 7); g.fill(); g.fillStyle = '#5a5a62'; g.beginPath(); g.ellipse(x - 21, y - 4 - i * 4, 2, 0.9, 0, 0, 7); g.fill(); }
+  g.fillStyle = '#b13a2a'; g.fillRect(x - 16, y - 24, 32, 9); g.fillStyle = '#f2d24a'; g.fillRect(x - 16, y - 16, 32, 1);
+  VR.gfx.text(g, 'GOMERÍA', x, y - 22, '#fff6d8', { center: true, shadow: '#1a1a1e', size: 7 });
+};
 VR.PUNTOS = {
+  gomeria1: { lugar: 'gom1', nombre: 'Gomería Aire Lindo', ico: '🛞', mini: 'o', draw: VR.drawGomeria, menu: () => [{ quien: 'sis', titulo: '🛞 Gomería Aire Lindo', txt: 'Parate acá con tu moto o tu auto y, si tiene una llanta pinchada, el gomero te la arregla por ' + VR.fmtGs(VR.PRECIOS.gomeria) + '.', op: [['Aguyje', () => false]] }] },
+  gomeria2: { lugar: 'gom2', nombre: 'Gomería Pinchazo Feliz', ico: '🛞', mini: 'o', draw: VR.drawGomeria, menu: () => [{ quien: 'sis', titulo: '🛞 Gomería Pinchazo Feliz', txt: 'Parate acá con tu moto o tu auto y, si tiene una llanta pinchada, el gomero te la arregla por ' + VR.fmtGs(VR.PRECIOS.gomeria) + '.', op: [['Aguyje', () => false]] }] },
   cajero: { lugar: 'cajero', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
   cajero2: { lugar: 'cajero2', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
   financiera: { lugar: 'financiera', nombre: 'Financiera', ico: '💰', mini: '₲', menu: (M) => VR.prestamoMenu(M, 'financiera') },

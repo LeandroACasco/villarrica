@@ -131,7 +131,7 @@
     toast(msg);
   }
   // así se ve el jugador arriba de la moto: su personaje (05/11/2026); casco = true se pone un casco (12/11/2026, Mbohasa)
-  const me = (casco) => { if (casco === undefined) casco = !!(vida && vida.s.casco); const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
+  const me = (casco) => { if (casco === undefined) casco = !!(vida && vida.cascoPuesto); const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];
@@ -165,6 +165,9 @@
   const btnEq = $('btnEq'), btnA = document.querySelector('[data-b="action"]'); let eqTxt = '';
   function toggleEq() { if (!vida || !vida.s.canasto) return; vida.s.equipo = vida.s.equipo === 'canasto' ? null : 'canasto'; vida.save(); if (!vida.s.equipo && changas.job && changas.job.k === 'chipa') { changas.job = null; changas.hud.hidden = true; } toast(vida.s.equipo ? '🧺 Canasto en la mano · ' + vida.s.stock + ' chipas · ACCIÓN al lado de la gente para vender' : '🧺 Guardaste el canasto'); }
   btnEq.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleEq(); });
+  // casco equipable: tecla H o desde la Mochila del celular
+  function toggleCasco() { if (!vida) return; if (vida.ponCasco() && car && car.rider) car.rider = me(); }
+  addEventListener('keydown', (e) => { if (e.code === 'KeyH' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleCasco(); });
   addEventListener('keydown', (e) => { if (e.code === 'KeyG' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleEq(); });
   function syncEq() {
     const eq = vida && vida.s.equipo, t = eq === 'canasto' && !car ? '🥐|VENDER' : '✋|ACCIÓN';
@@ -661,7 +664,7 @@
     } else if (celApp === 'mochila') {
       h = '<h3>🎒 Mochila</h3><div class="row2"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' chipas' : '—') + '</span></div>' +
         (s.canasto ? '<button class="cbtn" data-m="canasto">' + (s.equipo === 'canasto' ? 'Guardar el canasto' : 'Llevar el canasto en la mano') + '</button>' : '') +
-        '<div class="row2"><span>🪖 Casco</span><span>' + (s.casco ? 'sí' : 'no tenés') + '</span></div><div class="row2"><span>🔧 Herramientas</span><span>' + (s.herr ? 'sí' : 'no tenés') + '</span></div>';
+        '<div class="row2"><span>🪖 Casco</span><span>' + (s.casco ? (vida.cascoPuesto ? 'puesto' : 'guardado') : 'no tenés') + '</span></div>' + (s.casco ? '<button class="cbtn" data-c="casco">' + (vida.cascoPuesto ? 'Sacarte el casco' : 'Ponerte el casco') + '</button>' : '') + '<div class="row2"><span>🔧 Herramientas</span><span>' + (s.herr ? 'sí' : 'no tenés') + '</span></div>';
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
@@ -679,6 +682,7 @@
       if (vida.celuRoto() && Math.random() < 0.12) { toast('📱 La pantalla rota no responde... probá de nuevo'); return; }
       celApp = a; paintCel(); });
     celBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { celGo(() => toggleEq()); });
+    celBody.querySelectorAll('[data-c]').forEach((b) => b.onclick = () => { toggleCasco(); paintCel(); });
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
       if (b.dataset.j === 'x') { mbh.cancelar(); paintCel(); return; }
       if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }

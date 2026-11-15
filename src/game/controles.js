@@ -15,7 +15,8 @@ VR.Controles = class {
   }
   update(dt, player, car) {
     this.t += dt;
-    if (!car || car.type !== 'moto' || Math.abs(car.v) < 12 || (this.vida.s.casco)) return;
+    if (car) this.gomeria(car);
+    if (!car || car.type !== 'moto' || Math.abs(car.v) < 12 || this.vida.cascoPuesto) return;
     for (const p of this.puntos()) {
       if (Math.hypot(car.x - p.x, car.y - p.y) > 58 || (this.cool[p.id] || 0) > this.t) continue;
       this.cool[p.id] = this.t + 90;
@@ -23,6 +24,15 @@ VR.Controles = class {
       this.toast('🚓 Control de tránsito: andás sin casco. Multa de ' + VR.fmtGs(VR.PRECIOS.multaCasco));
       if (VR.mis) VR.mis.emit('multa', { motivo: 'casco' });
     }
+  }
+  // gomerías (ver VR.PUNTOS.gomeria1/2): parado con una llanta pinchada cerca de una, el gomero te ofrece arreglarla (más barato que el parche a domicilio)
+  gomeria(car) {
+    if (!VR.Tab || !VR.Tab.flat(car) || car.fixT > 0 || Math.abs(car.v) > 15 || VR.Dialogo.abierto || (this.cg || 0) > this.t) return;
+    for (const k of ['gomeria1', 'gomeria2']) { const D = VR.PUNTOS[k], p = D && this.lug.get(D.lugar); if (!p || Math.hypot(car.x - p.x, car.y - p.y) > 80) continue;
+      this.cg = this.t + 25; const n = VR.PRECIOS.gomeria, V = this.vida;
+      VR.mis.dialogo([{ quien: 'sis', titulo: '🛞 ' + D.nombre, txt: '¡Epa! Esa llanta está pinchada. La arreglo en un toque por ' + VR.fmtGs(n) + ' (en la calle te sale ' + VR.fmtGs(12000) + ').', op: [
+        ['Arreglala · ' + VR.fmtGs(n), () => { if (!V.gasta(n, 'Gomería: llanta')) return false; car.fixT = 5; this.toast('🛞 El gomero está arreglando la llanta…'); return false; }], ['Después', () => false]] }]);
+      return; }
   }
   collect(cx, cy, tall) {
     for (const p of this.puntos()) {

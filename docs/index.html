@@ -414,7 +414,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión d3b43cf7 · 2026-11-15</div>
+  <div class="tVer">Versión 0baa7b42 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -524,7 +524,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d3b43cf7 · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0baa7b42 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -8606,7 +8606,7 @@ VR.Weapons = class {
 
 VR.PRECIOS = { // en guaraníes (referencias de Leandro, 10/11/2026)
   pieza: 200000, // por semana
-  casco: 180000, multaCasco: 1287847, alquilerMoto: 20000, // J4 (M2): casco, multa de tránsito sin casco (11 jornales) y alquiler diario de la moto de Kike
+  gomeria: 8000, casco: 180000, multaCasco: 1287847, alquilerMoto: 20000, // J4 (M2): casco, multa de tránsito sin casco (11 jornales) y alquiler diario de la moto de Kike
   chipa: 5000, empanada: 6000, mbeju: 7000,
   plato: 15000, // plato del día, "a partir de"
   helado: 10000, // una porción; el kilo en la Marimer sale 45.000
@@ -8686,8 +8686,11 @@ VR.Vida = class {
   retira(n) { n = Math.min(n, this.s.banco); if (n <= 0) return 0; this.s.banco -= n; this.log(-n, '🏦 Retiro'); VR.Wallet.set(VR.Wallet.get() + n); this.log(n, 'Retiro del cajero'); this.sync(); this.msg('🏧 Sacaste ' + VR.fmtGs(n)); return n; }
   // pagar la deuda a mano (casco adelantado, multas, hospital): con el efectivo y, si no alcanza, con la billetera electrónica
   pagaDeuda() { const s = this.s; if (s.debe <= 0) return 0; let n = Math.min(s.debe, VR.Wallet.get()); if (n > 0) { VR.Wallet.set(VR.Wallet.get() - n); this.log(-n, 'Pago de deuda'); } let r = s.debe - n, b = Math.min(r, s.banco); if (b > 0) { s.banco -= b; this.log(-b, '🏦 Pago de deuda'); n += b; } s.debe -= n; if (n <= 0) this.msg('💸 No tenés con qué pagar la deuda'); else this.msg('✔ Pagaste ' + VR.fmtGs(n) + ' de deuda' + (s.debe > 0 ? ' · te quedan ' + VR.fmtGs(s.debe) : ' · ¡estás al día!')); this.save(); return n; }
+  // casco equipable (J4+): lo tenés (s.casco) y te lo ponés o sacás (s.cascoOn; por defecto puesto)
+  get cascoPuesto() { return !!this.s.casco && this.s.cascoOn !== false; }
+  ponCasco(on) { if (!this.s.casco) { this.msg('🪖 No tenés casco todavía (Ao Porã)'); return false; } this.s.cascoOn = on === undefined ? !this.cascoPuesto : !!on; this.save(); this.msg(this.s.cascoOn ? '🪖 Te pusiste el casco' : '🪖 Te sacaste el casco (guardado en la mochila)'); return true; }
   // casco (J4): se paga con la plata o, en la misión de Kike, queda como deuda con él
-  compraCasco(aDeuda) { const P = VR.PRECIOS.casco, s = this.s; if (s.casco) return true; if (aDeuda) { s.debe += P; this.log(0, 'Casco: lo adelantó Kike, quedó debiendo ' + VR.fmtGs(P)); } else if (!this.gasta(P, 'Casco')) return false; s.casco = true; this.save(); this.msg('🪖 ¡Casco nuevo!'); return true; }
+  compraCasco(aDeuda) { const P = VR.PRECIOS.casco, s = this.s; if (s.casco) return true; if (aDeuda) { s.debe += P; this.log(0, 'Casco: lo adelantó Kike, quedó debiendo ' + VR.fmtGs(P)); } else if (!this.gasta(P, 'Casco')) return false; s.casco = true; s.cascoOn = true; this.save(); this.msg('🪖 ¡Casco nuevo!'); return true; }
   gasta(n, why) { if (VR.Wallet.get() < n) { this.msg('💸 No te alcanza: ' + VR.fmtGs(n)); return false; } this.mueve(-n, why); return true; }
   // ---- cosas de la vida ----
   come(precio, hambre, que) { if (!this.gasta(precio, que)) return false; this.s.hambre = Math.min(100, this.s.hambre + hambre); this.sync(); this.msg('🍽 ' + que + ' · −' + VR.fmtGs(precio)); if (VR.mis) VR.mis.emit('come', { que, precio }); return true; }
@@ -9655,6 +9658,8 @@ VR.Lugares = class {
       case 'super_guasu': return L(/^Hiper Bigote/, 24);
       case 'super_yvoty': return L(/^Súper Seis y Medio/, 24);
       case 'teatro': { const d = (W.decals || []).find((x) => x.kind === 'muni'); return d && { x: (d.bx + (d.tx || d.bw / 2)) * VR.TILE, y: (d.y + d.bh) * VR.TILE + 10 }; } // la puerta del Teatro Municipal (como en main.js)
+      case 'gom1': { const p = L(/Terminal/, 70); return p; } // gomería del Centro (inventada), junto a la terminal
+      case 'gom2': { const c = VR.vida && VR.vida.s.casa; return c && { x: c.x - 330, y: c.y + 14 }; } // gomería de Santa Lucía (inventada), cerca de tu pieza
       case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
     }
     return null;
@@ -9671,7 +9676,7 @@ VR.Lugares = class {
   }
 };
 VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
-  parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus', teatro: 'Teatro Municipal' };
+  parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus', teatro: 'Teatro Municipal', gom1: 'Gomería Aire Lindo', gom2: 'Gomería Pinchazo Feliz' };
 
 // ---------------- barrios por historia ----------------
 // Sin paredes: se puede ir a cualquier lado, pero en un barrio cerrado no hay changas ni misiones, el GPS no marca
@@ -10136,7 +10141,17 @@ VR.drawCelulares = (g, x, y) => { // puesto chico: mostrador azul, toldo celeste
   g.fillStyle = '#26262c'; g.fillRect(x - 15, y - 21, 31, 1);
   g.fillStyle = '#ff5a5a'; g.fillRect(x + 8, y - 17, 3, 3);
 };
+VR.drawGomeria = (g, x, y) => { // tinglado chico con pila de cubiertas, tacho de agua y cartel
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 17, y - 2, 36, 5);
+  g.fillStyle = '#6b6b72'; g.fillRect(x - 16, y - 14, 32, 13); g.fillStyle = '#4a4a52'; g.fillRect(x - 16, y - 4, 32, 3);
+  g.fillStyle = '#2b2b30'; g.fillRect(x - 13, y - 12, 12, 9); g.fillStyle = '#e8b830'; g.fillRect(x + 3, y - 12, 11, 9); g.fillStyle = '#1a1a1e'; g.fillRect(x + 5, y - 10, 7, 5);
+  for (let i = 0; i < 3; i++) { g.fillStyle = '#1b1b1f'; g.beginPath(); g.ellipse(x - 21, y - 4 - i * 4, 5, 2.3, 0, 0, 7); g.fill(); g.fillStyle = '#5a5a62'; g.beginPath(); g.ellipse(x - 21, y - 4 - i * 4, 2, 0.9, 0, 0, 7); g.fill(); }
+  g.fillStyle = '#b13a2a'; g.fillRect(x - 16, y - 24, 32, 9); g.fillStyle = '#f2d24a'; g.fillRect(x - 16, y - 16, 32, 1);
+  VR.gfx.text(g, 'GOMERÍA', x, y - 22, '#fff6d8', { center: true, shadow: '#1a1a1e', size: 7 });
+};
 VR.PUNTOS = {
+  gomeria1: { lugar: 'gom1', nombre: 'Gomería Aire Lindo', ico: '🛞', mini: 'o', draw: VR.drawGomeria, menu: () => [{ quien: 'sis', titulo: '🛞 Gomería Aire Lindo', txt: 'Parate acá con tu moto o tu auto y, si tiene una llanta pinchada, el gomero te la arregla por ' + VR.fmtGs(VR.PRECIOS.gomeria) + '.', op: [['Aguyje', () => false]] }] },
+  gomeria2: { lugar: 'gom2', nombre: 'Gomería Pinchazo Feliz', ico: '🛞', mini: 'o', draw: VR.drawGomeria, menu: () => [{ quien: 'sis', titulo: '🛞 Gomería Pinchazo Feliz', txt: 'Parate acá con tu moto o tu auto y, si tiene una llanta pinchada, el gomero te la arregla por ' + VR.fmtGs(VR.PRECIOS.gomeria) + '.', op: [['Aguyje', () => false]] }] },
   cajero: { lugar: 'cajero', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
   cajero2: { lugar: 'cajero2', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },
   financiera: { lugar: 'financiera', nombre: 'Financiera', ico: '💰', mini: '₲', menu: (M) => VR.prestamoMenu(M, 'financiera') },
@@ -10405,6 +10420,7 @@ VR.showVehicleCard = (v) => {
   const buzz = (n) => VR.input && VR.input.buzz && VR.input.buzz(n);
 
   const Tab = VR.Tab = {
+    flat, // ¿tiene una llanta pinchada? (lo usan las gomerías)
     ficha, ensure, range,
     // llamado desde la física del vehículo que maneja el jugador; devuelve [acelerador, volante]
     tick(c, dt, th, st, brake) {
@@ -14692,7 +14708,8 @@ VR.Controles = class {
   }
   update(dt, player, car) {
     this.t += dt;
-    if (!car || car.type !== 'moto' || Math.abs(car.v) < 12 || (this.vida.s.casco)) return;
+    if (car) this.gomeria(car);
+    if (!car || car.type !== 'moto' || Math.abs(car.v) < 12 || this.vida.cascoPuesto) return;
     for (const p of this.puntos()) {
       if (Math.hypot(car.x - p.x, car.y - p.y) > 58 || (this.cool[p.id] || 0) > this.t) continue;
       this.cool[p.id] = this.t + 90;
@@ -14700,6 +14717,15 @@ VR.Controles = class {
       this.toast('🚓 Control de tránsito: andás sin casco. Multa de ' + VR.fmtGs(VR.PRECIOS.multaCasco));
       if (VR.mis) VR.mis.emit('multa', { motivo: 'casco' });
     }
+  }
+  // gomerías (ver VR.PUNTOS.gomeria1/2): parado con una llanta pinchada cerca de una, el gomero te ofrece arreglarla (más barato que el parche a domicilio)
+  gomeria(car) {
+    if (!VR.Tab || !VR.Tab.flat(car) || car.fixT > 0 || Math.abs(car.v) > 15 || VR.Dialogo.abierto || (this.cg || 0) > this.t) return;
+    for (const k of ['gomeria1', 'gomeria2']) { const D = VR.PUNTOS[k], p = D && this.lug.get(D.lugar); if (!p || Math.hypot(car.x - p.x, car.y - p.y) > 80) continue;
+      this.cg = this.t + 25; const n = VR.PRECIOS.gomeria, V = this.vida;
+      VR.mis.dialogo([{ quien: 'sis', titulo: '🛞 ' + D.nombre, txt: '¡Epa! Esa llanta está pinchada. La arreglo en un toque por ' + VR.fmtGs(n) + ' (en la calle te sale ' + VR.fmtGs(12000) + ').', op: [
+        ['Arreglala · ' + VR.fmtGs(n), () => { if (!V.gasta(n, 'Gomería: llanta')) return false; car.fixT = 5; this.toast('🛞 El gomero está arreglando la llanta…'); return false; }], ['Después', () => false]] }]);
+      return; }
   }
   collect(cx, cy, tall) {
     for (const p of this.puntos()) {
@@ -14968,7 +14994,7 @@ VR.Titulo = class {
     toast(msg);
   }
   // así se ve el jugador arriba de la moto: su personaje (05/11/2026); casco = true se pone un casco (12/11/2026, Mbohasa)
-  const me = (casco) => { if (casco === undefined) casco = !!(vida && vida.s.casco); const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
+  const me = (casco) => { if (casco === undefined) casco = !!(vida && vida.cascoPuesto); const L = casco ? { ...player.lookData, hat: 'casco', hatColor: 1 } : player.lookData; return Object.assign(VR.av2Rider(L), { L }); };
   const sc = saved && saved.car;
   if (sc) {
     let c = cars[sc.i];
@@ -15002,6 +15028,9 @@ VR.Titulo = class {
   const btnEq = $('btnEq'), btnA = document.querySelector('[data-b="action"]'); let eqTxt = '';
   function toggleEq() { if (!vida || !vida.s.canasto) return; vida.s.equipo = vida.s.equipo === 'canasto' ? null : 'canasto'; vida.save(); if (!vida.s.equipo && changas.job && changas.job.k === 'chipa') { changas.job = null; changas.hud.hidden = true; } toast(vida.s.equipo ? '🧺 Canasto en la mano · ' + vida.s.stock + ' chipas · ACCIÓN al lado de la gente para vender' : '🧺 Guardaste el canasto'); }
   btnEq.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleEq(); });
+  // casco equipable: tecla H o desde la Mochila del celular
+  function toggleCasco() { if (!vida) return; if (vida.ponCasco() && car && car.rider) car.rider = me(); }
+  addEventListener('keydown', (e) => { if (e.code === 'KeyH' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleCasco(); });
   addEventListener('keydown', (e) => { if (e.code === 'KeyG' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleEq(); });
   function syncEq() {
     const eq = vida && vida.s.equipo, t = eq === 'canasto' && !car ? '🥐|VENDER' : '✋|ACCIÓN';
@@ -15498,7 +15527,7 @@ VR.Titulo = class {
     } else if (celApp === 'mochila') {
       h = '<h3>🎒 Mochila</h3><div class="row2"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' chipas' : '—') + '</span></div>' +
         (s.canasto ? '<button class="cbtn" data-m="canasto">' + (s.equipo === 'canasto' ? 'Guardar el canasto' : 'Llevar el canasto en la mano') + '</button>' : '') +
-        '<div class="row2"><span>🪖 Casco</span><span>' + (s.casco ? 'sí' : 'no tenés') + '</span></div><div class="row2"><span>🔧 Herramientas</span><span>' + (s.herr ? 'sí' : 'no tenés') + '</span></div>';
+        '<div class="row2"><span>🪖 Casco</span><span>' + (s.casco ? (vida.cascoPuesto ? 'puesto' : 'guardado') : 'no tenés') + '</span></div>' + (s.casco ? '<button class="cbtn" data-c="casco">' + (vida.cascoPuesto ? 'Sacarte el casco' : 'Ponerte el casco') + '</button>' : '') + '<div class="row2"><span>🔧 Herramientas</span><span>' + (s.herr ? 'sí' : 'no tenés') + '</span></div>';
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
@@ -15516,6 +15545,7 @@ VR.Titulo = class {
       if (vida.celuRoto() && Math.random() < 0.12) { toast('📱 La pantalla rota no responde... probá de nuevo'); return; }
       celApp = a; paintCel(); });
     celBody.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { celGo(() => toggleEq()); });
+    celBody.querySelectorAll('[data-c]').forEach((b) => b.onclick = () => { toggleCasco(); paintCel(); });
     celBody.querySelectorAll('[data-j]').forEach((b) => b.onclick = () => {
       if (b.dataset.j === 'x') { mbh.cancelar(); paintCel(); return; }
       if (!VR.Barrios.enPunto(world, player.x, player.y)) { toast('🔒 Mbohasa no entra acá: ' + VR.Barrios.CARTEL); return; }

@@ -11,7 +11,7 @@
 
 VR.PRECIOS = { // en guaraníes (referencias de Leandro, 10/11/2026)
   pieza: 200000, // por semana
-  casco: 180000, multaCasco: 1287847, alquilerMoto: 20000, // J4 (M2): casco, multa de tránsito sin casco (11 jornales) y alquiler diario de la moto de Kike
+  gomeria: 8000, casco: 180000, multaCasco: 1287847, alquilerMoto: 20000, // J4 (M2): casco, multa de tránsito sin casco (11 jornales) y alquiler diario de la moto de Kike
   chipa: 5000, empanada: 6000, mbeju: 7000,
   plato: 15000, // plato del día, "a partir de"
   helado: 10000, // una porción; el kilo en la Marimer sale 45.000
@@ -91,8 +91,11 @@ VR.Vida = class {
   retira(n) { n = Math.min(n, this.s.banco); if (n <= 0) return 0; this.s.banco -= n; this.log(-n, '🏦 Retiro'); VR.Wallet.set(VR.Wallet.get() + n); this.log(n, 'Retiro del cajero'); this.sync(); this.msg('🏧 Sacaste ' + VR.fmtGs(n)); return n; }
   // pagar la deuda a mano (casco adelantado, multas, hospital): con el efectivo y, si no alcanza, con la billetera electrónica
   pagaDeuda() { const s = this.s; if (s.debe <= 0) return 0; let n = Math.min(s.debe, VR.Wallet.get()); if (n > 0) { VR.Wallet.set(VR.Wallet.get() - n); this.log(-n, 'Pago de deuda'); } let r = s.debe - n, b = Math.min(r, s.banco); if (b > 0) { s.banco -= b; this.log(-b, '🏦 Pago de deuda'); n += b; } s.debe -= n; if (n <= 0) this.msg('💸 No tenés con qué pagar la deuda'); else this.msg('✔ Pagaste ' + VR.fmtGs(n) + ' de deuda' + (s.debe > 0 ? ' · te quedan ' + VR.fmtGs(s.debe) : ' · ¡estás al día!')); this.save(); return n; }
+  // casco equipable (J4+): lo tenés (s.casco) y te lo ponés o sacás (s.cascoOn; por defecto puesto)
+  get cascoPuesto() { return !!this.s.casco && this.s.cascoOn !== false; }
+  ponCasco(on) { if (!this.s.casco) { this.msg('🪖 No tenés casco todavía (Ao Porã)'); return false; } this.s.cascoOn = on === undefined ? !this.cascoPuesto : !!on; this.save(); this.msg(this.s.cascoOn ? '🪖 Te pusiste el casco' : '🪖 Te sacaste el casco (guardado en la mochila)'); return true; }
   // casco (J4): se paga con la plata o, en la misión de Kike, queda como deuda con él
-  compraCasco(aDeuda) { const P = VR.PRECIOS.casco, s = this.s; if (s.casco) return true; if (aDeuda) { s.debe += P; this.log(0, 'Casco: lo adelantó Kike, quedó debiendo ' + VR.fmtGs(P)); } else if (!this.gasta(P, 'Casco')) return false; s.casco = true; this.save(); this.msg('🪖 ¡Casco nuevo!'); return true; }
+  compraCasco(aDeuda) { const P = VR.PRECIOS.casco, s = this.s; if (s.casco) return true; if (aDeuda) { s.debe += P; this.log(0, 'Casco: lo adelantó Kike, quedó debiendo ' + VR.fmtGs(P)); } else if (!this.gasta(P, 'Casco')) return false; s.casco = true; s.cascoOn = true; this.save(); this.msg('🪖 ¡Casco nuevo!'); return true; }
   gasta(n, why) { if (VR.Wallet.get() < n) { this.msg('💸 No te alcanza: ' + VR.fmtGs(n)); return false; } this.mueve(-n, why); return true; }
   // ---- cosas de la vida ----
   come(precio, hambre, que) { if (!this.gasta(precio, que)) return false; this.s.hambre = Math.min(100, this.s.hambre + hambre); this.sync(); this.msg('🍽 ' + que + ' · −' + VR.fmtGs(precio)); if (VR.mis) VR.mis.emit('come', { que, precio }); return true; }

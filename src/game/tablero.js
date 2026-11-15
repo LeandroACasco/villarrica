@@ -51,6 +51,7 @@
   const buzz = (n) => VR.input && VR.input.buzz && VR.input.buzz(n);
 
   const Tab = VR.Tab = {
+    flat, // ¿tiene una llanta pinchada? (lo usan las gomerías)
     ficha, ensure, range,
     // llamado desde la física del vehículo que maneja el jugador; devuelve [acelerador, volante]
     tick(c, dt, th, st, brake) {
