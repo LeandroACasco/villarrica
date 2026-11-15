@@ -131,7 +131,7 @@ VR.Vida = class {
   }
   pagaFiado() { const s = this.s, n = Math.min(s.fiado, VR.Wallet.get()); if (n <= 0) return 0; this.mueve(-n, 'Le pagaste a Doña Chela'); s.fiado -= n; return n; }
   // ---- lo que se ve en el HUD ----
-  hudLinea1() { const s = this.s, h = Math.round(s.hambre / 10); return '🕐 ' + this.diaSemana + ' ' + this.hhmm + '  🍽 ' + '▮'.repeat(h) + '▯'.repeat(10 - h); }
+  hudLinea1() { const s = this.s; return '🕐 ' + this.diaSemana + ' ' + this.hhmm + (s.hambre < 25 ? '  🍽 ' + Math.round(s.hambre) + '%' : ''); }
   hudLinea2() {
     const s = this.s, dias = Math.ceil(s.saldo), P = s.pieza, venceEn = Math.max(0, Math.ceil((P.vence - s.min) / 1440));
     return '📱 ' + (dias > 0 ? dias + ' d' : 'sin saldo') + '  🏠 ' + (P.saldo > 0 ? 'debés' : venceEn <= 1 ? 'vence hoy' : 'vence ' + VR.DIAS[((P.vence / 1440 | 0)) % 7]);

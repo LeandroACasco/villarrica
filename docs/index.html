@@ -77,7 +77,7 @@
   .pjBar i { display: block; height: 100%; width: 100%; transition: width .25s; } .pjBar.vida i { background: linear-gradient(#ff6b6b, #c92a3a); } .pjBar.ham i { background: linear-gradient(#ffc468, #e07b1a); }
   .pjBar b { position: absolute; left: 2px; top: -3px; font-size: 9px; line-height: 14px; filter: drop-shadow(0 1px 0 #000); }
   .pjBar.low { animation: pjParp .6s infinite alternate; } @keyframes pjParp { to { border-color: #ff3b3b; box-shadow: 0 0 6px #ff3b3b; } }
-  body.conPj #hud { left: calc(env(safe-area-inset-left) + 80px); }
+  body.conPj #hud { left: calc(env(safe-area-inset-left) + 80px); max-width: calc(100vw - 80px - 140px); } body.conPj #hud b { letter-spacing: .03em; font-size: 14px; } body.conPj #hud #plata { white-space: normal; } body.conPj #hud > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body.adentro #pjHud { visibility: hidden; }
   #invDlg { width: min(520px, 94vw); max-height: 92vh; padding: 14px; border: 2px solid #2d3a55; border-radius: 18px; background: linear-gradient(160deg, #1e2a40, #121822); color: #fff; overflow: auto; } #invDlg::backdrop { background: rgba(0,0,0,.55); } #invDlg .pjTop .hint { font-size: 12px; opacity: .7; } #invPieza h4 { margin: 12px 0 6px; opacity: .8; } .pjChip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
   /* Configuración en pestañas */
@@ -440,7 +440,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 23fefe20 · 2026-11-15</div>
+  <div class="tVer">Versión 9874a9ee · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -555,7 +555,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 23fefe20 · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 9874a9ee · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -8769,7 +8769,7 @@ VR.Vida = class {
   }
   pagaFiado() { const s = this.s, n = Math.min(s.fiado, VR.Wallet.get()); if (n <= 0) return 0; this.mueve(-n, 'Le pagaste a Doña Chela'); s.fiado -= n; return n; }
   // ---- lo que se ve en el HUD ----
-  hudLinea1() { const s = this.s, h = Math.round(s.hambre / 10); return '🕐 ' + this.diaSemana + ' ' + this.hhmm + '  🍽 ' + '▮'.repeat(h) + '▯'.repeat(10 - h); }
+  hudLinea1() { const s = this.s; return '🕐 ' + this.diaSemana + ' ' + this.hhmm + (s.hambre < 25 ? '  🍽 ' + Math.round(s.hambre) + '%' : ''); }
   hudLinea2() {
     const s = this.s, dias = Math.ceil(s.saldo), P = s.pieza, venceEn = Math.max(0, Math.ceil((P.vence - s.min) / 1440));
     return '📱 ' + (dias > 0 ? dias + ' d' : 'sin saldo') + '  🏠 ' + (P.saldo > 0 ? 'debés' : venceEn <= 1 ? 'vence hoy' : 'vence ' + VR.DIAS[((P.vence / 1440 | 0)) % 7]);
