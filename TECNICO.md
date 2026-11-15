@@ -672,3 +672,11 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 - De día el marcador no aparece y ACCIÓN dice «abre de noche». De noche: marcador 🎶, **neón en la puerta** (`night.add`) e interior con pista de luces animadas, bola espejada, rayos, DJ (o pantalla de karaoke en Blue), barra con bebidas y picadas, mesas, 12 bailarines, patovica; ACCIÓN en la pista baila.
 - **Armas contra chespis**: `weapons.js` → `hurtChespi` (pistola y lanzallamas alcanzan a `VR.chespis.list`): quedan en el piso y viene la ambulancia (emerg.js los acepta). Si el chespi estaba con el cuchillo (`mode === 'knife'`) y está a menos de 220 px, disparar es **legítima defensa: no suma estrellas** y sale el aviso 🛡; si solo estaba pidiendo, cuenta como crimen normal. Las armas siguen siendo solo de Libre.
 - Sin datos de dirección: Energy Disco (Carovení Viejo), Tequila, Panza Drink's y **La Librería** (no apareció en la web).
+
+## Notas de puesta al día (15/11/2026)
+
+- **Guardado de Historia:** `VR.store.PROG` (`core.js`) = `pos:`, `dest:`, `plata`, `ropa:mia`, `look:propio`, `pj`, `vida`, `mis` (las misiones; la lista de 6.18 no lo nombraba). Fuera de `VR.store` quedan en `localStorage` las fotos del celular (`celapps.js`), `vr_zoom`, `vr_culebra` y `cisne:record`: no son progreso y no viajan entre dispositivos.
+- **Online:** `VR.FB` (`online.js`) usa Firestore solo para la cartelera de salas (colección `villarrica_salas`, sin Auth). Online siempre en Libre.
+- **Mbohasa:** botón *Saltear viaje* y conducción en carril derecho que adelanta (`5aa5825`); detalle en `claude/mbohasa-conduccion-estado.md`.
+- **Historia sin armas:** `weapons.js` fuerza apagado en Historia; `shell.html` oculta DISPARAR y las opciones de armas del menú Desarrollador.
+- **Guirnaldas del Centro:** los focos se apagan de día y prenden de noche (`3fef876`).
