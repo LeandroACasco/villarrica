@@ -792,7 +792,7 @@
   const ctrl = mis ? new VR.Controles({ world, lug: mis.lug, vida, toast }) : null;
   if (mis) {
     mis.prestaMoto = () => { if (mis.motoK) return mis.motoK; const k = mis.dondeEsta('kike'); if (!k) return null; const p = mis.lug.libre(k.x + 34, k.y + 12), c = new VR.Car(world, p.x, p.y, 0, 4, 'moto', 'cub');
-      c.prestada = true; c.alq = vida.dia; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
+      c.prestada = true; c.mio = true; c.alq = vida.dia; // c.mio = «tenés la llave»: noRobar() la deja usar sin herramientas world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
     mis.quitaMoto = () => { const c = mis.motoK; if (!c) return; mis.motoK = null; world.removeBox(c); const i = cars.indexOf(c); if (i >= 0) cars.splice(i, 1); toast('🏍 Devolviste la moto de Kike'); };
   }
   // Mbohasa de verdad (12/11/2026): viene un conductor en moto o auto, te subís y te lleva por las calles (src/game/mbohasa.js)

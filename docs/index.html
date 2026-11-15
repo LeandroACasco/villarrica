@@ -414,7 +414,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 2d811848 · 2026-11-15</div>
+  <div class="tVer">Versión 5cf6e713 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -524,7 +524,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 2d811848 · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 5cf6e713 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -15625,7 +15625,7 @@ VR.Titulo = class {
   const ctrl = mis ? new VR.Controles({ world, lug: mis.lug, vida, toast }) : null;
   if (mis) {
     mis.prestaMoto = () => { if (mis.motoK) return mis.motoK; const k = mis.dondeEsta('kike'); if (!k) return null; const p = mis.lug.libre(k.x + 34, k.y + 12), c = new VR.Car(world, p.x, p.y, 0, 4, 'moto', 'cub');
-      c.prestada = true; c.alq = vida.dia; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
+      c.prestada = true; c.mio = true; c.alq = vida.dia; // c.mio = «tenés la llave»: noRobar() la deja usar sin herramientas world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
     mis.quitaMoto = () => { const c = mis.motoK; if (!c) return; mis.motoK = null; world.removeBox(c); const i = cars.indexOf(c); if (i >= 0) cars.splice(i, 1); toast('🏍 Devolviste la moto de Kike'); };
   }
   // Mbohasa de verdad (12/11/2026): viene un conductor en moto o auto, te subís y te lleva por las calles (src/game/mbohasa.js)
