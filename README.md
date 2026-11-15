@@ -27,3 +27,5 @@ python3 -m http.server -d docs 8000
 ## Documentación técnica
 
 Cómo está armado el juego y recetas para agregar cosas (vehículos, ropa, lugares, armas): [TECNICO.md](TECNICO.md).
+
+Visión, alcance, decisiones y estado actual por versión (hoy v1.76: modo Historia con misiones M1–M3, guardia de bomberos, inventario y buzón de mensajes): [DISENO.md](DISENO.md). Fichas de vehículos y armas: [VEHICULOS.md](VEHICULOS.md), [ARSENAL.md](ARSENAL.md).
