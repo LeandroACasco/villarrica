@@ -5,7 +5,7 @@ VR.Changas = class {
   constructor(o) { // o: { world, peds, setDest, toast, getCar, player }
     Object.assign(this, o); this.job = null; this.rnd = Math.random;
     this.hud = document.createElement('div'); this.hud.id = 'jobHud'; this.hud.hidden = true; document.body.append(this.hud);
-    this.d = VR.dlg('changasDlg', '<h2>📋 Changas</h2><div class="seg" style="flex-direction:column"><button data-k="delivery">🍦 Delivery de helados · en moto</button><button data-k="taxi">🚖 Taxista · te damos el taxi</button><button data-k="chipa">🥐 Vender chipa · a pie</button><button data-k="no">Dejar la changa</button></div><p class="hint">Delivery: retirá en la Heladería Marimer y llevá a tiempo. Taxista: te damos un taxi, buscá al cliente y dejalo en el círculo; si chocás, paga la mitad. Chipa: acercate a la gente y ACCIÓN.</p><div class="seg"><button data-k="x">Cerrar</button></div>');
+    this.d = VR.dlg('changasDlg', '<h2>📋 Changas</h2><div class="seg" style="flex-direction:column"><button data-k="delivery">🍦 Delivery de helados · en moto</button><button data-k="taxi">🚖 Taxista · te damos el taxi</button><button data-k="chipa">🥐 Vender chipa · a pie</button><button data-k="guardia">🚒 Guardia en el cuartel · bomberos</button><button data-k="no">Dejar la changa</button></div><p class="hint">Delivery: retirá en la Heladería Marimer y llevá a tiempo. Taxista: te damos un taxi, buscá al cliente y dejalo en el círculo; si chocás, paga la mitad. Chipa: acercate a la gente y ACCIÓN.</p><div class="seg"><button data-k="x">Cerrar</button></div>');
     this.d.querySelectorAll('button').forEach((b) => b.onclick = () => { const k = b.dataset.k; this.d.close(); VR.input.enabled = true; if (k !== 'x') this.start(k); });
     this.lbl = {}; this.d.querySelectorAll('[data-k]').forEach((b) => { this.lbl[b.dataset.k] = b.textContent; });
     const m = (this.world.labels || []).find((l) => /Marimer/.test(l.text)); this.helad = m ? { x: m.x, y: m.y + 30, name: 'Heladería Marimer' } : null;
@@ -46,7 +46,8 @@ VR.Changas = class {
   }
   start(k, force) { // force: la empieza una misión (sin mirar si está abierta)
     const car = this.getCar(), p = this.player;
-    if (k === 'no') { this.end('Dejaste la changa'); return; }
+    if (k === 'no') { if (VR.guardia && VR.guardia.job) VR.guardia.abort('Dejaste la guardia'); this.end('Dejaste la changa'); return; }
+    if (k === 'guardia') { if (VR.guardia) VR.guardia.start(); else this.toast('🔒 La guardia es solo en el modo Historia'); return; }
     if (VR.mis && !force && !VR.mis.changaOk(k)) { this.toast('🔒 Esta changa se abre con las misiones (📌 Pausa → Misiones)'); return; }
     if (VR.mis && !VR.Barrios.enPunto(this.world, (car || p).x, (car || p).y)) { this.toast('🔒 ' + VR.Barrios.CARTEL + ': acá no hay changas todavía'); return; }
     if (VR.vida && k !== 'chipa' && !VR.vida.saldoOk()) { this.toast('📱 Sin saldo no te llegan changas por la app. Cargá saldo (solo la chipa se hace en persona)'); return; }

@@ -460,7 +460,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión cbf4c766 · 2026-11-15</div>
+  <div class="tVer">Versión 24e6dfa7 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -575,7 +575,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión cbf4c766 · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 24e6dfa7 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -9562,7 +9562,7 @@ VR.Changas = class {
   constructor(o) { // o: { world, peds, setDest, toast, getCar, player }
     Object.assign(this, o); this.job = null; this.rnd = Math.random;
     this.hud = document.createElement('div'); this.hud.id = 'jobHud'; this.hud.hidden = true; document.body.append(this.hud);
-    this.d = VR.dlg('changasDlg', '<h2>📋 Changas</h2><div class="seg" style="flex-direction:column"><button data-k="delivery">🍦 Delivery de helados · en moto</button><button data-k="taxi">🚖 Taxista · te damos el taxi</button><button data-k="chipa">🥐 Vender chipa · a pie</button><button data-k="no">Dejar la changa</button></div><p class="hint">Delivery: retirá en la Heladería Marimer y llevá a tiempo. Taxista: te damos un taxi, buscá al cliente y dejalo en el círculo; si chocás, paga la mitad. Chipa: acercate a la gente y ACCIÓN.</p><div class="seg"><button data-k="x">Cerrar</button></div>');
+    this.d = VR.dlg('changasDlg', '<h2>📋 Changas</h2><div class="seg" style="flex-direction:column"><button data-k="delivery">🍦 Delivery de helados · en moto</button><button data-k="taxi">🚖 Taxista · te damos el taxi</button><button data-k="chipa">🥐 Vender chipa · a pie</button><button data-k="guardia">🚒 Guardia en el cuartel · bomberos</button><button data-k="no">Dejar la changa</button></div><p class="hint">Delivery: retirá en la Heladería Marimer y llevá a tiempo. Taxista: te damos un taxi, buscá al cliente y dejalo en el círculo; si chocás, paga la mitad. Chipa: acercate a la gente y ACCIÓN.</p><div class="seg"><button data-k="x">Cerrar</button></div>');
     this.d.querySelectorAll('button').forEach((b) => b.onclick = () => { const k = b.dataset.k; this.d.close(); VR.input.enabled = true; if (k !== 'x') this.start(k); });
     this.lbl = {}; this.d.querySelectorAll('[data-k]').forEach((b) => { this.lbl[b.dataset.k] = b.textContent; });
     const m = (this.world.labels || []).find((l) => /Marimer/.test(l.text)); this.helad = m ? { x: m.x, y: m.y + 30, name: 'Heladería Marimer' } : null;
@@ -9603,7 +9603,8 @@ VR.Changas = class {
   }
   start(k, force) { // force: la empieza una misión (sin mirar si está abierta)
     const car = this.getCar(), p = this.player;
-    if (k === 'no') { this.end('Dejaste la changa'); return; }
+    if (k === 'no') { if (VR.guardia && VR.guardia.job) VR.guardia.abort('Dejaste la guardia'); this.end('Dejaste la changa'); return; }
+    if (k === 'guardia') { if (VR.guardia) VR.guardia.start(); else this.toast('🔒 La guardia es solo en el modo Historia'); return; }
     if (VR.mis && !force && !VR.mis.changaOk(k)) { this.toast('🔒 Esta changa se abre con las misiones (📌 Pausa → Misiones)'); return; }
     if (VR.mis && !VR.Barrios.enPunto(this.world, (car || p).x, (car || p).y)) { this.toast('🔒 ' + VR.Barrios.CARTEL + ': acá no hay changas todavía'); return; }
     if (VR.vida && k !== 'chipa' && !VR.vida.saldoOk()) { this.toast('📱 Sin saldo no te llegan changas por la app. Cargá saldo (solo la chipa se hace en persona)'); return; }
@@ -9939,7 +9940,7 @@ VR.Misiones = class {
   get paso() { const m = this.mision; return m && m.pasos[this.s.act.paso]; }
   get vars() { return this.s.act ? this.s.act.v : {}; }
   hecha(id) { return this.s.hechas.includes(id); }
-  changaOk(k) { const P = this.paso; return this.s.changas.includes(k) || !!(P && P.changa === k); } // abierta, o la usa el paso actual
+  changaOk(k) { const P = this.paso; return this.s.changas.includes(k) || (k === 'guardia' && this.hecha('m3')) || !!(P && P.changa === k); } // abierta, o la usa el paso actual
   // ---- personajes ----
   npcLook(k) { const P = VR.PERSONAJES[k]; if (!this.npcs[k]) this.npcs[k] = VR.av2Lazy(P.look); return this.npcs[k]; }
   dondeEsta(k) { const a = this.s.act, mv = a && a.v.pos && a.v.pos[k]; const P = VR.PERSONAJES[k]; const l = mv || (P && P.lugar); return l ? this.lug.get(l) : null; }
@@ -10131,7 +10132,7 @@ VR.Misiones = class {
   saltar() { if (this.s.act && !VR.Dialogo.abierto) { this._dlgPend = null; this.siguiente(); } }
 };
 VR.CAPITULOS = { 1: "Pirapire'ỹ", 2: "Ñamopu'ã", 3: 'Tape pyahu', 4: "Mba'apo" };
-VR.CHANGA_NOMBRE = { chipa: 'vender chipa', delivery: 'delivery de helados', taxi: 'taxista' };
+VR.CHANGA_NOMBRE = { guardia: 'guardia en el cuartel', chipa: 'vender chipa', delivery: 'delivery de helados', taxi: 'taxista' };
 
 // ======================================================================================================
 // Misiones (datos). Diálogos en jopara de ejemplo: los revisa Leandro con el equipo antes de dejarlos fijos.
@@ -10240,7 +10241,7 @@ VR.MISIONES = {
           M.vida.mueve(pago, 'Premio de los bomberos (Benítez)'); VR.pastizal.limpiar();
           M.toast('🚒 Benítez te dio ' + VR.fmtGs(pago) + (dmg > 5 ? ' (descontó los golpes al camión)' : ' · ¡camión impecable!')); } },
     ],
-    premio: { barrios: ['Yvaroty'], texto: 'El barrio Yvaroty ya está abierto en el mapa. Los bomberos te deben una.' },
+    premio: { barrios: ['Yvaroty'], changas: ['guardia'], texto: 'El barrio Yvaroty ya está abierto en el mapa y Benítez te ofrece la guardia en el cuartel (📋 Changas). Los bomberos te deben una.' },
   },
 };
 
@@ -14865,7 +14866,7 @@ VR.Stats = {
 };
 VR.Buzon = {
   s: null,
-  PERS: { kike: ['Kike', '🏍'], mirta: ['Mirta (Ao Porã)', '🪖'], sis: ['Aviso', '📣'] },
+  PERS: { kike: ['Kike', '🏍'], mirta: ['Mirta (Ao Porã)', '🪖'], sis: ['Aviso', '📣'], benitez: ['Suboficial Benítez', '🚒'] },
   load() { if (!this.s) this.s = Object.assign({ msgs: [], dia: 0 }, VR.store.get('buzon', null) || {}); return this.s; },
   save() { if (!VR.wiped) VR.store.set('buzon', this.s); },
   add(de, txt, vida) { const s = this.load(), p = this.PERS[de] || [de, '💬'];
@@ -14944,6 +14945,120 @@ VR.Pastizal = class {
           g.fillStyle = '#e8421a'; g.fillRect(fx - 2, y - h, 4, h); g.fillStyle = '#ffa52a'; g.fillRect(fx - 1, y - h * 0.7, 3, h * 0.7); g.fillStyle = '#fff1a8'; g.fillRect(fx, y - h * 0.38, 1, h * 0.38); }
         if ((c.ph * 7 | 0) % 3 === 0) { const u = (t * 12 + c.ph * 5) % 16; g.fillStyle = 'rgba(70,70,74,' + (0.3 * (1 - u / 16)) + ')'; g.fillRect(x - 2 + Math.sin(u * 0.5 + c.ph) * 3, y - 12 - u, 5, 4); }
       } }); }
+  }
+};
+
+// ===== game/guardia.js =====
+// Guardia en el cuartel (J5, después de M3): changa diaria de los bomberos voluntarios. Un turno = 3 avisos por radio con códigos 10 en orden
+// al azar: incendio de pastizal (10-70, camión bomba y cañón), herido con camilla (10-50/10-52, ambulancia al hospital) y gato en un árbol
+// (camión, frená al lado). Vehículos prestados (sin estrellas). Se cobra al volver al cuartel: lo ganado menos los golpes. Un turno por día.
+'use strict';
+VR.Guardia = class {
+  // o: { world, peds, changas, mis, vida, setDest, toast, getCar, player, cars }
+  constructor(o) { Object.assign(this, o); this.job = null; this.rnd = Math.random; }
+  static get VALOR() { return { fuego: 36000, herido: 34000, gato: 10000 }; }
+  hechoHoy() { const k = VR.store.get('guardia', null); return !!(k && k.dia === this.vida.dia); }
+  abierta() { return this.mis.hecha('m3'); }
+  cuartel() { return this.mis.lug.get('cuartel'); }
+  start() {
+    const M = this.mis, car = this.getCar(), f = car || this.player, cu = this.cuartel();
+    if (!this.abierta()) { this.toast('🔒 La guardia se abre al terminar «Tata!» con Benítez'); return; }
+    if (this.job) { this.toast('🚒 Ya estás de guardia'); return; }
+    if (M.s.act || (this.changas.job)) { this.toast('Terminá primero la misión o changa en curso'); return; }
+    if (this.hechoHoy()) { this.toast('🚒 Hoy ya hiciste tu turno de guardia. Volvé mañana'); return; }
+    if (!cu || Math.hypot(f.x - cu.x, f.y - cu.y) > 450) { this.toast('🚒 Presentate en el cuartel de bomberos (Plaza Pettirossi) para empezar la guardia'); return; }
+    const o = ['fuego', 'herido', 'gato']; for (let i = 2; i > 0; i--) { const j = (this.rnd() * (i + 1)) | 0; [o[i], o[j]] = [o[j], o[i]]; }
+    this.job = { fase: 'espera', t: 0, orden: o, i: 0, av: null, gan: 0, dmg: 0, res: [], prest: [], was: false, prev: 0, dk: '' };
+    this.mis.cartel('🚒 GUARDIA', 'Turno de bomberos · esperá la radio');
+    this.toast('🚒 Guardia en el cuartel: esperá el aviso por radio (3 avisos)');
+  }
+  abort(msg) { if (!this.job) return; this.limpia(); if (msg) this.toast(msg); }
+  limpia() {
+    const J = this.job; if (!J) return;
+    for (const c of J.prest) { c.mio = false; c.prestada = false; }
+    if (VR.pastizal) VR.pastizal.limpiar(); this.job = null; this.setDest(null); this.changas.hud.hidden = true;
+  }
+  presta(model) {
+    let c = this.cars.find((x) => x.firehouse && x.model === model && !x.wreck);
+    if (!c) { const cu = this.cuartel(), p = this.mis.lug.libre(cu.x, cu.y + 60); c = new VR.Car(this.world, p.x, p.y, Math.PI, 0, 'car', model); c.firehouse = true; this.cars.push(c); this.world.addBox(c); }
+    c.mio = true; c.prestada = true; if (!this.job.prest.includes(c)) this.job.prest.push(c); return c;
+  }
+  spot(a, b) { const cu = this.cuartel(); return this.changas.spot(a, b, cu) || { x: cu.x + 320, y: cu.y + 40, name: 'el barrio' }; }
+  llamar() {
+    const J = this.job, tipo = J.orden[J.i], cu = this.cuartel(), pz = VR.pastizal; let A, msg, sub;
+    if (tipo === 'fuego') { pz.limpiar(); pz.empezar(); const c = pz.centro(); A = { tipo, x: c.x, y: c.y, name: 'el parque Ykua Pytã', veh: 'bomba', est: 'ir' }; msg = '10-70: incendio de pastizal en el parque Ykua Pytã. ¡Salga el camión!'; sub = '10-70 · Pastizal en el parque'; }
+    else if (tipo === 'herido') { const s = this.spot(500, 1500); A = { tipo, x: s.x, y: s.y, name: s.name, veh: 'ambulancia', est: 'ir', pal: (this.rnd() * 32) | 0, salud: 100, prog: 0 }; msg = '10-50 sobre ' + s.name + ': persona herida. 10-52, ¡salga la ambulancia!'; sub = '10-50 · Herido en ' + s.name; }
+    else { const s = this.spot(400, 1300); A = { tipo, x: s.x, y: s.y, name: s.name, veh: 'bomba', est: 'ir', prog: 0 }; msg = 'Asistencia en ' + s.name + ': una señora pide ayuda, el gato no baja del árbol.'; sub = 'Asistencia · Gato en el árbol'; }
+    J.av = A; J.fase = 'aviso'; J.t = 0; J.dk = ''; this.presta(A.veh);
+    this.mis.cartel('📻 ' + A.veh.toUpperCase().replace('AMBULANCIA', 'AMBULANCIA').replace('BOMBA', 'CAMIÓN'), sub);
+    this.toast('📻 Central a Unidad 2: ' + msg + ' (10-76 en camino)');
+  }
+  cierra(ok, txt) {
+    const J = this.job, A = J.av, V = Math.round(VR.Guardia.VALOR[A.tipo] * (ok ? (A.tipo === 'herido' ? Math.max(0.5, A.salud / 100) : 1) : 0));
+    J.gan += V; J.res.push(V); J.av = null; J.i++; J.fase = J.i >= 3 ? 'fin' : 'espera'; J.t = 0; J.dk = ''; this.setDest(null);
+    if (VR.pastizal && A.tipo === 'fuego' && !ok) VR.pastizal.limpiar();
+    this.toast((ok ? '✅ ' : '❌ ') + txt + (ok ? ' · +' + VR.fmtGs(V) + ' (se cobra al volver al cuartel)' : ''));
+    if (J.i < 3 && ok) this.toast('📻 10-8: Unidad disponible. Esperá el próximo aviso');
+  }
+  dest(x, y, name) { const k = (x | 0) + ',' + (y | 0); if (this.job.dk === k) return; this.job.dk = k; this.setDest({ x, y, name }); }
+  update(dt) {
+    const J = this.job; if (!J) return; if (this.mis.s.act) { this.abort('Se cortó la guardia: empezó una misión'); return; }
+    const car = this.getCar(), f = car || this.player, cu = this.cuartel(), pz = VR.pastizal, A = J.av; J.t += dt; let hud = '';
+    const slow = (c, n) => !c || Math.abs(c.v) < n;
+    if (J.fase === 'espera') { if (J.t > (J.i ? 7 : 8)) this.llamar(); hud = '🚒 Guardia · esperando la radio · aviso ' + (J.i + 1) + '/3 · ya sumás ' + VR.fmtGs(J.gan); }
+    else if (J.fase === 'aviso' && A) {
+      const nom = A.veh === 'bomba' ? 'el camión bomba' : 'la ambulancia', v = this.presta(A.veh), en = !!(car && car.model === A.veh);
+      if (!en) { J.was = false; this.dest(v.x, v.y, nom); hud = '🚒 Subite a ' + nom + (Math.hypot(f.x - v.x, f.y - v.y) < 80 ? ' (acercate y entrá)' : ' · seguí el GPS'); }
+      else {
+        if (J.was) J.dmg += Math.max(0, J.prev - (car.hp ?? 100)); J.was = true; J.prev = car.hp ?? 100;
+        const d = Math.hypot(car.x - A.x, car.y - A.y);
+        if (A.tipo === 'fuego') {
+          this.dest(A.x, A.y, 'Incendio en el parque');
+          if (A.est === 'ir') { hud = '🔥 10-70 · Andá al parque (sirena: tocá ACCIÓN)'; if (d < 260) { A.est = 'apagar'; this.toast('🔥 ¡Mantené ACCIÓN para el cañón de agua!'); } }
+          if (A.est === 'apagar') {
+            hud = '🔥 ¡Apagá el fuego! Mantené ACCIÓN · focos: ' + pz.ardiendo + ' · no dejes que llegue a la glorieta';
+            if (pz.enGlorieta()) this.cierra(false, 'El fuego llegó a la glorieta'); else if (pz.quemadas > pz.limite) this.cierra(false, 'Se quemó medio parque'); else if (pz.ardiendo === 0) this.cierra(true, '¡Apagaste el incendio!');
+          }
+        } else if (A.tipo === 'gato') {
+          this.dest(A.x, A.y, 'Gato en el árbol'); hud = '🐈 Asistencia · llegá y frená al lado del árbol';
+          if (d < 60 && slow(car, 20)) { A.prog += dt / 3; hud = '🐈 Subiendo la escalera... ' + Math.min(100, Math.round(A.prog * 100)) + '%'; if (A.prog >= 1) this.cierra(true, '¡El gato bajó! La señora te agradece'); } else A.prog = Math.max(0, A.prog - dt * 0.5);
+        } else if (A.est === 'ir') {
+          this.dest(A.x, A.y, 'Herido'); hud = '🚑 10-50 · Llegá al herido y frená al lado';
+          if (d < 60 && slow(car, 20)) { A.prog += dt / 3.5; hud = '🛏 Cargando la camilla... ' + Math.min(100, Math.round(A.prog * 100)) + '%'; if (A.prog >= 1) { A.est = 'llevar'; A.prev = car.hp ?? 100; this.toast('🛏 Herido a bordo. 10-76 al Hospital Regional: manejá suave'); } } else A.prog = Math.max(0, A.prog - dt * 0.5);
+        } else {
+          const h = this.mis.lug.get('hospital'); A.salud -= dt * 0.9 + Math.max(0, A.prev - (car.hp ?? 100)) * 3; A.prev = car.hp ?? 100; if (h) this.dest(h.x, h.y, 'Hospital Regional');
+          hud = '🚑 Llevalo al Hospital Regional · estado del herido ' + Math.max(0, Math.round(A.salud)) + '%';
+          if (A.salud <= 0) this.cierra(false, 'El herido no llegó a tiempo');
+          else if (h && Math.hypot(car.x - h.x, car.y - h.y) < 70 && slow(car, 25)) this.cierra(true, 'Entregaste al herido en el hospital (' + Math.round(A.salud) + '% de estado)');
+        }
+      }
+    } else if (J.fase === 'fin') {
+      this.dest(cu.x, cu.y, 'Cuartel de bomberos'); hud = '🚒 10-8: volvé al cuartel y entregá el vehículo · acumulado ' + VR.fmtGs(J.gan);
+      if (Math.hypot(f.x - cu.x, f.y - cu.y) < 90 && slow(car, 45) && (!car || car.prestada)) this.termina();
+    }
+    if (this.job && (this.hT = (this.hT || 0) - dt) < 0) { this.hT = 0.2; this.changas.hud.hidden = false; this.changas.hud.textContent = hud; }
+  }
+  termina() {
+    const J = this.job, V = this.vida, pen = Math.min(Math.round(J.gan * 0.4), Math.round(J.dmg) * 1500), pago = Math.max(0, J.gan - pen);
+    if (pago > 0) V.mueve(pago, 'Guardia en el cuartel (Benítez)');
+    VR.store.set('guardia', { dia: V.dia });
+    const ok = J.res.filter((x) => x > 0).length;
+    if (VR.Buzon) VR.Buzon.add('benitez', ok === 3 ? 'Muy bien la guardia de hoy, ' + 'los tres avisos resueltos. Aguyje.' : ok ? 'Gracias por la guardia: resolviste ' + ok + ' de 3 avisos. Mañana otra vez.' : 'Hoy no fue tu día, pero gracias por presentarte. Mañana otra vez.', V);
+    this.toast('🚒 Guardia terminada: ' + ok + '/3 avisos · cobraste ' + VR.fmtGs(pago) + (pen ? ' (descontados ' + VR.fmtGs(pen) + ' por golpes)' : ''));
+    this.limpia();
+  }
+  drawGround(g, cx, cy) {
+    const J = this.job, A = J && J.av; if (!A || A.tipo === 'fuego' || A.est === 'llevar') return; const x = A.x - cx, y = A.y - cy, t = performance.now() / 1000, r = 24 + Math.sin(t * 4) * 2;
+    g.save(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,90,60,.95)'; g.fillStyle = 'rgba(255,90,60,.18)'; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.stroke(); g.restore();
+  }
+  collect(cx, cy, tall) {
+    const J = this.job, A = J && J.av; if (!A || (A.tipo !== 'herido' && A.tipo !== 'gato') || A.est === 'llevar') return; const x = Math.round(A.x - cx), y = Math.round(A.y - cy), P = this.peds;
+    tall.push({ sy: A.y + 6, draw: (g) => {
+      const b = Math.sin(performance.now() / 150) * 2; g.font = '14px system-ui'; g.textAlign = 'center';
+      if (A.tipo === 'herido' && P && P.sprites) { const spr = P.sprites[A.pal % P.sprites.length]; g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x, y, 11, 4, 0, 0, 7); g.fill(); g.drawImage(VR.lyingCanvas(spr), x - 17, y - 11, 34, 18); g.fillText('🆘', x, y - 16 + b); }
+      else { g.fillText('🌳', x, y - 6); g.fillText('🐈', x + 4, y - 18 + b); }
+      if (A.prog > 0 && A.prog < 1) { g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(x - 14, y - 32, 28, 5); g.fillStyle = '#6fe08a'; g.fillRect(x - 13, y - 31, 26 * A.prog, 3); }
+    } });
   }
 };
 
@@ -15610,7 +15725,7 @@ VR.Titulo = class {
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
-    changas.update(dt);
+    changas.update(dt); if (VR.guardia) VR.guardia.update(dt);
     if (vida) { player.setCasco(vida.cascoPuesto); if (pj && pj._cp !== vida.cascoPuesto) { pj._cp = vida.cascoPuesto; pj.icono(); } } if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car); if (pz) pz.update(dt, player, car);
     syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
@@ -15658,7 +15773,7 @@ VR.Titulo = class {
     ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
     world.draw(ctx, cx, cy, sw, sh);
     world.warm(cx, cy, sw, sh);
-    changas.drawGround(ctx, cx, cy);
+    changas.drawGround(ctx, cx, cy); if (VR.guardia) VR.guardia.drawGround(ctx, cx, cy);
     if (mis) mis.drawGround(ctx, cx, cy);
     // cosas altas y personajes ordenados por profundidad
     tall.length = 0;
@@ -15667,7 +15782,7 @@ VR.Titulo = class {
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { player.draw(c, cx, cy, a); if (weapons && !player.rag) weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); if (ctrl) ctrl.collect(cx, cy, tall); if (pz) pz.collect(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (VR.guardia) VR.guardia.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); if (ctrl) ctrl.collect(cx, cy, tall); if (pz) pz.collect(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (chespis) chespis.collect(cx, cy, sw, sh, a, tall);
     if (escena) escena.collect(cx, cy, sw, sh, tall);
@@ -16028,7 +16143,9 @@ VR.Titulo = class {
   // ---- misiones de la Historia (J2) ----
   VR.myLook = () => player.lookData;
   const showBanner = (chico, grande, sub) => { const bn = $('banner'); bn.innerHTML = '<small>' + chico + '</small>' + grande + (sub ? '<small class="sub">' + sub + '</small>' : ''); bn.classList.add('show'); clearTimeout(bn._h); bn._h = setTimeout(() => bn.classList.remove('show'), 2800); };
+  VR.guardia = null;
   const mis = VR.mis = vida ? new VR.Misiones({ world, player, toast, setDest, getCar: () => car, vida, changas, banner: showBanner }) : null;
+  if (mis) VR.guardia = new VR.Guardia({ world, peds, changas, mis, vida, setDest, toast, getCar: () => car, player, cars });
   // J4: la moto de Kike (prestada o alquilada) y los controles de tránsito
   const ctrl = mis ? new VR.Controles({ world, lug: mis.lug, vida, toast }) : null;
   const pz = VR.pastizal = mis ? new VR.Pastizal({ world, hurt: (n) => hurtPlayer(n), toast }) : null;

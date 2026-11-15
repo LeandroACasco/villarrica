@@ -719,3 +719,7 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 ## v1.75 — Pastizal (M3)
 - `src/game/pastizal.js` `VR.Pastizal`: celdas = tiles GRASS/TREE; propagación cada 0.5 s (p=0.125 por vecino, sesgo de viento, x0.18 si el jugador está a >1800 px), cada celda arde 11–18 s y queda ceniza; `mojar(x,y,dt)` lo llama la partícula 'water' de emerg.js. `origen()` busca pasto denso ~26 tiles al este de la glorieta; `enGlorieta()` radio = min(w,h)*8+4.
 - `VR.MISIONES.m3`, `Misiones.accion/rifaAccion`, `mis.prestaCamion()` (marca `mio`+`prestada`; `emer.stolen` ignora `prestada`), Lugares.base `'fuego'`. Cadena de ACCIÓN en main.js: `mis.accion` antes de `changas.action`.
+
+## v1.76 — Guardia
+- `src/game/guardia.js` `VR.Guardia` (instancia `VR.guardia`, solo Historia): fases espera → aviso → fin. Usa `changas.hud`, `changas.spot`, `mis.lug`, `VR.pastizal` y vehículos `firehouse` (`presta(model)` marca `mio`+`prestada`, los suelta en `limpia()`; no usar `mis.prestaCamion`, que lo resetea Misiones.update). Anti-doble: `VR.store 'guardia' {dia}`.
+- Engancha: `Changas.start('guardia')` delega; `Misiones.changaOk('guardia')` = M3 hecha; update/drawGround/collect en el bucle de main.js. Buzón: `PERS.benitez`.

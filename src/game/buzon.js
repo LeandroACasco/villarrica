@@ -15,7 +15,7 @@ VR.Stats = {
 };
 VR.Buzon = {
   s: null,
-  PERS: { kike: ['Kike', '🏍'], mirta: ['Mirta (Ao Porã)', '🪖'], sis: ['Aviso', '📣'] },
+  PERS: { kike: ['Kike', '🏍'], mirta: ['Mirta (Ao Porã)', '🪖'], sis: ['Aviso', '📣'], benitez: ['Suboficial Benítez', '🚒'] },
   load() { if (!this.s) this.s = Object.assign({ msgs: [], dia: 0 }, VR.store.get('buzon', null) || {}); return this.s; },
   save() { if (!VR.wiped) VR.store.set('buzon', this.s); },
   add(de, txt, vida) { const s = this.load(), p = this.PERS[de] || [de, '💬'];

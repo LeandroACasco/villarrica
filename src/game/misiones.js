@@ -273,7 +273,7 @@ VR.Misiones = class {
   get paso() { const m = this.mision; return m && m.pasos[this.s.act.paso]; }
   get vars() { return this.s.act ? this.s.act.v : {}; }
   hecha(id) { return this.s.hechas.includes(id); }
-  changaOk(k) { const P = this.paso; return this.s.changas.includes(k) || !!(P && P.changa === k); } // abierta, o la usa el paso actual
+  changaOk(k) { const P = this.paso; return this.s.changas.includes(k) || (k === 'guardia' && this.hecha('m3')) || !!(P && P.changa === k); } // abierta, o la usa el paso actual
   // ---- personajes ----
   npcLook(k) { const P = VR.PERSONAJES[k]; if (!this.npcs[k]) this.npcs[k] = VR.av2Lazy(P.look); return this.npcs[k]; }
   dondeEsta(k) { const a = this.s.act, mv = a && a.v.pos && a.v.pos[k]; const P = VR.PERSONAJES[k]; const l = mv || (P && P.lugar); return l ? this.lug.get(l) : null; }
@@ -465,7 +465,7 @@ VR.Misiones = class {
   saltar() { if (this.s.act && !VR.Dialogo.abierto) { this._dlgPend = null; this.siguiente(); } }
 };
 VR.CAPITULOS = { 1: "Pirapire'ỹ", 2: "Ñamopu'ã", 3: 'Tape pyahu', 4: "Mba'apo" };
-VR.CHANGA_NOMBRE = { chipa: 'vender chipa', delivery: 'delivery de helados', taxi: 'taxista' };
+VR.CHANGA_NOMBRE = { guardia: 'guardia en el cuartel', chipa: 'vender chipa', delivery: 'delivery de helados', taxi: 'taxista' };
 
 // ======================================================================================================
 // Misiones (datos). Diálogos en jopara de ejemplo: los revisa Leandro con el equipo antes de dejarlos fijos.
@@ -574,7 +574,7 @@ VR.MISIONES = {
           M.vida.mueve(pago, 'Premio de los bomberos (Benítez)'); VR.pastizal.limpiar();
           M.toast('🚒 Benítez te dio ' + VR.fmtGs(pago) + (dmg > 5 ? ' (descontó los golpes al camión)' : ' · ¡camión impecable!')); } },
     ],
-    premio: { barrios: ['Yvaroty'], texto: 'El barrio Yvaroty ya está abierto en el mapa. Los bomberos te deben una.' },
+    premio: { barrios: ['Yvaroty'], changas: ['guardia'], texto: 'El barrio Yvaroty ya está abierto en el mapa y Benítez te ofrece la guardia en el cuartel (📋 Changas). Los bomberos te deben una.' },
   },
 };
 
