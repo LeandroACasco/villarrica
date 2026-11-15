@@ -14,5 +14,12 @@ VR.menuTabs = () => {
   const ir = (k) => { for (const b of bar.children) b.classList.toggle('on', b.dataset.t === k); for (const k2 in pan) pan[k2].hidden = k2 !== k; try { sessionStorage.setItem('villarrica:mt', k); } catch (e) { /* sin storage */ } };
   bar.onclick = (e) => { const b = e.target.closest('button'); if (b) ir(b.dataset.t); };
   let ini = 'juego'; try { ini = sessionStorage.getItem('villarrica:mt') || 'juego'; } catch (e) { /* sin storage */ } ir(pan[ini] ? ini : 'juego');
+  // personajes para elegir: cada botón de #segPj muestra al personaje (se redibuja al abrir la pestaña, por si cambió tu ropa)
+  const cartas = () => { const s = document.getElementById('segPj'); if (!s || !VR.av2Render || !VR.av2LookOf) return;
+    for (const b of s.querySelectorAll('button')) { let c = b.querySelector('canvas'); if (!c) { c = document.createElement('canvas'); c.width = 66; c.height = 100; b.prepend(c); }
+      try { const im = VR.av2Render(Object.assign({}, VR.AV2_DEFAULT, VR.av2LookOf(b.dataset.v)), 'down', 'idle', 0, 3), g = c.getContext('2d'), k = Math.min(c.width / im.width, c.height / im.height);
+        g.clearRect(0, 0, c.width, c.height); g.imageSmoothingEnabled = false; g.drawImage(im, (c.width - im.width * k) / 2, c.height - im.height * k, im.width * k, im.height * k); } catch (e) { /* sin vista previa */ } } };
+  bar.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && b.dataset.t === 'pers') cartas(); });
+  VR.menuCartas = cartas;
   VR.menuTab = ir;
 };

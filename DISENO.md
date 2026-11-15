@@ -526,3 +526,5 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 - **v1.70 · Avatar estilo GTA:** el botón del personaje pasó a un retrato redondo arriba a la izquierda (Historia) con barras de vida (❤) y hambre (🍽) debajo; parpadean en rojo si vida < 30 o hambre < 25. El retrato muestra el casco puesto. Tocarlo abre "Mi personaje". El panel de texto se corrió a su derecha. Pendiente: renovar pantalla de título/menú principal (Continuar con resumen, tarjetas, íconos de ajustes).
 
 - **v1.70b:** ajuste del HUD en teléfono (captura de Leandro): el panel de texto ya no tapa los botones (ancho máximo + puntos suspensivos), se sacó la barra de hambre en texto (salía como cuadraditos) y solo avisa "🍽 N%" si hambre < 25.
+
+- **v1.71:** Configuración con tamaño fijo (todas las pestañas igual de grandes, el contenido scrollea adentro) y selector de personaje con tarjetas que muestran a cada uno.

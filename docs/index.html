@@ -85,6 +85,10 @@
   .mtBar button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: inherit; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
   .mtBar button i { font-style: normal; font-size: 20px; } .mtBar button.on { background: #2f6fd6; border-color: #7fb0ff; color: #fff; }
   .mtPan[hidden] { display: none; }
+  #menu .dlg { height: min(88vh, 720px); overflow: hidden; } #menu .dlg > .mtCont { flex: 1 1 auto; min-height: 0; overflow: auto; touch-action: pan-y; } #menu .dlg > p { font-size: 11px; }
+  #segPj { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: none; border: 0; }
+  #segPj button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; height: auto; border-radius: 12px; border: 2px solid transparent; background: rgba(255,255,255,.07); color: inherit; }
+  #segPj button.on { border-color: #e8a840; background: rgba(232,168,64,.22); color: inherit; } #segPj canvas { width: 66px; height: 100px; image-rendering: pixelated; }
   /* Pausa: botones grandes en grilla */
   #pause .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; } #pause .row .btn { padding: 12px 8px; }
   #celDlg::backdrop { background: rgba(0,0,0,.45); }
@@ -440,7 +444,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 9874a9ee · 2026-11-15</div>
+  <div class="tVer">Versión 4e1db4f0 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -555,7 +559,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 9874a9ee · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 4e1db4f0 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -14886,6 +14890,13 @@ VR.menuTabs = () => {
   const ir = (k) => { for (const b of bar.children) b.classList.toggle('on', b.dataset.t === k); for (const k2 in pan) pan[k2].hidden = k2 !== k; try { sessionStorage.setItem('villarrica:mt', k); } catch (e) { /* sin storage */ } };
   bar.onclick = (e) => { const b = e.target.closest('button'); if (b) ir(b.dataset.t); };
   let ini = 'juego'; try { ini = sessionStorage.getItem('villarrica:mt') || 'juego'; } catch (e) { /* sin storage */ } ir(pan[ini] ? ini : 'juego');
+  // personajes para elegir: cada botón de #segPj muestra al personaje (se redibuja al abrir la pestaña, por si cambió tu ropa)
+  const cartas = () => { const s = document.getElementById('segPj'); if (!s || !VR.av2Render || !VR.av2LookOf) return;
+    for (const b of s.querySelectorAll('button')) { let c = b.querySelector('canvas'); if (!c) { c = document.createElement('canvas'); c.width = 66; c.height = 100; b.prepend(c); }
+      try { const im = VR.av2Render(Object.assign({}, VR.AV2_DEFAULT, VR.av2LookOf(b.dataset.v)), 'down', 'idle', 0, 3), g = c.getContext('2d'), k = Math.min(c.width / im.width, c.height / im.height);
+        g.clearRect(0, 0, c.width, c.height); g.imageSmoothingEnabled = false; g.drawImage(im, (c.width - im.width * k) / 2, c.height - im.height * k, im.width * k, im.height * k); } catch (e) { /* sin vista previa */ } } };
+  bar.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && b.dataset.t === 'pers') cartas(); });
+  VR.menuCartas = cartas;
   VR.menuTab = ir;
 };
 

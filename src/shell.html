@@ -85,6 +85,10 @@
   .mtBar button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: inherit; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
   .mtBar button i { font-style: normal; font-size: 20px; } .mtBar button.on { background: #2f6fd6; border-color: #7fb0ff; color: #fff; }
   .mtPan[hidden] { display: none; }
+  #menu .dlg { height: min(88vh, 720px); overflow: hidden; } #menu .dlg > .mtCont { flex: 1 1 auto; min-height: 0; overflow: auto; touch-action: pan-y; } #menu .dlg > p { font-size: 11px; }
+  #segPj { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: none; border: 0; }
+  #segPj button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; height: auto; border-radius: 12px; border: 2px solid transparent; background: rgba(255,255,255,.07); color: inherit; }
+  #segPj button.on { border-color: #e8a840; background: rgba(232,168,64,.22); color: inherit; } #segPj canvas { width: 66px; height: 100px; image-rendering: pixelated; }
   /* Pausa: botones grandes en grilla */
   #pause .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; } #pause .row .btn { padding: 12px 8px; }
   #celDlg::backdrop { background: rgba(0,0,0,.45); }
