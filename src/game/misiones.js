@@ -46,6 +46,7 @@ VR.Lugares = class {
       case 'aopora': return L(/Ao Por/, 26);
       case 'parque': return L(/Parque Manuel/);
       case 'cisnes': return L(/Paseo en cisne/);
+      case 'fuego': return VR.pastizal && VR.pastizal.centro(); // el pastizal que se prende en la misión M3
       case 'cuartel': return W.firehouse && { x: W.firehouse.x, y: W.firehouse.y + 20 };
       case 'catedral': return L(/^Catedral/, 30);
       case 'terminal': return L(/Terminal/);
@@ -85,7 +86,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { fuego: 'Incendio en el parque', mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus', teatro: 'Teatro Municipal', gom1: 'Gomería Aire Lindo', gom2: 'Gomería Pinchazo Feliz', taxihosp: 'Parada de taxis del Hospital' };
 
 // ---------------- barrios por historia ----------------
@@ -239,6 +240,26 @@ VR.Misiones = class {
     this.ox = 0;
   }
   save() { if (!VR.wiped) VR.store.set('mis', this.s); }
+  // ACCIÓN durante un paso que la usa (la rifa de M3): devuelve true si la consumió
+  accion(player) { const a = this.s.act, P = this.paso; return !!(a && !a.fallo && P && P.accion && P.accion(this, player)); }
+  // ofrecer una rifa a la persona más cercana: algunos compran, algunos regatean (hay que insistir) y otros no
+  rifaAccion(player) {
+    const v = this.vars.rifa; if (!v || v.v >= 10) return false;
+    if (this.getCar()) { this.toast('🚶 Bajate para ofrecer las rifas'); return true; }
+    const peds = VR.peds; if (!peds) return false;
+    const q = peds.greet(player.x, player.y); if (!q) { player.say('¡Rifa, rifa para los bomberos!', 1.6); return true; }
+    const di = (t) => { q.say = { text: t, t: 1.8 }; }, pick = (a) => a[(Math.random() * a.length) | 0];
+    if (q.rifa === 'vendida') { di('Ya te compré, po'); return true; }
+    if (q.rifa === 'no') { di(pick(['Nahániri', 'Ya dije que no', 'Otro día'])); return true; }
+    const zonas = ['plaza', 'marimer', 'parque'].map((k) => this.lug.get(k)).filter(Boolean);
+    if (!zonas.some((z) => Math.hypot(q.x - z.x, q.y - z.y) < 280)) { di('Ndaikuaái ndéve...'); if (!v.avZ) { v.avZ = 1; this.toast('🎟 Mejor ofrecelas en la plaza, la Marimer o el parque'); } return true; }
+    if (q.rifa === 'regatea' || Math.random() < 0.5) {
+      q.rifa = 'vendida'; v.v++; v.caja += 20000; di(pick(['¡Dame una!', 'Para los bomberos, dale', 'Hee, una rifa']));
+      if (VR.audio && VR.audio.coin) VR.audio.coin(); this.toast('🎟 Rifa vendida · ' + v.v + '/10'); this.save();
+    } else if (Math.random() < 0.4) { q.rifa = 'regatea'; di('¿No me hacés una rebajita?'); this.toast('🎟 Insistí: ACCIÓN otra vez'); }
+    else { q.rifa = 'no'; di(pick(['Nahániri', 'Otro día', 'Ya compré en otro lado'])); }
+    return true;
+  }
   // al cambiar el día: Kike cobra otro día de alquiler (si seguís con la moto) y recuerda las deudas, todo por mensaje
   chequeaDia() { const V = this.vida, B = VR.Buzon; if (!V || !B) return; const b = B.load();
     if (!b.dia) { b.dia = V.dia; B.save(); return; } if (V.dia === b.dia) return;
@@ -374,6 +395,7 @@ VR.Misiones = class {
   update(dt, player, car) {
     if (VR.Dialogo.abierto) return;
     this.chequeaDia();
+    if (this.camionK && !(this.s.act && this.s.act.id === 'm3')) { const c = this.camionK; c.mio = false; c.prestada = false; this.camionK = null; if (VR.pastizal) VR.pastizal.limpiar(); } // se acabó M3: el camión vuelve a ser de los bomberos
     if (this._dlgPend) { const f = this._dlgPend; this._dlgPend = null; f(); return; }
     if (this.bub) { this.bub.t -= dt; if (this.bub.t <= 0) this.bub = null; }
     const a = this.s.act, P = this.paso; if (!a || !P || a.fallo) { this.hud.hidden = true; return; }
@@ -519,6 +541,40 @@ VR.MISIONES = {
           M.toast(medio ? '🍦 Llegó medio derretido: te pagan la mitad' : '🍦 ¡Llegó perfecta! Pago completo'); const k = M.motoK; if (k) k.alq = V.dia; } },
     ],
     premio: { changas: ['delivery'], cap: 2, texto: 'Cobraste la entrega (menos los ' + VR.fmtGs(20000) + ' de la moto). Delivery de helados abierto (📋 Changas) y Kike te alquila su moto cuando quieras. Capítulo 2: Ñamopu\'ã.' },
+  },
+  // M3 «Tata!» (cap. 2, J5): las rifas del cuartel, el pastizal que se prende en el parque y el camión bomba prestado.
+  m3: {
+    titulo: 'Tata!', cap: 2, quien: 'benitez', req: { cap: 2, mis: ['m2'] }, desc: 'Los bomberos voluntarios necesitan plata para el combustible del camión: vendé sus rifas. Y cuidado con el pasto seco...',
+    oferta: [['benitez', "Ore ndorekói sueldo, ñande ha'e voluntario. Ko rifa ñanepytyvõ ñamyenyhẽ hag̃ua el tanque del camión."],
+      ['yo', '¿Y yo qué hago?'],
+      ['benitez', "Te doy diez números a " + VR.fmtGs(20000) + " cada uno. Los vendés en la plaza, la Marimer y el parque, y te quedás con " + VR.fmtGs(2000) + " por número. ¿Ajépa?"]],
+    fallaSi: { hospital: 'Te llevaron al hospital', explota: 'El camión explotó' },
+    pasos: [
+      { id: 'rifas', obj: 'Retirá las rifas con el Suboficial Benítez (cuartel de bomberos)', hablar: 'benitez', punto: true,
+        charla: [['benitez', 'Acá tenés los diez números. Hablales bien a la gente: es para los bomberos, po.'], ['yo', 'Dejá en mis manos.']],
+        alTerminar: (M) => { M.vars.rifa = { v: 0, caja: 0 }; M.toast('🎟 Tenés 10 rifas: ACCIÓN al lado de la gente (plaza, Marimer o parque)'); } },
+      { id: 'vender', obj: (M) => { const r = M.vars.rifa || { v: 0, caja: 0 }; return '🎟 Vendé las rifas en la plaza, la Marimer o el parque: ' + r.v + '/10 · recaudado ' + VR.fmtGs(r.caja); }, ir: 'plaza', punto: true,
+        accion: (M, pl) => M.rifaAccion(pl), cond: (M) => !!(M.vars.rifa && M.vars.rifa.v >= 10) },
+      { id: 'entregar', obj: 'Llevale la plata de las rifas a Benítez (cuartel)', hablar: 'benitez', punto: true,
+        charla: (M) => [['yo', 'Vendí las diez. Acá tenés ' + VR.fmtGs(M.vars.rifa ? M.vars.rifa.caja : 200000) + '.'], ['benitez', "¡Aguyje, che ra'a! Descontá tus " + VR.fmtGs(20000) + " de comisión. Con esto llenamos el tanque."]],
+        alTerminar: (M) => { M.vida.mueve(20000, 'Comisión por las rifas (10 × 2.000)'); } },
+      { id: 'camion', obj: '🚨 ¡Incendio en el parque! Subite al camión bomba (frente al cuartel)', ir: 'cuartel', punto: true,
+        dlg: [['benitez', '¡Tata oĩ Ykua Pytãme! Chofer… ¿moõpa oĩ? Nde, ¿remaneja kuaápa? ¡Jaha!'], ['yo', '¡Yo manejo! ¿Dónde está el camión?'], ['benitez', 'Ahí afuera. Tocá ACCIÓN para la sirena y mantené ACCIÓN para el cañón de agua. ¡Pya\'e!']],
+        alEmpezar: (M, re) => { const pz = VR.pastizal; if (!re || !pz.activo) { pz.limpiar(); pz.empezar(); } if (M.prestaCamion) M.prestaCamion(); if (!re) M.cartel('¡INCENDIO!', 'Pastizal en el parque Ykua Pytã'); },
+        cond: (M) => { const c = M.getCar(); return !!(c && c.model === 'bomba'); } },
+      { id: 'fuego', obj: '🔥 Llevá el camión al parque: el fuego está del lado este de la laguna', ir: 'fuego', r: 200,
+        alEmpezar: (M) => { const c = M.getCar(); M.vars.hp0 = c && c.hp != null ? c.hp : 100; },
+        cond: (M, f) => { const c = M.getCar(), t = M.lug.get('fuego'); return !!(c && c.model === 'bomba' && t && Math.hypot(f.x - t.x, f.y - t.y) < 260); } },
+      { id: 'apagar', obj: () => '🔥 ¡Apagá el fuego! Mantené ACCIÓN con el cañón · focos: ' + VR.pastizal.ardiendo + ' · no dejes que llegue a la glorieta',
+        tick: (M) => { const pz = VR.pastizal; if (!pz.activo || M.vars.fin) return; if (pz.enGlorieta()) { M.vars.fin = 1; M.fallar('El fuego llegó a la glorieta'); } else if (pz.quemadas > pz.limite) { M.vars.fin = 1; M.fallar('Se quemó medio parque'); } },
+        cond: () => VR.pastizal.activo && VR.pastizal.ardiendo === 0, alTerminar: (M) => { M.toast('🔥 ¡Apagaste el incendio! Ahora devolvé el camión al cuartel'); } },
+      { id: 'volver', obj: '🚒 Devolvé el camión bomba al cuartel sin chocarlo', ir: 'cuartel', r: 60,
+        cond: (M, f) => { const c = M.getCar(), t = M.lug.get('cuartel'); return !!(c && c.model === 'bomba' && t && Math.hypot(f.x - t.x, f.y - t.y) < 60 && Math.abs(c.v) < 45); },
+        alTerminar: (M) => { const c = M.getCar(), hp = c && c.hp != null ? c.hp : 100, dmg = Math.max(0, (M.vars.hp0 || hp) - hp), pago = Math.max(120000, 300000 - Math.round(dmg) * 4000);
+          M.vida.mueve(pago, 'Premio de los bomberos (Benítez)'); VR.pastizal.limpiar();
+          M.toast('🚒 Benítez te dio ' + VR.fmtGs(pago) + (dmg > 5 ? ' (descontó los golpes al camión)' : ' · ¡camión impecable!')); } },
+    ],
+    premio: { barrios: ['Yvaroty'], texto: 'El barrio Yvaroty ya está abierto en el mapa. Los bomberos te deben una.' },
   },
 };
 

@@ -375,12 +375,12 @@
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) { const no = noRobar(nc); if (no) toast(no); else enterCar(nc); } else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (nch) { chespis.talk(nch); return; } if (np) { VR.despensa.entrar(); return; } if (nme) { VR.mercado.entrar(); return; } if (nsu) { VR.super.abrir(nsu.id); return; } if (nbo) { if (VR.bolicheAbierto()) VR.boliche.abrir(nbo.id); else toast('🔒 ' + nbo.name + ': abre de noche'); return; } if (ns) { VR.tienda.entrar(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (nch) { chespis.talk(nch); return; } if (np) { VR.despensa.entrar(); return; } if (nme) { VR.mercado.entrar(); return; } if (nsu) { VR.super.abrir(nsu.id); return; } if (nbo) { if (VR.bolicheAbierto()) VR.boliche.abrir(nbo.id); else toast('🔒 ' + nbo.name + ': abre de noche'); return; } if (ns) { VR.tienda.entrar(); return; } if (mis && mis.accion(player)) {} else if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
-    if (vida) { player.setCasco(vida.cascoPuesto); if (pj && pj._cp !== vida.cascoPuesto) { pj._cp = vida.cascoPuesto; pj.icono(); } } if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
+    if (vida) { player.setCasco(vida.cascoPuesto); if (pj && pj._cp !== vida.cascoPuesto) { pj._cp = vida.cascoPuesto; pj.icono(); } } if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car); if (pz) pz.update(dt, player, car);
     syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
@@ -436,7 +436,7 @@
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { player.draw(c, cx, cy, a); if (weapons && !player.rag) weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); if (ctrl) ctrl.collect(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); if (ctrl) ctrl.collect(cx, cy, tall); if (pz) pz.collect(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (chespis) chespis.collect(cx, cy, sw, sh, a, tall);
     if (escena) escena.collect(cx, cy, sw, sh, tall);
@@ -800,9 +800,11 @@
   const mis = VR.mis = vida ? new VR.Misiones({ world, player, toast, setDest, getCar: () => car, vida, changas, banner: showBanner }) : null;
   // J4: la moto de Kike (prestada o alquilada) y los controles de tránsito
   const ctrl = mis ? new VR.Controles({ world, lug: mis.lug, vida, toast }) : null;
+  const pz = VR.pastizal = mis ? new VR.Pastizal({ world, hurt: (n) => hurtPlayer(n), toast }) : null;
   if (mis) {
     mis.prestaMoto = (r) => { if (mis.motoK) return mis.motoK; const k = r || mis.dondeEsta('kike'); if (!k) return null; const p = r ? { x: r.x, y: r.y } : mis.lug.libre(k.x + 34, k.y + 12), c = new VR.Car(world, p.x, p.y, 0, 4, 'moto', 'cub');
       c.prestada = true; c.mio = true; c.alq = vida.dia; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; if (r) c.a = c.pa = r.a || 0; else toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
+    mis.prestaCamion = () => { let c = cars.find((x) => x.firehouse && x.model === 'bomba'); if (!c) { const f = world.firehouse; if (!f) return null; const p = mis.lug.libre(f.x, f.y + 60); c = new VR.Car(world, p.x, p.y, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; cars.push(c); world.addBox(c); } c.mio = true; c.prestada = true; mis.camionK = c; return c; };
     mis.destActual = () => dest; mis.vehiculoMio = () => { const c = (!car && lastCar) || cars.find((x) => x.mio); if (!c) return null; const p = mis.lug.libre(c.x + 22, c.y + 6); return { x: p.x, y: p.y, name: 'tu vehículo' }; };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
     { const tp = mis.lug.get(VR.PUNTOS.taxihosp.lugar); if (tp) for (let i = 0; i < 2; i++) { const x = tp.x + i * 28 - 14, y = tp.y - 34, m = 'sedan', c = new VR.Car(world, x, y, Math.PI / 2, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); if (c.contacts && c.contacts(x, y, c.a)) continue; c.taxi = true; cars.push(c); world.addBox(c); } }

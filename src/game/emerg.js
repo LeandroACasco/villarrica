@@ -130,6 +130,7 @@ VR.Emergency = class {
     if (speed > 55) { p.injured = true; p.t = 40; this.dispatch('ambulancia', p); }
   }
   stolen(v) {
+    if (v.prestada) return; // un vehículo prestado en una misión (el camión bomba de Benítez) no es robo
     const e = v.spec.emer;
     if (v.unit) { v.unit.dead = true; v.unit = null; }
     if (e === 'policia') this.crime('robo_policia', 2, v.x, v.y, true);
@@ -424,6 +425,7 @@ VR.Emergency = class {
       if (p.k === 'debris' || p.k === 'fire') { p.vx *= Math.exp(-3 * dt); p.vy *= Math.exp(-3 * dt); }
       if (p.k === 'smoke') { p.r += dt * 5; p.vx *= Math.exp(-dt); }
       if (p.k === 'water') { // apaga lo que toca y voltea a la gente
+        if (VR.pastizal) VR.pastizal.mojar(p.x, p.y, dt);
         for (const v of this.burning) if (Math.abs(v.x - p.x) < v.WID && Math.abs(v.y - p.y) < v.LEN / 2) { v.wet = (v.wet || 0) + dt * 0.2; if (v.wet > 1.6) this.extinguish(v); }
         if (this.peds && this.rnd() < 0.3) for (const q of this.peds.list) if (q.mode !== 'down' && Math.abs(q.x - p.x) < 5 && Math.abs(q.y - 4 - p.y) < 7) { q.mode = 'down'; q.t = 1.4; q.vx = p.vx * 0.3; q.vy = p.vy * 0.3; }
       }

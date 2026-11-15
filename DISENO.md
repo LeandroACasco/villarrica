@@ -534,3 +534,8 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 - **v1.73:** botón de Inventario visible arriba (ícono de mochila en pixel art, `VR.drawMochilaIcon`); el inventario tiene tamaño fijo en todas las pestañas; en la Historia el personaje siempre lleva mochila puesta (`Player.setLook` fuerza `mochila:true`).
 
 - **v1.74 · Hospital:** las dos primeras visitas al Hospital Regional son gratis; desde la tercera el costo es aleatorio: 25% solo insumos (10–25 mil), 50% sin medicamentos (40–90 mil), 25% sin medicamentos + estudios en sanatorio privado (110–180 mil). `vida.atencion()` (cuenta en `s.hosp`) reemplaza al viejo precio fijo de 120.000 en desmayo, explosión y herida grave.
+
+### v1.75 — J5: M3 «Tata!» (rifas + incendio del parque)
+- Benítez (cuartel) te da 10 rifas a 20.000; las vendés a pie con ACCIÓN a la gente de la plaza, Marimer o parque (compra, regatea o rechaza; 2.000 de comisión por número).
+- Se entrega la plata, suena la alarma: pastizal en el parque Ykua Pytã (este de la laguna). Se maneja el camión bomba del cuartel (prestado: no da estrellas), cañón con ACCIÓN sostenida.
+- Si el fuego llega a la glorieta o se queman >140 celdas, falla (reintento en el checkpoint). Al devolver el camión al cuartel: 300.000 menos 4.000 por punto de daño (mín. 120.000). Abre el barrio Yvaroty.

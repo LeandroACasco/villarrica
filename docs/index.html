@@ -460,7 +460,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 9cadecb2 · 2026-11-15</div>
+  <div class="tVer">Versión cbf4c766 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -575,7 +575,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 9cadecb2 · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión cbf4c766 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -7904,6 +7904,7 @@ VR.Emergency = class {
     if (speed > 55) { p.injured = true; p.t = 40; this.dispatch('ambulancia', p); }
   }
   stolen(v) {
+    if (v.prestada) return; // un vehículo prestado en una misión (el camión bomba de Benítez) no es robo
     const e = v.spec.emer;
     if (v.unit) { v.unit.dead = true; v.unit = null; }
     if (e === 'policia') this.crime('robo_policia', 2, v.x, v.y, true);
@@ -8198,6 +8199,7 @@ VR.Emergency = class {
       if (p.k === 'debris' || p.k === 'fire') { p.vx *= Math.exp(-3 * dt); p.vy *= Math.exp(-3 * dt); }
       if (p.k === 'smoke') { p.r += dt * 5; p.vx *= Math.exp(-dt); }
       if (p.k === 'water') { // apaga lo que toca y voltea a la gente
+        if (VR.pastizal) VR.pastizal.mojar(p.x, p.y, dt);
         for (const v of this.burning) if (Math.abs(v.x - p.x) < v.WID && Math.abs(v.y - p.y) < v.LEN / 2) { v.wet = (v.wet || 0) + dt * 0.2; if (v.wet > 1.6) this.extinguish(v); }
         if (this.peds && this.rnd() < 0.3) for (const q of this.peds.list) if (q.mode !== 'down' && Math.abs(q.x - p.x) < 5 && Math.abs(q.y - 4 - p.y) < 7) { q.mode = 'down'; q.t = 1.4; q.vx = p.vx * 0.3; q.vy = p.vy * 0.3; }
       }
@@ -9710,6 +9712,7 @@ VR.Lugares = class {
       case 'aopora': return L(/Ao Por/, 26);
       case 'parque': return L(/Parque Manuel/);
       case 'cisnes': return L(/Paseo en cisne/);
+      case 'fuego': return VR.pastizal && VR.pastizal.centro(); // el pastizal que se prende en la misión M3
       case 'cuartel': return W.firehouse && { x: W.firehouse.x, y: W.firehouse.y + 20 };
       case 'catedral': return L(/^Catedral/, 30);
       case 'terminal': return L(/Terminal/);
@@ -9749,7 +9752,7 @@ VR.Lugares = class {
     return (this.c[key] = { x: p.x, y: p.y, name: VR.LUGAR_NOMBRE[nm] || this.world.placeName(p.x, p.y) || nm });
   }
 };
-VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
+VR.LUGAR_NOMBRE = { fuego: 'Incendio en el parque', mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
   parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus', teatro: 'Teatro Municipal', gom1: 'Gomería Aire Lindo', gom2: 'Gomería Pinchazo Feliz', taxihosp: 'Parada de taxis del Hospital' };
 
 // ---------------- barrios por historia ----------------
@@ -9903,6 +9906,26 @@ VR.Misiones = class {
     this.ox = 0;
   }
   save() { if (!VR.wiped) VR.store.set('mis', this.s); }
+  // ACCIÓN durante un paso que la usa (la rifa de M3): devuelve true si la consumió
+  accion(player) { const a = this.s.act, P = this.paso; return !!(a && !a.fallo && P && P.accion && P.accion(this, player)); }
+  // ofrecer una rifa a la persona más cercana: algunos compran, algunos regatean (hay que insistir) y otros no
+  rifaAccion(player) {
+    const v = this.vars.rifa; if (!v || v.v >= 10) return false;
+    if (this.getCar()) { this.toast('🚶 Bajate para ofrecer las rifas'); return true; }
+    const peds = VR.peds; if (!peds) return false;
+    const q = peds.greet(player.x, player.y); if (!q) { player.say('¡Rifa, rifa para los bomberos!', 1.6); return true; }
+    const di = (t) => { q.say = { text: t, t: 1.8 }; }, pick = (a) => a[(Math.random() * a.length) | 0];
+    if (q.rifa === 'vendida') { di('Ya te compré, po'); return true; }
+    if (q.rifa === 'no') { di(pick(['Nahániri', 'Ya dije que no', 'Otro día'])); return true; }
+    const zonas = ['plaza', 'marimer', 'parque'].map((k) => this.lug.get(k)).filter(Boolean);
+    if (!zonas.some((z) => Math.hypot(q.x - z.x, q.y - z.y) < 280)) { di('Ndaikuaái ndéve...'); if (!v.avZ) { v.avZ = 1; this.toast('🎟 Mejor ofrecelas en la plaza, la Marimer o el parque'); } return true; }
+    if (q.rifa === 'regatea' || Math.random() < 0.5) {
+      q.rifa = 'vendida'; v.v++; v.caja += 20000; di(pick(['¡Dame una!', 'Para los bomberos, dale', 'Hee, una rifa']));
+      if (VR.audio && VR.audio.coin) VR.audio.coin(); this.toast('🎟 Rifa vendida · ' + v.v + '/10'); this.save();
+    } else if (Math.random() < 0.4) { q.rifa = 'regatea'; di('¿No me hacés una rebajita?'); this.toast('🎟 Insistí: ACCIÓN otra vez'); }
+    else { q.rifa = 'no'; di(pick(['Nahániri', 'Otro día', 'Ya compré en otro lado'])); }
+    return true;
+  }
   // al cambiar el día: Kike cobra otro día de alquiler (si seguís con la moto) y recuerda las deudas, todo por mensaje
   chequeaDia() { const V = this.vida, B = VR.Buzon; if (!V || !B) return; const b = B.load();
     if (!b.dia) { b.dia = V.dia; B.save(); return; } if (V.dia === b.dia) return;
@@ -10038,6 +10061,7 @@ VR.Misiones = class {
   update(dt, player, car) {
     if (VR.Dialogo.abierto) return;
     this.chequeaDia();
+    if (this.camionK && !(this.s.act && this.s.act.id === 'm3')) { const c = this.camionK; c.mio = false; c.prestada = false; this.camionK = null; if (VR.pastizal) VR.pastizal.limpiar(); } // se acabó M3: el camión vuelve a ser de los bomberos
     if (this._dlgPend) { const f = this._dlgPend; this._dlgPend = null; f(); return; }
     if (this.bub) { this.bub.t -= dt; if (this.bub.t <= 0) this.bub = null; }
     const a = this.s.act, P = this.paso; if (!a || !P || a.fallo) { this.hud.hidden = true; return; }
@@ -10183,6 +10207,40 @@ VR.MISIONES = {
           M.toast(medio ? '🍦 Llegó medio derretido: te pagan la mitad' : '🍦 ¡Llegó perfecta! Pago completo'); const k = M.motoK; if (k) k.alq = V.dia; } },
     ],
     premio: { changas: ['delivery'], cap: 2, texto: 'Cobraste la entrega (menos los ' + VR.fmtGs(20000) + ' de la moto). Delivery de helados abierto (📋 Changas) y Kike te alquila su moto cuando quieras. Capítulo 2: Ñamopu\'ã.' },
+  },
+  // M3 «Tata!» (cap. 2, J5): las rifas del cuartel, el pastizal que se prende en el parque y el camión bomba prestado.
+  m3: {
+    titulo: 'Tata!', cap: 2, quien: 'benitez', req: { cap: 2, mis: ['m2'] }, desc: 'Los bomberos voluntarios necesitan plata para el combustible del camión: vendé sus rifas. Y cuidado con el pasto seco...',
+    oferta: [['benitez', "Ore ndorekói sueldo, ñande ha'e voluntario. Ko rifa ñanepytyvõ ñamyenyhẽ hag̃ua el tanque del camión."],
+      ['yo', '¿Y yo qué hago?'],
+      ['benitez', "Te doy diez números a " + VR.fmtGs(20000) + " cada uno. Los vendés en la plaza, la Marimer y el parque, y te quedás con " + VR.fmtGs(2000) + " por número. ¿Ajépa?"]],
+    fallaSi: { hospital: 'Te llevaron al hospital', explota: 'El camión explotó' },
+    pasos: [
+      { id: 'rifas', obj: 'Retirá las rifas con el Suboficial Benítez (cuartel de bomberos)', hablar: 'benitez', punto: true,
+        charla: [['benitez', 'Acá tenés los diez números. Hablales bien a la gente: es para los bomberos, po.'], ['yo', 'Dejá en mis manos.']],
+        alTerminar: (M) => { M.vars.rifa = { v: 0, caja: 0 }; M.toast('🎟 Tenés 10 rifas: ACCIÓN al lado de la gente (plaza, Marimer o parque)'); } },
+      { id: 'vender', obj: (M) => { const r = M.vars.rifa || { v: 0, caja: 0 }; return '🎟 Vendé las rifas en la plaza, la Marimer o el parque: ' + r.v + '/10 · recaudado ' + VR.fmtGs(r.caja); }, ir: 'plaza', punto: true,
+        accion: (M, pl) => M.rifaAccion(pl), cond: (M) => !!(M.vars.rifa && M.vars.rifa.v >= 10) },
+      { id: 'entregar', obj: 'Llevale la plata de las rifas a Benítez (cuartel)', hablar: 'benitez', punto: true,
+        charla: (M) => [['yo', 'Vendí las diez. Acá tenés ' + VR.fmtGs(M.vars.rifa ? M.vars.rifa.caja : 200000) + '.'], ['benitez', "¡Aguyje, che ra'a! Descontá tus " + VR.fmtGs(20000) + " de comisión. Con esto llenamos el tanque."]],
+        alTerminar: (M) => { M.vida.mueve(20000, 'Comisión por las rifas (10 × 2.000)'); } },
+      { id: 'camion', obj: '🚨 ¡Incendio en el parque! Subite al camión bomba (frente al cuartel)', ir: 'cuartel', punto: true,
+        dlg: [['benitez', '¡Tata oĩ Ykua Pytãme! Chofer… ¿moõpa oĩ? Nde, ¿remaneja kuaápa? ¡Jaha!'], ['yo', '¡Yo manejo! ¿Dónde está el camión?'], ['benitez', 'Ahí afuera. Tocá ACCIÓN para la sirena y mantené ACCIÓN para el cañón de agua. ¡Pya\'e!']],
+        alEmpezar: (M, re) => { const pz = VR.pastizal; if (!re || !pz.activo) { pz.limpiar(); pz.empezar(); } if (M.prestaCamion) M.prestaCamion(); if (!re) M.cartel('¡INCENDIO!', 'Pastizal en el parque Ykua Pytã'); },
+        cond: (M) => { const c = M.getCar(); return !!(c && c.model === 'bomba'); } },
+      { id: 'fuego', obj: '🔥 Llevá el camión al parque: el fuego está del lado este de la laguna', ir: 'fuego', r: 200,
+        alEmpezar: (M) => { const c = M.getCar(); M.vars.hp0 = c && c.hp != null ? c.hp : 100; },
+        cond: (M, f) => { const c = M.getCar(), t = M.lug.get('fuego'); return !!(c && c.model === 'bomba' && t && Math.hypot(f.x - t.x, f.y - t.y) < 260); } },
+      { id: 'apagar', obj: () => '🔥 ¡Apagá el fuego! Mantené ACCIÓN con el cañón · focos: ' + VR.pastizal.ardiendo + ' · no dejes que llegue a la glorieta',
+        tick: (M) => { const pz = VR.pastizal; if (!pz.activo || M.vars.fin) return; if (pz.enGlorieta()) { M.vars.fin = 1; M.fallar('El fuego llegó a la glorieta'); } else if (pz.quemadas > pz.limite) { M.vars.fin = 1; M.fallar('Se quemó medio parque'); } },
+        cond: () => VR.pastizal.activo && VR.pastizal.ardiendo === 0, alTerminar: (M) => { M.toast('🔥 ¡Apagaste el incendio! Ahora devolvé el camión al cuartel'); } },
+      { id: 'volver', obj: '🚒 Devolvé el camión bomba al cuartel sin chocarlo', ir: 'cuartel', r: 60,
+        cond: (M, f) => { const c = M.getCar(), t = M.lug.get('cuartel'); return !!(c && c.model === 'bomba' && t && Math.hypot(f.x - t.x, f.y - t.y) < 60 && Math.abs(c.v) < 45); },
+        alTerminar: (M) => { const c = M.getCar(), hp = c && c.hp != null ? c.hp : 100, dmg = Math.max(0, (M.vars.hp0 || hp) - hp), pago = Math.max(120000, 300000 - Math.round(dmg) * 4000);
+          M.vida.mueve(pago, 'Premio de los bomberos (Benítez)'); VR.pastizal.limpiar();
+          M.toast('🚒 Benítez te dio ' + VR.fmtGs(pago) + (dmg > 5 ? ' (descontó los golpes al camión)' : ' · ¡camión impecable!')); } },
+    ],
+    premio: { barrios: ['Yvaroty'], texto: 'El barrio Yvaroty ya está abierto en el mapa. Los bomberos te deben una.' },
   },
 };
 
@@ -14819,6 +14877,76 @@ VR.Buzon = {
     return s.msgs.map((m) => { const p = this.PERS[m.de] || [m.de, '💬']; return '<div class="row2" style="display:block;' + (m.leido ? '' : 'border-left:3px solid #ff5fa2;padding-left:6px') + '"><b>' + p[1] + ' ' + p[0] + '</b> <small>· día ' + m.dia + ' ' + m.hora + '</small><br>' + m.txt.replace(/</g, '&lt;') + '</div>'; }).join(''); },
 };
 
+// ===== game/pastizal.js =====
+// Fuego de pastizal (J5, M3 «Tata!»): celdas de pasto que arden, se propagan con el viento, se queman en unos segundos y se apagan con el cañón de agua del camión bomba.
+// Cada celda es un tile (16 px). Arde pasto y árboles; no arde el agua, el pavimento ni los edificios. Lo prende la misión (`empezar`) y se limpia al terminar (`limpiar`).
+'use strict';
+VR.Pastizal = class {
+  // o: { world, hurt(n), toast }
+  constructor(o) {
+    Object.assign(this, o); this.cells = new Map(); this.ash = new Map(); this.activo = false; this.t = 0; this.acc = 0; this.quemadas = 0; this.limite = 140; this.o = null;
+    this.viento = { x: -0.55, y: 0.1 }; this.origenPx = null; this.glo = null;
+  }
+  ardible(tx, ty) { const t = this.world.get(tx, ty); return t === VR.T.GRASS || t === VR.T.TREE; }
+  // un punto de pasto del lado este de la laguna, a ~18 tiles de la glorieta, rodeado de pasto
+  origen() {
+    const W = this.world, T = VR.T, S = VR.TILE, g = (W.decals || []).find((d) => d.kind === 'glorieta'); if (!g) return null;
+    const gx = g.x + g.w / 2, gy = g.y + g.h / 2; this.glo = { x: gx * S, y: gy * S, r: Math.min(g.w, g.h) * S / 2 + 4 };
+    let best = null, bs = 1e9;
+    for (let ty = Math.floor(gy) - 22; ty <= gy + 22; ty++) for (let tx = Math.floor(gx) + 8; tx <= gx + 60; tx++) {
+      if (W.get(tx, ty) !== T.GRASS) continue; let n = 0; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (W.get(tx + dx, ty + dy) === T.GRASS) n++;
+      if (n < 22) continue; const sc = Math.abs(Math.hypot(tx - gx, ty - gy) - 26) + (25 - n) * 0.5; if (sc < bs) { bs = sc; best = { tx, ty }; }
+    }
+    return best && { x: (best.tx + 0.5) * S, y: (best.ty + 0.5) * S };
+  }
+  centro() { return this.origenPx; }
+  empezar() {
+    this.limpiar(); const p = this.origen(); if (!p) return false; this.origenPx = p; this.activo = true; this.t = 0; this.quemadas = 0;
+    const S = VR.TILE, cx = Math.floor(p.x / S), cy = Math.floor(p.y / S); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) this.prende(cx + dx, cy + dy);
+    return true;
+  }
+  limpiar() { this.cells.clear(); this.ash.clear(); this.activo = false; this.quemadas = 0; }
+  prende(tx, ty) {
+    const k = tx + ',' + ty; if (this.cells.has(k) || this.ash.has(k) || !this.ardible(tx, ty)) return false;
+    const arbol = this.world.get(tx, ty) === VR.T.TREE; this.cells.set(k, { tx, ty, hp: arbol ? 2 : 1, vida: 11 + Math.random() * 7, ph: Math.random() * 6.28, edad: 0 }); this.quemadas++; return true;
+  }
+  get ardiendo() { return this.cells.size; }
+  cerca(x, y, r) { for (const c of this.cells.values()) if (Math.hypot((c.tx + 0.5) * VR.TILE - x, (c.ty + 0.5) * VR.TILE - y) < r) return true; return false; }
+  // el fuego llegó a la glorieta
+  enGlorieta() { return !!this.glo && this.cerca(this.glo.x, this.glo.y, this.glo.r); }
+  mojar(x, y, dt) {
+    if (!this.cells.size) return; const S = VR.TILE, tx = Math.floor(x / S), ty = Math.floor(y / S);
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const k = (tx + dx) + ',' + (ty + dy), c = this.cells.get(k); if (!c) continue;
+      if (Math.hypot((c.tx + 0.5) * S - x, (c.ty + 0.5) * S - y) > 11) continue; c.hp -= dt * 0.9; if (c.hp <= 0) { this.cells.delete(k); this.ash.set(k, { tx: c.tx, ty: c.ty, mojado: true }); } }
+  }
+  update(dt, player, car) {
+    if (!this.activo) return; this.t += dt; this.acc += dt; const S = VR.TILE;
+    // lejos del fuego se propaga despacio, así llegás con el fuego chico (el camión tarda en cruzar la ciudad)
+    const f = car || player, o = this.origenPx, lejos = o && Math.hypot(f.x - o.x, f.y - o.y) > 1800 ? 0.18 : 1;
+    for (const [k, c] of this.cells) { c.edad += dt; c.vida -= dt * lejos; if (c.vida <= 0) { this.cells.delete(k); this.ash.set(k, { tx: c.tx, ty: c.ty }); } }
+    if (this.acc >= 0.5) { this.acc = 0; const nuevos = [];
+      for (const c of this.cells.values()) { if (c.edad < 1.2) continue;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const w = 1 + 0.9 * (dx * this.viento.x + dy * this.viento.y) / 0.55; if (Math.random() < 0.125 * Math.max(0.25, w) * lejos) nuevos.push([c.tx + dx, c.ty + dy]); } }
+      for (const [x, y] of nuevos) this.prende(x, y);
+    }
+    // el fuego quema lo que toca: a pie te hace daño y el camión se va dañando
+    if (this.cells.size && f) { const c = this.cells.get(Math.floor(f.x / S) + ',' + Math.floor(f.y / S)); if (c) { if (car) { if (car.hp != null) car.hp -= dt * 1.5; } else if (this.hurt) this.hurt(dt * 7); } }
+  }
+  collect(cx, cy, tall) {
+    if (!this.activo && !this.ash.size) return; const S = VR.TILE, W = VR.screen.w, H = VR.screen.h, t = this.t;
+    for (const a of this.ash.values()) { const x = Math.round(a.tx * S - cx), y = Math.round(a.ty * S - cy); if (x < -S || y < -S || x > W || y > H) continue;
+      tall.push({ sy: -1e6, draw: (g) => { g.fillStyle = a.mojado ? 'rgba(34,30,26,.5)' : 'rgba(22,16,12,.62)'; g.fillRect(x, y, S, S); g.fillStyle = 'rgba(70,62,56,.35)'; g.fillRect(x + 3, y + 5, 3, 2); g.fillRect(x + 10, y + 10, 3, 2); } }); }
+    for (const c of this.cells.values()) { const x = Math.round(c.tx * S + S / 2 - cx), y = Math.round(c.ty * S + S - cy); if (x < -20 || y < -30 || x > W + 20 || y > H + 20) continue;
+      const k = Math.min(1, c.hp / (c.hp > 1 ? 2 : 1) * 0.5 + 0.5), life = Math.min(1, c.vida / 3);
+      tall.push({ sy: c.ty * S + S, draw: (g) => {
+        g.fillStyle = 'rgba(255,110,20,.22)'; g.fillRect(x - 9, y - 12, 18, 14);
+        for (let i = -1; i <= 1; i++) { const h = (5 + 5 * Math.sin(t * 9 + c.ph + i * 2)) * k * (0.5 + life * 0.5) + 3, fx = x + i * 4;
+          g.fillStyle = '#e8421a'; g.fillRect(fx - 2, y - h, 4, h); g.fillStyle = '#ffa52a'; g.fillRect(fx - 1, y - h * 0.7, 3, h * 0.7); g.fillStyle = '#fff1a8'; g.fillRect(fx, y - h * 0.38, 1, h * 0.38); }
+        if ((c.ph * 7 | 0) % 3 === 0) { const u = (t * 12 + c.ph * 5) % 16; g.fillStyle = 'rgba(70,70,74,' + (0.3 * (1 - u / 16)) + ')'; g.fillRect(x - 2 + Math.sin(u * 0.5 + c.ph) * 3, y - 12 - u, 5, 4); }
+      } }); }
+  }
+};
+
 // ===== game/personaje.js =====
 // Pantalla de personaje (Historia): se abre tocando el avatar en la esquina. Muestra al protagonista de cerca (podés girarlo o hacerlo caminar),
 // su estado y el equipo que lleva puesto (casco, canasto...). El casco equipado también se ve a pie (ver Player.setCasco).
@@ -15478,12 +15606,12 @@ VR.Titulo = class {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) { const no = noRobar(nc); if (no) toast(no); else enterCar(nc); } else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (nch) { chespis.talk(nch); return; } if (np) { VR.despensa.entrar(); return; } if (nme) { VR.mercado.entrar(); return; } if (nsu) { VR.super.abrir(nsu.id); return; } if (nbo) { if (VR.bolicheAbierto()) VR.boliche.abrir(nbo.id); else toast('🔒 ' + nbo.name + ': abre de noche'); return; } if (ns) { VR.tienda.entrar(); return; } if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (nch) { chespis.talk(nch); return; } if (np) { VR.despensa.entrar(); return; } if (nme) { VR.mercado.entrar(); return; } if (nsu) { VR.super.abrir(nsu.id); return; } if (nbo) { if (VR.bolicheAbierto()) VR.boliche.abrir(nbo.id); else toast('🔒 ' + nbo.name + ': abre de noche'); return; } if (ns) { VR.tienda.entrar(); return; } if (mis && mis.accion(player)) {} else if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt);
-    if (vida) { player.setCasco(vida.cascoPuesto); if (pj && pj._cp !== vida.cascoPuesto) { pj._cp = vida.cascoPuesto; pj.icono(); } } if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car);
+    if (vida) { player.setCasco(vida.cascoPuesto); if (pj && pj._cp !== vida.cascoPuesto) { pj._cp = vida.cascoPuesto; pj.icono(); } } if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car); if (pz) pz.update(dt, player, car);
     syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
@@ -15539,7 +15667,7 @@ VR.Titulo = class {
     fauna.drawGround(ctx, cx, cy, sw, sh);
     cisnes.draw(ctx, cx, cy, night, player.lookData);
     if (!car && !online.ride && !cisnes.riding && !mbh.riding) tall.push({ sy: VR.lerp(player.py, player.y, a), draw: (c) => { player.draw(c, cx, cy, a); if (weapons && !player.rag) weapons.drawHeld(c, player, cx, cy, a); } });
-    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); if (ctrl) ctrl.collect(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
+    online.collect(cx, cy, a, tall, car); changas.collect(cx, cy, tall); if (mis) { mis.collect(cx, cy, tall, player); mis.collectPuntos(cx, cy, tall); if (ctrl) ctrl.collect(cx, cy, tall); if (pz) pz.collect(cx, cy, tall); } if (puestoL) puestoL.collect(cx, cy, tall); { const t = performance.now() / 1000; for (const e of entradas()) { const x = Math.round(e.x - cx), y = Math.round(e.y - cy); if (x < -20 || y < -20 || x > VR.screen.w + 20 || y > VR.screen.h + 50) continue; if (Math.hypot(e.x - player.x, e.y - player.y) < 44) continue; tall.push({ sy: e.y + 9999, draw: (g) => drawEntrada(g, e, x, y, t) }); } }
     if (peds) peds.collect(cx, cy, sw, sh, a, tall);
     if (chespis) chespis.collect(cx, cy, sw, sh, a, tall);
     if (escena) escena.collect(cx, cy, sw, sh, tall);
@@ -15903,9 +16031,11 @@ VR.Titulo = class {
   const mis = VR.mis = vida ? new VR.Misiones({ world, player, toast, setDest, getCar: () => car, vida, changas, banner: showBanner }) : null;
   // J4: la moto de Kike (prestada o alquilada) y los controles de tránsito
   const ctrl = mis ? new VR.Controles({ world, lug: mis.lug, vida, toast }) : null;
+  const pz = VR.pastizal = mis ? new VR.Pastizal({ world, hurt: (n) => hurtPlayer(n), toast }) : null;
   if (mis) {
     mis.prestaMoto = (r) => { if (mis.motoK) return mis.motoK; const k = r || mis.dondeEsta('kike'); if (!k) return null; const p = r ? { x: r.x, y: r.y } : mis.lug.libre(k.x + 34, k.y + 12), c = new VR.Car(world, p.x, p.y, 0, 4, 'moto', 'cub');
       c.prestada = true; c.mio = true; c.alq = vida.dia; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; if (r) c.a = c.pa = r.a || 0; else toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
+    mis.prestaCamion = () => { let c = cars.find((x) => x.firehouse && x.model === 'bomba'); if (!c) { const f = world.firehouse; if (!f) return null; const p = mis.lug.libre(f.x, f.y + 60); c = new VR.Car(world, p.x, p.y, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; cars.push(c); world.addBox(c); } c.mio = true; c.prestada = true; mis.camionK = c; return c; };
     mis.destActual = () => dest; mis.vehiculoMio = () => { const c = (!car && lastCar) || cars.find((x) => x.mio); if (!c) return null; const p = mis.lug.libre(c.x + 22, c.y + 6); return { x: p.x, y: p.y, name: 'tu vehículo' }; };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
     { const tp = mis.lug.get(VR.PUNTOS.taxihosp.lugar); if (tp) for (let i = 0; i < 2; i++) { const x = tp.x + i * 28 - 14, y = tp.y - 34, m = 'sedan', c = new VR.Car(world, x, y, Math.PI / 2, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); if (c.contacts && c.contacts(x, y, c.a)) continue; c.taxi = true; cars.push(c); world.addBox(c); } }
