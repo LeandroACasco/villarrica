@@ -59,6 +59,7 @@
       if (d.stock <= 0) { if (K.none) say(K.none); return true; }
       if (VR.Wallet.get() < K.price) { this.o.toast('💸 No te alcanza: cuesta ' + VR.fmtGs(K.price)); return true; }
       VR.Wallet.add(-K.price); d.stock--; d.cool = 1.2; say(pick(K.buy));
+      if (K.manta === 'hippie' && this.o.item) this.o.item({ k: 'pulsera', n: 'Pulsera artesanal', ico: '📿', tipo: 'objeto', desc: 'Hecha a mano' }); else if (K.manta === 'tejida' && this.o.item) this.o.item({ k: 'artesania', n: 'Artesanía tejida', ico: '🧺', tipo: 'objeto', desc: 'Tejido hecho a mano' });
       if (K.heal && this.o.heal) this.o.heal(K.heal);
       if (K.hambre && this.o.hambre) this.o.hambre(K.hambre);
       if (VR.audio && VR.audio.coin) VR.audio.coin();

@@ -706,3 +706,6 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 
 ## Menú en pestañas (v1.68)
 - `VR.menuTabs()` (menutabs.js) reagrupa los `<h3>` de `#menu .dlg` en paneles según el mapa `DE` (título → pestaña); un título nuevo cae en Avanzado. El crédito y el botón Cerrar quedan fuera de las pestañas. Hat `motero` en avatar2.js (no está en CAT.hat).
+
+## Inventario (v1.69)
+- `VR.Inv` (add/quita/compra/come, datos en `vida.s.inv`) y `VR.Inventario` (UI `#invDlg`). El súper usa la opción `guarda` (si existe) en vez de `come`; calle.js usa `o.item`. Falta usar pulseras como accesorio equipable.

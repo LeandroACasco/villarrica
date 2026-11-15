@@ -70,6 +70,7 @@
   .pjEst { display: flex; flex-wrap: wrap; gap: 6px; } .pjEst span { background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; font-size: 13px; } .pjEst .mal { background: #6b2430; }
   .pjSlot { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px; margin-bottom: 6px; } .pjSlot i { font-style: normal; font-size: 24px; } .pjSlot div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; } .pjSlot small { opacity: .6; } .pjSlot em { font-style: normal; opacity: .85; font-size: 12px; }
   #pjMoch { margin-top: 6px; width: 100%; }
+  #invDlg { width: min(520px, 94vw); max-height: 92vh; padding: 14px; border: 2px solid #2d3a55; border-radius: 18px; background: linear-gradient(160deg, #1e2a40, #121822); color: #fff; overflow: auto; } #invDlg::backdrop { background: rgba(0,0,0,.55); } #invDlg .pjTop .hint { font-size: 12px; opacity: .7; } #invPieza h4 { margin: 12px 0 6px; opacity: .8; } .pjChip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
   /* Configuración en pestañas */
   .mtBar { display: flex; gap: 4px; overflow-x: auto; margin: 4px 0 10px; padding-bottom: 4px; position: sticky; top: 0; background: inherit; z-index: 2; }
   .mtBar button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: inherit; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
@@ -430,7 +431,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión 77e571e4 · 2026-11-15</div>
+  <div class="tVer">Versión 29c3566c · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -439,7 +440,7 @@
     <h2>Pausa</h2>
     <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
     <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
-    <div class="row" id="pHist"><button class="btn" id="pPj">🧍 Personaje</button><button class="btn" id="pCel">📱 Celular</button><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
+    <div class="row" id="pHist"><button class="btn" id="pPj">🧍 Personaje</button><button class="btn" id="pInv">🎒 Inventario</button><button class="btn" id="pCel">📱 Celular</button><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
     <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
   </div>
 </dialog>
@@ -447,7 +448,9 @@
 <div id="celFade"></div>
 <dialog id="pjDlg"><div class="pjTop"><b>🧍 Mi personaje</b><button class="icon-btn" id="pjClose" aria-label="Cerrar">✕</button></div>
   <div class="pjCuerpo"><div class="pjVista"><canvas id="pjCv" width="220" height="280"></canvas><div class="pjCtl"><button class="cbtn" id="pjGira">↻ Girar</button><button class="cbtn" id="pjAnda">🚶 Caminar</button></div></div>
-  <div class="pjDer"><div id="pjEst" class="pjEst"></div><h4>Equipo</h4><div id="pjEq"></div><button class="cbtn" id="pjMoch">🎒 Ver mochila</button></div></div></dialog>
+  <div class="pjDer"><div id="pjEst" class="pjEst"></div><h4>Equipo</h4><div id="pjEq"></div><button class="cbtn" id="pjMoch">🎒 Inventario</button></div></div></dialog>
+<dialog id="invDlg"><div class="pjTop"><b>🎒 Inventario</b><span id="invCnt" class="hint"></span><button class="icon-btn" id="invClose" aria-label="Cerrar">✕</button></div>
+  <div id="invTabs" class="mtBar"></div><div id="invLista"></div><div id="invPieza"></div></dialog>
 <dialog id="celDlg"><div class="celTop"><span id="celHora"></span><span id="celSaldo"></span></div><div id="celBody"></div><div class="celNav"><button id="celBack" aria-label="Atrás">◀</button><button id="celHome" aria-label="Inicio">●</button><button id="celClose" aria-label="Cerrar">■</button></div>
   <div id="celRoto"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="none" stroke-linecap="round" stroke-linejoin="round">
     <g stroke="#000" stroke-opacity=".55" stroke-width="1.1"><path id="cr1" d="M72 22 L58 30 L47 44 L40 61 L29 78 L21 100"/><path d="M72 22 L84 33 L90 52 L100 66"/><path d="M72 22 L66 8 L68 0"/><path d="M72 22 L90 14 L100 9"/><path d="M58 30 L36 28 L18 34 L0 31"/><path d="M47 44 L62 53 L70 70 L76 100"/></g>
@@ -543,7 +546,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 77e571e4 · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 29c3566c · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -12673,6 +12676,7 @@ VR.Cisnes = class {
       if (d.stock <= 0) { if (K.none) say(K.none); return true; }
       if (VR.Wallet.get() < K.price) { this.o.toast('💸 No te alcanza: cuesta ' + VR.fmtGs(K.price)); return true; }
       VR.Wallet.add(-K.price); d.stock--; d.cool = 1.2; say(pick(K.buy));
+      if (K.manta === 'hippie' && this.o.item) this.o.item({ k: 'pulsera', n: 'Pulsera artesanal', ico: '📿', tipo: 'objeto', desc: 'Hecha a mano' }); else if (K.manta === 'tejida' && this.o.item) this.o.item({ k: 'artesania', n: 'Artesanía tejida', ico: '🧺', tipo: 'objeto', desc: 'Tejido hecho a mano' });
       if (K.heal && this.o.heal) this.o.heal(K.heal);
       if (K.hambre && this.o.hambre) this.o.hambre(K.hambre);
       if (VR.audio && VR.audio.coin) VR.audio.coin();
@@ -14104,7 +14108,7 @@ VR.Chespis = class {
       const t = total(), op = [['Pagar ' + fmt(t), () => {
         if (VR.Wallet.get() < t) { S.decir('💸 No te alcanza. Sacá algo del carrito o volvé con más plata.'); return false; }
         const h = S.cart.reduce((a, c) => a + c.h, 0), cu = S.cart.reduce((a, c) => a + c.cu, 0);
-        if (o.come) o.come(t, h, 'Compras en ' + S.marca.n, cu); S.cart = []; S.decir('🧾 «' + pick(FR_CAJA) + '»'); return false; }],
+        if (o.guarda) { if (!o.guarda(t, S.cart, S.marca.n)) return false; } else if (o.come) o.come(t, h, 'Compras en ' + S.marca.n, cu); S.cart = []; S.decir('🧾 «' + pick(FR_CAJA) + '»'); return false; }],
         ['Vaciar el carrito', () => { S.cart = []; S.decir('🛒 Dejaste todo en el carrito y se lo llevó un empleado.'); return false; }], ['Seguir comprando', () => false]];
       if (o.menu) o.menu([{ quien: 'sis', titulo: '🧾 Caja ' + (i + 1) + ' · ' + S.marca.n, txt: 'Cajera: «Son ' + fmt(t) + '» (' + S.cart.length + ' cosas). Tenés ' + fmt(VR.Wallet.get()), op }]);
     };
@@ -14811,6 +14815,48 @@ VR.Personaje = class {
   }
 };
 
+// ===== game/inventario.js =====
+// Inventario (Historia): lo comprado y lo que llevás encima. Vive en `vida.s.inv` (viaja con la partida).
+// Items apilables { k, n, ico, tipo: 'comida'|'objeto', c: cantidad, h: hambre que repone, cu: vida que cura, col }.
+// El equipo puesto (casco, canasto) se maneja desde "Mi personaje"; acá se lo ve y se lo puede poner o sacar también.
+VR.Inv = {
+  vida: null,
+  list() { const V = this.vida; if (!V) return []; return V.s.inv || (V.s.inv = []); },
+  add(it, c) { const L = this.list(), f = L.find((x) => x.k === it.k); c = c || 1; if (f) f.c += c; else L.push(Object.assign({ c }, it)); if (this.vida) this.vida.save(); },
+  quita(k, c) { const L = this.list(), i = L.findIndex((x) => x.k === k); if (i < 0) return false; L[i].c -= c || 1; if (L[i].c <= 0) L.splice(i, 1); this.vida.save(); return true; },
+  total() { return this.list().reduce((a, x) => a + x.c, 0); },
+  // guarda lo que se compró en el súper (una entrada por producto); devuelve false si no alcanzó la plata
+  compra(total, carro, donde) { const V = this.vida; if (!V || !V.gasta(total, 'Compras en ' + donde)) return false;
+    for (const p of carro) this.add({ k: 'comida:' + p.n, n: p.n, ico: '🛒', tipo: 'comida', h: p.h, cu: p.cu || 0 }); V.msg('🎒 Guardaste ' + carro.length + ' cosas en el inventario'); return true; },
+  come(k) { const V = this.vida, x = this.list().find((q) => q.k === k); if (!x) return false; this.quita(k, 1); V.s.hambre = Math.min(100, V.s.hambre + (x.h || 0)); V.sync(); V.save(); if (x.cu && VR.heal) VR.heal(x.cu); V.msg('🍽 Comiste: ' + x.n + (x.h ? ' · +' + x.h + '% de hambre' : '')); return true; },
+};
+VR.Inventario = class {
+  constructor(o) { Object.assign(this, o); VR.Inv.vida = this.vida; // { vida, $, toggleCasco, toggleEq, hayMoto: () => bool, alCerrar }
+    const $ = this.$; this.dlg = $('invDlg'); this.tab = 'todo';
+    $('invClose').onclick = () => this.dlg.close();
+    $('invTabs').onclick = (e) => { const b = e.target.closest('button'); if (b) { this.tab = b.dataset.t; this.pinta(); } };
+    this.dlg.addEventListener('close', () => { if (!this._keep) { VR.loop.paused = false; VR.input.enabled = true; } this._keep = false; });
+    addEventListener('keydown', (e) => { if (e.code === 'KeyI' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName) && !document.querySelector('dialog[open]') && VR.loop && !VR.loop.paused) this.abrir(); });
+  }
+  abrir() { if (this.dlg.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; this.pinta(); this.dlg.showModal(); }
+  fichas() { const V = this.vida, s = V.s, f = [], eq = (k, ico, n, st, on, bot) => ({ k, ico, n, st, tipo: 'equipo', on, bot });
+    if (s.casco) f.push(eq('casco', '🪖', 'Casco de moto', V.cascoPuesto ? 'Puesto' : 'Guardado', V.cascoPuesto, V.cascoPuesto ? 'Sacar' : 'Poner'));
+    if (s.canasto) f.push(eq('canasto', '🧺', 'Canasto de chipa', s.stock + ' chipas' + (s.equipo === 'canasto' ? ' · en la mano' : ''), s.equipo === 'canasto', s.equipo === 'canasto' ? 'Guardar' : 'Llevar'));
+    if (s.herr) f.push({ k: 'herr', ico: '🔧', n: 'Caja de herramientas', st: 'Para arreglar el auto', tipo: 'objeto' });
+    if (this.hayMoto && this.hayMoto()) f.push({ k: 'llave', ico: '🔑', n: 'Llave de la moto de Kike', st: 'Alquilada: ' + VR.fmtGs(VR.PRECIOS.alquilerMoto) + ' por día', tipo: 'clave' });
+    for (const x of VR.Inv.list()) f.push({ k: x.k, ico: x.ico, n: x.n + (x.c > 1 ? ' ×' + x.c : ''), st: x.tipo === 'comida' ? '+' + (x.h || 0) + '% de hambre' + (x.cu ? ' · +' + x.cu + ' vida' : '') : (x.desc || 'Objeto'), tipo: x.tipo, col: x.col, bot: x.tipo === 'comida' ? 'Comer' : '' });
+    return f; }
+  pinta() { const $ = this.$, V = this.vida, T = [['todo', '🎒', 'Todo'], ['equipo', '🧍', 'Equipo'], ['comida', '🍽', 'Comida'], ['objeto', '🎁', 'Objetos'], ['clave', '🔑', 'Clave']];
+    $('invTabs').innerHTML = T.map(([k, i, n]) => '<button data-t="' + k + '" class="' + (k === this.tab ? 'on' : '') + '"><i>' + i + '</i><span>' + n + '</span></button>').join('');
+    const F = this.fichas().filter((f) => this.tab === 'todo' || f.tipo === this.tab);
+    $('invLista').innerHTML = F.length ? F.map((f) => '<div class="pjSlot"><i' + (f.col ? ' style="text-shadow:0 0 0 ' + f.col + ';color:' + f.col + '"' : '') + '>' + f.ico + '</i><div><b>' + f.n + '</b><em>' + f.st + '</em></div>' + (f.bot ? '<button class="cbtn" data-k="' + f.k + '">' + f.bot + '</button>' : '') + '</div>').join('')
+      : '<p class="hint">' + (this.tab === 'comida' ? 'No tenés comida guardada. Lo que comprás en el súper queda acá para comer cuando quieras.' : 'No tenés nada de este tipo todavía.') + '</p>';
+    $('invLista').querySelectorAll('[data-k]').forEach((b) => b.onclick = () => { const k = b.dataset.k; if (k === 'casco') this.toggleCasco(); else if (k === 'canasto') this.toggleEq(); else VR.Inv.come(k); this.pinta(); });
+    const P = V.s.pieza && V.s.pieza.items ? VR.PIEZA_ITEMS.filter((i) => V.s.pieza.items[i.k]) : [];
+    $('invPieza').innerHTML = P.length ? '<h4>🏠 En tu pieza</h4>' + P.map((i) => '<span class="pjChip">' + i.ico + ' ' + i.n + '</span>').join('') : '';
+    $('invCnt').textContent = VR.Inv.total() + ' cosas guardadas'; }
+};
+
 // ===== game/menutabs.js =====
 // Menú de Configuración en pestañas: agrupa las secciones (cada <h3> y lo que le sigue) sin mover ni renombrar ningún control.
 VR.menuTabs = () => {
@@ -15108,7 +15154,7 @@ VR.Titulo = class {
   const chespis = VR.chespis = peds ? new VR.Chespis(world, peds, { player: () => player, busy: () => VR.Dialogo.abierto, toast: (m) => toast(m), menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     hurt: (dx, dy, n) => { player.knock(dx * 70, dy * 70, 0.35); if (VR.audio && VR.audio.ouch) VR.audio.ouch(player.x, player.y); hurtPlayer(n); },
     anchors: () => Object.keys(VR.SUPERS).map((id) => lugE.get('super_' + id)).filter(Boolean) }) : null; // chespis: caminan, piden plata y pueden sacar un cuchillo (14/11/2026)
-  const calle = VR.calle = peds ? new VR.Calle(world, peds, { toast: (m) => toast(m), heal: (n) => VR.heal && VR.heal(n), hambre: (n) => { if (vida && vida.s) vida.s.hambre = Math.min(100, vida.s.hambre + n); } }) : { update() {}, collect() {}, near() { return null; }, act() { return false; } };   // vendedores y gente de la calle (calle.js)
+  const calle = VR.calle = peds ? new VR.Calle(world, peds, { toast: (m) => toast(m), heal: (n) => VR.heal && VR.heal(n), hambre: (n) => { if (vida && vida.s) vida.s.hambre = Math.min(100, vida.s.hambre + n); }, item: (it) => { if (vida) VR.Inv.add(it); } }) : { update() {}, collect() {}, near() { return null; }, act() { return false; } };   // vendedores y gente de la calle (calle.js)
   const fauna = VR.fauna = new VR.Fauna(world); // carpinchos, patos, peces y palomas (fauna.js)
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
@@ -15591,6 +15637,7 @@ VR.Titulo = class {
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
+  $('pInv').onclick = () => pauseThen(() => { if (inv) inv.abrir(); });
   $('pPj').onclick = () => pauseThen(() => { if (pj) pj.abrir(); });
   // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
   const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', celStop = null;
@@ -15603,7 +15650,8 @@ VR.Titulo = class {
   };
   VR.menuTabs();
   if (vida) $('btnCel').hidden = false;
-  const pj = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => openCel('mochila') }) : null;
+  const inv = vida ? new VR.Inventario({ vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), hayMoto: () => !!(mis && mis.motoK) }) : null;
+  const pj = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => inv.abrir() }) : null;
   $('btnCel').onclick = () => openCel();
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
@@ -15621,7 +15669,7 @@ VR.Titulo = class {
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
     if (celApp === 'home') {
-      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
+      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
@@ -15673,10 +15721,6 @@ VR.Titulo = class {
       h = '<h3>💬 Mensajes</h3>' + VR.Buzon.html(); VR.Buzon.leerTodo();
     } else if (celApp === 'stats') {
       h = '<h3>📊 Estadísticas</h3>' + VR.Stats.html();
-    } else if (celApp === 'mochila') {
-      h = '<h3>🎒 Mochila</h3><div class="row2"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' chipas' : '—') + '</span></div>' +
-        (s.canasto ? '<button class="cbtn" data-m="canasto">' + (s.equipo === 'canasto' ? 'Guardar el canasto' : 'Llevar el canasto en la mano') + '</button>' : '') +
-        '<div class="row2"><span>🪖 Casco</span><span>' + (s.casco ? (vida.cascoPuesto ? 'puesto' : 'guardado') : 'no tenés') + '</span></div>' + (s.casco ? '<button class="cbtn" data-c="casco">' + (vida.cascoPuesto ? 'Sacarte el casco' : 'Ponerte el casco') + '</button>' : '') + '<div class="row2"><span>🔧 Herramientas</span><span>' + (s.herr ? 'sí' : 'no tenés') + '</span></div>';
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
@@ -15833,7 +15877,7 @@ VR.Titulo = class {
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍽 ' + n + ' · −' + VR.fmtGs(p)); } } }); // Mercado Municipal por dentro (13/11/2026)
   VR.boliche = VR.crearBoliche({ player, busy: () => false, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍹 ' + n + ' · −' + VR.fmtGs(p)); } } }); // boliches por dentro (14/11/2026)
-  VR.super = VR.crearSuper({ player, busy: () => false, toast: (m) => toast(m), menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
+  VR.super = VR.crearSuper({ player, busy: () => false, toast: (m) => toast(m), guarda: vida ? (t, carro, donde) => VR.Inv.compra(t, carro, donde) : null, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🛒 ' + n + ' · −' + VR.fmtGs(p)); } } }); // supermercados por dentro (14/11/2026)
   let puestoL = null; // en Libre no hay misiones, pero la despensa sí está (puesto en la vereda al sudeste de la plaza + el interior)
   if (!mis) {

@@ -166,7 +166,7 @@
       const t = total(), op = [['Pagar ' + fmt(t), () => {
         if (VR.Wallet.get() < t) { S.decir('💸 No te alcanza. Sacá algo del carrito o volvé con más plata.'); return false; }
         const h = S.cart.reduce((a, c) => a + c.h, 0), cu = S.cart.reduce((a, c) => a + c.cu, 0);
-        if (o.come) o.come(t, h, 'Compras en ' + S.marca.n, cu); S.cart = []; S.decir('🧾 «' + pick(FR_CAJA) + '»'); return false; }],
+        if (o.guarda) { if (!o.guarda(t, S.cart, S.marca.n)) return false; } else if (o.come) o.come(t, h, 'Compras en ' + S.marca.n, cu); S.cart = []; S.decir('🧾 «' + pick(FR_CAJA) + '»'); return false; }],
         ['Vaciar el carrito', () => { S.cart = []; S.decir('🛒 Dejaste todo en el carrito y se lo llevó un empleado.'); return false; }], ['Seguir comprando', () => false]];
       if (o.menu) o.menu([{ quien: 'sis', titulo: '🧾 Caja ' + (i + 1) + ' · ' + S.marca.n, txt: 'Cajera: «Son ' + fmt(t) + '» (' + S.cart.length + ' cosas). Tenés ' + fmt(VR.Wallet.get()), op }]);
     };

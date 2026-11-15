@@ -70,6 +70,7 @@
   .pjEst { display: flex; flex-wrap: wrap; gap: 6px; } .pjEst span { background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; font-size: 13px; } .pjEst .mal { background: #6b2430; }
   .pjSlot { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px; margin-bottom: 6px; } .pjSlot i { font-style: normal; font-size: 24px; } .pjSlot div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; } .pjSlot small { opacity: .6; } .pjSlot em { font-style: normal; opacity: .85; font-size: 12px; }
   #pjMoch { margin-top: 6px; width: 100%; }
+  #invDlg { width: min(520px, 94vw); max-height: 92vh; padding: 14px; border: 2px solid #2d3a55; border-radius: 18px; background: linear-gradient(160deg, #1e2a40, #121822); color: #fff; overflow: auto; } #invDlg::backdrop { background: rgba(0,0,0,.55); } #invDlg .pjTop .hint { font-size: 12px; opacity: .7; } #invPieza h4 { margin: 12px 0 6px; opacity: .8; } .pjChip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
   /* Configuración en pestañas */
   .mtBar { display: flex; gap: 4px; overflow-x: auto; margin: 4px 0 10px; padding-bottom: 4px; position: sticky; top: 0; background: inherit; z-index: 2; }
   .mtBar button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: inherit; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
@@ -436,7 +437,7 @@
     <h2>Pausa</h2>
     <div class="row"><button class="btn primary" id="pSeguir">▶ Seguir jugando</button></div>
     <div class="row"><button class="btn" id="pMapa">🗺 Mapa</button><button class="btn" id="pOnline">🌐 Online</button></div>
-    <div class="row" id="pHist"><button class="btn" id="pPj">🧍 Personaje</button><button class="btn" id="pCel">📱 Celular</button><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
+    <div class="row" id="pHist"><button class="btn" id="pPj">🧍 Personaje</button><button class="btn" id="pInv">🎒 Inventario</button><button class="btn" id="pCel">📱 Celular</button><button class="btn" id="pMis">📌 Misiones</button><button class="btn" id="pBill">💵 Billetera</button><button class="btn" id="pMetas">⭐ Metas</button></div>
     <div class="row"><button class="btn" id="pConfig">⚙ Configuración</button><button class="btn" id="pSalir">⏏ Menú principal</button></div>
   </div>
 </dialog>
@@ -444,7 +445,9 @@
 <div id="celFade"></div>
 <dialog id="pjDlg"><div class="pjTop"><b>🧍 Mi personaje</b><button class="icon-btn" id="pjClose" aria-label="Cerrar">✕</button></div>
   <div class="pjCuerpo"><div class="pjVista"><canvas id="pjCv" width="220" height="280"></canvas><div class="pjCtl"><button class="cbtn" id="pjGira">↻ Girar</button><button class="cbtn" id="pjAnda">🚶 Caminar</button></div></div>
-  <div class="pjDer"><div id="pjEst" class="pjEst"></div><h4>Equipo</h4><div id="pjEq"></div><button class="cbtn" id="pjMoch">🎒 Ver mochila</button></div></div></dialog>
+  <div class="pjDer"><div id="pjEst" class="pjEst"></div><h4>Equipo</h4><div id="pjEq"></div><button class="cbtn" id="pjMoch">🎒 Inventario</button></div></div></dialog>
+<dialog id="invDlg"><div class="pjTop"><b>🎒 Inventario</b><span id="invCnt" class="hint"></span><button class="icon-btn" id="invClose" aria-label="Cerrar">✕</button></div>
+  <div id="invTabs" class="mtBar"></div><div id="invLista"></div><div id="invPieza"></div></dialog>
 <dialog id="celDlg"><div class="celTop"><span id="celHora"></span><span id="celSaldo"></span></div><div id="celBody"></div><div class="celNav"><button id="celBack" aria-label="Atrás">◀</button><button id="celHome" aria-label="Inicio">●</button><button id="celClose" aria-label="Cerrar">■</button></div>
   <div id="celRoto"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="none" stroke-linecap="round" stroke-linejoin="round">
     <g stroke="#000" stroke-opacity=".55" stroke-width="1.1"><path id="cr1" d="M72 22 L58 30 L47 44 L40 61 L29 78 L21 100"/><path d="M72 22 L84 33 L90 52 L100 66"/><path d="M72 22 L66 8 L68 0"/><path d="M72 22 L90 14 L100 9"/><path d="M58 30 L36 28 L18 34 L0 31"/><path d="M47 44 L62 53 L70 70 L76 100"/></g>

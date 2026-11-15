@@ -104,7 +104,7 @@
   const chespis = VR.chespis = peds ? new VR.Chespis(world, peds, { player: () => player, busy: () => VR.Dialogo.abierto, toast: (m) => toast(m), menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     hurt: (dx, dy, n) => { player.knock(dx * 70, dy * 70, 0.35); if (VR.audio && VR.audio.ouch) VR.audio.ouch(player.x, player.y); hurtPlayer(n); },
     anchors: () => Object.keys(VR.SUPERS).map((id) => lugE.get('super_' + id)).filter(Boolean) }) : null; // chespis: caminan, piden plata y pueden sacar un cuchillo (14/11/2026)
-  const calle = VR.calle = peds ? new VR.Calle(world, peds, { toast: (m) => toast(m), heal: (n) => VR.heal && VR.heal(n), hambre: (n) => { if (vida && vida.s) vida.s.hambre = Math.min(100, vida.s.hambre + n); } }) : { update() {}, collect() {}, near() { return null; }, act() { return false; } };   // vendedores y gente de la calle (calle.js)
+  const calle = VR.calle = peds ? new VR.Calle(world, peds, { toast: (m) => toast(m), heal: (n) => VR.heal && VR.heal(n), hambre: (n) => { if (vida && vida.s) vida.s.hambre = Math.min(100, vida.s.hambre + n); }, item: (it) => { if (vida) VR.Inv.add(it); } }) : { update() {}, collect() {}, near() { return null; }, act() { return false; } };   // vendedores y gente de la calle (calle.js)
   const fauna = VR.fauna = new VR.Fauna(world); // carpinchos, patos, peces y palomas (fauna.js)
   if (peds) { const sc = peds.scatter.bind(peds); peds.scatter = (x, y, r, from) => { fauna.scare(x, y, r); return sc(x, y, r, from); }; }
   const gpsNet = prueba ? null : new VR.GPS(world);
@@ -587,6 +587,7 @@
   $('pBill').onclick = () => pauseThen(() => openVida('bill'));
   $('pMetas').onclick = () => pauseThen(() => openVida('metas'));
   $('pCel').onclick = () => pauseThen(() => openCel());
+  $('pInv').onclick = () => pauseThen(() => { if (inv) inv.abrir(); });
   $('pPj').onclick = () => pauseThen(() => { if (pj) pj.abrir(); });
   // ---------- celular (Historia): apps; Mbohasa (viajes en moto o auto, nombre inventado), billeteras, mochila, ropero ----------
   const celDlg = $('celDlg'), celBody = $('celBody'); let celApp = 'home', celStop = null;
@@ -599,7 +600,8 @@
   };
   VR.menuTabs();
   if (vida) $('btnCel').hidden = false;
-  const pj = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => openCel('mochila') }) : null;
+  const inv = vida ? new VR.Inventario({ vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), hayMoto: () => !!(mis && mis.motoK) }) : null;
+  const pj = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => inv.abrir() }) : null;
   $('btnCel').onclick = () => openCel();
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
@@ -617,7 +619,7 @@
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
     if (celApp === 'home') {
-      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['mochila', '🎒', 'Mochila', '#b07a3a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
+      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
@@ -669,10 +671,6 @@
       h = '<h3>💬 Mensajes</h3>' + VR.Buzon.html(); VR.Buzon.leerTodo();
     } else if (celApp === 'stats') {
       h = '<h3>📊 Estadísticas</h3>' + VR.Stats.html();
-    } else if (celApp === 'mochila') {
-      h = '<h3>🎒 Mochila</h3><div class="row2"><span>🧺 Canasto de chipa</span><span>' + (s.canasto ? s.stock + ' chipas' : '—') + '</span></div>' +
-        (s.canasto ? '<button class="cbtn" data-m="canasto">' + (s.equipo === 'canasto' ? 'Guardar el canasto' : 'Llevar el canasto en la mano') + '</button>' : '') +
-        '<div class="row2"><span>🪖 Casco</span><span>' + (s.casco ? (vida.cascoPuesto ? 'puesto' : 'guardado') : 'no tenés') + '</span></div>' + (s.casco ? '<button class="cbtn" data-c="casco">' + (vida.cascoPuesto ? 'Sacarte el casco' : 'Ponerte el casco') + '</button>' : '') + '<div class="row2"><span>🔧 Herramientas</span><span>' + (s.herr ? 'sí' : 'no tenés') + '</span></div>';
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
@@ -829,7 +827,7 @@
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍽 ' + n + ' · −' + VR.fmtGs(p)); } } }); // Mercado Municipal por dentro (13/11/2026)
   VR.boliche = VR.crearBoliche({ player, busy: () => false, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍹 ' + n + ' · −' + VR.fmtGs(p)); } } }); // boliches por dentro (14/11/2026)
-  VR.super = VR.crearSuper({ player, busy: () => false, toast: (m) => toast(m), menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
+  VR.super = VR.crearSuper({ player, busy: () => false, toast: (m) => toast(m), guarda: vida ? (t, carro, donde) => VR.Inv.compra(t, carro, donde) : null, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🛒 ' + n + ' · −' + VR.fmtGs(p)); } } }); // supermercados por dentro (14/11/2026)
   let puestoL = null; // en Libre no hay misiones, pero la despensa sí está (puesto en la vereda al sudeste de la plaza + el interior)
   if (!mis) {
