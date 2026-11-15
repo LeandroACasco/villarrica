@@ -528,3 +528,5 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 - **v1.70b:** ajuste del HUD en teléfono (captura de Leandro): el panel de texto ya no tapa los botones (ancho máximo + puntos suspensivos), se sacó la barra de hambre en texto (salía como cuadraditos) y solo avisa "🍽 N%" si hambre < 25.
 
 - **v1.71:** Configuración con tamaño fijo (todas las pestañas igual de grandes, el contenido scrollea adentro) y selector de personaje con tarjetas que muestran a cada uno.
+
+- **v1.72 · Menú principal renovado:** botón grande "Continuar" (o "Nueva Historia") con resumen de la partida (día, hora, efectivo y misión en curso, leídos del guardado), tarjetas Multijugador y Paseo libre, íconos Ajustes y Créditos, línea de estado de la nube y animación de entrada. Sigue andando con teclado, mouse, táctil y control de consola (arriba/abajo); la selección arranca en Continuar.

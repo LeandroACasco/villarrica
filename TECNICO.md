@@ -712,3 +712,6 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 
 ## Avatar HUD (v1.70)
 - `#pjHud` (retrato + `.pjBar.vida/.ham`), `Personaje.barras(hp, ham)` se llama desde `hpShow()` y `vidaHud()`; `body.conPj` corre `#hud`. En Libre (sin vida) no se muestra.
+
+## Menú principal (v1.72)
+- Mismos `.tBtn[data-a]` y `ACT`/`titleNav` de antes (orden: historia, multi, libre, config, creditos). `tagHist()` arma el resumen leyendo `VR.Guardado.snapshot()`.

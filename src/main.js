@@ -1256,7 +1256,7 @@
     mode = 'title'; document.body.classList.add('title'); titleEl.hidden = false; VR.screen.setBase(TITLE_BASE);
     const sw0 = cisnes.list[0]; if (sw0) { sw0.auto = true; sw0.autoLook = sw0.autoLook || VR.av2Random(); sw0.pas = sw0.pas || VR.av2Random(); } // una pareja pasea en cisne
     tagHist();
-    tReady = !first; tMenu.hidden = first; tTap.hidden = !first; tSel = 2; tLock = 0.3; paintSel();
+    tReady = !first; tMenu.hidden = first; tTap.hidden = !first; tSel = 0; tLock = 0.3; paintSel();
     tFade._f = -1; title.phase = 'play'; title.fade = 0; title.cut(true); titleWarm(6);
   }
   function showTitleMenu() { if (tReady || mode !== 'title') return; tReady = true; tTap.hidden = true; tMenu.hidden = false; tLock = 0.3; paintSel(); VR.audio.resume(); }
@@ -1288,7 +1288,12 @@
     try { sessionStorage.setItem('villarrica:go', m); if (online) sessionStorage.setItem('villarrica:onl', '1'); } catch (e) { location.href = location.pathname + '?' + m; return; }
     setTimeout(() => location.reload(), 450);
   }
-  const tagHist = () => { const g = $('tHistTag'); if (g) g.textContent = VR.store.hasHistoria() ? 'continuar' : 'nueva'; };
+  // resumen de la partida en el botón grande: día y hora, plata y misión en curso (se lee del guardado, sirva el modo que sirva)
+  const tagHist = () => { const g = $('tHistTag'), tit = $('tHistTit'), res = $('tResumen'), cu = $('tCuenta'), hay = VR.store.hasHistoria(); if (g) g.hidden = true; if (tit) tit.textContent = hay ? 'Continuar' : 'Nueva Historia';
+    if (res) { res.textContent = 'Villarrica te espera: empezá tu historia'; try { const sn = hay && VR.Guardado.snapshot(), P = VR.Guardado.PFX;
+      if (sn) { const v = JSON.parse(sn.d[P + 'vida']), pl = JSON.parse(sn.d[P + 'plata'] || '0'), m = sn.d[P + 'mis'] ? JSON.parse(sn.d[P + 'mis']) : null, mi = m && m.act && VR.MISIONES && VR.MISIONES[m.act.id], mm = Math.floor(v.min % 1440);
+        res.textContent = 'Día ' + (Math.floor(v.min / 1440) + 1) + ' · ' + Math.floor(mm / 60) + ':' + String(mm % 60).padStart(2, '0') + ' · 💵 ' + VR.fmtGs(pl) + (mi ? '\n📌 ' + mi.titulo : ''); res.style.whiteSpace = 'pre-line'; } } catch (e) { /* sin resumen */ } }
+    if (cu) { let n = false; try { n = !!VR.Guardado.mem('uid'); } catch (e) { /* sin nube */ } cu.textContent = n ? '☁ Partida en la nube activa' : '☁ Guardado solo en este dispositivo (Ajustes → Partida)'; } };
   const ACT = {
     historia: () => VR.modo === 'historia' ? startGame() : switchModo('historia'),
     multi: () => VR.modo === 'libre' ? startGame(() => { VR.input.releaseAll(); $('onDlg').showModal(); }) : switchModo('libre', true), // Online siempre juega en Libre
