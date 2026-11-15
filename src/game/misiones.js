@@ -67,6 +67,7 @@ VR.Lugares = class {
       case 'super_guasu': return L(/^Hiper Bigote/, 24);
       case 'super_yvoty': return L(/^Súper Seis y Medio/, 24);
       case 'teatro': { const d = (W.decals || []).find((x) => x.kind === 'muni'); return d && { x: (d.bx + (d.tx || d.bw / 2)) * VR.TILE, y: (d.y + d.bh) * VR.TILE + 10 }; } // la puerta del Teatro Municipal (como en main.js)
+      case 'hospital': return W.hospital && { x: W.hospital.x, y: W.hospital.y }; // el Hospital Regional (donde te llevan si te desmayás o te hieren)
       case 'gom1': { const p = L(/Terminal/, 70); return p; } // gomería del Centro (inventada), junto a la terminal
       case 'gom2': { const c = VR.vida && VR.vida.s.casa; return c && { x: c.x - 330, y: c.y + 14 }; } // gomería de Santa Lucía (inventada), cerca de tu pieza
       case 'despensa': { const p = L(/Plaza de los H/); return p && { x: p.x + 420, y: p.y + 660 }; } // J3: despensa chica en la vereda sur, al sudeste de la plaza (inventada)
@@ -85,7 +86,7 @@ VR.Lugares = class {
   }
 };
 VR.LUGAR_NOMBRE = { mercado1: 'Mercado 1', mercado2: 'Mercado 2', boli_bambuddha: 'Bambú Buda', boli_blue: 'Blú Karaoque', boli_estacion: 'La Re-Estación', boli_gleu: 'Gluglú Pub', super_ligero: 'Súper Lento', super_lucero: 'Súper Candente', super_kuarahy: 'Súper Herrumbre', super_kuarahyGroup: 'Herrumbre Group', super_kuarahyNorte: 'Herrumbre Norte', super_guasu: 'Hiper Bigote', super_yvoty: 'Súper Seis y Medio', financiera: 'Financiera', celulares: 'Celu Porã (servicio técnico)', cajero: 'Cajero (banco del Centro)', cajero2: 'Cajero (Santa Lucía)', despensa: 'Despensa Ñande Róga', pieza: 'tu pieza (Santa Lucía)', plaza: 'Plaza de los Héroes', muni: 'Municipalidad', marimer: 'Heladería Marimer', aopora: 'Ao Porã',
-  parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus', teatro: 'Teatro Municipal', gom1: 'Gomería Aire Lindo', gom2: 'Gomería Pinchazo Feliz' };
+  parque: 'Parque Manuel Ortiz Guerrero', cisnes: 'Paseo en cisne', cuartel: 'Cuartel de bomberos', catedral: 'Catedral', terminal: 'Terminal de Ómnibus', teatro: 'Teatro Municipal', gom1: 'Gomería Aire Lindo', gom2: 'Gomería Pinchazo Feliz', taxihosp: 'Parada de taxis del Hospital' };
 
 // ---------------- barrios por historia ----------------
 // Sin paredes: se puede ir a cualquier lado, pero en un barrio cerrado no hay changas ni misiones, el GPS no marca
@@ -558,7 +559,22 @@ VR.drawGomeria = (g, x, y) => { // tinglado chico con pila de cubiertas, tacho d
   g.fillStyle = '#b13a2a'; g.fillRect(x - 16, y - 24, 32, 9); g.fillStyle = '#f2d24a'; g.fillRect(x - 16, y - 16, 32, 1);
   VR.gfx.text(g, 'GOMERÍA', x, y - 22, '#fff6d8', { center: true, shadow: '#1a1a1e', size: 7 });
 };
+VR.drawTaxiSign = (g, x, y) => { // poste con cartel amarillo de TAXI
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 5, y - 1, 11, 3); g.fillStyle = '#55555c'; g.fillRect(x - 1, y - 22, 2, 22);
+  g.fillStyle = '#1a1a1e'; g.fillRect(x - 11, y - 33, 22, 11); g.fillStyle = '#f2c230'; g.fillRect(x - 10, y - 32, 20, 9);
+  VR.gfx.text(g, 'TAXI', x, y - 31, '#1a1a1e', { center: true, size: 7 });
+};
+// J4+: taxis afuera del hospital: te llevan al Centro, al destino marcado en el mapa o a tu vehículo (10.000 + 3.000 por km; si no alcanza, queda como deuda)
+VR.menuTaxi = (M) => { const gs = VR.fmtGs, V = M.vida, op = [];
+  const precio = (d) => Math.round((10000 + 3000 * Math.hypot(d.x - M.player.x, d.y - M.player.y) / 8000) / 500) * 500;
+  const va = (d, txt) => op.push([txt + ' · ' + gs(precio(d)), () => { if (M.taxi) M.taxi(d, precio(d)); return false; }]);
+  const plaza = M.lug.get('plaza'); if (plaza) va(plaza, '🏛 Al Centro (Plaza de los Héroes)');
+  const dm = M.destActual && M.destActual(); if (dm && Number.isFinite(dm.x)) va({ x: dm.x, y: dm.y, name: dm.name || 'tu destino' }, '📍 Al destino marcado' + (dm.name ? ' (' + dm.name + ')' : ''));
+  const vm = M.vehiculoMio && M.vehiculoMio(); if (vm) va(vm, '🏍 A donde dejé mi vehículo');
+  op.push(['No, gracias', () => false]);
+  return [{ quien: 'sis', titulo: '🚕 Taxis del Hospital', txt: '«¿Para dónde, che memby?» El viaje sale 10.000 más 3.000 por km. Si no tenés con qué pagar, queda como deuda. Tenés ' + gs(VR.Wallet.get()) + '.', op }]; };
 VR.PUNTOS = {
+  taxihosp: { lugar: { en: 'hospital', dx: 90, dy: 50 }, nombre: 'Taxis del Hospital', ico: '🚕', mini: 'T', draw: VR.drawTaxiSign, menu: (M) => VR.menuTaxi(M) },
   gomeria1: { lugar: 'gom1', nombre: 'Gomería Aire Lindo', ico: '🛞', mini: 'o', draw: VR.drawGomeria, menu: () => [{ quien: 'sis', titulo: '🛞 Gomería Aire Lindo', txt: 'Parate acá con tu moto o tu auto y, si tiene una llanta pinchada, el gomero te la arregla por ' + VR.fmtGs(VR.PRECIOS.gomeria) + '.', op: [['Aguyje', () => false]] }] },
   gomeria2: { lugar: 'gom2', nombre: 'Gomería Pinchazo Feliz', ico: '🛞', mini: 'o', draw: VR.drawGomeria, menu: () => [{ quien: 'sis', titulo: '🛞 Gomería Pinchazo Feliz', txt: 'Parate acá con tu moto o tu auto y, si tiene una llanta pinchada, el gomero te la arregla por ' + VR.fmtGs(VR.PRECIOS.gomeria) + '.', op: [['Aguyje', () => false]] }] },
   cajero: { lugar: 'cajero', nombre: 'Cajero', ico: '🏧', mini: '¤', menu: (M) => VR.cajeroMenu(M), draw: VR.drawCajero },

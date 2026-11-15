@@ -797,6 +797,9 @@
   if (mis) {
     mis.prestaMoto = () => { if (mis.motoK) return mis.motoK; const k = mis.dondeEsta('kike'); if (!k) return null; const p = mis.lug.libre(k.x + 34, k.y + 12), c = new VR.Car(world, p.x, p.y, 0, 4, 'moto', 'cub');
       c.prestada = true; c.mio = true; c.alq = vida.dia; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
+    mis.destActual = () => dest; mis.vehiculoMio = () => { const c = (!car && lastCar) || cars.find((x) => x.mio); if (!c) return null; const p = mis.lug.libre(c.x + 22, c.y + 6); return { x: p.x, y: p.y, name: 'tu vehículo' }; };
+    mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
+    { const tp = mis.lug.get(VR.PUNTOS.taxihosp.lugar); if (tp) for (let i = 0; i < 2; i++) { const x = tp.x + i * 28 - 14, y = tp.y - 34, m = 'sedan', c = new VR.Car(world, x, y, Math.PI / 2, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); if (c.contacts && c.contacts(x, y, c.a)) continue; c.taxi = true; cars.push(c); world.addBox(c); } }
     mis.quitaMoto = () => { const c = mis.motoK; if (!c) return; mis.motoK = null; world.removeBox(c); const i = cars.indexOf(c); if (i >= 0) cars.splice(i, 1); toast('🏍 Devolviste la moto de Kike'); };
   }
   // Mbohasa de verdad (12/11/2026): viene un conductor en moto o auto, te subís y te lleva por las calles (src/game/mbohasa.js)
@@ -843,6 +846,8 @@
     if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
     if (mbh.activo && mbh.v && !mbh.riding) o.push({ x: mbh.v.x, y: mbh.v.y, ico: mbh.r.tipo === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: 'Tu Mbohasa' }); // el conductor, siempre visible en el minimapa y el mapa grande (12/11/2026)
     const ks = mis ? Object.keys(VR.PUNTOS) : ['despensa'];
+    { const mios = new Set(); if (!car && lastCar) mios.add(lastCar); for (const c of cars) if (c.mio) mios.add(c); // dónde dejaste tus vehículos (el último del que te bajaste y los tuyos)
+      for (const c of mios) if (c !== car && !c.mbh) o.push({ x: c.x, y: c.y - 4, ico: c.type === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: c.prestada ? 'Moto de Kike (acá la dejaste)' : (c === lastCar ? 'Tu vehículo (el último)' : 'Tu vehículo') }); }
     for (const k of ks) { const D = VR.PUNTOS[k], p = D && lugE.get(D.lugar); if (p) o.push({ x: p.x, y: p.y - (k === 'despensa' ? 4 : 0), ico: D.ico, c: C[k] || '#9fe0a0', name: D.nombre }); }
     return o; };
   const drawEntrada = (g, e, x, y, t) => { // flecha que late + ícono sobre la puerta

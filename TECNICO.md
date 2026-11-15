@@ -692,3 +692,8 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 - **Controles de tránsito** (`src/game/controles.js`, `VR.Controles`, solo Historia): 2 puestos (a mitad de camino entre la Marimer y el Teatro, y junto a la Catedral) con camioneta de luces y conos; en moto sin casco, a menos de 58 px y a más de 12 px/s, multa (`vida.cobrarODeber`, aviso, evento `multa`) con 90 s de espera por puesto. Licencia y contramano quedan para J6.
 - **Casco equipable** (`vida.s.casco` = lo tenés, `s.cascoOn` = puesto; `vida.cascoPuesto`, `vida.ponCasco()`): tecla **H** o Mochila del celular; la multa del control y el casco dibujado en el conductor usan `cascoPuesto`.
 - **Gomerías** (`VR.PUNTOS.gomeria1/2`, inventadas: «Aire Lindo» junto a la terminal, «Pinchazo Feliz» en Santa Lucía): puesto con pila de cubiertas y marcador 🛞 en el mapa. Parado cerca (< 80 px) con una llanta pinchada, `VR.Controles.gomeria()` ofrece arreglarla por `VR.PRECIOS.gomeria` (8.000 Gs., en la calle el parche cuesta 12.000). `VR.Tab.flat(c)` está expuesto para eso.
+
+
+## Taxis del hospital y marcadores de vehículos (v1.65)
+- `entradas()` en main.js agrega marcadores 🏍/🚗 para `cars` con `c.mio` y `lastCar` (si no vas manejando).
+- `VR.PUNTOS.taxihosp` (lugar `{en:'hospital',dx:90,dy:50}`), `VR.menuTaxi(M)`; `Lugares.base('hospital')` = `world.hospital`. `mis.taxi(d,precio)` cobra con `vida.cobrarODeber` y hace fade + `teleport`. `mis.destActual`/`mis.vehiculoMio` los provee main.js. Taxis estacionados: `VR.Car` sedán con `c.taxi=true` en `cars`.

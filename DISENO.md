@@ -506,6 +506,9 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 - 14/11/2026 (v1.59): Supermercados por dentro y chespis. Ver TECNICO.md.
 - 14/11/2026 (v1.60): Boliches de noche y armas contra chespis. Ver TECNICO.md.
 - 14/11/2026 (v1.61): Súper con diseño genérico y nombres alternativos (los reales quedan solo en la documentación). Ver TECNICO.md.
-- 15/11/2026 (v1.64): J4 (M2 «Helado de urgencia»), casco, moto de Kike y controles de tránsito. Ver TECNICO.md.
+- 15/11/2026 (v1.65): J4 (M2 «Helado de urgencia»), casco, moto de Kike y controles de tránsito. Ver TECNICO.md.
 - 15/11/2026 (v1.63): Guardado compartido: exportar/importar y nube con Google.
 - 15/11/2026 (v1.62): Puesta al día de la documentación (lista de cambios de 11–14/11 que faltaba en Estado actual). Ver TECNICO.md.
+
+
+- **v1.65 · Vehículos marcados y taxis del hospital:** en el mapa/minimapa se marcan tus vehículos (los `mio`, la moto de Kike y el último del que te bajaste). Afuera del Hospital hay una parada de taxis (PUNTO `taxihosp`, cartel TAXI + sedán amarillo): te llevan al Centro (Plaza de los Héroes), al destino marcado en el mapa o a donde dejaste tu vehículo; tarifa 10.000 + 3.000/km, si no alcanza queda como deuda.
