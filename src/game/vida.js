@@ -89,6 +89,8 @@ VR.Vida = class {
   // cajero: pasar efectivo a la cuenta o sacar
   deposita(n) { n = Math.min(n, VR.Wallet.get()); if (n <= 0) return 0; VR.Wallet.set(VR.Wallet.get() - n); this.log(-n, 'Depósito en el cajero'); this.s.banco += n; this.log(n, '🏦 Depósito'); this.sync(); this.msg('🏧 Depositaste ' + VR.fmtGs(n)); return n; }
   retira(n) { n = Math.min(n, this.s.banco); if (n <= 0) return 0; this.s.banco -= n; this.log(-n, '🏦 Retiro'); VR.Wallet.set(VR.Wallet.get() + n); this.log(n, 'Retiro del cajero'); this.sync(); this.msg('🏧 Sacaste ' + VR.fmtGs(n)); return n; }
+  // pagar la deuda a mano (casco adelantado, multas, hospital): con el efectivo y, si no alcanza, con la billetera electrónica
+  pagaDeuda() { const s = this.s; if (s.debe <= 0) return 0; let n = Math.min(s.debe, VR.Wallet.get()); if (n > 0) { VR.Wallet.set(VR.Wallet.get() - n); this.log(-n, 'Pago de deuda'); } let r = s.debe - n, b = Math.min(r, s.banco); if (b > 0) { s.banco -= b; this.log(-b, '🏦 Pago de deuda'); n += b; } s.debe -= n; if (n <= 0) this.msg('💸 No tenés con qué pagar la deuda'); else this.msg('✔ Pagaste ' + VR.fmtGs(n) + ' de deuda' + (s.debe > 0 ? ' · te quedan ' + VR.fmtGs(s.debe) : ' · ¡estás al día!')); this.save(); return n; }
   // casco (J4): se paga con la plata o, en la misión de Kike, queda como deuda con él
   compraCasco(aDeuda) { const P = VR.PRECIOS.casco, s = this.s; if (s.casco) return true; if (aDeuda) { s.debe += P; this.log(0, 'Casco: lo adelantó Kike, quedó debiendo ' + VR.fmtGs(P)); } else if (!this.gasta(P, 'Casco')) return false; s.casco = true; this.save(); this.msg('🪖 ¡Casco nuevo!'); return true; }
   gasta(n, why) { if (VR.Wallet.get() < n) { this.msg('💸 No te alcanza: ' + VR.fmtGs(n)); return false; } this.mueve(-n, why); return true; }

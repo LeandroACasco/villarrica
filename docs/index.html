@@ -414,7 +414,7 @@
       <button class="tBtn" data-a="creditos">★ Créditos</button>
     </div>
   </div>
-  <div class="tVer">Versión dbbd1add · 2026-11-15</div>
+  <div class="tVer">Versión d3b43cf7 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -524,7 +524,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión dbbd1add · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d3b43cf7 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -8684,6 +8684,8 @@ VR.Vida = class {
   // cajero: pasar efectivo a la cuenta o sacar
   deposita(n) { n = Math.min(n, VR.Wallet.get()); if (n <= 0) return 0; VR.Wallet.set(VR.Wallet.get() - n); this.log(-n, 'Depósito en el cajero'); this.s.banco += n; this.log(n, '🏦 Depósito'); this.sync(); this.msg('🏧 Depositaste ' + VR.fmtGs(n)); return n; }
   retira(n) { n = Math.min(n, this.s.banco); if (n <= 0) return 0; this.s.banco -= n; this.log(-n, '🏦 Retiro'); VR.Wallet.set(VR.Wallet.get() + n); this.log(n, 'Retiro del cajero'); this.sync(); this.msg('🏧 Sacaste ' + VR.fmtGs(n)); return n; }
+  // pagar la deuda a mano (casco adelantado, multas, hospital): con el efectivo y, si no alcanza, con la billetera electrónica
+  pagaDeuda() { const s = this.s; if (s.debe <= 0) return 0; let n = Math.min(s.debe, VR.Wallet.get()); if (n > 0) { VR.Wallet.set(VR.Wallet.get() - n); this.log(-n, 'Pago de deuda'); } let r = s.debe - n, b = Math.min(r, s.banco); if (b > 0) { s.banco -= b; this.log(-b, '🏦 Pago de deuda'); n += b; } s.debe -= n; if (n <= 0) this.msg('💸 No tenés con qué pagar la deuda'); else this.msg('✔ Pagaste ' + VR.fmtGs(n) + ' de deuda' + (s.debe > 0 ? ' · te quedan ' + VR.fmtGs(s.debe) : ' · ¡estás al día!')); this.save(); return n; }
   // casco (J4): se paga con la plata o, en la misión de Kike, queda como deuda con él
   compraCasco(aDeuda) { const P = VR.PRECIOS.casco, s = this.s; if (s.casco) return true; if (aDeuda) { s.debe += P; this.log(0, 'Casco: lo adelantó Kike, quedó debiendo ' + VR.fmtGs(P)); } else if (!this.gasta(P, 'Casco')) return false; s.casco = true; this.save(); this.msg('🪖 ¡Casco nuevo!'); return true; }
   gasta(n, why) { if (VR.Wallet.get() < n) { this.msg('💸 No te alcanza: ' + VR.fmtGs(n)); return false; } this.mueve(-n, why); return true; }
@@ -10113,6 +10115,7 @@ VR.cajeroMenu = (M) => { const V = M.vida, e = VR.Wallet.get(), b = V.s.banco, o
   if (e > 0) op.push(['Depositar todo el efectivo (' + VR.fmtGs(e) + ')', () => { V.deposita(e); return false; }]);
   for (const n of [50000, 100000]) if (b >= n) op.push(['Sacar ' + VR.fmtGs(n), () => { V.retira(n); return false; }]);
   if (b > 0) op.push(['Sacar todo (' + VR.fmtGs(b) + ')', () => { V.retira(b); return false; }]);
+  if (V.s.debe > 0) op.push(['Pagar mi deuda (' + VR.fmtGs(V.s.debe) + ')', () => { V.pagaDeuda(); return false; }]);
   op.push(['🏦 Préstamos del banco', () => VR.prestamoMenu(M, 'banco')]);
   op.push(['Salir', () => false]);
   return [{ quien: 'sis', titulo: '🏧 Cajero', txt: 'Efectivo: ' + VR.fmtGs(e) + ' · Billetera electrónica: ' + VR.fmtGs(b), op }]; };
@@ -10175,8 +10178,9 @@ VR.menuMirta = (M) => { const V = M.vida, P = VR.PRECIOS, op = [];
   return [{ quien: 'mirta', txt: 'Los cascos están ahí. Uno integral con visor sale ' + VR.fmtGs(P.casco) + '. Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op }];
 };
 VR.menuKike = (M) => { const V = M.vida, P = VR.PRECIOS;
-  if (!M.hecha('m2')) return [['kike', 'Tengo una idea para hacernos ricos... después te cuento.']];
-  const op = []; if (!M.motoK) op.push(['Alquilar la moto · ' + VR.fmtGs(P.alquilerMoto) + ' por el día', () => { if (!V.s.casco) return [['kike', 'Sin casco no te la presto. Comprate uno en Ao Porã.']]; if (!V.gasta(P.alquilerMoto, 'Alquiler de la moto de Kike')) return false; if (M.prestaMoto) M.prestaMoto(); return [['kike', 'Está al lado mío. La devolvés al amanecer, ¿ajépa?']]; }]);
+  if (!M.hecha('m2') && !(V.s.debe > 0)) return [['kike', 'Tengo una idea para hacernos ricos... después te cuento.']];
+  const op = []; if (V.s.debe > 0) op.push(['Pagar mi deuda (' + VR.fmtGs(V.s.debe) + ')', () => { V.pagaDeuda(); return false; }]);
+  if (!M.motoK) op.push(['Alquilar la moto · ' + VR.fmtGs(P.alquilerMoto) + ' por el día', () => { if (!V.s.casco) return [['kike', 'Sin casco no te la presto. Comprate uno en Ao Porã.']]; if (!V.gasta(P.alquilerMoto, 'Alquiler de la moto de Kike')) return false; if (M.prestaMoto) M.prestaMoto(); return [['kike', 'Está al lado mío. La devolvés al amanecer, ¿ajépa?']]; }]);
   op.push(['Nada, Kike', () => false]);
   return [{ quien: 'kike', txt: M.motoK ? 'La moto la tenés vos hasta mañana. Ani rejapo tavy.' : "Ahí tengo mi moto, che ra'a. " + VR.fmtGs(P.alquilerMoto) + ' por el día.', op }];
 };
