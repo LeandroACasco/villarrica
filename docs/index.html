@@ -460,7 +460,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión cc7e1f2b · 2026-11-15</div>
+  <div class="tVer">Versión 9cadecb2 · 2026-11-15</div>
 </div>
 <div id="fade"></div>
 
@@ -575,7 +575,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión cc7e1f2b · 2026-11-15</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 9cadecb2 · 2026-11-15</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -8738,6 +8738,14 @@ VR.Vida = class {
     W.set(W.get() + n); this.log(n, why);
   }
   // gasto que se paga con lo que hay y, si no alcanza, queda como deuda (hospital, multas)
+  // Hospital Regional: las dos primeras visitas son gratis; después el costo es aleatorio (a veces faltan medicamentos y hay que comprarlos afuera; otras te mandan a hacer estudios en un sanatorio y sale bastante más)
+  atencion() { const s = this.s; s.hosp = (s.hosp || 0) + 1;
+    if (s.hosp <= 2) { this.save(); return { cost: 0, txt: 'El Hospital Regional te atendió gratis (visita ' + s.hosp + ' de 2 sin costo).' }; }
+    const r = Math.random(), U = (a, b) => Math.round((a + Math.random() * (b - a)) / 1000) * 1000; let cost, nota;
+    if (r < 0.25) { cost = U(10000, 25000); nota = 'Había lo básico: solo pagaste los insumos'; }
+    else if (r < 0.75) { cost = U(40000, 90000); nota = 'No había medicamentos: los compraste en la farmacia'; }
+    else { cost = U(110000, 180000); nota = 'No había medicamentos y te mandaron a hacerte estudios en un sanatorio privado'; }
+    this.cobrarODeber(cost, 'Hospital: ' + nota); return { cost, txt: nota + ' · ' + VR.fmtGs(cost) }; }
   cobrarODeber(n, why) {
     const W = VR.Wallet, pago = Math.min(W.get(), n); W.set(W.get() - pago); this.log(-pago, why);
     const b = Math.min(this.s.banco, n - pago); if (b > 0) { this.s.banco -= b; this.log(-b, '🏦 ' + why); } n -= b;
@@ -15205,7 +15213,7 @@ VR.Titulo = class {
   const gpsNet = prueba ? null : new VR.GPS(world);
   const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
     onBusted: () => { sentTo('🚔 ¡Te agarró la Policía! Saliste de la comisaría después de un rato.', 'comisaria'); if (VR.mis) VR.mis.emit('arresto'); },
-    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al Hospital Regional.', 'hospital'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
+    onWasted: () => { const h = vida && vida.atencion(); sentTo('💥 Explotó con vos adentro... te llevaron al Hospital Regional.' + (h ? ' ' + h.txt : ''), 'hospital'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
   const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
@@ -15213,7 +15221,7 @@ VR.Titulo = class {
   VR.audio.setOn(VR.store.get('snd', true)); VR.audio.setVol(VR.store.get('vol', 0.6));
   if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
     vida.onMsg = (m) => toast(m);
-    vida.onDesmayo = () => { VR.Stats.inc('desmayos'); sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios), 'hospital'); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
+    vida.onDesmayo = () => { VR.Stats.inc('desmayos'); const h = vida.atencion(); sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. ' + h.txt, 'hospital'); if (VR.mis) VR.mis.emit('hospital'); };
   }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg, to) {
@@ -15292,8 +15300,8 @@ VR.Titulo = class {
     hp -= dmg; hpQuiet = 6; hpShow();
     if (hp <= 0) {
       hp = 60; hpShow(); player.rag = null; const cost = VR.PRECIOS && VR.PRECIOS.remedios || 30000;
-      if (vida) vida.cobrarODeber(cost, 'Hospital: curaciones'); else VR.Wallet.add(-Math.min(VR.Wallet.get(), cost));
-      sentTo('🏥 Quedaste muy mal y te llevaron al hospital. Curaciones: ' + VR.fmtGs(cost), 'hospital');
+      const h = vida ? vida.atencion() : null; if (!vida) VR.Wallet.add(-Math.min(VR.Wallet.get(), cost));
+      sentTo('🏥 Quedaste muy mal y te llevaron al hospital. ' + (h ? h.txt : 'Curaciones: ' + VR.fmtGs(cost)), 'hospital');
     }
   }
   function hpTick(dt) { if (hp >= 100) return; hpQuiet -= dt; if (hpQuiet <= 0) { hp = Math.min(100, hp + dt * 2.5); hpShow(); } }

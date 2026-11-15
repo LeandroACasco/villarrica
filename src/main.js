@@ -110,7 +110,7 @@
   const gpsNet = prueba ? null : new VR.GPS(world);
   const emer = prueba ? null : new VR.Emergency(world, { traffic, gps: gpsNet, peds, night, toast: (m) => toast(m),
     onBusted: () => { sentTo('🚔 ¡Te agarró la Policía! Saliste de la comisaría después de un rato.', 'comisaria'); if (VR.mis) VR.mis.emit('arresto'); },
-    onWasted: () => { sentTo('💥 Explotó con vos adentro... te llevaron al Hospital Regional.', 'hospital'); if (vida) vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
+    onWasted: () => { const h = vida && vida.atencion(); sentTo('💥 Explotó con vos adentro... te llevaron al Hospital Regional.' + (h ? ' ' + h.txt : ''), 'hospital'); if (VR.mis) { VR.mis.emit('explota'); VR.mis.emit('hospital'); } } });
   if (emer) emer.sound = VR.store.get('snd', true);
   VR.emer = emer;
   const weapons = prueba ? null : new VR.Weapons(world, { peds, emer, night, toast: (m) => toast(m) });
@@ -118,7 +118,7 @@
   VR.audio.setOn(VR.store.get('snd', true)); VR.audio.setVol(VR.store.get('vol', 0.6));
   if (vida) { // Historia: avisos, desmayo por hambre y cobro del hospital
     vida.onMsg = (m) => toast(m);
-    vida.onDesmayo = () => { VR.Stats.inc('desmayos'); sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. Remedios: ' + VR.fmtGs(VR.PRECIOS.remedios), 'hospital'); vida.cobrarODeber(VR.PRECIOS.remedios, 'Hospital: remedios'); if (VR.mis) VR.mis.emit('hospital'); };
+    vida.onDesmayo = () => { VR.Stats.inc('desmayos'); const h = vida.atencion(); sentTo('🏥 Te desmayaste de hambre y te llevaron al hospital. ' + h.txt, 'hospital'); if (VR.mis) VR.mis.emit('hospital'); };
   }
   // te agarraron o volaste: aparecés en la plaza, sin estrellas
   function sentTo(msg, to) {
@@ -197,8 +197,8 @@
     hp -= dmg; hpQuiet = 6; hpShow();
     if (hp <= 0) {
       hp = 60; hpShow(); player.rag = null; const cost = VR.PRECIOS && VR.PRECIOS.remedios || 30000;
-      if (vida) vida.cobrarODeber(cost, 'Hospital: curaciones'); else VR.Wallet.add(-Math.min(VR.Wallet.get(), cost));
-      sentTo('🏥 Quedaste muy mal y te llevaron al hospital. Curaciones: ' + VR.fmtGs(cost), 'hospital');
+      const h = vida ? vida.atencion() : null; if (!vida) VR.Wallet.add(-Math.min(VR.Wallet.get(), cost));
+      sentTo('🏥 Quedaste muy mal y te llevaron al hospital. ' + (h ? h.txt : 'Curaciones: ' + VR.fmtGs(cost)), 'hospital');
     }
   }
   function hpTick(dt) { if (hp >= 100) return; hpQuiet -= dt; if (hpQuiet <= 0) { hp = Math.min(100, hp + dt * 2.5); hpShow(); } }

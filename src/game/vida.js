@@ -79,6 +79,14 @@ VR.Vida = class {
     W.set(W.get() + n); this.log(n, why);
   }
   // gasto que se paga con lo que hay y, si no alcanza, queda como deuda (hospital, multas)
+  // Hospital Regional: las dos primeras visitas son gratis; después el costo es aleatorio (a veces faltan medicamentos y hay que comprarlos afuera; otras te mandan a hacer estudios en un sanatorio y sale bastante más)
+  atencion() { const s = this.s; s.hosp = (s.hosp || 0) + 1;
+    if (s.hosp <= 2) { this.save(); return { cost: 0, txt: 'El Hospital Regional te atendió gratis (visita ' + s.hosp + ' de 2 sin costo).' }; }
+    const r = Math.random(), U = (a, b) => Math.round((a + Math.random() * (b - a)) / 1000) * 1000; let cost, nota;
+    if (r < 0.25) { cost = U(10000, 25000); nota = 'Había lo básico: solo pagaste los insumos'; }
+    else if (r < 0.75) { cost = U(40000, 90000); nota = 'No había medicamentos: los compraste en la farmacia'; }
+    else { cost = U(110000, 180000); nota = 'No había medicamentos y te mandaron a hacerte estudios en un sanatorio privado'; }
+    this.cobrarODeber(cost, 'Hospital: ' + nota); return { cost, txt: nota + ' · ' + VR.fmtGs(cost) }; }
   cobrarODeber(n, why) {
     const W = VR.Wallet, pago = Math.min(W.get(), n); W.set(W.get() - pago); this.log(-pago, why);
     const b = Math.min(this.s.banco, n - pago); if (b > 0) { this.s.banco -= b; this.log(-b, '🏦 ' + why); } n -= b;

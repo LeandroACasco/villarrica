@@ -532,3 +532,5 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 - **v1.72 · Menú principal renovado:** botón grande "Continuar" (o "Nueva Historia") con resumen de la partida (día, hora, efectivo y misión en curso, leídos del guardado), tarjetas Multijugador y Paseo libre, íconos Ajustes y Créditos, línea de estado de la nube y animación de entrada. Sigue andando con teclado, mouse, táctil y control de consola (arriba/abajo); la selección arranca en Continuar.
 
 - **v1.73:** botón de Inventario visible arriba (ícono de mochila en pixel art, `VR.drawMochilaIcon`); el inventario tiene tamaño fijo en todas las pestañas; en la Historia el personaje siempre lleva mochila puesta (`Player.setLook` fuerza `mochila:true`).
+
+- **v1.74 · Hospital:** las dos primeras visitas al Hospital Regional son gratis; desde la tercera el costo es aleatorio: 25% solo insumos (10–25 mil), 50% sin medicamentos (40–90 mil), 25% sin medicamentos + estudios en sanatorio privado (110–180 mil). `vida.atencion()` (cuenta en `s.hosp`) reemplaza al viejo precio fijo de 120.000 en desmayo, explosión y herida grave.
