@@ -238,11 +238,11 @@
       const B = RGB(base), Sd = RGB(o.shade || TINT(SH(base, T.sombra), '#3a2a7a', 0.16)), Li = RGB(o.light || TINT(SH(base, T.luz), '#fff0b8', 0.13)), id = layerN++;   // luz cálida, sombra fría
       const s = Math.max(1, Math.round(k * (o.band || T.bandaLuz)));
       const lightSide = mirror ? 1 : -1; // la luz viene de la izquierda de la pantalla
-      if (o.sep !== false && k >= 2) {
+      if (o.sep !== false && k >= 1.5) {
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
           const i = y * W + x; if (m[i] || out[i * 4 + 3] === 0) continue;
           if ((x > 0 && m[i - 1]) || (x < W - 1 && m[i + 1]) || (y > 0 && m[i - W]) || (y < H - 1 && m[i + W])) {
-            out[i * 4] *= T.separacion; out[i * 4 + 1] *= T.separacion; out[i * 4 + 2] *= T.separacion;
+            const sf = k >= 2 ? T.separacion : 0.84; out[i * 4] *= sf; out[i * 4 + 1] *= sf; out[i * 4 + 2] *= sf;
           }
         }
       }
@@ -640,9 +640,10 @@
     const fin = new Uint8ClampedArray(out);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x; if (out[i * 4 + 3]) continue;
-      let n = -1;
-      if (x > 0 && out[(i - 1) * 4 + 3]) n = i - 1; else if (x < W - 1 && out[(i + 1) * 4 + 3]) n = i + 1; else if (y > 0 && out[(i - W) * 4 + 3]) n = i - W; else if (y < H - 1 && out[(i + W) * 4 + 3]) n = i + W;
-      if (n >= 0) { fin[i * 4] = out[n * 4] * T.contorno + 10; fin[i * 4 + 1] = out[n * 4 + 1] * T.contorno * (0.26 / 0.28) + 8; fin[i * 4 + 2] = out[n * 4 + 2] * T.contorno + 12; fin[i * 4 + 3] = 255; }
+      let n = -1, f = T.contorno;
+      const lit = mirror ? 1 : -1;   // la luz viene de la izquierda de la pantalla
+      if (x > 0 && out[(i - 1) * 4 + 3]) { n = i - 1; f *= lit < 0 ? 0.9 : 1.55; } else if (x < W - 1 && out[(i + 1) * 4 + 3]) { n = i + 1; f *= lit < 0 ? 1.55 : 0.9; } else if (y > 0 && out[(i - W) * 4 + 3]) { n = i - W; f *= 0.85; } else if (y < H - 1 && out[(i + W) * 4 + 3]) { n = i + W; f *= 1.5; }
+      if (n >= 0) { fin[i * 4] = out[n * 4] * f + 12; fin[i * 4 + 1] = out[n * 4 + 1] * f * (0.26 / 0.28) + 8; fin[i * 4 + 2] = out[n * 4 + 2] * f + 24; fin[i * 4 + 3] = 255; }
     }
     const res = document.createElement('canvas'); res.width = W; res.height = H;
     res.getContext('2d').putImageData(new ImageData(fin, W, H), 0, 0);
@@ -650,6 +651,16 @@
     return res;
   }
 
+  // Dibujo con más detalle al tamaño del juego (17/11/2026): se pinta al doble y se reduce con suavizado, así los detalles chicos
+  // (costuras, ojos, labios, pliegues) quedan como matices en vez de perderse. `VR.AV2_SS = false` vuelve al dibujo seco de antes.
+  VR.AV2_SS = false;
+  VR.av2Sprite = (L, d, a, ph, k) => {
+    if (!VR.AV2_SS || k >= 2.5) return render(L, d, a, ph, k);
+    const big = render(L, d, a, ph, k * 2), c = document.createElement('canvas'); c.width = 16 * k; c.height = 32 * k;
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(big, 0, 0, c.width, c.height);
+    if (big.hand) c.hand = big.hand;
+    return c;
+  };
   VR.av2Render = render;
   // hoja de animaciones: { down|up|right|left: { idle: [..], walk: [..], run: [..] } }
   VR.av2Sheet = (look, k = 1, n = { idle: 1, walk: 6, run: 6 }) => {
@@ -664,7 +675,7 @@
     return { n, look: L, get(d, a, i) {
       if (a === 'idle' && !i) i = (Math.floor(performance.now() / 420 + off) % 4);
       const key = d + a + i; let f = c.get(key);
-      if (!f) { f = render(L, d, a, i / n[a.replace('+aim', '')], k); c.set(key, f); }
+      if (!f) { f = VR.av2Sprite(L, d, a, i / n[a.replace('+aim', '')], k); c.set(key, f); }
       return f;
     } };
   };
