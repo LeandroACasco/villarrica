@@ -730,3 +730,7 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 ## Carteles de calle en las esquinas (17/11/2026)
 - `tools/osm_to_map.py` (sección «carteles de calle»): por cada cruce del Centro (`CARTEL_BARRIOS`) con 2 calles con nombre de OSM saca nombre abreviado (`ABREV`) y sentido (mano única → `E/W/N/S`, doble mano → `''`) y pone un decal `cartel_calle` (`px, py` = pie del poste, `pl` = `[[nombre, 'h'|'v', dir]]`) en las esquinas NE y SO sobre la vereda. 455 en el Centro.
 - `src/world/carteles.js` (`VR.decorTop.cartel_calle`): poste con chapa de nombre + chapa de flecha (doble si va para los dos lados). Sin marcas ni publicidad. El poste es un obstáculo fino (`buildProps`, r 2). Para otros barrios: agregarlos a `CARTEL_BARRIOS`.
+
+## Más detalle en las personas (17/11/2026, `avatar2.js`)
+- Peinados nuevos: `bob`, `ladoLargo` (flequillo de lado), `mediaCola`, `colitaAlta`. Colores de pelo 9-14 (borgoña, cobrizo, platinado, ciruela, azulado, rosa) y `L.ombre` (puntas más claras).
+- Bloque «detalles de cara y pelo» al final de `drawHair`: reflejo en la coronilla, maquillaje (`L.makeup` 0-2, `L.lips`, `L.shadow` en `CAT`), rubor, pecas, aros (`L.aros`, `L.arosC`), vincha, moño y gomita (`L.accC`). `VR.av2Random` los reparte, sobre todo a las mujeres. Mismo tamaño de sprite.

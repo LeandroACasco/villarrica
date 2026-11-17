@@ -12,18 +12,19 @@
   // ---------- catálogo de la tienda (precios en guaraníes) ----------
   const CAT = {
     skin: ['#f1c9a5', '#e0aa7e', '#c98b5c', '#b07850', '#8f5b38', '#6b4026'],
-    hairColor: ['#16110d', '#2a1b12', '#4a2e1a', '#7a4e24', '#c8a050', '#9c9890', '#8a2a22', '#8a7868', '#e8d08a'],
+    hairColor: ['#16110d', '#2a1b12', '#4a2e1a', '#7a4e24', '#c8a050', '#9c9890', '#8a2a22', '#8a7868', '#e8d08a', '#6b1f2e', '#b5532a', '#e6e0d0', '#5a3a5a', '#2f4a6a', '#c24a7a'],   // 9-14: borgoña, cobrizo, platinado, ciruela, azulado, rosa (17/11/2026)
     cloth: ['#c8322a', '#f2efe6', '#2e6fc8', '#2c2c34', '#3b9a5a', '#e8b830', '#7a4ab0', '#e86aa0', '#e87a2a', '#4aa8b8', '#8a6a48', '#6a7a3a', '#a8d0ec', '#1e3a6a', '#9a9aa2', '#5a2a2a'],
     denim: ['#2c4a7b', '#4a6a9a', '#2a2a32', '#6a6258', '#c8c0ae'],
     hair: { corto: ['Corto', 15000], degrade: ['Degradé', 25000], rapado: ['Rapado', 10000], peinadoAtras: ['Para atrás', 20000], flequillo: ['Flequillo', 20000],
-      medio: ['Hasta los hombros', 25000], largo: ['Largo lacio', 25000], onduladoFlequillo: ['Ondulado con flequillo', 35000], ondulado: ['Largo ondulado', 30000], rulos: ['Rulos', 30000], colita: ['Colita', 20000], colitaLado: ['Colita al costado', 20000], rodete: ['Rodete', 20000], trenza: ['Trenza', 30000], pelado: ['Pelado', 0] },
+      medio: ['Hasta los hombros', 25000], largo: ['Largo lacio', 25000], onduladoFlequillo: ['Ondulado con flequillo', 35000], ondulado: ['Largo ondulado', 30000], rulos: ['Rulos', 30000], colita: ['Colita', 20000], colitaLado: ['Colita al costado', 20000], rodete: ['Rodete', 20000], trenza: ['Trenza', 30000], bob: ['Bob', 30000], ladoLargo: ['Largo con flequillo de lado', 35000], mediaCola: ['Media cola con rodete', 30000], colitaAlta: ['Colita alta', 25000], pelado: ['Pelado', 0] },
     top: { remera: ['Remera', 35000], musculosa: ['Musculosa', 25000], polo: ['Chomba', 60000], camiseta: ['Camiseta a rayas', 95000], camisa: ['Camisa manga larga', 85000],
       camisaCorta: ['Camisa manga corta', 75000], buzo: ['Buzo con capucha', 120000], campera: ['Campera abierta', 160000], puffer: ['Campera inflable', 220000], hoodieAbierto: ['Campera con capucha', 150000], sueter: ['Buzo liso', 90000], top: ['Top', 30000] },
     bottom: { jean: ['Jean', 110000], cargo: ['Pantalón cargo', 120000], jogging: ['Jogging', 70000], vestir: ['Pantalón de vestir', 130000], bermuda: ['Bermuda', 55000], cargoShort: ['Short cargo', 60000],
       short: ['Short', 40000], pollera: ['Pollera', 65000], calza: ['Calza', 50000] },
     shoes: { zapatillas: ['Zapatillas', 150000], botitas: ['Zapatillas altas', 180000], chinelas: ['Chinelas', 20000], zapatos: ['Zapatos', 200000], botines: ['Botines', 180000] },
     hat: { ninguno: ['Sin gorra', 0], gorra: ['Gorra', 30000], gorraAtras: ['Gorra para atrás', 30000], gorro: ['Gorro de lana', 35000], piri: ['Sombrero piri', 45000], casco: ['Casco', 120000] },
-    extra: { lentes: ['Lentes de sol', 25000], anteojos: ['Anteojos', 90000], mochila: ['Mochila', 90000], termo: ['Termo de tereré', 60000], reloj: ['Reloj', 70000], cadenita: ['Cadenita', 40000] },
+    extra: { lentes: ['Lentes de sol', 25000], anteojos: ['Anteojos', 90000], mochila: ['Mochila', 90000], termo: ['Termo de tereré', 60000], reloj: ['Reloj', 70000], cadenita: ['Cadenita', 40000], aros: ['Aros', 45000], vincha: ['Vincha', 25000], lazo: ['Moño en el pelo', 20000] },
+    lips: ['#d0707a', '#c4202e', '#e0705a', '#8a2a4a', '#b8505a'], shadow: ['#b89a8a', '#7a5a8a', '#6a8aa8', '#a8786a', '#5a7a5a'],
     beard: { no: ['Sin barba', 0], bigote: ['Bigote', 0], barba: ['Barba', 0], candado: ['Candado', 0], chivita: ['Chivita', 0] },
     build: { flaco: ['Flaco', 0], normal: ['Normal', 0], fornido: ['Fornido', 0], panza: ['Con panza', 0] },
     gender: { m: ['Hombre', 0], f: ['Mujer', 0] },
@@ -61,8 +62,15 @@
     if (L.hat === 'casco') L.hat = 'gorra';
     for (const k in CAT.extra) L[k] = rnd() < 0.14;
     if (L.lentes && L.anteojos) L.anteojos = false;
-    if (gender === 'f') { L.beard = 'no'; if (rnd() < 0.7) L.hair = ['largo', 'ondulado', 'colita', 'colitaLado', 'rodete', 'trenza'][(rnd() * 6) | 0]; }
-    else { if (L.top === 'top') L.top = 'remera'; if (L.bottom === 'pollera' || L.bottom === 'calza') L.bottom = 'jean'; if (['trenza', 'rodete', 'colitaLado', 'ondulado'].includes(L.hair)) L.hair = 'corto'; }
+    if (gender === 'f') {
+      L.beard = 'no'; if (rnd() < 0.8) L.hair = ['largo', 'ondulado', 'colita', 'colitaLado', 'rodete', 'trenza', 'bob', 'ladoLargo', 'mediaCola', 'colitaAlta', 'largo', 'onduladoFlequillo'][(rnd() * 12) | 0];
+      if (rnd() < 0.18) L.hairColor = 9 + ((rnd() * 6) | 0);                       // teñido: borgoña, cobrizo, platinado, ciruela, azulado, rosa
+      L.makeup = rnd() < 0.78 ? (rnd() < 0.5 ? 1 : 2) : 0; L.lips = (rnd() * CAT.lips.length) | 0; L.shadow = (rnd() * CAT.shadow.length) | 0;
+      L.aros = rnd() < 0.5; L.arosC = (rnd() * 4) | 0; L.vincha = rnd() < 0.08; L.lazo = !L.vincha && rnd() < 0.1; L.accC = (rnd() * CAT.cloth.length) | 0;
+      L.pecas = rnd() < 0.12; if (rnd() < 0.14) L.ombre = (rnd() * 5) | 0 ? 4 : 10;  // puntas más claras (rubio o cobrizo)
+      L.hat = L.hat === 'ninguno' || rnd() < 0.5 ? L.hat : 'ninguno';
+    }
+    else { L.aros = rnd() < 0.05; L.vincha = L.lazo = false; if (L.top === 'top') L.top = 'remera'; if (L.bottom === 'pollera' || L.bottom === 'calza') L.bottom = 'jean'; if (['trenza', 'rodete', 'colitaLado', 'ondulado', 'bob', 'ladoLargo', 'mediaCola', 'colitaAlta'].includes(L.hair)) L.hair = 'corto'; }
     return L;
   };
 
@@ -261,14 +269,15 @@
     const sleeveLen = L.top === 'musculosa' || L.top === 'top' ? 0 : longSleeve ? 1 : 0.45;
     const legLen = { short: 0.26, cargoShort: 0.28, bermuda: 0.58, pollera: 0, calza: 0.92 }[L.bottom] ?? 1;
     const wavy = L.hair === 'ondulado' || L.hair === 'onduladoFlequillo';
-    const longHair = L.hair === 'largo' || L.hair === 'trenza' || wavy;
-    const midHair = L.hair === 'medio';
+    const longHair = L.hair === 'largo' || L.hair === 'trenza' || L.hair === 'ladoLargo' || L.hair === 'mediaCola' || wavy;
+    const midHair = L.hair === 'medio' || L.hair === 'bob', ML = L.hair === 'bob' ? 2.5 : 3.4;   // largo del pelo hasta los hombros (el bob es más corto)
 
     if (!side) {
       const front = !back;
       const [hL, hR] = S.hip, [kL, kR] = S.knee, [aL, aR] = S.ank, [sL, sR] = S.sh, [eL, eR] = S.elb, [wL, wR] = S.wri;
       // pelo largo por detrás del cuerpo (de frente)
       if (longHair && front) paint((g) => { poly(g, [[8 - 2.6, 3.5 + S.bob], [8 + 2.6, 3.5 + S.bob], [8 + 2.9, 10.8 + S.bob], [8 - 2.9, 10.8 + S.bob]]); }, SH(hair, 0.8), { light: false });
+      if (longHair && front && L.ombre !== undefined) paint((g) => { poly(g, [[8 - 2.9, 8.4 + S.bob], [8 + 2.9, 8.4 + S.bob], [8 + 2.9, 10.8 + S.bob], [8 - 2.9, 10.8 + S.bob]]); }, SH(CAT.hairColor[L.ombre], 0.85), { light: false });
       if (L.mochila && front) paint((g) => { g.fillRect(8 - 3.4 * sw, 8 + S.bob, 6.8 * sw, 7); }, SH(packC, 0.7), { light: false });
       // piernas (piel) y pantalón encima
       for (const [h, kn, an] of [[hL, kL, aL], [hR, kR, aR]]) paint((g) => { cap(g, h, kn, 2.2 * ww * GP, 1.8 * GP); cap(g, kn, an, 1.8 * GP, 1.3 * GP); }, skin, { shade: skinD });
@@ -505,11 +514,12 @@
         if (st === 'degrade' || st === 'rapado') paint((g) => g.fillRect(hx - 1.6, hy + 0.9, 3.2, 1.1), SH(skin, 0.92), { light: false, sep: false });
         if (longHair) paint((g) => { poly(g, [[hx - 2.1, hy], [hx + 2.1, hy], [hx + 2.4, 10.6 + S.bob], [hx - 2.4, 10.6 + S.bob]]); }, H2, { shade: HD });
         if (st === 'trenza') paint((g) => { for (let i = 0; i < 5; i++) ell(g, hx, 9.8 + S.bob + i * 1.0, 0.7, 0.6); }, H2, { shade: HD });
-        if (st === 'medio') paint((g) => { g.beginPath(); g.roundRect(hx - 2.3, hy - 0.5, 4.6, 4.0 + S.hair * 0.2, 0.8); g.fill(); }, H2, { shade: HD });
+        if (st === 'medio') paint((g) => { g.beginPath(); g.roundRect(hx - 2.3, hy - 0.5, 4.6, (ML + 0.6) + S.hair * 0.2, 0.8); g.fill(); }, H2, { shade: HD });
         if (wavy) paint((g) => { for (let i = 0; i < 6; i++) { const o = (i % 2) * 0.35; ell(g, hx - 2.4 + o, hy + 0.8 + i * 1.45 + S.hair * 0.3, 0.95, 0.95); ell(g, hx + 2.4 - o, hy + 0.8 + i * 1.45 + S.hair * 0.3, 0.95, 0.95); ell(g, hx, hy + 2 + i * 1.3, 1.9, 0.9); } }, H2, { shade: HD });
         if (st === 'colitaLado') paint((g) => cap(g, [hx + 1.6, hy + 0.8], [hx + 2.4, hy + 5.0 + S.hair * 0.3], 1.1, 0.7), H2, { shade: HD });
         if (st === 'colita') paint((g) => { ell(g, hx, hy + 2.1, 0.6, 0.6); cap(g, [hx, hy + 2.3], [hx + 0.2, hy + 5.2], 1.0, 0.6); }, H2, { shade: HD });
-        if (st === 'rodete') paint((g) => ell(g, hx, hy - 1.9, 1.1, 0.9), H2, { shade: HD });
+        if ((st === 'rodete' || st === 'mediaCola')) paint((g) => ell(g, hx, hy - 1.9, 1.1, 0.9), H2, { shade: HD });
+        if (st === 'colitaAlta') paint((g) => { ell(g, hx, hy - 1.7, 0.8, 0.7); cap(g, [hx, hy - 1.5], [hx + 0.3 + S.lx * 3, hy + 5.0 + S.hair * 0.5], 1.5, 0.7); }, H2, { shade: HD });
       } else if (!sideV) {
         // de frente
         if (st === 'rapado') paint((g) => cap0(g, -0.05), SH(hair, 0.8), { light: false });
@@ -517,15 +527,17 @@
         else if (st === 'rulos') paint((g) => { for (let a = Math.PI * 0.95; a <= Math.PI * 2.05; a += 0.35) ell(g, hx + Math.cos(a) * 1.9, hy - 0.4 + Math.sin(a) * 1.9, 0.9, 0.9); ell(g, hx, hy - 1.2, 1.9, 1.2); ell(g, hx - 2.1, hy + 0.5, 0.6, 0.9); ell(g, hx + 2.1, hy + 0.5, 0.6, 0.9); }, H2, { shade: HD });
         else {
           paint((g) => { cap0(g, 0.05); if (st === 'flequillo') poly(g, [[hx - 2.0, hy - 0.8], [hx + 1.6, hy - 0.9], [hx + 0.6, hy - 0.05], [hx - 1.9, hy - 0.2]]);
-            if (st === 'corto' || st === 'peinadoAtras' || st === 'colita' || st === 'rodete' || st === 'colitaLado') { g.fillRect(hx - 2.15, hy - 0.6, 0.55, 1.0); g.fillRect(hx + 1.6, hy - 0.6, 0.55, 1.0); }
+            if (st === 'corto' || st === 'peinadoAtras' || st === 'colita' || (st === 'rodete' || st === 'mediaCola') || st === 'colitaLado') { g.fillRect(hx - 2.15, hy - 0.6, 0.55, 1.0); g.fillRect(hx + 1.6, hy - 0.6, 0.55, 1.0); }
             if (st === 'onduladoFlequillo') poly(g, [[hx - 2.0, hy - 0.9], [hx + 2.0, hy - 0.9], [hx + 1.9, hy - 0.25], [hx + 0.6, hy - 0.45], [hx - 0.4, hy - 0.2], [hx - 1.9, hy - 0.35]]);
-            if (midHair) { poly(g, [[hx - 0.2, hy - 2.3], [hx - 2.0, hy - 1.0], [hx - 2.6, hy + 0.6], [hx - 2.5, hy + 3.4 + S.hair * 0.2], [hx - 1.5, hy + 3.2], [hx - 1.5, hy - 0.4], [hx - 0.6, hy - 1.2]]); poly(g, [[hx + 0.2, hy - 2.3], [hx + 2.0, hy - 1.0], [hx + 2.6, hy + 0.6], [hx + 2.5, hy + 3.4 + S.hair * 0.2], [hx + 1.5, hy + 3.2], [hx + 1.5, hy - 0.4], [hx + 0.6, hy - 1.2]]); }
+            if (st === 'ladoLargo') poly(g, [[hx - 2.1, hy - 1.0], [hx + 2.0, hy - 1.0], [hx + 1.9, hy - 0.4], [hx + 0.5, hy - 0.1], [hx - 0.5, hy + 0.55], [hx - 2.0, hy + 0.7]]);
+            if (midHair) { poly(g, [[hx - 0.2, hy - 2.3], [hx - 2.0, hy - 1.0], [hx - 2.6, hy + 0.6], [hx - 2.5, hy + ML + S.hair * 0.2], [hx - 1.5, hy + ML - 0.2], [hx - 1.5, hy - 0.4], [hx - 0.6, hy - 1.2]]); poly(g, [[hx + 0.2, hy - 2.3], [hx + 2.0, hy - 1.0], [hx + 2.6, hy + 0.6], [hx + 2.5, hy + ML + S.hair * 0.2], [hx + 1.5, hy + ML - 0.2], [hx + 1.5, hy - 0.4], [hx + 0.6, hy - 1.2]]); }
             if (longHair) { g.fillRect(hx - 2.35, hy - 0.6, 0.75, 4.8 + S.hair * 0.3); g.fillRect(hx + 1.6, hy - 0.6, 0.75, 4.8 + S.hair * 0.3); } }, H2, { shade: HD });
           if (st === 'peinadoAtras' && k >= 2) pix(hx - 1.2, hy - 1.9, SH(hair, 1.4), Math.round(2.4 * k), P);
           if (st === 'corto' && k >= 2) pix(hx - 1.5, hy - 1.7, SH(hair, 1.35), Math.round(1.2 * k), P);
           if (midHair) paint((g) => { ell(g, hx, hy - 0.9, 2.3, 1.75); poly(g, [[hx - 2.1, hy - 1.3], [hx + 1.9, hy - 1.6], [hx + 1.7, hy - 0.75], [hx + 0.3, hy - 1.0], [hx - 1.0, hy - 0.6], [hx - 2.0, hy - 0.55]]); }, H2, { shade: HD });
           if (midHair && k >= 2) { pix(hx - 1.6, hy - 2.0, SH(hair, 1.7), Math.round(1.4 * k), P); pix(hx + 0.4, hy - 1.2, SH(hair, 0.7), Math.round(0.9 * k), P); }
-          if (st === 'rodete') paint((g) => ell(g, hx, hy - 2.55, 1.0, 0.75), H2, { shade: HD });
+          if ((st === 'rodete' || st === 'mediaCola')) paint((g) => ell(g, hx, hy - 2.55, 1.0, 0.75), H2, { shade: HD });
+          if (st === 'colitaAlta') paint((g) => { ell(g, hx, hy - 2.5, 1.0, 0.8); }, H2, { shade: HD });
           if (wavy) paint((g) => { for (let i = 0; i < 6; i++) { const o = (i % 2) * 0.4; ell(g, hx - 2.35 - o, hy + 0.4 + i * 1.25 + S.hair * 0.3, 0.95, 0.9); ell(g, hx + 2.35 + o, hy + 0.4 + i * 1.25 + S.hair * 0.3, 0.95, 0.9); } }, H2, { shade: HD });
           if (st === 'colitaLado') paint((g) => { ell(g, hx - 2.1, hy + 0.9, 0.7, 0.7); cap(g, [hx - 2.2, hy + 1.2], [hx - 2.7, hy + 5.4 + S.hair * 0.3], 1.1, 0.7); }, H2, { shade: HD });
         }
@@ -537,14 +549,45 @@
           paint((g) => { g.beginPath(); g.ellipse(hx - 0.25, hy - 0.5, 2.15, 2.0, 0, Math.PI * 0.95, Math.PI * 2.02); g.fill(); g.fillRect(hx - 2.35, hy - 0.6, 1.9, st === 'degrade' ? 1.0 : 2.0);
             if (st === 'flequillo') poly(g, [[hx + 0.4, hy - 1.6], [hx + 2.0, hy - 0.9], [hx + 1.4, hy - 0.3]]);
             if (longHair) g.fillRect(hx - 2.5, hy - 0.4, 1.5, 4.6);
-            if (midHair) { g.beginPath(); g.roundRect(hx - 2.6, hy - 0.6, 2.2, 3.7 + S.hair * 0.2, 0.6); g.fill(); }
+            if (midHair) { g.beginPath(); g.roundRect(hx - 2.6, hy - 0.6, 2.2, (ML + 0.3) + S.hair * 0.2, 0.6); g.fill(); }
+            if (st === 'ladoLargo') poly(g, [[hx + 0.1, hy - 1.7], [hx + 2.0, hy - 0.9], [hx + 1.7, hy + 0.2], [hx + 0.3, hy - 0.3]]);
             if (st === 'onduladoFlequillo') poly(g, [[hx + 0.2, hy - 1.7], [hx + 2.0, hy - 1.0], [hx + 1.6, hy - 0.35], [hx + 0.5, hy - 0.7]]); }, H2, { shade: HD });
           if (st === 'colita') paint((g) => cap(g, [hx - 2.2, hy + 0.2], [hx - 3.0 - S.lx * 4, hy + 3.0 + S.hair * 0.4], 1.0, 0.6), H2, { shade: HD });
-          if (st === 'rodete') paint((g) => ell(g, hx - 1.4, hy - 2.0, 0.95, 0.8), H2, { shade: HD });
+          if ((st === 'rodete' || st === 'mediaCola')) paint((g) => ell(g, hx - 1.4, hy - 2.0, 0.95, 0.8), H2, { shade: HD });
+          if (st === 'colitaAlta') paint((g) => cap(g, [hx - 1.8, hy - 1.5], [hx - 3.4 - S.lx * 4, hy + 3.8 + S.hair * 0.5], 1.4, 0.7), H2, { shade: HD });
           if (st === 'trenza') paint((g) => { for (let i = 0; i < 4; i++) ell(g, hx - 2.0 - i * 0.15 - S.lx * 3, hy + 4.4 + i * 1.0 + S.hair * 0.3, 0.6, 0.55); }, H2, { shade: HD });
           if (wavy) paint((g) => { for (let i = 0; i < 6; i++) ell(g, hx - 1.9 - (i % 2) * 0.45 - S.lx * 2.5, hy + 0.6 + i * 1.25 + S.hair * 0.3, 1.0, 0.95); }, H2, { shade: HD });
           if (st === 'colitaLado') paint((g) => cap(g, [hx - 1.4, hy + 0.8], [hx - 1.9 - S.lx * 3, hy + 5.0 + S.hair * 0.3], 1.0, 0.65), H2, { shade: HD });
         }
+      }
+      // ---------- detalles de cara y pelo (17/11/2026): brillo, maquillaje, pecas, aros, vincha y moño ----------
+      {
+        const fem = S.fem, mk = L.makeup | 0, hasHat = L.hat && L.hat !== 'ninguno', front = !back && !sideV, ey = hy + 0.05;
+        const hx2 = (c, t) => { const a = RGB(c); return '#' + a.map((v) => Math.max(0, Math.min(255, Math.round(v + (255 - v) * t))).toString(16).padStart(2, '0')).join(''); };
+        const mixC = (c1, c2, t) => { const a = RGB(c1), b = RGB(c2); return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+        if (st !== 'pelado' && st !== 'rapado' && !hasHat) pix(back ? hx - 1.3 : sideV ? hx - 1.1 : hx - 1.4, hy - 1.95, hx2(hair, 0.32), Math.max(2, Math.round(1.3 * k)), 1);   // reflejo en la coronilla
+        if (fem && mk > 0) {
+          const lip = CAT.lips[L.lips % CAT.lips.length] || CAT.lips[0], sh = CAT.shadow[L.shadow % CAT.shadow.length] || CAT.shadow[0];
+          if (front) {
+            pix(hx - 0.5, hy + 1.55, lip, Math.max(1, Math.round(1.0 * k)), 1);                                    // labios
+            if (mk >= 2) { pix(hx - 0.35, hy + 1.55 + 1 / k, hx2(lip, 0.35), 1, 1); pix(hx - 1.7, ey - 0.4, '#120c0a', 1, 1); pix(hx + 1.2, ey - 0.4, '#120c0a', 1, 1); }   // brillo del labio y delineado
+            for (const sx of [-1, 1]) pix(hx + sx * 0.85 - 0.45, ey - 0.35 - 1 / k, mixC(skin, sh, 0.7), Math.max(1, Math.round(0.9 * k)), 1);        // sombra de ojos
+            for (const sx of [-1, 1]) pix(hx + sx * 1.45 - 0.2, hy + 0.95, mixC(skin, '#e0607a', mk >= 2 ? 0.55 : 0.4), 1, 1);                  // rubor
+          } else if (sideV) {
+            pix(hx + 1.7, hy + 1.45, lip, 1, 1); pix(hx + 1.45, hy - 0.2, '#120c0a', 1, 1);
+          }
+        }
+        if (fem && L.pecas && front) for (const sx of [-1, 1]) { pix(hx + sx * 1.1 - 0.2, hy + 0.8, SH(skin, 0.78), 1, 1); pix(hx + sx * 0.6 - 0.2, hy + 0.95, SH(skin, 0.82), 1, 1); }
+        if (L.aros) {   // aros: dorado, plateado, perla o de color
+          const ac = ['#f2c94c', '#d8dce2', '#f4efe6', CAT.cloth[(L.accC | 0) % CAT.cloth.length]][(L.arosC | 0) % 4];
+          if (sideV) pix(hx - 0.7, hy + 1.2, ac, 1, 2); else pix(hx - 2.25, hy + 1.05, ac, 1, 2), pix(hx + 2.0, hy + 1.05, ac, 1, 2);
+        }
+        if (!hasHat && (L.vincha || L.lazo)) {
+          const ac = CAT.cloth[(L.accC | 0) % CAT.cloth.length];
+          if (L.vincha) pix(sideV ? hx - 1.9 : hx - 2.1, hy - 1.45, ac, Math.round((sideV ? 3.6 : 4.2) * k), Math.max(1, Math.round(0.45 * k)));
+          else { const bx = sideV ? hx - 1.1 : hx + 1.3; pix(bx, hy - 2.7, ac, Math.max(3, Math.round(2.2 * k)), Math.max(2, Math.round(1.3 * k))); pix(bx + 0.6, hy - 2.4, SH(ac, 0.7), 1, 1); }
+        }
+        if (!hasHat && (st === 'colita' || st === 'colitaAlta' || st === 'colitaLado' || st === 'mediaCola' || st === 'rodete') && fem) pix(back ? hx - 0.4 : sideV ? hx - 2.3 : hx - 0.3, back ? hy + 2.0 : sideV ? hy + 0.1 : hy - 2.1, CAT.cloth[(L.accC | 0) % CAT.cloth.length], 2, 1); // gomita
       }
       // sombreros
       const hat = L.hat;
