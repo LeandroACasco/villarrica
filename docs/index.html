@@ -460,7 +460,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 4f6690d2 · 2026-11-17</div>
+  <div class="tVer">Versión 0fca03a4 · 2026-11-17</div>
 </div>
 <div id="fade"></div>
 
@@ -575,7 +575,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 4f6690d2 · 2026-11-17</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 0fca03a4 · 2026-11-17</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -3817,7 +3817,7 @@ VR.makeTestMap = () => {
       const AN = arm(aN), AF = arm(aF);
       S.elbN = AN[0]; S.wriN = AN[1]; S.elbF = AF[0]; S.wriF = AF[1]; S.aim = aimOn;
       S.hair = moving ? -bodyY * 0.4 : 0;
-      if (br) { const r = 0.55 * (0.5 + 0.5 * br); for (const q of [S.shoulder, S.neck, S.head, S.elbN, S.wriN, S.elbF, S.wriF]) q[1] -= r; }
+      if (br) { const r = 0.85 * (0.5 + 0.5 * br); for (const q of [S.shoulder, S.neck, S.head, S.elbN, S.wriN, S.elbF, S.wriF]) q[1] -= r; }
       return S;
     }
     // de frente / de espaldas: las mismas piernas proyectadas. Lo que va hacia la cámara baja un poco (vista 3/4).
@@ -3858,7 +3858,7 @@ VR.makeTestMap = () => {
     const EL = armF(-1, aLeft, S.sh[0]), ER = armF(1, aRight, S.sh[1]);
     S.aim = aimOn; S.elb = [EL[0], ER[0]]; S.wri = [EL[1], ER[1]]; S.angs = [aLeft[0], aRight[0]];
     S.hair = moving ? -bodyY * 0.4 : 0;
-    if (br) { const r = 0.55 * (0.5 + 0.5 * br); for (const q of [S.sh[0], S.sh[1], S.neckBase, S.head, S.elb[0], S.elb[1], S.wri[0], S.wri[1]]) q[1] -= r; }
+    if (br) { const r = 0.85 * (0.5 + 0.5 * br); for (const q of [S.sh[0], S.sh[1], S.neckBase, S.head, S.elb[0], S.elb[1], S.wri[0], S.wri[1]]) q[1] -= r; }
     return S;
   }
 
