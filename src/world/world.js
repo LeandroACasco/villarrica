@@ -142,6 +142,7 @@ VR.World = class {
     const add = (x, y, r) => { const o = { x, y, r }; for (let cy = Math.floor((y - r) / 32); cy <= Math.floor((y + r) / 32); cy++) for (let cx = Math.floor((x - r) / 32); cx <= Math.floor((x + r) / 32); cx++) { const k = cx + cy * 65536; let l = G.get(k); if (!l) G.set(k, l = []); l.push(o); } };
     for (const d of this.decals || []) {
       if (d.kind === 'farol_parque') add(d.x * S + 8, (d.y + 2) * S + 10, 3.5);
+      else if (d.kind === 'cartel_calle') add(d.px, d.py, 2);
       else if (d.kind === 'banco') {
         if (d.fa !== undefined) { const q = d.fa - Math.PI / 2; for (const o of [-5.5, 0, 5.5]) add(d.px + Math.cos(q) * o, d.py + Math.sin(q) * o + 1, 4.5); }
         else if (d.f === 's') for (const o of [3, 8, 13]) add(d.x * S + o, d.y * S + 5, 4.5);

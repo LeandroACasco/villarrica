@@ -1475,6 +1475,52 @@ def main(src, out, preview=None):
     cr_ = [(int(ax_) + dx, int(ay_) + dy) for dy in range(-12, 13) for dx in range(-12, 13) if rd_(int(ax_) + dx, int(ay_) + dy) and all(rd_(int(ax_) + dx + a, int(ay_) + dy + b) for a, b in ((3, 0), (-3, 0), (0, 3), (0, -3)))]
     print('Accidente: tile', (int(ax_), int(ay_)), '→ cruces cerca:', sorted(cr_, key=lambda q: (q[0] - ax_) ** 2 + (q[1] - ay_) ** 2)[:3] or 'NINGUNO')
 
+    # ---------- carteles de calle en las esquinas (17/11/2026, fotos de Leandro) ----------
+    # Poste en la esquina de la vereda con una chapa por calle (nombre) y otra con la flecha del sentido (una flecha si es
+    # de mano única, doble si va para los dos lados). Nombres y sentidos salen de OSM; solo en el Centro (CARTEL_BARRIOS).
+    CARTEL_BARRIOS = ('Centro',)
+    ABREV = [('Mariscal Francisco Solano López', 'Mcal. López'), ('Mariscal ', 'Mcal. '), ('General ', 'Gral. '), ('Coronel ', 'Cnel. '),
+             ('Doctor ', 'Dr. '), ('Presidente ', 'Pdte. '), ('Capitán ', 'Cap. '), ('Teniente ', 'Tte. '), ('Avenida ', 'Av. '),
+             ('Profesor ', 'Prof. '), ('Sargento ', 'Sgto. '), ('Brigadier ', 'Brig. '), ('Comandante ', 'Cmte. '), ('Ingeniero ', 'Ing. ')]
+    def abrev(nm):
+        nm = nm.replace('Blás', 'Blas').replace('António', 'Antonio')
+        for a_, b_ in ABREV: nm = nm.replace(a_, b_)
+        return nm
+    ok_bar = [barrio_names.index(b_) + 1 for b_ in CARTEL_BARRIOS if b_ in barrio_names]
+    at_node = {}
+    for tags_, ids_ in raw_ways:
+        nm_ = tags_.get('name')
+        if not nm_ or tags_.get('highway') not in ROADS or tags_.get('area') == 'yes': continue
+        ow_ = tags_.get('oneway'); ow_ = 1 if ow_ in ('yes', 'true', '1') else -1 if ow_ == '-1' else 0
+        for i_, nid_ in enumerate(ids_):
+            a_ = ids_[max(i_ - 1, 0)]; b_ = ids_[min(i_ + 1, len(ids_) - 1)]
+            if a_ == b_ or nid_ not in final: continue
+            (ax0, ay0), (bx0, by0) = T(final[a_]), T(final[b_])
+            vx_, vy_ = bx0 - ax0, by0 - ay0
+            ax_h = 'h' if abs(vx_) >= abs(vy_) else 'v'
+            if ow_ == 0: dr_ = ''
+            else:
+                if ow_ < 0: vx_, vy_ = -vx_, -vy_
+                dr_ = ('E' if vx_ > 0 else 'W') if ax_h == 'h' else ('S' if vy_ > 0 else 'N')
+            at_node.setdefault(nid_, {}).setdefault(ax_h, (abrev(nm_), dr_))
+    ok_t = (SIDEWALK, PAVING)
+    cart_pos, n_cart = [], 0
+    for nid_, d_ in at_node.items():
+        if len(d_) < 2: continue
+        nx_, ny_ = T(final[nid_]); nx_, ny_ = int(nx_), int(ny_)
+        if not (0 <= ny_ < H and 0 <= nx_ < W) or barrio[ny_, nx_] not in ok_bar: continue
+        pl_ = [[d_[k_][0], k_, d_[k_][1]] for k_ in ('h', 'v')]
+        for sx_, sy_ in ((1, -1), (-1, 1)):  # esquinas noreste y sudoeste del cruce
+            for dd_ in range(1, 9):
+                tx_, ty_ = nx_ + sx_ * dd_, ny_ + sy_ * dd_
+                if not (0 <= ty_ < H and 0 <= tx_ < W): break
+                if tiles[ty_, tx_] in ok_t and not rounded[ty_, tx_]:
+                    if all((tx_ - qx) ** 2 + (ty_ - qy) ** 2 > 9 for qx, qy in cart_pos):
+                        cart_pos.append((tx_, ty_)); n_cart += 1
+                        decals.append({'kind': 'cartel_calle', 'x': tx_ - 1, 'y': ty_ - 2, 'w': 3, 'h': 3, 'px': tx_ * 16 + 8 - sx_ * 4, 'py': ty_ * 16 + 8 - sy_ * 4, 'pl': pl_})
+                    break
+    print('carteles de calle:', n_cart)
+
     # ---------- empaquetar ----------
     roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'swidths': [ROADS[k][1] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
     meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'pois': {k: [int(v[0]), int(v[1])] for k, v in poi_pos.items()}, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,

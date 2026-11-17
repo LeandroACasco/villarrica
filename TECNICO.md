@@ -726,3 +726,7 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 
 ## v1.78 — Ceder el paso a la sirena (`traffic.js`)
 - `yieldRoom(v, ai, L)` mide los px libres a la derecha incluyendo cualquier baldosa no sólida sin vehículo (hasta 60); mientras `ai.yield > 0` el desplazamiento objetivo es `min(30, max(rm.R, ai.yr))`, a 32 px/s; velocidad objetivo 30 hasta llegar al 85 % del desplazamiento y 0 después (si `offT ≥ 12`; si no, 18 como antes). Detección: sirena a <260 px, adelante y a <48 px de lateral; `yield` dura 3,6 s.
+
+## Carteles de calle en las esquinas (17/11/2026)
+- `tools/osm_to_map.py` (sección «carteles de calle»): por cada cruce del Centro (`CARTEL_BARRIOS`) con 2 calles con nombre de OSM saca nombre abreviado (`ABREV`) y sentido (mano única → `E/W/N/S`, doble mano → `''`) y pone un decal `cartel_calle` (`px, py` = pie del poste, `pl` = `[[nombre, 'h'|'v', dir]]`) en las esquinas NE y SO sobre la vereda. 455 en el Centro.
+- `src/world/carteles.js` (`VR.decorTop.cartel_calle`): poste con chapa de nombre + chapa de flecha (doble si va para los dos lados). Sin marcas ni publicidad. El poste es un obstáculo fino (`buildProps`, r 2). Para otros barrios: agregarlos a `CARTEL_BARRIOS`.
