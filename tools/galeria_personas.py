@@ -56,7 +56,7 @@ const cache=new Map();
 function img(L,d,a,i,k){const key=JSON.stringify(L)+d+a+i+k;let c=cache.get(key);if(!c){c=RND(Object.assign({},VR.AV2_DEFAULT,L),d,a,i,k);cache.set(key,c);}return c;}
 function card(name,L,sub,onclick){const b=document.createElement('button');b.className='card';const cv=document.createElement('canvas');const im=img(L,'down','idle',0,st.k);cv.width=im.width;cv.height=im.height;cv.getContext('2d').drawImage(im,0,0);cv._L=L;
  b.append(cv);b.insertAdjacentHTML('beforeend','<b>'+name+'</b><span>'+sub+'</span>');b.onclick=()=>onclick(name,L);return b;}
-const frame=(a)=>a==='idle'?st.f%4:st.f%8;
+const frame=(a)=>a==='idle'?Math.floor(st.f/10)%4:st.f%8;   // parado: un cuadro cada ~1,1 s, como en el juego
 function tickCards(){for(const cv of document.querySelectorAll('#grid canvas')){if(!cv._L)continue;const im=img(cv._L,st.dir,st.anim,frame(st.anim),st.k);if(cv.width!==im.width){cv.width=im.width;cv.height=im.height;}const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);g.drawImage(im,0,0);}}
 function show(name,L){st.sel=[name,L];const d=$('#det');d.hidden=false;d.innerHTML='<b style="font-size:18px">'+name+'</b><div class="views"></div><pre></pre>';const v=d.querySelector('.views'),k=Math.max(st.k,4);
  const cvs=['down','up','left','right'].map(dir=>{const c=document.createElement('canvas');c.width=16*k;c.height=32*k;v.append(c);return [c,dir];});
