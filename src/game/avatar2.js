@@ -26,7 +26,8 @@
     extra: { lentes: ['Lentes de sol', 25000], anteojos: ['Anteojos', 90000], mochila: ['Mochila', 90000], termo: ['Termo de tereré', 60000], reloj: ['Reloj', 70000], cadenita: ['Cadenita', 40000], aros: ['Aros', 45000], vincha: ['Vincha', 25000], lazo: ['Moño en el pelo', 20000] },
     lips: ['#d0707a', '#c4202e', '#e0705a', '#8a2a4a', '#b8505a'], shadow: ['#b89a8a', '#7a5a8a', '#6a8aa8', '#a8786a', '#5a7a5a'],
     beard: { no: ['Sin barba', 0], bigote: ['Bigote', 0], barba: ['Barba', 0], candado: ['Candado', 0], chivita: ['Chivita', 0] },
-    build: { flaco: ['Flaco', 0], normal: ['Normal', 0], fornido: ['Fornido', 0], panza: ['Con panza', 0] },
+    build: { flaco: ['Flaco', 0], normal: ['Normal', 0], fornido: ['Fornido', 0], panza: ['Con panza', 0], curvy: ['Curvilínea', 0], atletico: ['Atlético', 0], esbelta: ['Esbelta', 0] },
+    gait: { normal: ['Normal', 0], relajado: ['Relajado', 0], apurado: ['Apurado', 0], garboso: ['Garboso', 0] },
     gender: { m: ['Hombre', 0], f: ['Mujer', 0] },
   };
   VR.AV2_CAT = CAT;
@@ -61,6 +62,10 @@
       hat: rnd() < 0.3 ? pick(CAT.hat) : 'ninguno', hatColor: n(CAT.cloth), packColor: n(CAT.cloth), print: rnd() < 0.4 };
     if (L.hat === 'casco') L.hat = 'gorra';
     for (const k in CAT.extra) L[k] = rnd() < 0.14;
+    L.gait = ['normal', 'normal', 'normal', 'relajado', 'relajado', 'apurado', 'garboso'][(rnd() * 7) | 0];   // cada uno camina distinto
+    L.alto = (gender === 'f' ? 0.93 : 0.96) + rnd() * 0.1;                                                  // altura (±5 %)
+    if (gender === 'f') { if (L.build === 'fornido') L.build = 'atletico'; if (rnd() < 0.3) L.build = ['curvy', 'esbelta', 'curvy', 'normal'][(rnd() * 4) | 0]; if (rnd() < 0.3) L.gait = 'garboso'; }
+    else if (L.build === 'curvy' || L.build === 'esbelta') L.build = rnd() < 0.5 ? 'normal' : 'atletico';
     if (L.lentes && L.anteojos) L.anteojos = false;
     if (gender === 'f') {
       L.beard = 'no'; if (rnd() < 0.8) L.hair = ['largo', 'ondulado', 'colita', 'colitaLado', 'rodete', 'trenza', 'bob', 'ladoLargo', 'mediaCola', 'colitaAlta', 'largo', 'onduladoFlequillo'][(rnd() * 12) | 0];
@@ -95,14 +100,17 @@
   function skeleton(L, dir, anim0, ph) {
     const aimOn = /\+aim$/.test(anim0), anim = anim0.replace('+aim', '');
     const fem = L.gender === 'f';
-    const bd = { flaco: [0.9, 0.92], normal: [1, 1], fornido: [1.14, 1.06], panza: [1.06, 1.18] }[L.build] || [1, 1];
-    const sw = bd[0] * (fem ? 0.84 : 1), ww = bd[1] * (fem ? 0.84 : 1), hipW = fem ? 1.18 : 1;
+    const bd = { flaco: [0.9, 0.92], normal: [1, 1], fornido: [1.14, 1.06], panza: [1.06, 1.18], curvy: [0.97, 1.0], atletico: [1.08, 0.96], esbelta: [0.92, 0.9] }[L.build] || [1, 1];
+    const BM = { curvy: [0.86, 1.2], atletico: [0.92, 0.97], esbelta: [0.97, 1.0] }[L.build] || [1, 1];   // cintura y cadera (17/11/2026)
+    const GK = { normal: [1, 1, 1], relajado: [0.65, 0.88, 0.8], apurado: [1.25, 1.1, 1.1], garboso: [0.85, 1, 1.7] }[L.gait] || [1, 1, 1];   // modo de caminar: brazos, pasos, balanceo
+    const alto = L.alto || 1;                                                                                   // altura: el largo de las piernas
+    const sw = bd[0] * (fem ? 0.84 : 1), ww = bd[1] * (fem ? 0.84 : 1), hipW = (fem ? 1.18 : 1) * Math.sqrt(BM[1]);
     const run = anim === 'run', walk = anim === 'walk', moving = run || walk, sit = anim === 'sit';
-    const S = { sw, ww, hipW, fem, dir, anim, run };
-    const L1 = T.muslo, L2 = T.pantorrilla;
+    const S = { sw, ww, hipW, fem, dir, anim, run, wmul: BM[0], hmul: BM[1] };
+    const L1 = T.muslo * alto, L2 = T.pantorrilla * alto;
     const tab = run ? LEG_RUN : LEG_WALK;
     // sentado (05/11/2026): muslo hacia adelante (90°) y pantorrilla para abajo; los pies apoyados en el piso
-    const legAt = (t) => moving ? key(tab, t) : sit ? [90, 90, 0] : [0, 4, 0];
+    const legAt = (t) => { if (!moving) return sit ? [90, 90, 0] : [0, 4, 0]; const q = key(tab, t); q[0] *= GK[1]; return q; };
     const lN = legAt(ph), lF = legAt(ph + 0.5);
     const legPts = (hip, [th, kn, fa]) => {
       const a = th * D2R, b2 = (th - kn) * D2R;
@@ -122,8 +130,8 @@
     // brazos: opuestos a la pierna del mismo lado, con un poco de retraso
     const armAt = (t) => {
       const s = Math.sin(2 * Math.PI * (t - 0.06));
-      if (run) return [-44 * s + 6, 88 + 12 * s];
-      if (walk) return [-24 * s, 12 + 14 * Math.max(0, -s)];
+      if (run) return [-44 * s * GK[0] + 6, 88 + 12 * s];
+      if (walk) return [-24 * s * GK[0], 12 + 14 * Math.max(0, -s) * GK[0]];
       if (sit) return [22, 64]; // manos sobre las rodillas
       return [0, 6];
     };
@@ -152,7 +160,7 @@
     }
     // de frente / de espaldas: las mismas piernas proyectadas. Lo que va hacia la cámara baja un poco (vista 3/4).
     const toward = dir === 'down' ? 1 : -1;
-    const sway = moving ? (run ? 0.2 : 0.35) * Math.sin(2 * Math.PI * ph) : 0; // la cadera se va hacia la pierna de apoyo
+    const sway = moving ? (run ? 0.2 : 0.35) * (fem ? 1.5 : 1) * GK[2] * Math.sin(2 * Math.PI * ph) : 0; // la cadera se va hacia la pierna de apoyo
     const tilt = moving ? 0.22 * Math.sin(2 * Math.PI * ph) : 0;               // hombros al revés de la cadera
     const proj = (hx, hy, [th, kn]) => {
       const a = th * D2R, b2 = (th - kn) * D2R;
@@ -326,7 +334,7 @@
       const torsoPts = (ext) => {
         const b = S.bob, e = ext || 0, belly = L.build === 'panza' ? 0.6 : 0, nb = S.neckBase, f = S.fem;
         const [L0, R0] = S.sh, wy = 13.6 + b, hy2 = (LONGTOP && ext >= 0 ? 17.5 : 16.6) + b;
-        const wx = T.cintura * (f ? 1.85 / 2.3 : 1) * ww + belly + (LONGTOP ? 0.2 : 0), hx2 = T.cadera * (f ? 2.75 / 2.45 : 1) * ww + (LONGTOP ? 0.35 : 0);
+        const wx = T.cintura * (f ? 1.85 / 2.3 : 1) * ww * S.wmul + belly + (LONGTOP ? 0.2 : 0), hx2 = T.cadera * (f ? 2.75 / 2.45 : 1) * ww * S.hmul + (LONGTOP ? 0.35 : 0);
         return [[nb[0] - 1.0 - e * 0.3, nb[1]], [L0[0] + 1.0, L0[1] - 0.75 - e * 0.5], [L0[0] - 0.15 - e, L0[1] + 0.2], [L0[0] + 0.35 - e, L0[1] + 2.3], [8 - wx - e, wy], [8 - hx2 - e, hy2], [8 + hx2 + e, hy2], [8 + wx + e, wy],
           [R0[0] - 0.35 + e, R0[1] + 2.3], [R0[0] + 0.15 + e, R0[1] + 0.2], [R0[0] - 1.0, R0[1] - 0.75 - e * 0.5], [nb[0] + 1.0 + e * 0.3, nb[1]]];
       };
