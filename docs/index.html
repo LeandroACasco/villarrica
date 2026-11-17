@@ -460,7 +460,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 724d166b · 2026-11-17</div>
+  <div class="tVer">Versión 1b4bcecf · 2026-11-17</div>
 </div>
 <div id="fade"></div>
 
@@ -575,7 +575,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 724d166b · 2026-11-17</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 1b4bcecf · 2026-11-17</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -3991,6 +3991,11 @@ VR.makeTestMap = () => {
           const c = L.shoes === 'botines' ? '#5a3a22' : L.shoes === 'zapatos' ? '#2a1e16' : shoeC;
           paint((g) => { ell(g, an[0], an[1] + 0.9, 1.3, 0.85); if (tall) g.fillRect(an[0] - 0.85, an[1] - 1.2, 1.7, 1.8); }, c);
           if (L.shoes === 'zapatillas' || L.shoes === 'botitas') { pix(an[0] - 1.2, an[1] + 1.45, '#f2efe6', Math.round(2.4 * k), P); if (k >= 1.5 && front) { pix(an[0] - 0.35, an[1] + 0.3, '#f2efe6', P, P); pix(an[0] - 0.35, an[1] + 0.75, '#f2efe6', P, P); } }
+          if (k >= 1.5) {
+            if (L.shoes === 'zapatos') { pix(an[0] - 1.1, an[1] + 1.5, '#0e0a08', Math.round(2.2 * k), P); pix(an[0] - 0.6, an[1] + 0.35, '#7a6a5c', Math.round(0.9 * k), P); } // suela y brillo
+            else if (L.shoes === 'botines') { pix(an[0] - 1.1, an[1] + 1.5, '#2a1a10', Math.round(2.2 * k), P); for (const dx of [-0.9, 0.3]) pix(an[0] + dx, an[1] + 1.85, '#d8d4c8', P, P); pix(an[0] - 0.8, an[1] - 0.6, '#8a6844', Math.round(1.6 * k), P); } // tapones y caña
+            else { pix(an[0] - 0.9, an[1] + 0.2, SH(shoeC, 1.35), Math.round(1.1 * k), P); if (tall) pix(an[0] - 0.85, an[1] - 0.9, SH(shoeC, 0.7), Math.round(1.7 * k), P); } // brillo y puño
+          }
         }
       }
       // torso
@@ -4011,6 +4016,7 @@ VR.makeTestMap = () => {
         if (sleeveLen > 0) {
           const end = sleeveLen >= 1 ? w0 : lerp(s0, e0, sleeveLen * 1.6);
           paint((g) => { cap(g, s0, sleeveLen >= 1 ? e0 : end, (2.05 + bulky) * sw * GB, (1.85 + bulky) * GB); if (sleeveLen >= 1) cap(g, e0, w0, (1.7 + bulky) * GB, (1.5 + bulky) * GB); }, topC, { shade: SH(topC, 0.72) });
+          if (sleeveLen >= 1 && k >= 1.5 && L.top !== 'puffer') { pix(e0[0] - 0.8, e0[1] - 0.1, SH(topC, 0.8), Math.round(1.4 * k), P); pix(e0[0] - 0.5, e0[1] + 0.5, SH(topC, 0.85), Math.round(0.9 * k), P); } // pliegue del codo
           if (sleeveLen >= 1 && k >= 1.5) pix(w0[0] - 0.75, w0[1] - 0.2, SH(topC, 0.78), Math.round(1.5 * k), P); // puño
           if (L.top === 'puffer' && k >= 1.5) for (let t = 0.2; t < 1; t += 0.22) { const q = lerp(s0, w0, t); pix(q[0] - 0.9, q[1], SH(topC, 0.62), Math.round(1.8 * k), P); }
         }
@@ -4042,14 +4048,24 @@ VR.makeTestMap = () => {
         if (k >= 1.5) pix(8 - gap - 0.15, 8 + S.bob, SH(topC, 0.6), P, Math.round(8 * k)); // cierre
       }
       if (L.top === 'camiseta') paint(null, top2, { mask: raster((g) => { for (let x = -4; x <= 4; x += 1.6) g.fillRect(8 + x, 6, 0.75, 11); }), clip: topMask, light: false, sep: false });
+      if (front && k >= 1.5 && hasTop && L.top !== 'top' && L.top !== 'puffer' && L.top !== 'musculosa') { // pliegues: arrugas en la cintura y debajo del pecho
+        const fc = SH(topC, 0.82), b = S.bob;
+        pix(8 - 2.3 * ww, 14.2 + b, fc, Math.round(1.3 * k), P); pix(8 - 1.1 * ww, 14.8 + b, fc, Math.round(1.1 * k), P);
+        pix(8 + 1.2 * ww, 14.3 + b, fc, Math.round(1.2 * k), P); pix(8 + 2.0 * ww, 14.9 + b, fc, Math.round(0.9 * k), P);
+        if (S.fem) pix(8 - 0.9 * sw, 11.9 + b, fc, Math.round(1.8 * k), P);
+      }
       if (L.print && (L.top === 'remera' || L.top === 'musculosa') && front && k >= 1.5) paint((g) => { g.fillRect(8 - 1.4, 9.6 + S.bob, 2.8, 2.2); }, top2, { sep: false, light: false });
       if (front && hasTop) {
         // cuello: redondo (remera), en V (camiseta), con solapa (chomba, camisa), capucha (buzo)
-        if (L.top === 'remera' || L.top === 'musculosa' || L.top === 'camiseta' || L.top === 'sueter') paint((g) => ell(g, 8, 7.1 + S.bob, 1.15, 0.75), skin, { shade: skinD, sep: k >= 1.5 });
+        if (L.top === 'remera' || L.top === 'musculosa' || L.top === 'camiseta' || L.top === 'sueter') {
+          if (k >= 1.5 && L.top !== 'musculosa') paint((g) => ell(g, 8, 7.05 + S.bob, 1.55, 1.0), SH(topC, L.top === 'sueter' ? 1.2 : 0.7), { light: false, sep: false }); // borde del cuello
+          paint((g) => ell(g, 8, 7.1 + S.bob, 1.15, 0.75), skin, { shade: skinD, sep: k >= 1.5 });
+        }
         if (L.top === 'polo' || L.top === 'camisa' || L.top === 'camisaCorta') {
           paint((g) => poly(g, [[8 - 0.9, 7 + S.bob], [8 + 0.9, 7 + S.bob], [8, 8.4 + S.bob]]), skin, { shade: skinD });
           const col = L.top === 'polo' ? top2 : SH(topC, 1.12);
           paint((g) => { poly(g, [[8 - 1.6, 6.9 + S.bob], [8 - 0.2, 7.3 + S.bob], [8 - 0.6, 8.6 + S.bob]]); poly(g, [[8 + 1.6, 6.9 + S.bob], [8 + 0.2, 7.3 + S.bob], [8 + 0.6, 8.6 + S.bob]]); }, col, { light: false });
+          if (k >= 1.5) { const ed = SH(col, 0.62); pix(8 - 1.6, 7.0 + S.bob, ed, Math.round(1.2 * k), P); pix(8 + 0.4, 7.0 + S.bob, ed, Math.round(1.2 * k), P); pix(8 - 0.8, 8.5 + S.bob, ed, P, P); pix(8 + 0.6, 8.5 + S.bob, ed, P, P); } // borde de la solapa
           if (k >= 1.5) { const n = L.top === 'polo' ? 2 : 5; for (let i = 0; i < n; i++) pix(8 - 0.15, 8.9 + i * 1.3 + S.bob, '#f4f1e8', P, P); if (L.top !== 'polo') pix(8 - 0.05, 8.6 + S.bob, SH(topC, 0.75), P, Math.round(6.6 * k)); }
         }
         if (L.top === 'buzo') {
