@@ -37,7 +37,7 @@ pre{white-space:pre-wrap;word-break:break-word;color:var(--mute);font-size:11px;
 '''
 JS = r'''
 const $=(s)=>document.querySelector(s);
-const EMB=window.parent!==window;
+const EMB=location.href==='about:srcdoc';
 const st={tab:'base',gen:'all',niv:3,n:48,seed:1,k:EMB?3:4,sel:null,anim:'idle',dir:'down',f:0};
 const RND=(L,d,a,i,k)=>VR.av2Sprite?VR.av2Sprite(L,d,a,i/(a==='idle'||a==='wave'||a==='phone'?4:8),k):VR.av2Render(L,d,a,i/8,k);
 const rng=(seed)=>{let s=seed>>>0||1;return()=>{s=(s*16807)%2147483647;return s/2147483647};};
