@@ -108,7 +108,10 @@
     const sw = bd[0] * (fem ? 0.84 : 1), ww = bd[1] * (fem ? 0.84 : 1), hipW = (fem ? 1.18 : 1) * Math.sqrt(BM[1]);
     const run = anim === 'run', walk = anim === 'walk', moving = run || walk, sit = anim === 'sit';
     const S = { sw, ww, hipW, fem, dir, anim, run, wmul: BM[0], hmul: BM[1] };
-    const br = anim === 'idle' ? Math.sin(2 * Math.PI * ph) : 0;   // respiración y cambio de peso cuando está parado (17/11/2026)
+    const isW = anim === 'wave', isP = anim === 'phone';   // saludar con la mano / mirar el celular (17/11/2026)
+    const br = (anim === 'idle' || isP) ? Math.sin(2 * Math.PI * ph) : 0;
+    const wob = isW ? Math.sin(2 * Math.PI * ph) : 0;
+    S.phone = isP; S.wave = isW;   // respiración y cambio de peso cuando está parado (17/11/2026)
     const L1 = T.muslo * alto, L2 = T.pantorrilla * alto;
     const tab = run ? LEG_RUN : LEG_WALK;
     // sentado (05/11/2026): muslo hacia adelante (90°) y pantorrilla para abajo; los pies apoyados en el piso
@@ -138,6 +141,8 @@
       return [0, 6];
     };
     let aN = armAt(ph), aF = armAt(ph + 0.5);
+    if (isW && (dir === 'left' || dir === 'right')) aN = [150 + 6 * wob, 25 + 38 * wob];
+    if (isP && (dir === 'left' || dir === 'right')) aN = [52, 105];
     if (aimOn && (dir === 'left' || dir === 'right')) aN = [84, 4]; // apuntando: el brazo cercano va estirado hacia adelante
     const lean = run ? 10 : walk ? 2 : 0;
     if (dir === 'left' || dir === 'right') {
@@ -159,6 +164,7 @@
       S.elbN = AN[0]; S.wriN = AN[1]; S.elbF = AF[0]; S.wriF = AF[1]; S.aim = aimOn;
       S.hair = moving ? -bodyY * 0.4 : 0;
       if (br) { const r = 0.85 * (0.5 + 0.5 * br); for (const q of [S.shoulder, S.neck, S.head, S.elbN, S.wriN, S.elbF, S.wriF]) q[1] -= r; }
+      if (isP) S.head = [S.head[0] + 0.3, S.head[1] + 0.45];
       return S;
     }
     // de frente / de espaldas: las mismas piernas proyectadas. Lo que va hacia la cámara baja un poco (vista 3/4).
@@ -196,10 +202,15 @@
     };
     let aLeft = dir === 'down' ? aN : aF, aRight = dir === 'down' ? aF : aN; // brazo opuesto a la pierna del mismo lado
     if (aimOn && !(dir === 'left' || dir === 'right')) aRight = dir === 'down' ? [62, 52] : [62, 40]; // apuntando de frente / de espaldas: el brazo derecho se levanta
+    if (!(dir === 'up')) { if (isW) aRight = [150 + 6 * wob, 25 + 38 * wob]; if (isP) aRight = [58, 112]; }
+    if (dir === 'up' && isW) aRight = [150 + 6 * wob, 25 + 38 * wob];
     const EL = armF(-1, aLeft, S.sh[0]), ER = armF(1, aRight, S.sh[1]);
+    if (isW) { ER[0][0] += 2.0 + 0.4 * wob; ER[1][0] += 2.6 + 1.6 * wob; }
+    if (isP) { ER[0][0] -= 0.2; ER[1][0] -= 1.3; }
     S.aim = aimOn; S.elb = [EL[0], ER[0]]; S.wri = [EL[1], ER[1]]; S.angs = [aLeft[0], aRight[0]];
     S.hair = moving ? -bodyY * 0.4 : 0;
     if (br) { const r = 0.85 * (0.5 + 0.5 * br); for (const q of [S.sh[0], S.sh[1], S.neckBase, S.head, S.elb[0], S.elb[1], S.wri[0], S.wri[1]]) q[1] -= r; }
+    if (isP && dir === 'down') S.head = [S.head[0], S.head[1] + 0.5];
     return S;
   }
 
@@ -362,6 +373,7 @@
           if (L.top === 'puffer' && k >= 1.5) for (let t = 0.2; t < 1; t += 0.22) { const q = lerp(s0, w0, t); pix(q[0] - 0.9, q[1], SH(topC, 0.62), Math.round(1.8 * k), P); }
         }
         paint((g) => { ell(g, w0[0], w0[1] + 0.8, 0.82, 0.95); }, skin, { shade: skinD });
+        if (S.phone && right && !back) { paint((g) => { g.beginPath(); g.roundRect(w0[0] - 0.6, w0[1] - 0.2, 1.3, 2.3, 0.25); g.fill(); }, '#1b1d24', { sep: false }); if (k >= 1.5) pix(w0[0] - 0.3, w0[1] + 0.2, '#e8e8f0', P, P); }
         if (L.reloj && !right && k >= 1.5) pix(w0[0] - 0.6, w0[1] - 0.15, '#2a2a30', Math.round(1.2 * k), Math.max(1, Math.round(0.45 * k)));
         if (L.termo && right) {
           paint((g) => { g.beginPath(); g.roundRect(w0[0] - 0.6, w0[1] - 1.6, 1.2, 3.6, 0.3); g.fill(); }, '#2e6fc8');
@@ -513,6 +525,7 @@
         if (k >= 1.5) for (const x of [-1.2, 0.3, 1.6]) pix(8 + x, 17.5 + b, SH(botC, 0.78), P, Math.round(3 * k));
       }
       armDraw(S.elbN, S.wriN, true);
+      if (S.phone) { const w = S.wriN; paint((g) => { g.beginPath(); g.roundRect(w[0] - 0.2, w[1] - 1.4, 0.9, 2.4, 0.25); g.fill(); }, '#1b1d24', { sep: false }); if (k >= 1.5) pix(w[0] + 0.5, w[1] - 1.2, '#8fd0ff', P, Math.round(1.6 * k)); }
       if (L.reloj && k >= 1.5) pix(S.wriN[0] - 0.4, S.wriN[1] - 0.2, '#2a2a30', Math.round(1.1 * k), Math.max(1, Math.round(0.45 * k)));
       // cuello y cabeza de perfil
       paint((g) => cap(g, [S.neck[0], S.neck[1] + 0.3], [S.head[0] - 0.2, S.head[1] + 1.8], 1.5, 1.5), skinD, { light: false });
@@ -685,11 +698,13 @@
     return out;
   };
   // versión perezosa para el juego: cada cuadro se dibuja recién la primera vez que se usa (sin tirones)
-  VR.av2Lazy = (look, k = (VR.RES || 1) * (VR.PS || 1), n = { idle: 4, walk: 8, run: 8, sit: 1 }) => {
+  VR.av2Lazy = (look, k = (VR.RES || 1) * (VR.PS || 1), n = { idle: 4, walk: 8, run: 8, sit: 1, wave: 4, phone: 4 }) => {
     const L = Object.assign({}, VR.AV2_DEFAULT, look), c = new Map();
     const off = [...(String(L.top) + L.hair + L.topColor + L.skin)].reduce((q, ch) => q + ch.charCodeAt(0), 0);   // cada uno respira a su ritmo
     return { n, look: L, get(d, a, i) {
       if (a === 'idle' && !i) i = (Math.floor(performance.now() / 1100 + off) % 4);
+      else if (a === 'wave' && !i) i = (Math.floor(performance.now() / 180 + off) % 4);
+      else if (a === 'phone' && !i) i = (Math.floor(performance.now() / 1100 + off) % 4);
       const key = d + a + i; let f = c.get(key);
       if (!f) { f = VR.av2Sprite(L, d, a, i / n[a.replace('+aim', '')], k); c.set(key, f); }
       return f;

@@ -39,7 +39,7 @@ JS = r'''
 const $=(s)=>document.querySelector(s);
 const EMB=window.parent!==window;
 const st={tab:'base',gen:'all',niv:3,n:48,seed:1,k:EMB?3:4,sel:null,anim:'idle',dir:'down',f:0};
-const RND=(L,d,a,i,k)=>VR.av2Sprite?VR.av2Sprite(L,d,a,i/(a==='idle'?4:8),k):VR.av2Render(L,d,a,i/8,k);
+const RND=(L,d,a,i,k)=>VR.av2Sprite?VR.av2Sprite(L,d,a,i/(a==='idle'||a==='wave'||a==='phone'?4:8),k):VR.av2Render(L,d,a,i/8,k);
 const rng=(seed)=>{let s=seed>>>0||1;return()=>{s=(s*16807)%2147483647;return s/2147483647};};
 const BASE=[];
 BASE.push(['Equipo (Kiut Studio)',Object.entries(VR.AV2_TEAM).map(([k,v])=>[v[0],v[1],'protagonista elegible'])]);
@@ -56,7 +56,7 @@ const cache=new Map();
 function img(L,d,a,i,k){const key=JSON.stringify(L)+d+a+i+k;let c=cache.get(key);if(!c){c=RND(Object.assign({},VR.AV2_DEFAULT,L),d,a,i,k);cache.set(key,c);}return c;}
 function card(name,L,sub,onclick){const b=document.createElement('button');b.className='card';const cv=document.createElement('canvas');const im=img(L,'down','idle',0,st.k);cv.width=im.width;cv.height=im.height;cv.getContext('2d').drawImage(im,0,0);cv._L=L;
  b.append(cv);b.insertAdjacentHTML('beforeend','<b>'+name+'</b><span>'+sub+'</span>');b.onclick=()=>onclick(name,L);return b;}
-const frame=(a)=>a==='idle'?Math.floor(st.f/10)%4:st.f%8;   // parado: un cuadro cada ~1,1 s, como en el juego
+const frame=(a)=>a==='idle'||a==='phone'?Math.floor(st.f/10)%4:a==='wave'?Math.floor(st.f/2)%4:st.f%8;   // parado: un cuadro cada ~1,1 s, como en el juego
 function tickCards(){for(const cv of document.querySelectorAll('#grid canvas')){if(!cv._L)continue;const im=img(cv._L,st.dir,st.anim,frame(st.anim),st.k);if(cv.width!==im.width){cv.width=im.width;cv.height=im.height;}const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);g.drawImage(im,0,0);}}
 function show(name,L){st.sel=[name,L];const d=$('#det');d.hidden=false;d.innerHTML='<b style="font-size:18px">'+name+'</b><div class="views"></div><pre></pre>';const v=d.querySelector('.views'),k=Math.max(st.k,4);
  const cvs=['down','up','left','right'].map(dir=>{const c=document.createElement('canvas');c.width=16*k;c.height=32*k;v.append(c);return [c,dir];});
@@ -71,7 +71,7 @@ seg('#tabs','tab',[['base','Base'],['gen','Generados por el juego']]);
 seg('#sexo','gen',[['all','Todos'],['f','Mujeres'],['m','Hombres']]);
 seg('#niv','niv',[[0,'Sin nivel'],[1,'Bajo'],[3,'Medio'],[5,'Alto']]);
 seg('#kk','k',[[1.5,'Tamaño del juego'],[3,'Ampliado ×3'],[5,'Ampliado ×5']]);
-seg('#an','anim',[['idle','Quieto'],['walk','Caminar'],['run','Correr']]);
+seg('#an','anim',[['idle','Quieto'],['walk','Caminar'],['run','Correr'],['wave','Saludar'],['phone','Celular']]);
 seg('#dr','dir',[['down','Frente'],['up','Espalda'],['right','Perfil']]);
 if(EMB){document.querySelector('#ctl').hidden=true;document.querySelector('h1').hidden=true;document.querySelector('p.sub').hidden=true;}
 window.addEventListener('message',(e)=>{const m=e.data||{};if(m.t==='set'){Object.assign(st,m.v);render();}if(m.t==='tick'){st.f=m.f;tickCards();}});

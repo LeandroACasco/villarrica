@@ -81,7 +81,7 @@ VR.Peds = class {
   greet(px, py) {
     let best = null, bd = 30;
     for (const p of this.list) { const d = Math.hypot(p.x - px, p.y - py); if (d < bd && p.mode !== 'down') { bd = d; best = p; } }
-    if (best) { best.mode = 'idle'; best.t = 2.5; best.vx = best.vy = 0; best.dir = Math.abs(px - best.x) > Math.abs(py - best.y) ? (px > best.x ? 'right' : 'left') : (py > best.y ? 'down' : 'up'); setTimeout(() => this.talk(best, 'greet', 2.4), 500); }
+    if (best) { best.mode = 'idle'; best.act = 'wave'; best.t = 2.5; best.vx = best.vy = 0; best.dir = Math.abs(px - best.x) > Math.abs(py - best.y) ? (px > best.x ? 'right' : 'left') : (py > best.y ? 'down' : 'up'); setTimeout(() => this.talk(best, 'greet', 2.4), 500); }
     return best;
   }
   // la gente sentada se levanta y sale corriendo (disparos, fuego, explosiones o un auto que se le viene encima);
@@ -137,7 +137,7 @@ VR.Peds = class {
         if (d < 70 && toward > 0.6) { p.mode = 'flee'; p.t = 1.2; if (this.rnd() < 0.6) this.talk(p, 'flee', 1.2); this.awayFrom(p, car); }
       }
       p.t -= dt;
-      if (p.mode === 'idle') { if (p.t <= 0) { p.mode = 'walk'; this.newDir(p); } p.anim = 0; continue; }
+      if (p.mode === 'idle') { if (p.act === undefined) p.act = this.rnd() < 0.3 ? 'phone' : 'idle'; if (p.t <= 0) { p.mode = 'walk'; p.act = undefined; this.newDir(p); } p.anim = 0; continue; }
       const sp = p.mode === 'flee' ? 95 : p.sp;
       const nx = p.x + p.vx * sp * dt, ny = p.y + p.vy * sp * dt;
       const ahead = this.free(p.x + p.vx * 8, p.y + p.vy * 8);
@@ -196,7 +196,7 @@ VR.Peds = class {
       const x = Math.round(VR.lerp(p.px, p.x, al) - camX), y = Math.round(VR.lerp(p.py, p.y, al) - camY);
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
-        const pim = p.mode === 'down' ? null : (p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, p.armed ? 'idle+aim' : 'idle', 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8));
+        const pim = p.mode === 'down' ? null : (p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, p.armed ? 'idle+aim' : (p.act || 'idle'), 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8));
         if (pim) { VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.24); VR.sun.cast(ctx, pim, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.28); } else VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
         if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal], x, y);
         else if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
