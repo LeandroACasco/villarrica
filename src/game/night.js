@@ -155,10 +155,11 @@ VR.Night = class {
       g.globalAlpha = k; g.drawImage(W, px - r, py - r, r * 2, r * 2);
     }
     for (const v of cones) {
-      const moto = v.type === 'moto', L = moto ? 70 : 90;
+      const moto = v.type === 'moto', L = moto ? 120 : 175;   // 17/11/2026: faros más largos, anchos y fuertes (de noche era muy oscuro)
       g.save(); g.translate(v.x - cx + Math.sin(v.a) * v.LEN / 2, v.y - cy - Math.cos(v.a) * v.LEN / 2); g.rotate(v.a);
-      if (moto) { g.globalAlpha = 0.9; g.drawImage(this.cone, -L * 0.33, -L, L * 0.66, L); }
-      else for (const s of [-1, 1]) { g.globalAlpha = 0.7; g.drawImage(this.cone, s * v.WID * 0.27 - L * 0.22, -L, L * 0.44, L); } // dos haces, uno por faro
+      if (moto) { g.globalAlpha = 1; g.drawImage(this.cone, -L * 0.4, -L, L * 0.8, L); g.drawImage(this.cone, -L * 0.4, -L, L * 0.8, L); }
+      else for (const s of [-1, 1]) { g.globalAlpha = 1; g.drawImage(this.cone, s * v.WID * 0.27 - L * 0.3, -L, L * 0.6, L); g.drawImage(this.cone, s * v.WID * 0.27 - L * 0.3, -L, L * 0.6, L); } // dos haces, uno por faro
+      g.globalAlpha = 0.9; g.drawImage(W, -34, -34, 68, 68); // charco de luz pegado a la trompa
       g.restore();
     }
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
