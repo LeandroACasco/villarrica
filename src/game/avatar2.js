@@ -128,7 +128,6 @@
     else bodyY = 30.0 - Math.max(pN[1][1], pF[1][1]);
     if (!moving) bodyY = 30.0 - pN[1][1];
     if (sit && dir !== 'left' && dir !== 'right') bodyY = 30.0 - (17.0 + (dir === 'down' ? L1 * 0.55 : 0.8) + L2 * 0.75); // de frente: la falda (muslos) se ve desde arriba
-    if (br) bodyY -= 0.32 * Math.max(0, br);
     S.bob = bodyY; S.sit = sit;
     // brazos: opuestos a la pierna del mismo lado, con un poco de retraso
     const armAt = (t) => {
@@ -139,7 +138,6 @@
       return [0, 6];
     };
     let aN = armAt(ph), aF = armAt(ph + 0.5);
-    if (br) { aN = [aN[0] + br * 2.5, aN[1] + br * 3]; aF = [aF[0] - br * 2, aF[1] - br * 3]; }
     if (aimOn && (dir === 'left' || dir === 'right')) aN = [84, 4]; // apuntando: el brazo cercano va estirado hacia adelante
     const lean = run ? 10 : walk ? 2 : 0;
     if (dir === 'left' || dir === 'right') {
@@ -160,11 +158,12 @@
       const AN = arm(aN), AF = arm(aF);
       S.elbN = AN[0]; S.wriN = AN[1]; S.elbF = AF[0]; S.wriF = AF[1]; S.aim = aimOn;
       S.hair = moving ? -bodyY * 0.4 : 0;
+      if (br) { const r = 0.7 * (0.5 + 0.5 * br); for (const q of [S.shoulder, S.neck, S.head, S.elbN, S.wriN, S.elbF, S.wriF]) q[1] -= r; }
       return S;
     }
     // de frente / de espaldas: las mismas piernas proyectadas. Lo que va hacia la cámara baja un poco (vista 3/4).
     const toward = dir === 'down' ? 1 : -1;
-    const sway = br ? 0.22 * br : moving ? (run ? 0.2 : 0.35) * (fem ? 1.5 : 1) * GK[2] * Math.sin(2 * Math.PI * ph) : 0; // la cadera se va hacia la pierna de apoyo
+    const sway = moving ? (run ? 0.2 : 0.35) * (fem ? 1.5 : 1) * GK[2] * Math.sin(2 * Math.PI * ph) : 0; // la cadera se va hacia la pierna de apoyo
     const tilt = moving ? 0.22 * Math.sin(2 * Math.PI * ph) : 0;               // hombros al revés de la cadera
     const proj = (hx, hy, [th, kn]) => {
       const a = th * D2R, b2 = (th - kn) * D2R;
@@ -200,6 +199,7 @@
     const EL = armF(-1, aLeft, S.sh[0]), ER = armF(1, aRight, S.sh[1]);
     S.aim = aimOn; S.elb = [EL[0], ER[0]]; S.wri = [EL[1], ER[1]]; S.angs = [aLeft[0], aRight[0]];
     S.hair = moving ? -bodyY * 0.4 : 0;
+    if (br) { const r = 0.7 * (0.5 + 0.5 * br); for (const q of [S.sh[0], S.sh[1], S.neckBase, S.head, S.elb[0], S.elb[1], S.wri[0], S.wri[1]]) q[1] -= r; }
     return S;
   }
 
