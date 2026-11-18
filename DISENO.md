@@ -555,3 +555,10 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 
 ### v1.79 — M3: se recupera tras recargar o ser arrestado
 - Reporte de Leandro: no podía volver a marcar el GPS del incendio y la Policía lo agarró. Causa: el pastizal y la marca de «camión prestado» no se guardan; tras recargar (o perder el paso) el GPS no tenía lugar y el camión contaba como robado. Ahora `lug 'fuego'` calcula el origen si no hay fuego, y `Misiones.update` reenciende el fuego en los pasos `fuego`/`apagar` y vuelve a marcar el camión como prestado en `camion`…`volver`.
+
+### v1.84 — Iglesias y colegios con nombres reales + gente que entra y sale (18/11/2026)
+- Pedido de Leandro: nombres reales (iglesias y colegios son la excepción a los nombres humorísticos), gente entrando y saliendo de las iglesias, y padres y estudiantes en los colegios.
+- Datos: `data/instituciones.json` (38 lugares de OSM: iglesias, colegios, universidad; generador en `tools/instituciones_extraer.py`). El conversor los pega al edificio más cercano, con cartel chico y un decal `iglesia` o `colegio` (Catedral: sin decal propio).
+- Dibujo (`src/world/instituciones.js`): iglesia con cruz, torre y puerta de arco; colegio con franja azul con el nombre, bandera paraguaya y puerta doble.
+- Gente (`src/game/flujo.js`, `VR.Flujo`): busca la puerta de cada lugar (30 de ~39 la encuentran) y, según el horario, hace entrar o salir gente. Colegios: entrada ~6:30–7:30 y salida ~11:30–12:30 y 17–18 (alumnos de uniforme más chicos, con padres acompañando). Iglesias: más gente domingos y en misa. Los que salen aparecen desde adentro con fade; los que entran se desvanecen en la puerta. En Historia usa `VR.vida`, en Libre el reloj real.
+- Sin probar en el teléfono. Pendiente: retocar Catedral y Don Bosco con las fotos de Leandro.

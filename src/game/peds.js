@@ -107,6 +107,7 @@ VR.Peds = class {
     const cs = car ? Math.hypot(car.vx || 0, car.vy || 0) : 0;
     for (const p of this.list) {
       p.px = p.x; p.py = p.y;
+      if (p.fa !== undefined && p.fa < 1 && p.mode !== 'go') p.fa = Math.min(1, p.fa + dt * 2.2); // los que salen de una puerta aparecen de a poco
       if (p.road && this.walkable(p.x, p.y)) p.road = false; this._road = !!p.road;
       if (p.say) { p.say.t -= dt; if (p.say.t <= 0) p.say = null; }
       // ¿lo chocó un vehículo (el tuyo o uno del tránsito)? Sale despedido (ragdoll)
@@ -130,6 +131,7 @@ VR.Peds = class {
         if (p.t <= 0 && (!p.rag || p.rag.done)) { p.rag = null; p.mode = 'flee'; p.t = 1.4; this.talk(p, 'hit'); if (!this.free(p.x, p.y)) this.toWalkable(p); this.awayFrom(p, car || focus); }
         continue;
       }
+      if (p.go) { if (p.mode === 'go') { if (VR.flujo) VR.flujo.step(p, dt); else p.dead = true; continue; } p.go = null; } // llega a una iglesia o un colegio (flujo.js)
       // ¿le venís encima?
       if (car && cs > 50 && p.mode !== 'flee') {
         const dx = p.x - car.x, dy = p.y - car.y, d = Math.hypot(dx, dy);
@@ -197,11 +199,12 @@ VR.Peds = class {
       if (x < -20 || y < -36 || x > sw + 20 || y > sh + 20) continue;
       out.push({ sy: y + camY, draw: (ctx) => {
         const pim = p.mode === 'down' ? null : (p.mode === 'idle' ? this.sprites[p.pal].get(p.dir, p.armed ? 'idle+aim' : (p.act || 'idle'), 0) : this.sprites[p.pal].get(p.dir, p.mode === 'flee' ? 'run' : 'walk', Math.floor(p.anim) % 8));
-        if (pim) { VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS, 1.5 * VR.PS, 0.24); VR.sun.cast(ctx, pim, x, y + VR.PS, 16 * VR.PS, 32 * VR.PS, 0.28); } else VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
+        const sc = p.sc || 1, fa = p.fa !== undefined && p.fa < 1 ? Math.max(0, p.fa) : 1; if (fa < 1) { ctx.save(); ctx.globalAlpha = fa; }
+        if (pim) { VR.sun.blob(ctx, x, y, 3, 3.2 * VR.PS * sc, 1.5 * VR.PS * sc, 0.24); VR.sun.cast(ctx, pim, x, y + VR.PS, 16 * VR.PS * sc, 32 * VR.PS * sc, 0.28); } else VR.sun.blob(ctx, x, y, 30, 5.5, 2.3, 0.28);
         if (p.mode === 'down' && p.rag) p.rag.draw(ctx, this.sprites[p.pal], x, y);
         else if (p.mode === 'down') ctx.drawImage(this.lying(p.pal), x - 17, y - 12, 34, 18);
         else {
-          ctx.drawImage(pim, x - 8 * VR.PS, y - 31 * VR.PS, 16 * VR.PS, 32 * VR.PS);
+          ctx.drawImage(pim, x - 8 * VR.PS * sc, y - 31 * VR.PS * sc, 16 * VR.PS * sc, 32 * VR.PS * sc);
           if (p.armed && p.mode === 'idle') { // pistola en la mano (la mano sale del propio sprite)
             const a = ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[p.dir], h = pim.hand, PSv = VR.PS || 1, hx = h ? x - 8 * PSv + h[0] * PSv : x + 3, hy = h ? y - 31 * PSv + h[1] * PSv : y - 17;
             ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.75); ctx.rotate(a); ctx.scale(0.82, 0.82);
@@ -209,6 +212,7 @@ VR.Peds = class {
             ctx.restore();
           }
         }
+        if (fa < 1) ctx.restore();
         if (p.say) VR.Player.prototype.drawBubble.call({ bubble: p.say, px: x + camX, x: x + camX, py: y + camY + 6, y: y + camY + 6 }, ctx, camX, camY, 1);
       } });
     }

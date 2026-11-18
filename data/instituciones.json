@@ -1,0 +1,268 @@
+[
+{
+"tipo": "colegio",
+"nombre": "Asociación de Damas Salesianas",
+"lat": -25.785914,
+"lon": -56.444391,
+"osm": "4557284766"
+},
+{
+"tipo": "colegio",
+"nombre": "Centro Educativo Internacional",
+"lat": -25.780674,
+"lon": -56.441483,
+"osm": "4557284783"
+},
+{
+"tipo": "uni",
+"nombre": "Colegio Don Bosco",
+"lat": -25.786241,
+"lon": -56.443729,
+"osm": "176565385"
+},
+{
+"tipo": "colegio",
+"nombre": "Colegio Nacional Delfín Chamorro",
+"lat": -25.790481,
+"lon": -56.457171,
+"osm": "12392703245"
+},
+{
+"tipo": "colegio",
+"nombre": "Cristhina Príncipe de Paz",
+"lat": -25.776871,
+"lon": -56.44568,
+"osm": "4557284778"
+},
+{
+"tipo": "colegio",
+"nombre": "Curuzú San Francisco",
+"lat": -25.787899,
+"lon": -56.437001,
+"osm": "4557284781"
+},
+{
+"tipo": "colegio",
+"nombre": "Divino Niño Jesús",
+"lat": -25.782182,
+"lon": -56.436579,
+"osm": "4557284785"
+},
+{
+"tipo": "colegio",
+"nombre": "Escuela Básica Nº 51 Clotilde Bordón",
+"lat": -25.794569,
+"lon": -56.459674,
+"osm": "12342320823"
+},
+{
+"tipo": "colegio",
+"nombre": "Escuela Don Bosco",
+"lat": -25.786607,
+"lon": -56.443909,
+"osm": "4557284775"
+},
+{
+"tipo": "colegio",
+"nombre": "Escuela Manuel Ortiz Guerrero",
+"lat": -25.776585,
+"lon": -56.439348,
+"osm": "4557284770"
+},
+{
+"tipo": "colegio",
+"nombre": "Escuela Nº 2714 María Berta Tichis de Camperi",
+"lat": -25.793218,
+"lon": -56.429707,
+"osm": "1356488644"
+},
+{
+"tipo": "colegio",
+"nombre": "Hogar San José",
+"lat": -25.785163,
+"lon": -56.446509,
+"osm": "4557284776"
+},
+{
+"tipo": "uni",
+"nombre": "IDELGUAP",
+"lat": -25.782165,
+"lon": -56.441921,
+"osm": "4557284768"
+},
+{
+"tipo": "iglesia",
+"nombre": "Iglesia Sagrado Corazón de Jesús",
+"lat": -25.791036,
+"lon": -56.458585,
+"osm": "1120327450"
+},
+{
+"tipo": "iglesia",
+"nombre": "Iglesia Yvaroty",
+"lat": -25.772502,
+"lon": -56.445847,
+"osm": "167440884"
+},
+{
+"tipo": "iglesia",
+"nombre": "Iglesia de Jesucristo de los Santos de los Últimos Días",
+"lat": -25.777725,
+"lon": -56.444683,
+"osm": "633784797"
+},
+{
+"tipo": "colegio",
+"nombre": "María Auxiliadora",
+"lat": -25.782926,
+"lon": -56.445223,
+"osm": "4557284777"
+},
+{
+"tipo": "colegio",
+"nombre": "Mita'i Churi",
+"lat": -25.777264,
+"lon": -56.446895,
+"osm": "4557284771"
+},
+{
+"tipo": "colegio",
+"nombre": "Niño Jesús",
+"lat": -25.771484,
+"lon": -56.434537,
+"osm": "4557284784"
+},
+{
+"tipo": "colegio",
+"nombre": "Pabla G. de Vega",
+"lat": -25.790367,
+"lon": -56.441969,
+"osm": "4557284779"
+},
+{
+"tipo": "iglesia",
+"nombre": "Salón del Reino de los Testigos de Jehová",
+"lat": -25.776136,
+"lon": -56.444231,
+"osm": "5310384913"
+},
+{
+"tipo": "colegio",
+"nombre": "San Miguel",
+"lat": -25.777442,
+"lon": -56.42979,
+"osm": "4557284772"
+},
+{
+"tipo": "colegio",
+"nombre": "San Miguel",
+"lat": -25.776398,
+"lon": -56.437813,
+"osm": "4557284782"
+},
+{
+"tipo": "colegio",
+"nombre": "Santa Lucía",
+"lat": -25.775081,
+"lon": -56.435695,
+"osm": "4557284773"
+},
+{
+"tipo": "colegio",
+"nombre": "Santa Lucía",
+"lat": -25.796614,
+"lon": -56.434915,
+"osm": "4557284774"
+},
+{
+"tipo": "uni",
+"nombre": "Universidad Técnica de Comercialización y Desarrollo",
+"lat": -25.778199,
+"lon": -56.443832,
+"osm": "633785120"
+},
+{
+"tipo": "colegio",
+"nombre": "Victorina Caballero",
+"lat": -25.784123,
+"lon": -56.445456,
+"osm": "4557284767"
+},
+{
+"tipo": "iglesia",
+"nombre": "",
+"lat": -25.773994,
+"lon": -56.448897,
+"osm": "4953587623"
+},
+{
+"tipo": "iglesia",
+"nombre": "",
+"lat": -25.789138,
+"lon": -56.454019,
+"osm": "12513150384"
+},
+{
+"tipo": "iglesia",
+"nombre": "",
+"lat": -25.789859,
+"lon": -56.449784,
+"osm": "676314082"
+},
+{
+"tipo": "iglesia",
+"nombre": "",
+"lat": -25.768407,
+"lon": -56.456318,
+"osm": "677422536"
+},
+{
+"tipo": "colegio",
+"nombre": "",
+"lat": -25.791657,
+"lon": -56.459502,
+"osm": "1120327435"
+},
+{
+"tipo": "iglesia",
+"nombre": "",
+"lat": -25.789395,
+"lon": -56.448772,
+"osm": "1288485793"
+},
+{
+"tipo": "colegio",
+"nombre": "",
+"lat": -25.79479,
+"lon": -56.459082,
+"osm": "1313375662"
+},
+{
+"tipo": "colegio",
+"nombre": "",
+"lat": -25.775679,
+"lon": -56.431103,
+"osm": "1317731724"
+},
+{
+"tipo": "iglesia",
+"nombre": "",
+"lat": -25.788198,
+"lon": -56.438675,
+"osm": "1319973844"
+},
+{
+"tipo": "iglesia",
+"nombre": "",
+"lat": -25.792939,
+"lon": -56.423944,
+"osm": "1326369322"
+},
+{
+"tipo": "colegio",
+"nombre": "",
+"lat": -25.790177,
+"lon": -56.457596,
+"osm": "1339710175"
+}
+]

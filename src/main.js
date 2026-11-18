@@ -93,6 +93,7 @@
     addEventListener('touchend', () => { pd = 0; }, { passive: true }); }
   const traffic = prueba ? null : new VR.Traffic(world, { max: 28, motoShare: 0.45 });
   const peds = prueba ? null : new VR.Peds(world);
+  const flujo = peds ? (VR.flujo = new VR.Flujo(world, peds)) : null; // gente entrando y saliendo de iglesias y colegios
   if (peds) VR.peds = peds;
   const estvida = VR.estvida = prueba ? null : new VR.EstVida(world);   // playeros y vehículos que cargan en las estaciones (estvida.js)
   const asalto = VR.asalto = peds ? new VR.Asalto(world, peds, { hurt: (n) => hurtPlayer(n), toast: (m) => toast(m), scare: (x, y) => weapons && weapons.scare && weapons.scare(x, y, 170, 'shots'), target: () => car ? { x: car.x, y: car.y, car: true, sp: Math.hypot(car.vx || 0, car.vy || 0) } : { x: player.x, y: player.y, car: false, sp: 0 } }) : null;   // conductores que se bajan (asalto.js)
@@ -392,7 +393,7 @@
         car ? null : { x: player.x, y: player.y - 4 }, (v) => { v.honkT = 1.1; v.honkTxt = BOCINAS[(Math.random() * BOCINAS.length) | 0]; VR.audio.horn(v.x, v.y, v.type === 'moto' ? 'moto' : v.spec.mass > 1.3 ? 'big' : 'car'); });
       for (const v of traffic.list) if (v.honkT > 0) v.honkT -= dt;
     }
-    if (peds && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; peds.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
+    if (peds && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h, vw = { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }; peds.update(dt, car || player, vw, car); if (flujo) flujo.update(dt, car || player, vw); }
     if (chespis && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; chespis.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car); }
     if (asalto) asalto.update(dt);
     if (estvida && !online.mirror) { const sw = VR.screen.w, sh = VR.screen.h; estvida.update(dt, car || player, { x0: cam.x - sw / 2, y0: cam.y - sh / 2, x1: cam.x + sw / 2, y1: cam.y + sh / 2 }, car ? null : { x: player.x, y: player.y - 4 }, car); }

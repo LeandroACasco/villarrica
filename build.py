@@ -7,8 +7,8 @@ import hashlib, json, pathlib, shutil, datetime, subprocess, sys
 root = pathlib.Path(__file__).parent
 # orden de carga de los scripts (todo queda en un solo index.html)
 SCRIPTS = ['engine/inflate.js', 'engine/core.js', 'engine/input.js', 'engine/gfx.js', 'engine/audio.js',
-           'world/tiles.js', 'world/suciedad.js', 'world/world.js', 'world/parque.js', 'world/carteles.js', 'world/estaciones.js', 'world/testmap.js',
-           'game/avatar2.js', 'game/retrato.js', 'game/player.js', 'game/ragdoll.js', 'game/car.js', 'game/autos.js', 'game/camiones.js', 'game/nivel.js', 'game/oblicuo.js', 'game/moto3d.js', 'game/tune.js', 'game/traffic.js', 'game/gps.js', 'game/peds.js', 'game/escena.js', 'game/clima.js', 'game/sol.js', 'game/night.js', 'game/emerg.js', 'game/weapons.js', 'game/shop.js', 'game/vida.js', 'game/online.js', 'game/taller.js', 'game/teatro.js', 'game/changas.js', 'game/misiones.js', 'game/panel.js', 'game/vcard.js', 'game/tablero.js', 'game/sidehd.js', 'game/cisnes.js', 'game/fauna.js', 'game/granja.js', 'game/perros.js', 'game/calle.js', 'game/caidas.js', 'game/estvida.js', 'game/asalto.js', 'game/chespis.js', 'game/pieza.js', 'game/salon.js', 'game/mercado.js', 'game/super.js', 'game/boliche.js', 'game/caveat.js', 'game/celapps.js', 'game/mbohasa.js', 'game/guardado.js', 'game/buzon.js', 'game/pastizal.js', 'game/guardia.js', 'game/personaje.js', 'game/inventario.js', 'game/menutabs.js', 'game/controles.js', 'game/titulo.js', 'main.js']
+           'world/tiles.js', 'world/suciedad.js', 'world/world.js', 'world/parque.js', 'world/carteles.js', 'world/instituciones.js', 'world/estaciones.js', 'world/testmap.js',
+           'game/avatar2.js', 'game/retrato.js', 'game/player.js', 'game/ragdoll.js', 'game/car.js', 'game/autos.js', 'game/camiones.js', 'game/nivel.js', 'game/oblicuo.js', 'game/moto3d.js', 'game/tune.js', 'game/traffic.js', 'game/gps.js', 'game/peds.js', 'game/flujo.js', 'game/escena.js', 'game/clima.js', 'game/sol.js', 'game/night.js', 'game/emerg.js', 'game/weapons.js', 'game/shop.js', 'game/vida.js', 'game/online.js', 'game/taller.js', 'game/teatro.js', 'game/changas.js', 'game/misiones.js', 'game/panel.js', 'game/vcard.js', 'game/tablero.js', 'game/sidehd.js', 'game/cisnes.js', 'game/fauna.js', 'game/granja.js', 'game/perros.js', 'game/calle.js', 'game/caidas.js', 'game/estvida.js', 'game/asalto.js', 'game/chespis.js', 'game/pieza.js', 'game/salon.js', 'game/mercado.js', 'game/super.js', 'game/boliche.js', 'game/caveat.js', 'game/celapps.js', 'game/mbohasa.js', 'game/guardado.js', 'game/buzon.js', 'game/pastizal.js', 'game/guardia.js', 'game/personaje.js', 'game/inventario.js', 'game/menutabs.js', 'game/controles.js', 'game/titulo.js', 'main.js']
 
 
 def build():
@@ -19,7 +19,7 @@ def build():
         shutil.copy(root / 'icons' / f, docs / 'icons' / f)
     # mapa: se vuelve a generar solo si cambió el .osm o el convertidor
     osm, conv, mp = root / 'data/villarrica.osm.gz', root / 'tools/osm_to_map.py', docs / 'map.bin'
-    deps = [osm, conv, root / 'data/barrios_ine.json', root / 'data/nivel_ine.json']
+    deps = [osm, conv, root / 'data/barrios_ine.json', root / 'data/nivel_ine.json', root / 'data/instituciones.json']
     if not mp.exists() or mp.stat().st_mtime < max(d.stat().st_mtime for d in deps):
         subprocess.run([sys.executable, str(conv), str(osm), str(mp)], check=True)
     code = '\n'.join('// ===== %s =====\n%s' % (s, (root / 'src' / s).read_text()) for s in SCRIPTS)

@@ -665,8 +665,18 @@ def main(src, out, preview=None):
             ('comisaria', 'Comisaría 5ª', (-25.7685736, -56.4460124), POLI), ('comisaria', 'Comisaría 6ª', (-25.7805313, -56.4609607), POLI),
             ('comisaria', 'Comisaría 26', (-25.7786781, -56.4727953), POLI), ('comisaria', 'Comisaría 32', (-25.7954947, -56.4378973), POLI),
             ('jefatura', 'Jefatura de Policía', (-25.7839495, -56.4315364), POLI)]
+    # ---------- iglesias y colegios (18/11/2026, pedido de Leandro): nombres reales (son instituciones, no marcas) ----------
+    # data/instituciones.json sale de OSM (tools/instituciones_extraer.py); los sin nombre quedan sin cartel pero con gente entrando y saliendo.
+    IGL = {'floors': 2, 'roof': 'teja', 'roofc': 1, 'wallc': 8}
+    COLE = {'floors': 1, 'roof': 'teja', 'roofc': 0, 'wallc': 12}
+    UNIV = {'floors': 2, 'roof': 'losa', 'roofc': 0, 'wallc': 4}
+    INST = []
+    inst_json = ROOT / 'data/instituciones.json'
+    if inst_json.exists():
+        for o_ in json.load(open(inst_json, encoding='utf-8')):
+            INST.append(('iglesia' if o_['tipo'] == 'iglesia' else 'colegio', o_['nombre'], (o_['lat'], o_['lon']), dict(IGL if o_['tipo'] == 'iglesia' else UNIV if o_['tipo'] == 'uni' else COLE, uni=o_['tipo'] == 'uni')))
     poi_lm, poi_pos = {}, {}
-    for kind_, text_, where_, st_ in POIS + SUPERS + BOLICHES:
+    for kind_, text_, where_, st_ in POIS + SUPERS + BOLICHES + INST:
         pts_ = [(where_[0], where_[2]), (where_[1], where_[3])] if len(where_) == 4 else [(where_[0] + 0.00006, where_[1] - 0.00006), (where_[0] - 0.00006, where_[1] + 0.00006)]
         (ax_, ay_), (bx_, by_) = [T(place(*proj(la_, lo_))) for la_, lo_ in pts_]
         tx0_, tx1_, ty0_, ty1_ = int(min(ax_, bx_)), int(max(ax_, bx_)), int(min(ay_, by_)), int(max(ay_, by_))
@@ -682,7 +692,7 @@ def main(src, out, preview=None):
         poi_pos[text_] = ((tx0_ + tx1_) // 2, (ty0_ + ty1_) // 2)
         if not found_: print('SIN EDIFICIO para', text_, poi_pos[text_]); continue
         big_ = max(found_, key=lambda v: (sub_ == v).sum())
-        for v in found_: poi_lm[v] = dict(st_, label=text_ if v == big_ else None, kind=kind_)
+        for v in found_: poi_lm[v] = dict(st_, label=text_ if v == big_ else None, big=(v == big_), kind=kind_)
     print('POIs: %d edificios marcados' % len(poi_lm))
     nivel_arr = np.asarray(nivel_im)
     for new_id, old in enumerate(ids, 1):
@@ -690,6 +700,8 @@ def main(src, out, preview=None):
         xm = int(xsum[new_id] / cnt[new_id])
         below = street[min(H - 1, ymax[new_id] + 2), xm]
         lm = LANDMARKS.get(tags.get('name', '')) or poi_lm.get(new_id)
+        if tags.get('name') == 'Catedral de Villarrica':  # la Catedral ya tiene su diseño: solo se suma la puerta (gente de misa)
+            decals.append({'kind': 'iglesia', 'name': 'Catedral de Villarrica', 'nodraw': True, 'x': int(xmin[new_id]), 'y': int(ymin[new_id]), 'w': int(xmax[new_id] - xmin[new_id] + 1), 'h': int(ymax[new_id] - ymin[new_id] + 1)})
         try:
             floors = int(float(tags.get('building:levels', '0')))
         except ValueError:
@@ -697,6 +709,9 @@ def main(src, out, preview=None):
         if lm:
             floors, rt, rc, wc, shop = lm['floors'], ROOF_TYPES.index(lm['roof']), N_ROOFS + lm['roofc'], lm['wallc'], lm.get('shop', 0)
             if lm.get('label'): labels.append({'text': lm['label'], 'x': int(xm * 16 + 8), 'y': int(ymin[new_id] * 16 - 12)})
+            if lm.get('label') and lm.get('kind') in ('iglesia', 'colegio'): labels[-1]['small'] = True
+            if lm.get('big') and lm.get('kind') in ('iglesia', 'colegio'):  # techo/fachada genérico + puerta con gente entrando y saliendo
+                decals.append({'kind': lm['kind'], 'name': lm.get('label') or '', 'uni': bool(lm.get('uni')), 'x': int(xmin[new_id]), 'y': int(ymin[new_id]), 'w': int(xmax[new_id] - xmin[new_id] + 1), 'h': int(ymax[new_id] - ymin[new_id] + 1)})
             if lm.get('label') and lm.get('kind') == 'super':  # diseño genérico de súper: techo, cartel y fachada con el color de la marca
                 decals.append({'kind': 'super', 'style': lm['brand'], 'name': lm['label'], 'x': int(xmin[new_id]), 'y': int(ymin[new_id]), 'w': int(xmax[new_id] - xmin[new_id] + 1), 'h': int(ymax[new_id] - ymin[new_id] + 1)})
             if lm.get('label') and lm.get('kind') in ('hospital', 'sanatorio', 'comisaria', 'jefatura'):  # cruz roja / escudo azul sobre el techo
