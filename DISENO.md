@@ -571,3 +571,6 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 
 ### v1.86 — Interior de la Catedral (19/11/2026)
 `src/game/catedral_int.js` (`VR.crearCatedral`, motor `VR.Salon`): nave con alfombra roja, 2×7 bancos con gente sentada, retablo dorado con tres hornacinas azules, altar con cura, lámparas de araña, ventiladores verdes, pila de agua bendita, velas, confesionario y Virgen. Se entra por el portón de la galería sur (`catL` en `main.js`, marcador ⛪ en el mapa). Probado solo en PC.
+
+### v1.87 — Colegio Don Bosco con diseño propio (19/11/2026)
+`src/world/donbosco.js` (fotos y video de Leandro): iglesia de ladrillo con fachada escalonada (vitral de la paloma, nicho con Don Bosco y un chico, franjas verdes, banderas, campanario verde en `decorTop`), colegio crema con galería de pilares y zócalo bordó, y patio rojo con líneas de cancha, escudo «1950» y dos aros. Converter: decals `donbosco_iglesia/_colegio/_patio` + `iglesia` nodraw para la gente de misa; el patio quita árboles y pone baldosa de patio. Sin probar en el teléfono; falta el interior de la iglesia (fotos: vitrales, ventiladores, bancos).

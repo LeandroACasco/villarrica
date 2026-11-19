@@ -39,6 +39,7 @@
     R(g, 'rgba(0,0,0,.28)', X0, Yb, W, 2);
   };
   VR.decorOver.colegio = (g, d) => {
+    if (d.nodraw) return;   // Colegio Don Bosco: diseño propio en world/donbosco.js
     const X0 = d.x * S, X1 = (d.x + d.w) * S, Yt = d.y * S, Yb = (d.y + d.h) * S, FH = 20, RE = Yb - FH, W = X1 - X0, cx = (X0 + X1) / 2;
     if (RE - Yt < 8 || W < 28) return;
     const C = d.uni ? ['#3a4a5e', '#222c3a'] : ['#2e6fc8', '#1e4a8a'];

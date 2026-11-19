@@ -1543,6 +1543,31 @@ def main(src, out, preview=None):
                     break
     print('carteles de calle:', n_cart)
 
+    # ---------- Colegio Don Bosco con diseño propio (19/11/2026, fotos y video de Leandro) ----------
+    # El predio de OSM (rectángulo ~78×87 m) es casi todo pasto: la iglesia de ladrillo escalonada es el edificio del extremo norte,
+    # el colegio con galerías es el que ya tenía el cartel, y el patio rojo con canchas ocupa el hueco libre del medio.
+    _ch = int(bid[1353, 1536]); _sc = int(bid[1367, 1530])
+    if _ch and _sc:
+        def _ext(i_):
+            ys_, xs_ = np.nonzero(bid == i_); return int(xs_.min()), int(ys_.min()), int(xs_.max() - xs_.min() + 1), int(ys_.max() - ys_.min() + 1)
+        cx_, cy_, cw_, chh_ = _ext(_ch); sx_, sy_, sw_, shh_ = _ext(_sc)
+        runs_ = []
+        for y_ in range(1358, 1383):
+            x_ = 1526
+            while x_ <= 1542:
+                if bid[y_, x_] == 0 and tiles[y_, x_] in (GRASS, TREE, DIRT, PAVING):
+                    x0_ = x_
+                    while x_ + 1 <= 1542 and bid[y_, x_ + 1] == 0 and tiles[y_, x_ + 1] in (GRASS, TREE, DIRT, PAVING): x_ += 1
+                    runs_.append([y_, x0_, x_]); tiles[y_, x0_:x_ + 1] = PAVING
+                x_ += 1
+        trees[:] = [t for t in trees if not (1526 <= t[0] <= 1542 and 1356 <= t[1] <= 1383)]   # sin árboles en el patio
+        decals.append({'kind': 'donbosco_patio', 'x': 1531, 'y': 1358, 'w': 12, 'h': 25, 'rows': runs_})
+        decals.append({'kind': 'donbosco_iglesia', 'x': cx_, 'y': cy_, 'w': cw_, 'h': chh_})
+        decals.append({'kind': 'iglesia', 'name': 'Iglesia Don Bosco', 'nodraw': True, 'x': cx_, 'y': cy_, 'w': cw_, 'h': chh_})
+        decals.append({'kind': 'donbosco_colegio', 'x': sx_, 'y': sy_, 'w': sw_, 'h': shh_})
+        for q_ in decals:
+            if q_['kind'] == 'colegio' and q_.get('name') == 'Colegio Don Bosco': q_['nodraw'] = True
+        print('Don Bosco: iglesia', (cx_, cy_, cw_, chh_), 'colegio', (sx_, sy_, sw_, shh_), 'patio', len(runs_), 'tramos')
     # ---------- empaquetar ----------
     roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'swidths': [ROADS[k][1] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
     meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'pois': {k: [int(v[0]), int(v[1])] for k, v in poi_pos.items()}, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,
