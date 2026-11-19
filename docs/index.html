@@ -298,9 +298,9 @@
   #gps { display: block; color: #7fe3ff !important; font-weight: 700; }
   #mapLabels span.small { font-size: 9px; color: #ffe9a8; } #mapLabels.far span.small { display: none; }
   #mapLabels span.barrio { font: 900 15px system-ui; letter-spacing: .12em; text-transform: uppercase; color: #ffd75e; opacity: .9; }
-  #mapMe { position: absolute; width: 12px; height: 12px; transform-origin: 0 0; transform: scale(var(--ik)) translate(-50%, -50%); border-radius: 50%; background: #f2a52b;
-    border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(242,165,43,.35); animation: pulse 1s infinite alternate; }
-  @keyframes pulse { to { box-shadow: 0 0 0 7px rgba(242,165,43,.1); } }
+  #mapMe { position: absolute; width: 16px; height: 16px; transform-origin: 0 0; transform: scale(var(--ik)) translate(-50%, -50%); border-radius: 50%; background: #ff3b3b;
+    border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(255,59,59,.4), 0 0 0 7px rgba(0,0,0,.35); animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { box-shadow: 0 0 0 9px rgba(255,59,59,.1), 0 0 0 11px rgba(0,0,0,.2); } }
   #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translateX(-50%); background: #24242a;
     border: 1px solid var(--line); padding: 9px 16px; border-radius: 10px; opacity: 0; transition: opacity .25s; pointer-events: none;
     max-width: 80vw; z-index: 20; text-align: center; }
@@ -555,7 +555,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión b631ed72 · 2026-11-19</div>
+  <div class="tVer">Versión 64fa0737 · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -670,7 +670,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión b631ed72 · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 64fa0737 · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -18326,7 +18326,7 @@ VR.Titulo = class {
   $('btnReset').onclick = () => { if (car) { car.driven = false; car.v = 0; car = null; zoomPoke(); driveLabels(false); } player.x = player.px = world.spawn.x; player.y = player.py = world.spawn.y; cam.x = cam.px = player.x; cam.y = cam.py = player.y; menu.close(); toast('📍 De vuelta en ' + world.spawnName); };
 
   // ---------- mapa de la ciudad ----------
-  let mapOpen = false, mapBuilt = false;
+  let mapOpen = false, mapBuilt = false, miniBase = null;
   const MAPCOL = [[92, 158, 58], [70, 70, 78], [196, 188, 172], [196, 120, 92], [200, 150, 112], [52, 112, 44], [230, 230, 230], [168, 98, 64], [70, 130, 200], [124, 116, 104], [182, 104, 64], [190, 188, 184], [140, 114, 86], [88, 108, 72], [206, 188, 152], [168, 92, 66]];
   function buildMap() {
     const c = $('mapCanvas'); c.width = world.w; c.height = world.h;
@@ -18336,15 +18336,17 @@ VR.Titulo = class {
       if (world.line[i] === 1 || world.line[i] === 2) col = [226, 191, 69];
       d[i * 4] = col[0]; d[i * 4 + 1] = col[1]; d[i * 4 + 2] = col[2]; d[i * 4 + 3] = 255;
     }
-    // límites de los barrios (11/11/2026): cada barrio con su color suave y un borde marcado entre barrios
+    // minimapa (19/11/2026): copia del mapa SIN límites de barrio, así no se confunde con la línea del GPS
+    { const mb = miniBase || (miniBase = document.createElement('canvas')); mb.width = world.w; mb.height = world.h; mb.getContext('2d').putImageData(img, 0, 0); }
+    // límites de los barrios (11/11/2026; 19/11 más sutiles): tinte suave y un borde fino entre barrios, solo en el mapa grande
     if (world.barrio) {
       const BC = [[255, 120, 90], [90, 170, 255], [255, 205, 70], [190, 110, 255], [70, 220, 150], [255, 120, 190], [120, 230, 235], [255, 160, 60]], N = world.w * world.h, w = world.w, B = world.barrio;
-      for (let i = 0; i < N; i++) { const b = B[i]; if (!b) continue; const c = BC[(b - 1) % BC.length]; for (let k = 0; k < 3; k++) d[i * 4 + k] = d[i * 4 + k] * 0.7 + c[k] * 0.3; }
-      const put = (i, c) => { if (i < 0 || i >= N) return; d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; };
+      for (let i = 0; i < N; i++) { const b = B[i]; if (!b) continue; const c = BC[(b - 1) % BC.length]; for (let k = 0; k < 3; k++) d[i * 4 + k] = d[i * 4 + k] * 0.8 + c[k] * 0.2; }
+      const put = (i, c) => { if (i < 0 || i >= N) return; for (let k = 0; k < 3; k++) d[i * 4 + k] = d[i * 4 + k] * 0.5 + c[k] * 0.5; };
       for (let y = 1; y < world.h - 1; y++) for (let xx = 1; xx < w - 1; xx++) {
         const i = y * w + xx, b = B[i];
-        if (b !== B[i + 1]) { const c = BC[((b || B[i + 1]) - 1) % BC.length]; put(i, c); put(i + 1, c); put(i - 1, c); put(i + 2, c); put(i - 2, c); put(i + 3, c); }
-        if (b !== B[i + w]) { const c = BC[((b || B[i + w]) - 1) % BC.length]; put(i, c); put(i + w, c); put(i - w, c); put(i + 2 * w, c); put(i - 2 * w, c); put(i + 3 * w, c); }
+        if (b !== B[i + 1]) { const c = BC[((b || B[i + 1]) - 1) % BC.length]; put(i, c); put(i + 1, c); }
+        if (b !== B[i + w]) { const c = BC[((b || B[i + w]) - 1) % BC.length]; put(i, c); put(i + w, c); }
       }
     }
     x.putImageData(img, 0, 0);
@@ -18628,7 +18630,7 @@ VR.Titulo = class {
     if (!miniReady || mapOpen) return;
     if (!mini.width) sizeMini(); // mientras el título esconde el HUD el canvas mide 0
     miniT += dt; if (miniT < 1 / 30) return; miniT = 0;
-    const D = mini.width, r = D / 2, src = $('mapCanvas');
+    const D = mini.width, r = D / 2, src = miniBase || $('mapCanvas');
     const want = car ? 0.9 + 0.8 * (1 - Math.min(1, Math.abs(car.v) / 240)) : 2.2; // px de minimapa (en px físicos/D·112) por baldosa
     miniZoom += (want - miniZoom) * 0.1;
     const k = miniZoom * D / 112, f = car || player, tx = f.x / VR.TILE, ty = (car ? f.y : f.y - 4) / VR.TILE;
@@ -18686,9 +18688,13 @@ VR.Titulo = class {
     // vos: flecha hacia donde mirás o vas
     const ang = car ? car.a : ({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 })[player.dir];
     const s = D / 112;
-    mctx.translate(r, r); mctx.rotate(ang);
-    mctx.beginPath(); mctx.moveTo(0, -8 * s); mctx.lineTo(6 * s, 6 * s); mctx.lineTo(0, 3 * s); mctx.lineTo(-6 * s, 6 * s); mctx.closePath();
-    mctx.fillStyle = '#1a1a1e'; mctx.lineWidth = 3 * s; mctx.strokeStyle = '#1a1a1e'; mctx.stroke(); mctx.fillStyle = '#ffffff'; mctx.fill();
+    const pul = 0.5 + 0.5 * Math.sin(performance.now() / 260);
+    mctx.translate(r, r);
+    mctx.beginPath(); mctx.arc(0, 0, (12 + 4 * pul) * s, 0, 7); mctx.fillStyle = 'rgba(255,60,60,' + (0.38 - 0.2 * pul) + ')'; mctx.fill(); // halo que late: se encuentra de un vistazo
+    mctx.beginPath(); mctx.arc(0, 0, 9.5 * s, 0, 7); mctx.fillStyle = 'rgba(26,26,30,.85)'; mctx.fill(); mctx.lineWidth = 2 * s; mctx.strokeStyle = '#fff'; mctx.stroke();
+    mctx.rotate(ang);
+    mctx.beginPath(); mctx.moveTo(0, -8 * s); mctx.lineTo(5.5 * s, 5 * s); mctx.lineTo(0, 2 * s); mctx.lineTo(-5.5 * s, 5 * s); mctx.closePath();
+    mctx.fillStyle = '#ff3b3b'; mctx.fill(); mctx.lineWidth = 1.2 * s; mctx.strokeStyle = '#fff'; mctx.stroke();
     mctx.restore();
     // N
     mctx.font = `900 ${Math.round(11 * s)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'top';

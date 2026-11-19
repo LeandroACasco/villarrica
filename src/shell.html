@@ -298,9 +298,9 @@
   #gps { display: block; color: #7fe3ff !important; font-weight: 700; }
   #mapLabels span.small { font-size: 9px; color: #ffe9a8; } #mapLabels.far span.small { display: none; }
   #mapLabels span.barrio { font: 900 15px system-ui; letter-spacing: .12em; text-transform: uppercase; color: #ffd75e; opacity: .9; }
-  #mapMe { position: absolute; width: 12px; height: 12px; transform-origin: 0 0; transform: scale(var(--ik)) translate(-50%, -50%); border-radius: 50%; background: #f2a52b;
-    border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(242,165,43,.35); animation: pulse 1s infinite alternate; }
-  @keyframes pulse { to { box-shadow: 0 0 0 7px rgba(242,165,43,.1); } }
+  #mapMe { position: absolute; width: 16px; height: 16px; transform-origin: 0 0; transform: scale(var(--ik)) translate(-50%, -50%); border-radius: 50%; background: #ff3b3b;
+    border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(255,59,59,.4), 0 0 0 7px rgba(0,0,0,.35); animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { box-shadow: 0 0 0 9px rgba(255,59,59,.1), 0 0 0 11px rgba(0,0,0,.2); } }
   #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translateX(-50%); background: #24242a;
     border: 1px solid var(--line); padding: 9px 16px; border-radius: 10px; opacity: 0; transition: opacity .25s; pointer-events: none;
     max-width: 80vw; z-index: 20; text-align: center; }
