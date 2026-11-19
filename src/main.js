@@ -636,7 +636,7 @@
   // devuelve el juego andando; si f solo marca algo (GPS), el juego queda andando. (Antes quedaba todo en pausa: se "colgaba" al marcar la misión.)
   // Si f falla, no se deja el juego congelado: se avisa y se sigue.
   const celGo = (f) => { celDlg._keep = true; celDlg.close(); resume(); try { f(); } catch (e) { console.error(e); toast('⚠ No se pudo hacer eso (' + (e && e.message || e) + ')'); VR.loop.paused = false; VR.input.enabled = true; } };
-  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), get todas() { return X_todas; }, app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); }, cel: (a) => openCel(a) };
+  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), get todas() { return X_todas; }, app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); }, dest: (d) => setDest(d), comisaria: () => (world.comisarias && world.comisarias.length ? world.comisarias.reduce((b, c) => (Math.hypot(c.x - player.x, c.y - player.y) < Math.hypot(b.x - player.x, b.y - player.y) ? c : b)) : null), cel: (a) => openCel(a) };
   if (vida) VR.CelX.arrancar(vida, CX);
   let X_todas = [];
   function paintCel() {
@@ -648,7 +648,7 @@
       const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['agenda', '📒', 'Contactos', '#7fe08a', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true],
-        ...VR.CelX.APPS.map(([k, i, n, c, red]) => [k, i, n, c, !red || net])];
+        ...VR.CelX.APPS.filter((a) => VR.CelX.tiene(a[0])).map(([k, i, n, c, red]) => [k, i, n, c, !red || net])];
       $('celBody').style.background = VR.CelX.fondo(); X_todas = A;
       h = '<div class="apps">' + VR.CelX.ordenar(A).map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {

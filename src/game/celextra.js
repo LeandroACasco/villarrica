@@ -6,7 +6,41 @@ VR.CelX = (() => {
   const hm = (m) => pad((m / 60) | 0) + ':' + pad(m % 60);
   const rng = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const APPS = [['alarma', '⏰', 'Alarma', '#ff9a5a', false], ['radio', '📻', 'Radio', '#c8a0ff', false], ['clima', '🌤', 'Clima', '#6ac8ff', true], ['noti', '📰', 'Noticias', '#e6e6e6', true],
-    ['deliv', '🍔', "Ñembo'u", '#ff6b4a', true], ['salud', '❤️', 'Salud', '#ff7a8a', false], ['juegos', '🎮', 'Juegos', '#9bbc0f', false], ['tere', '🧉', 'Tereré', '#3b9d5a', true], ['ajustes', '⚙️', 'Ajustes', '#9aa3b2', false]];
+    ['deliv', '🍔', "Ñembo'u", '#ff6b4a', true], ['salud', '❤️', 'Salud', '#ff7a8a', false], ['juegos', '🎮', 'Juegos', '#9bbc0f', false], ['tere', '🧉', 'Tereré', '#3b9d5a', true], ['calc', '🧮', 'Calculadora', '#ff9a5a', false], ['notas', '📝', 'Notas', '#ffd84a', false], ['crono', '⏱', 'Cronómetro', '#6ac8ff', false], ['musica', '🎧', 'Música', '#c8a0ff', false], ['banco', '💰', 'Banco+', '#3cc87a', true], ['tienda', '🛍', 'Tienda de apps', '#ff6b9a', false], ['sos', '🆘', 'Emergencia', '#ff4a4a', false], ['ajustes', '⚙️', 'Ajustes', '#9aa3b2', false]];
+
+  // ================= Apps nuevas (v2.04): calculadora, notas, cronómetro, música, banco+, tienda, emergencia, Tereré (fotos y mensajes) =================
+  const PREMIUM = { crono: 3000, musica: 6000, banco: 8000 };
+  const tiene = (k) => !PREMIUM[k] || cfgA().apps.includes(k);
+  const cfgA = () => { const c = cfg(); c.apps = c.apps || []; c.ahorro = c.ahorro || 0; c.ahDia = c.ahDia || V.dia; return c; };
+  const hms = (ms) => { const t = Math.max(0, Math.floor(ms / 10)), c = t % 100, s = Math.floor(t / 100) % 60, m = Math.floor(t / 6000); return pad(m) + ':' + pad(s) + '.' + pad(c); };
+  // --- calculadora ---
+  const calc = { d: '0', a: null, op: null, nuevo: true };
+  function calcTecla(k) {
+    if (/\d/.test(k)) { calc.d = calc.nuevo || calc.d === '0' ? k : calc.d + k; calc.nuevo = false; }
+    else if (k === ',') { if (calc.nuevo) { calc.d = '0,'; calc.nuevo = false; } else if (!calc.d.includes(',')) calc.d += ','; }
+    else if (k === 'C') { calc.d = '0'; calc.a = null; calc.op = null; calc.nuevo = true; }
+    else if (k === '±') calc.d = calc.d.startsWith('-') ? calc.d.slice(1) : (calc.d === '0' ? '0' : '-' + calc.d);
+    else if (k === '%') calc.d = String(parseFloat(calc.d.replace(',', '.')) / 100).replace('.', ',');
+    else { const x = parseFloat(calc.d.replace(',', '.')); if (calc.op && !calc.nuevo) { calc.a = opera(calc.a, x, calc.op); calc.d = fmtC(calc.a); } else calc.a = x; calc.op = k === '=' ? null : k; calc.nuevo = true; }
+  }
+  const opera = (a, b, o) => (o === '+' ? a + b : o === '−' ? a - b : o === '×' ? a * b : o === '÷' ? (b === 0 ? NaN : a / b) : b);
+  const fmtC = (n) => (Number.isFinite(n) ? String(Math.round(n * 1e8) / 1e8).replace('.', ',') : 'Error');
+  // --- cronómetro / temporizador ---
+  const cr = { run: false, t0: 0, acc: 0, vueltas: [], tmr: null, tmrEnd: 0, tmrMin: 5 };
+  const crT = () => cr.acc + (cr.run ? performance.now() - cr.t0 : 0);
+  // --- música: pistas que usan el sintetizador de la radio con distintas semillas ---
+  const PISTAS = [['Tarde en el Ykuá', 'guarania', 0], ['Ñande Rendá', 'guarania', 1], ['Polca del mercado', 'polca', 0], ['Polca de feria', 'polca', 3], ['Noche de cumbia', 'cumbia', 0], ['Cumbia del lago', 'cumbia', 2], ['Ruta 8', 'rock', 0], ['Garaje', 'rock', 4]];
+  let pista = -1;
+  const sonar = (i) => { pista = (i + PISTAS.length) % PISTAS.length; Radio.set(PISTAS[pista][1], PISTAS[pista][2]); };
+  // --- Tereré: fotos tuyas y mensajes directos ---
+  const COMF = ['¡Qué linda foto!', 'Se ve genial', 'Mba\'éichapa esa foto', 'Pasá la ubicación', '🔥🔥🔥', 'Divino che'];
+  const RDM = ['Jajaja, qué bueno. ¿Y vos qué hacés?', 'Dale, nos vemos por la plaza.', 'Gracias che, estoy a full hoy.', 'Pasame tu número… ah no, ya lo tengo censurado, jaja.', 'Ahí te aviso, ndaje.', 'Qué lindo que escribas, ¡un abrazo!'];
+  const MEDM = ['Hola, ¿cómo andás?', '¿Vamos a tomar tereré?', 'Me gustó tu publicación', '¿Sabés dónde hay buena chipa?'];
+  const dms = () => { const M = mias(); M.dm = M.dm || {}; return M.dm; };
+  function entraDM(i, t) { const D = dms(), k = String(i); D[k] = D[k] || { m: [], un: false }; D[k].m.push({ de: 'el', t }); D[k].un = true; V.save(); }
+  const sinLeerDM = () => Object.values(dms()).filter((d) => d.un).length;
+  function miniatura(u, cb) { const im = new Image(); im.onload = () => { const w = 200, h = Math.round(im.height * w / im.width), c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h); cb(c.toDataURL('image/jpeg', 0.6)); }; im.onerror = () => cb(null); im.src = u; }
+
   // ---- Tereré: la red social de Villarrica (todo inventado). Feed del día con vecinos; vos publicás y te van llegando likes y comentarios ----
   const GENTE = [['Cinthia Vera', '👩', 'cara', 11], ['Chino Ayala', '🧑', 'cara', 23], ['Doña Chela', '👵'], ['Kike Mbohasa', '🛵'], ['Tía Norma', '👩‍🦳'], ['Pablo Ñandú', '🧔', 'dib', 5], ['Lorena Ykuá', '👱‍♀️', 'cara', 37], ['El Gringo', '🧑‍🦰', 'lago', 2]]; // 3er dato: tipo de foto de perfil (la mayoría usa un emoji, como en la vida real)
   const POSTS = ['Hoy el calor está para tereré con menta. ¿Quién se suma a la plaza?', 'Se me pinchó la goma en la ruta, ¡qué día, ndaje!', 'Mañana feria en el mercado, lleguen temprano.', 'Ojo con la zona de la terminal esta noche, mucho movimiento.', 'Se corta la luz otra vez... paciencia nomás.', 'Vendo bici usada, buen estado. Consulten por privado.'];
@@ -34,9 +68,10 @@ VR.CelX = (() => {
   function dibujito(sd) { const key = 'dib' + sd, hit = FOTOS.get(key); if (hit) return hit; const c = document.createElement('canvas'); c.width = 16; c.height = 16; const g = c.getContext('2d'), rc = (x, y, a, b, col) => { g.fillStyle = col; g.fillRect(x, y, a, b); }; rc(0, 0, 16, 16, '#ffd8f0'); rc(3, 2, 10, 5, '#5a3ad8'); rc(2, 4, 3, 8, '#5a3ad8'); rc(11, 4, 3, 8, '#5a3ad8'); rc(4, 5, 8, 8, '#ffe0c8'); rc(4, 5, 8, 2, '#5a3ad8'); rc(5, 8, 3, 3, '#2a1a5a'); rc(9, 8, 3, 3, '#2a1a5a'); rc(5, 8, 1, 1, '#fff'); rc(9, 8, 1, 1, '#fff'); rc(7, 12, 2, 1, '#e86a8a'); const u = c.toDataURL(); FOTOS.set(key, u); return u; } // personaje de dibujito original
   const av = (g, sz) => { sz = sz || 26; const st = 'width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;vertical-align:middle;object-fit:cover;image-rendering:pixelated'; if (g[2] === 'cara') return '<img src="' + cara(g[3], sz) + '" style="' + st + '">'; if (g[2] === 'dib') return '<img src="' + dibujito(g[3]) + '" style="' + st + '">'; if (g[2] === 'lago') return '<img src="' + dibuja('lago', g[3], 60, 60) + '" style="' + st + '">'; return g[1]; };
   const COMS = ['Jajaja qué grande', '¡Genial!', 'Ahí voy', 'Pavê, me encantó', 'Qué bueno che', 'Totalmente de acuerdo', 'Mba\'éichapa, ¡qué buena!', '👏👏👏'];
+  const sos = { amb: 0 };
   const mias = () => (V.s.tere = V.s.tere || { mis: [], lk: {} });
   function feed() { const r = rng(Math.floor(V.s.min / 1440) * 31 + 7), n = 6, L = [], K = Object.keys(ESC); for (let i = 0; i < n; i++) { const g = GENTE[(r() * GENTE.length) | 0], foto = r() < 0.62; let t, sc = null; if (foto) { sc = K[(r() * K.length) | 0]; t = ESC[sc][(r() * ESC[sc].length) | 0]; } else t = POSTS[(r() * POSTS.length) | 0]; L.push({ id: V.dia + '_' + i, g, t, sc, sd: ((r() * 1000) | 0) + 1, l: 2 + ((r() * 40) | 0), c: r() < 0.5 ? COMS[(r() * COMS.length) | 0] : '', h: (V.s.min % 1440) - ((i * 97) % 600) }); } return L; }
-  function reacc(p) { const T = V.s.min - p.min, r = rng(p.min | 0); return { l: Math.min(60, Math.floor(T / 4) + ((r() * 3) | 0)), cs: Array.from({ length: Math.min(3, Math.floor(T / 25)) }, (_, i) => [GENTE[(r() * GENTE.length) | 0], COMS[(r() * COMS.length) | 0]]) }; }
+  function reacc(p) { const T = V.s.min - p.min, r = rng(p.min | 0), L = p.img ? COMF : COMS; return { l: Math.min(60, Math.floor(T / 4) + ((r() * 3) | 0) + (p.img ? 5 : 0)), cs: Array.from({ length: Math.min(3, Math.floor(T / 25)) }, (_, i) => { const q = (r() * GENTE.length) | 0; return [GENTE[q], L[(r() * L.length) | 0], q]; }) }; }
   // ---- personalización: fondos, tonos y orden de apps (se guarda en s.cel) ----
   const FONDOS = [['noche', 'Noche', 'linear-gradient(#10182e,#2a1a4a)', 0], ['lapacho', 'Lapacho', 'linear-gradient(#ff8fc0,#8a2f7a)', 8000], ['ykua', 'Ykuá', 'linear-gradient(#1c5a8a,#7fd0e8)', 8000], ['campo', 'Campo', 'linear-gradient(#2f6a2f,#d8c860)', 8000], ['atardecer', 'Atardecer', 'linear-gradient(#ff6b4a,#3a1a5a)', 12000], ['retro', 'Verde retro', 'linear-gradient(#0f380f,#306230)', 5000]];
   const TONOS = [['cl', 'Clásico', 0], ['gu', 'Guarania', 12000], ['cu', 'Cumbia', 12000], ['di', 'Digital', 8000], ['ro', 'Rock', 15000]];
@@ -68,7 +103,7 @@ VR.CelX = (() => {
       const t = L.shift(); this.linea = t; this.voz(t); },
     // melodía de un compás: camina por la escala cerca de la nota más alta del acorde; es la misma cada vez que vuelve el compás (la música «gira»)
     compas(E, bar, hook) {
-      const r = rng(bar * 131 + (this.k.length * 17) + (hook ? 7 : 0)), ch = E.prog[bar % E.prog.length][1]; let i = Math.max(0, E.sc.findIndex((n) => n >= ch[2])); this.mel = [];
+      const r = rng(bar * 131 + (this.k.length * 17) + (hook ? 7 : 0) + (this.off || 0) * 977), ch = E.prog[bar % E.prog.length][1]; let i = Math.max(0, E.sc.findIndex((n) => n >= ch[2])); this.mel = [];
       for (let j = 0; j < E.len; j++) { const a = r(), b = r(); i = Math.max(0, Math.min(E.sc.length - 1, i + (b < 0.33 ? -1 : b > 0.66 ? 1 : 0))); this.mel.push(a < (this.k === 'polca' ? 0.9 : this.k === 'cumbia' ? 0.45 : this.k === 'rock' ? 0.5 : 0.62) ? E.sc[i] : null); }
     },
     play(E, step, at) {
@@ -100,7 +135,7 @@ VR.CelX = (() => {
     },
     sched() { const a = A(), ac = a.ctx(); if (!ac || !this.k) return; const E = this.E[this.k]; if (this.nx < ac.currentTime) this.nx = ac.currentTime + 0.05;
       while (this.nx < ac.currentTime + 0.3) { this.play(E, this.step, this.nx - ac.currentTime); this.step++; this.nx += E.sd; } },
-    set(k) { clearInterval(this.tm); try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* sin voz */ } this.cola = null; this.linea = ''; this.k = k || null; this.step = 0; this.nx = 0; try { VR.store.set('radio', this.k || ''); } catch (e) { /* sin guardado */ }
+    set(k, off) { clearInterval(this.tm); this.off = off || 0; try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* sin voz */ } this.cola = null; this.linea = ''; this.k = k || null; this.step = 0; this.nx = 0; try { VR.store.set('radio', this.k || ''); } catch (e) { /* sin guardado */ }
       if (this.k) { A().noise(0.35, { vol: 0.05, lp: 5000, hp: 1200 }); this.tm = setInterval(() => this.sched(), 70); } },
     sig() { const i = this.k ? this.ORDEN.indexOf(this.k) : -1, n = i + 1 < this.ORDEN.length ? this.ORDEN[i + 1] : null; this.set(n); const E = n && this.E[n];
       if (VR.toast) VR.toast(E ? '📻 ' + E.fm + ' FM · ' + E.n : '📻 Radio apagada'); },
@@ -180,7 +215,7 @@ VR.CelX = (() => {
     ov.querySelector('[data-no]').onclick = fin; ov.querySelector('[data-si]').onclick = () => { fin(); X0.B.leerDe(id); call = { id, st: 'on', yo: '', resp: '', hola: txt }; A().blip(); X0.cel('call:' + id); };
     inc = { fin }; return true;
   }
-  const has = (k) => typeof k === 'string' && (APPS.some((a) => a[0] === k) || k === 'tere' || k === 'juegos' || k.startsWith('call:') || k.startsWith('deliv:') || GAMES.some((g) => g[0] === k && k !== 'culebra'));
+  const has = (k) => typeof k === 'string' && (APPS.some((a) => a[0] === k) || k.startsWith('tere') || k === 'juegos' || k.startsWith('call:') || k.startsWith('deliv:') || GAMES.some((g) => g[0] === k && k !== 'culebra'));
   const bar = (v, c) => '<div class="sBar"><i style="width:' + Math.max(0, Math.min(100, v)) + '%;background:' + c + '"></i></div>';
 
   function html(k, X) {
@@ -220,10 +255,44 @@ VR.CelX = (() => {
         '<p>' + (ham < 30 ? '🍽 Tenés hambre: comé algo de la mochila o pedí en Ñembo\'u.' : hp < 50 ? '🩹 Andá más despacio: la vida baja con los golpes y se recupera sola. El hospital es el último recurso.' : '✔ Estás bien. Seguí así.') + '</p>' +
         (ham < 50 ? '<button class="cbtn" data-a="deliv">🍔 Pedir comida</button>' : '');
     } else if (k === 'tere') {
-      const M = mias(), hm2 = (m) => { m = ((m % 1440) + 1440) % 1440; return pad(Math.floor(m / 60)) + ':' + pad(Math.floor(m % 60)); };
-      h = '<h3>🧉 Tereré</h3><div class="tpub"><input id="tePub" maxlength="120" placeholder="¿Qué estás pensando, che?"><button class="mini" data-tpub>Publicar</button></div>';
-      for (const p of M.mis.slice().reverse().slice(0, 6)) { const R = reacc(p); h += '<div class="tpost yo"><b>🙂 Vos</b> <small>' + hm2(p.min) + '</small><p>' + esc(p.t) + '</p><small>👍 ' + R.l + (R.cs.length ? ' · 💬 ' + R.cs.length : '') + '</small>' + R.cs.map((q) => '<div class="tcom"><b>' + av(q[0], 16) + ' ' + q[0][0] + ':</b> ' + esc(q[1]) + '</div>').join('') + '</div>'; }
-      for (const p of feed()) { const me = M.lk[p.id]; h += '<div class="tpost"><b>' + av(p.g) + ' ' + p.g[0] + '</b> <small>' + hm2(p.h) + '</small><p>' + esc(p.t) + '</p>' + (p.sc ? '<img class="tfoto" src="' + dibuja(p.sc, p.sd, 120, 75) + '">' : '') + '<small><button class="mini" data-tlk="' + p.id + '">' + (me ? '👍 Te gusta' : '👍 Me gusta') + '</button> ' + (p.l + (me ? 1 : 0)) + '</small>' + (p.c ? '<div class="tcom"><b>💬</b> ' + esc(p.c) + '</div>' : '') + '</div>'; }
+      const M = mias(), hm2 = (m) => { m = ((m % 1440) + 1440) % 1440; return pad(Math.floor(m / 60)) + ':' + pad(Math.floor(m % 60)); }, nDM = sinLeerDM();
+      h = '<h3>🧉 Tereré</h3><div class="tpub"><input id="tePub" maxlength="120" placeholder="¿Qué estás pensando, che?"><button class="mini" data-tpub>Publicar</button></div><div class="tpub"><button class="mini" data-a="tere:foto">📷 Con una foto</button><button class="mini" data-a="tere:dms">💬 Mensajes' + (nDM ? ' (' + nDM + ')' : '') + '</button></div>';
+      for (const p of M.mis.slice().reverse().slice(0, 6)) { const R = reacc(p); h += '<div class="tpost yo"><b>🙂 Vos</b> <small>' + hm2(p.min) + '</small><p>' + esc(p.t) + '</p>' + (p.img ? '<img class="tfoto" style="image-rendering:auto" src="' + p.img + '">' : '') + '<small>👍 ' + R.l + (R.cs.length ? ' · 💬 ' + R.cs.length : '') + '</small>' + R.cs.map((q) => '<div class="tcom"><b>' + av(q[0], 16) + ' ' + q[0][0] + ':</b> ' + esc(q[1]) + '</div>').join('') + '</div>'; }
+      const fd = feed(); for (let q = 0; q < fd.length; q++) { const p = fd[q], me = M.lk[p.id], gi = GENTE.indexOf(p.g); h += '<div class="tpost"><b>' + av(p.g) + ' ' + p.g[0] + '</b> <small>' + hm2(p.h) + '</small><p>' + esc(p.t) + '</p>' + (p.sc ? '<img class="tfoto" src="' + dibuja(p.sc, p.sd, 120, 75) + '">' : '') + '<small><button class="mini" data-tlk="' + p.id + '">' + (me ? '👍 Te gusta' : '👍 Me gusta') + '</button> <button class="mini" data-a="tere:' + gi + '">💬</button> ' + (p.l + (me ? 1 : 0)) + '</small>' + (p.c ? '<div class="tcom"><b>💬</b> ' + esc(p.c) + '</div>' : '') + '</div>'; }
+    } else if (k === 'tere:foto') {
+      const L = VR.Fotos ? VR.Fotos.list() : [];
+      h = '<h3>📷 Foto para Tereré</h3>' + (L.length ? '<p>Elegí una foto de tu galería:</p><div class="gal">' + L.map((f, i) => '<img data-tph="' + i + '" src="' + f.u + '">').join('') + '</div>' : '<p>Todavía no sacaste fotos. Abrí la 📷 Cámara (probá la selfie) y volvé.</p>') + '<button class="cbtn sec" data-a="tere">⬅ Volver</button>';
+    } else if (k === 'tere:dms') {
+      const D = dms(), ids = Object.keys(D).filter((q) => D[q].m.length);
+      h = '<h3>💬 Mensajes de Tereré</h3>' + (ids.length ? ids.map((q) => { const g = GENTE[+q], u = D[q].m[D[q].m.length - 1]; return '<button class="cbtn sec" data-a="tere:' + q + '" style="text-align:left">' + av(g, 20) + ' <b>' + g[0] + '</b>' + (D[q].un ? ' 🔴' : '') + '<br><small>' + esc(u.t.slice(0, 50)) + '</small></button>'; }).join('') : '<p>No tenés conversaciones. Tocá el 💬 de una publicación para escribirle a alguien.</p>') + '<button class="cbtn sec" data-a="tere">⬅ Volver</button>';
+    } else if (/^tere:\d+$/.test(k)) {
+      const gi = +k.slice(5), g = GENTE[gi]; if (!g) return '<p>No existe.</p>'; const D = dms(), d = D[gi] || { m: [] }; if (D[gi]) D[gi].un = false;
+      h = '<h3>' + av(g, 24) + ' ' + g[0] + '</h3><div class="dmBox">' + (d.m.length ? d.m.map((m) => '<div class="bub ' + (m.de === 'yo' ? 'yo' : 'el') + '">' + esc(m.t) + '</div>').join('') : '<p>Escribile algo:</p>') + '</div><div class="chRep">' + MEDM.map((t, q) => '<button class="rep" data-tdm="' + gi + ':' + q + '">' + esc(t) + '</button>').join('') + '</div><button class="cbtn sec" data-a="tere:dms">⬅ Mensajes</button>';
+    } else if (k === 'calc') {
+      const T = ['C', '±', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '−', '1', '2', '3', '+', '0', ',', '=']; 
+      h = '<h3>🧮 Calculadora</h3><div class="calcD">' + esc(calc.d) + '</div><div class="calcG">' + T.map((t) => '<button class="ck' + (/[÷×−+=]/.test(t) ? ' op' : '') + (t === '0' ? ' z' : '') + '" data-ck="' + t + '">' + t + '</button>').join('') + '</div>';
+    } else if (k === 'notas') {
+      h = '<h3>📝 Notas</h3><textarea id="notaTx" class="notaTx" placeholder="Anotá lo que quieras: precios, direcciones, deudas…">' + esc(cfg().nota || '') + '</textarea><p style="font-size:11px">Se guarda solo.</p>';
+    } else if (k === 'crono') {
+      if (!tiene('crono')) return '<p>Esta app se compra en la 🛍 Tienda de apps.</p><button class="cbtn" data-a="tienda">🛍 Ir a la tienda</button>';
+      const resta = cr.tmr ? Math.max(0, cr.tmrEnd - Date.now()) : 0;
+      h = '<h3>⏱ Cronómetro</h3><div class="calcD" id="crD">' + hms(crT()) + '</div><div class="tpub"><button class="mini" data-cr="go">' + (cr.run ? '⏸ Pausa' : '▶ Iniciar') + '</button><button class="mini" data-cr="lap"' + (cr.run ? '' : ' disabled') + '>🏁 Vuelta</button><button class="mini" data-cr="rst">↺ Reiniciar</button></div>' + cr.vueltas.slice().reverse().slice(0, 5).map((v2, q) => '<div class="row2"><span>Vuelta ' + (cr.vueltas.length - q) + '</span><b>' + hms(v2) + '</b></div>').join('') +
+        '<h4>⏳ Temporizador</h4><div class="calcD" id="tmD">' + (cr.tmr ? hms(resta) : pad(cr.tmrMin) + ':00.00') + '</div><div class="tpub"><button class="mini" data-tm="-1">−1 min</button><button class="mini" data-tm="1">+1 min</button><button class="mini" data-tm="go">' + (cr.tmr ? '⏹ Cancelar' : '▶ Empezar') + '</button></div>';
+    } else if (k === 'musica') {
+      if (!tiene('musica')) return '<p>Esta app se compra en la 🛍 Tienda de apps.</p><button class="cbtn" data-a="tienda">🛍 Ir a la tienda</button>';
+      const on = pista >= 0 && Radio.k;
+      h = '<h3>🎧 Música</h3><div class="row2"><span>' + (on ? '🎵 ' + PISTAS[pista][0] : 'Elegí una pista') + '</span><span><button class="mini" data-mu="prev">⏮</button> <button class="mini" data-mu="stop">' + (on ? '⏹' : '▶') + '</button> <button class="mini" data-mu="next">⏭</button></span></div>' + PISTAS.map((q, i) => '<button class="cbtn sec" data-mu="' + i + '" style="text-align:left">' + (on && pista === i ? '🔊 ' : '🎵 ') + q[0] + ' <small>· ' + q[1] + '</small></button>').join('') + '<p style="font-size:11px">Sintetizada en el momento, todo original.</p>';
+    } else if (k === 'banco') {
+      if (!tiene('banco')) return '<p>Esta app se compra en la 🛍 Tienda de apps.</p><button class="cbtn" data-a="tienda">🛍 Ir a la tienda</button>';
+      const c = cfgA(), d = V.dia - c.ahDia; if (d > 0 && c.ahorro > 0) { c.ahorro = Math.round(c.ahorro * Math.pow(1.01, d)); } c.ahDia = V.dia;
+      h = '<h3>💰 Banco+</h3><div class="row2"><span>🏦 Billetera electrónica</span><b>' + gs(s.banco) + '</b></div><div class="row2"><span>🐷 Caja de ahorro (1 % por día)</span><b>' + gs(c.ahorro) + '</b></div><div class="tpub"><button class="mini" data-ah="10000">+10.000</button><button class="mini" data-ah="50000">+50.000</button><button class="mini" data-ah="todo">Depositar todo</button><button class="mini" data-ah="ret">Retirar</button></div>' +
+        '<div class="row2"><span>💳 Deuda total</span><b>' + gs(v.deudaTotal()) + '</b></div><h4>Últimos movimientos</h4>' + s.mov.slice(0, 12).map((m) => '<div class="row2"><span>' + esc(m[3]) + '</span><span style="color:' + (m[2] < 0 ? '#ff8a7a' : '#9fe0a0') + '">' + (m[2] > 0 ? '+' : '') + gs(m[2]) + '</span></div>').join('') + '<p style="font-size:11px">Los préstamos se piden en la 🏦 Billetera.</p>';
+    } else if (k === 'tienda') {
+      const c = cfgA();
+      h = '<h3>🛍 Tienda de apps</h3><p>Apps extra para tu celular. Se pagan con la billetera electrónica (tenés ' + gs(s.banco) + ').</p>' + Object.keys(PREMIUM).map((a) => { const A2 = APPS.find((q) => q[0] === a); return '<div class="row2"><span>' + A2[1] + ' ' + A2[2] + '</span>' + (c.apps.includes(a) ? '<b>✔ Instalada</b>' : '<button class="mini" data-bapp="' + a + '"' + (s.banco < PREMIUM[a] ? ' disabled' : '') + '>Comprar ' + gs(PREMIUM[a]) + '</button>') + '</div>'; }).join('');
+    } else if (k === 'sos') {
+      const hp = VR.getHp ? VR.getHp() : 100;
+      h = '<h3>🆘 Emergencia</h3><p>Pedí ayuda. Hace falta saldo para llamar.</p><button class="cbtn" data-sos="amb"' + (hp >= 100 ? ' disabled' : '') + '>🚑 Ambulancia · te cura (25.000 Gs.)</button><button class="cbtn" data-sos="bom">🚒 Bomberos · llamar a Benítez</button><button class="cbtn" data-sos="pol">🚓 Policía · marcar la comisaría en el GPS</button>' + (sos.amb ? '<p>🚑 La ambulancia va en camino…</p>' : '');
     } else if (k === 'ajustes') {
       const c = cfg(), tr = (n) => (n ? gs(n) : 'gratis');
       h = '<h3>⚙️ Ajustes</h3><h4>🖼 Fondo de pantalla</h4><div class="fdGr">' + FONDOS.map(([id, n, bg, p]) => '<button class="fd' + (c.fondo === id ? ' sel' : '') + '" data-fd="' + id + '" style="background:' + bg + '"><b>' + n + '</b><small>' + (c.fondos.includes(id) ? (c.fondo === id ? '✔ puesto' : 'tuyo') : gs(p)) + '</small></button>').join('') + '</div>' +
@@ -244,6 +313,35 @@ VR.CelX = (() => {
   function init(k, body, X) {
     if (VR.Juegos && VR.Juegos[k]) return VR.Juegos[k](body);
     const { vida: v } = X, $$ = (sel, f) => body.querySelectorAll(sel).forEach(f);
+    if (k.startsWith('tere:')) {
+      const M = mias();
+      $$('[data-tph]', (e) => e.onclick = () => { const f = VR.Fotos.list()[+e.dataset.tph]; if (!f) return; miniatura(f.u, (img) => { if (!img) return; M.mis.push({ t: 'Mi foto', min: v.s.min, img }); while (M.mis.filter((q) => q.img).length > 4) M.mis.splice(M.mis.findIndex((q) => q.img), 1); v.save(); try { A().coin(); } catch (x) { /* sin audio */ } X.go2('tere'); }); });
+      $$('[data-tdm]', (e) => e.onclick = () => { const [gi, q] = e.dataset.tdm.split(':').map(Number), D = dms(); D[gi] = D[gi] || { m: [], un: false }; D[gi].m.push({ de: 'yo', t: MEDM[q] }); v.save(); X.paint(); setTimeout(() => { entraDM(gi, RDM[(Math.random() * RDM.length) | 0]); D[gi].un = X.app() !== 'tere:' + gi; if (X.app() === 'tere:' + gi) { D[gi].un = false; X.paint(); } }, 1400); });
+      return;
+    }
+    if (k === 'calc') { $$('[data-ck]', (e) => e.onclick = () => { calcTecla(e.dataset.ck); X.paint(); }); return; }
+    if (k === 'notas') { const t = body.querySelector('#notaTx'); t.oninput = () => { cfg().nota = t.value; }; t.onchange = () => v.save(); return () => v.save(); }
+    if (k === 'crono') {
+      const tick = setInterval(() => { const a = body.querySelector('#crD'), b = body.querySelector('#tmD'); if (a) a.textContent = hms(crT()); if (b && cr.tmr) b.textContent = hms(cr.tmrEnd - Date.now()); }, 50);
+      $$('[data-cr]', (e) => e.onclick = () => { const a = e.dataset.cr; if (a === 'go') { if (cr.run) { cr.acc = crT(); cr.run = false; } else { cr.t0 = performance.now(); cr.run = true; } } else if (a === 'lap') cr.vueltas.push(crT()); else { cr.run = false; cr.acc = 0; cr.vueltas = []; } X.paint(); });
+      $$('[data-tm]', (e) => e.onclick = () => { const a = e.dataset.tm; if (a === 'go') { if (cr.tmr) { clearTimeout(cr.tmr); cr.tmr = null; } else { cr.tmrEnd = Date.now() + cr.tmrMin * 60000; cr.tmr = setTimeout(() => { cr.tmr = null; X0.toast('⏳ ¡Terminó el temporizador!'); for (let q = 0; q < 4; q++) setTimeout(() => { try { A().tone(880, 0.2, { type: 'square', vol: 0.05 }); } catch (x) { /* sin audio */ } }, q * 300); }, cr.tmrMin * 60000); } } else cr.tmrMin = Math.max(1, Math.min(60, cr.tmrMin + +a)); X.paint(); });
+      return () => clearInterval(tick);
+    }
+    if (k === 'musica') { $$('[data-mu]', (e) => e.onclick = () => { const a = e.dataset.mu; if (a === 'stop') { if (Radio.k) { Radio.set(null); } else sonar(pista < 0 ? 0 : pista); } else if (a === 'next') sonar(pista + 1); else if (a === 'prev') sonar(pista - 1); else sonar(+a); X.paint(); }); return; }
+    if (k === 'banco') {
+      const c = cfgA(), sv = () => { v.save(); X.paint(); };
+      $$('[data-ah]', (e) => e.onclick = () => { const a = e.dataset.ah; if (a === 'ret') { if (c.ahorro > 0) { v.banco(c.ahorro, '🐷 Retiro de caja de ahorro'); c.ahorro = 0; } } else { const n = a === 'todo' ? s0().banco : +a; if (n > 0 && s0().banco >= n) { v.banco(-n, '🐷 Depósito en caja de ahorro'); c.ahorro += n; c.ahDia = v.dia; } } sv(); });
+      return;
+    }
+    if (k === 'tienda') { const c = cfgA(); $$('[data-bapp]', (e) => e.onclick = () => { const a = e.dataset.bapp; if (!c.apps.includes(a) && v.pagaBanco(PREMIUM[a], 'App ' + a)) { c.apps.push(a); v.save(); X0.toast('🛍 App instalada'); } X.paint(); }); return; }
+    if (k === 'sos') {
+      $$('[data-sos]', (e) => e.onclick = () => { const a = e.dataset.sos;
+        if (a === 'amb') { if (sos.amb) return; if (!v.cobrarODeber) return; v.cobrarODeber(25000, '🚑 Ambulancia'); sos.amb = 1; X0.toast('🚑 La ambulancia va en camino…'); setTimeout(() => { sos.amb = 0; if (VR.heal) VR.heal(100); X0.toast('🚑 Te atendieron en el lugar: estás recuperado'); try { A().coin(); } catch (x) { /* sin audio */ } }, 9000); }
+        else if (a === 'bom') VR.CelX.llamar('benitez');
+        else if (X.comisaria) { const q = X.comisaria(); if (q) { X.dest({ x: q.x, y: q.y, name: 'Comisaría' }); X0.toast('🚓 Marqué la comisaría en el GPS'); } else X0.toast('🚓 No hay comisaría cerca en este mapa'); }
+        X.paint(); });
+      return;
+    }
     if (k === 'tere') {
       const M = mias();
       $$('[data-tpub]', (e) => e.onclick = () => { const t = body.querySelector('#tePub').value.trim(); if (!t) return; M.mis.push({ t, min: v.s.min }); if (M.mis.length > 20) M.mis.shift(); v.save(); try { A().coin(); } catch (x) { /* sin audio */ } X.paint(); });
@@ -302,8 +400,9 @@ VR.CelX = (() => {
       super.update(dt);
     }
   };
+  const s0 = () => V.s;
   const ordenar = (L) => { const o = (V && V.s.cel && V.s.cel.orden) || []; return L.slice().sort((a, b) => { const x = o.indexOf(a[0]), y = o.indexOf(b[0]); return (x < 0 ? 999 : x) - (y < 0 ? 999 : y); }); };
-  return { APPS, GAMES, has, ordenar, fondo: () => { const f = FONDOS.find((q) => q[0] === cfg().fondo); return f ? f[2] : ''; }, sonarTono, html, init, Radio, llamar: (id) => { call = { id, st: 'ring', yo: '', resp: '' }; }, entrante,
+  return { APPS, GAMES, has, ordenar, tiene, sinLeerDM, fondo: () => { const f = FONDOS.find((q) => q[0] === cfg().fondo); return f ? f[2] : ''; }, sonarTono, html, init, Radio, llamar: (id) => { call = { id, st: 'ring', yo: '', resp: '' }; }, entrante,
     // cada llamada que hacés gasta 0,1 día de saldo (las que te hacen son gratis)
     cobraLlamada() { if (!(V.s.saldo >= 0.1)) { X0.toast('📵 No te alcanza el saldo para llamar'); return false; } V.s.saldo = Math.max(0, V.s.saldo - 0.1); V.save(); return true; },
     arrancar(vida, X) { V = vida; X0 = X; last = Math.floor(V.s.min); pedidos().forEach((p) => { delete p.rep; delete p.espera; });
