@@ -81,13 +81,20 @@ VR.Changas = class {
     if (q.chipa) { q.say = { text: 'Ya te compré, po', t: 1.6 }; return true; }
     if (VR.mis && !VR.Barrios.enPunto(this.world, player.x, player.y)) { q.say = { text: 'Ndaikuaái ndéve...', t: 1.6 }; return true; }
     q.chipa = true; const V = VR.vida;
-    if (this.rnd() < 0.6) { q.say = { text: ['¡Dame dos!', '¡Chipa, por favor!', 'Hee, una'][(this.rnd() * 3) | 0], t: 1.8 }; this.job.n++; if (V) V.s.stock--; this.pay(5000, V ? 'chipa (quedan ' + V.s.stock + ')' : 'chipa ' + this.job.n + '/10', true); if (VR.mis) VR.mis.emit('venta', { que: 'chipa' }); if (V && V.s.stock <= 0) { this.end('🧺 ¡Se terminó la chipa! Reponé con Doña Chela'); return true; } if (!V && this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
+    if (this.rnd() < 0.6) {
+      const dos = (!V || V.s.stock >= 2) && this.rnd() < 0.15, nn = dos ? 2 : 1;   // «¡Dame dos!» de verdad: a veces se llevan dos
+      q.say = { text: dos ? '¡Dame dos!' : ['¡Chipa, por favor!', 'Hee, una', '¡Una, po!'][(this.rnd() * 3) | 0], t: 1.8 };
+      this.job.n += nn; if (V) V.s.stock -= nn;
+      this.pay(5000 * nn, V ? (dos ? '2 chipas' : 'chipa') + ' (quedan ' + V.s.stock + ')' : 'chipa ' + this.job.n + '/10', true);
+      if (VR.mis) for (let i = 0; i < nn; i++) VR.mis.emit('venta', { que: 'chipa' });
+      if (V && V.s.stock <= 0) { this.end('🧺 ¡Se terminó la chipa! Reponé con Doña Chela'); return true; } if (!V && this.job.n >= 10) this.end('🥐 ¡Vendiste todo! Aguyje'); }
     else q.say = { text: ['Nahániri', 'Otro día', 'Ya comí'][(this.rnd() * 3) | 0], t: 1.6 };
     return true;
   }
   update(dt) {
     const J = this.job; if (!J) return; const car = this.getCar(), f = car || this.player;
     J.t += dt;
+    if (J.k === 'chipa' && this.peds && this.peds.crowd && (J.cw = (J.cw || 0) - dt) <= 0) { J.cw = 1.4; this.peds.crowd(this.player.x, this.player.y); }   // en la plaza siempre hay gente para vender
     if ((J.k === 'delivery' && !(car && car.type === 'moto')) || (J.k === 'taxi' && !(car && car.taxi))) { if ((J.off = (J.off || 0) + dt) > 20) this.end('Se canceló la changa (te bajaste)'); } else J.off = 0;
     const D = J.dest, dd = D ? Math.hypot(f.x - D.x, f.y - D.y) : 1e9, near = dd < 46, inRing = dd < 24, slow = !car || Math.abs(car.v) < 45, stopped = !car || Math.abs(car.v) < 18;
     if (J.k === 'delivery') {

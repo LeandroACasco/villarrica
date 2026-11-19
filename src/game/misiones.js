@@ -112,7 +112,7 @@ VR.PERSONAJES = {
   kike: { nombre: 'Kike', color: '#7fe08a', lugar: { en: 'plaza', dx: -150, dy: -60 }, dir: 'down',
     look: { gender: 'm', skin: 3, build: 'flaco', hair: 'corto', hairColor: 0, beard: 'bigote', top: 'musculosa', topColor: 2, bottom: 'bermuda', bottomColor: 3, shoes: 'chinelas', shoesColor: 3, hat: 'gorraAtras', hatColor: 0, termo: true },
     charla: ['Tengo una idea para hacernos ricos... después te cuento.', "¿Jaha jaikutu peteĩ tereré? Ko termo ro'ysã porã."], menu: (M) => VR.menuKike(M) },
-  chela: { nombre: 'Doña Chela', color: '#ffb36b', lugar: { en: 'plaza', dx: -130, dy: 90 }, dir: 'down',
+  chela: { nombre: 'Doña Chela', color: '#ffb36b', lugar: { en: 'plaza', dx: 12, dy: -100 }, dir: 'down',
     look: { gender: 'f', skin: 3, build: 'normal', hair: 'trenza', hairColor: 1, top: 'polo', topColor: 1, bottom: 'pollera', bottomColor: 10, shoes: 'chinelas', shoesColor: 1, hat: 'piri' },
     charla: ['¡Chipa, chipa calentita! Recién salida del tatakua.', "Ko'ãga ko'ãga ojehupi pyahu."], menu: (M) => VR.menuChela(M) },
   mirta: { nombre: 'Mirta (Ao Porã)', color: '#ff9ccf', lugar: { en: 'aopora', dx: 34, dy: 6 }, dir: 'left',
@@ -418,6 +418,7 @@ VR.Misiones = class {
       this.hT = 0.25; const M = this.mision;
       let tx = '📌 ' + M.titulo + ' · ' + (typeof P.obj === 'function' ? P.obj(this) : P.obj);
       if (P.esperar && P.esperar.n > 1) tx += ' (' + a.n + '/' + P.esperar.n + ')';
+      { const fr = P.esperar && P.esperar.n > 1 ? Math.min(1, a.n / P.esperar.n) : -1; this.hud.style.background = fr >= 0 ? 'linear-gradient(90deg, rgba(255,95,162,.65) ' + fr * 100 + '%, rgba(20,20,26,.84) ' + fr * 100 + '%)' : ''; }   // barra de progreso en el cartel
       if (P.limite) tx += ' · ⏱ ' + Math.max(0, Math.ceil(P.limite - a.t)) + ' s';
       if (this.hud.textContent !== tx) this.hud.textContent = tx; this.hud.hidden = false;
     }
@@ -503,17 +504,21 @@ VR.MISIONES = {
         charla: [['yo', 'Doña Chela, ¿necesita alguien que le venda chipa?'],
           ['chela', "Kike he'i ndéve, ¿ajépa? Bueno. El canasto sale " + VR.fmtGs(40000) + " y la chipa te la dejo a " + VR.fmtGs(3000) + ". Vos la vendés a " + VR.fmtGs(5000) + "."],
           ['yo', 'No me alcanza, Doña Chela...'],
-          ['chela', "Ya sé, che memby. Te fío el canasto y 15 chipas. Me pagás con la venta, ¿ajépa? Ani rejapo tavy."],
+          ['chela', "Ya sé, che memby. El canasto te lo presto y te fío 8 chipas. Me pagás con la venta, ¿ajépa? Ani rejapo tavy."],
           ['chela', 'Andá por la plaza y frente a la Municipalidad. Parate al lado de la gente y ofrecé. ¡Pero con ganas!']],
-        alTerminar: (M) => { const V = M.vida; if (!V.s.canasto) { V.s.canasto = true; V.s.fiado += VR.PRECIOS.canasto; V.log(0, 'Canasto fiado ' + VR.fmtGs(VR.PRECIOS.canasto)); } V.llenaCanasto(15 - V.s.stock, true); M.toast('🧺 Canasto con ' + V.s.stock + ' chipas · le debés ' + VR.fmtGs(V.s.fiado) + ' a Doña Chela'); if (M.changas) M.changas.start('chipa', true); } },
-      { id: 'vender', obj: 'Vendé las 15 chipas (ACCIÓN al lado de la gente)', esperar: { ev: 'venta', n: 15 }, punto: true, changa: 'chipa',
-        alEmpezar: (M) => { const V = M.vida; if (V.s.stock < 15 - M.s.act.n) V.llenaCanasto(15 - M.s.act.n - V.s.stock, true); if (M.changas && !(M.changas.job && M.changas.job.k === 'chipa')) M.changas.start('chipa', true); } },
+        alTerminar: (M) => { const V = M.vida; if (!V.s.canasto) { V.s.canasto = true; V.log(0, 'Doña Chela te prestó el canasto'); } V.llenaCanasto(8 - V.s.stock, true); M.toast('🧺 Canasto con ' + V.s.stock + ' chipas · le debés ' + VR.fmtGs(V.s.fiado) + ' a Doña Chela'); if (M.changas) M.changas.start('chipa', true); } },
+      { id: 'vender', obj: 'Vendé las 8 chipas (ACCIÓN al lado de la gente)', esperar: { ev: 'venta', n: 8 }, punto: true, changa: 'chipa',
+        alEmpezar: (M) => { const V = M.vida; if (V.s.stock < 8 - M.s.act.n) V.llenaCanasto(8 - M.s.act.n - V.s.stock, true); if (M.changas && !(M.changas.job && M.changas.job.k === 'chipa')) M.changas.start('chipa', true); } },
       { id: 'pagar', obj: 'Pagale a Doña Chela lo que le debés', hablar: 'chela', cond: (M) => M.vida.s.fiado <= 0,
         charla: [{ quien: 'chela', txt: "¿Ha? ¿Vendiste todo? Mbaʼeichaitépa.", op: [
           ['Pagarle lo que le debo', (M) => { const n = M.vida.pagaFiado(); return [['chela', M.vida.s.fiado <= 0 ? "¡Aguyje! Ko'ãga pe canasto nde mba'e. Cuando quieras más chipa, vení." : 'Me diste ' + VR.fmtGs(n) + '. Todavía me debés ' + VR.fmtGs(M.vida.s.fiado) + ', ¿eh?']]; }],
           ['Después', () => false]] }] },
       { id: 'saldo', obj: 'Cargá saldo en la despensa', ir: 'despensa', esperar: { ev: 'saldo' }, cond: (M) => M.vida.s.saldo > 0,
         dlg: [['kike', '¡Epa, vendiste todo! Cargá saldo al celular en la despensa, así te llegan changas por la app.']] },
+      { id: 'kike2', obj: 'Kike se ofrece a llevarte de vuelta: hablale', hablar: 'kike', punto: true,
+        charla: [{ quien: 'kike', txt: "¡Epa, vendedor! Ya es tarde y Santa Lucía queda lejos. ¿Querés que te lleve en mi moto hasta tu pieza? Pasá un tereré después, ¿ajépa?", op: [
+          ['Sí, llevame (dejo la bici acá)', (M) => { if (M.kikeLleva) M.kikeLleva(); return [['kike', '¡Agarrate fuerte, po! Ani rejapo tavy.']]; }],
+          ['No, vuelvo en la bici', () => [['kike', 'Bueno, che ra\'a. Ojo con los pozos.']]]] }] },
       { id: 'volver', obj: 'Volvé a la pieza antes de la noche y hablá con Ña Ramona', hablar: 'ramona', punto: true,
         charla: [{ quien: 'ramona', txt: "¿Ha? ¿Ya volviste? Sábado pe che cobráta, pero si querés adelantar algo...", op: [
           ['Adelantarle lo que tengo', (M) => { const n = Math.min(VR.Wallet.get(), M.vida.s.pieza.saldo > 0 ? M.vida.s.pieza.saldo : VR.PRECIOS.pieza); if (n < 1000) return [['ramona', "Ndaipóri piko? Bueno, sábado pe."]]; M.vida.mueve(-n, 'Pieza (adelanto a Ña Ramona)'); M.vida.s.pieza.saldo -= n; return [['ramona', 'Me diste ' + VR.fmtGs(n) + ". ¡Aguyje, mitã! Rejapo porã."]]; }],

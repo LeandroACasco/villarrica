@@ -78,6 +78,18 @@ VR.Peds = class {
   }
   talk(p, kind, secs = 1.8) { const L = VR.PED_TALK[kind]; p.say = { text: L[(this.rnd() * L.length) | 0], t: secs }; }
   // el jugador saluda: contesta el más cercano
+  // gente cerca de (x, y) mientras vendés chipa: si hay menos de 7 posibles compradores a menos de 240 px, aparece otra a pie, fuera de tu vista cercana
+  crowd(x, y) {
+    let n = 0; for (const p of this.list) if (p.mode !== 'down' && !p.chipa && !p.sit && Math.hypot(p.x - x, p.y - y) < 240) n++;
+    if (n >= 7) return null;
+    for (let t = 0; t < 25; t++) {
+      const a = this.rnd() * Math.PI * 2, d = 110 + this.rnd() * 110, px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+      if (!this.free(px, py)) continue;
+      const p = { x: px, y: py, px, py, dir: 'down', vx: 0, vy: 0, anim: 0, mode: 'walk', t: 0, sp: 26 + this.rnd() * 18, pal: this.pickPal(px, py), say: null };
+      this.newDir(p); this.list.push(p); return p;
+    }
+    return null;
+  }
   greet(px, py) {
     let best = null, bd = 30;
     for (const p of this.list) { const d = Math.hypot(p.x - px, p.y - py); if (d < bd && p.mode !== 'down') { bd = d; best = p; } }

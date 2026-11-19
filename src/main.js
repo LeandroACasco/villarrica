@@ -262,7 +262,12 @@
   if (vida) VR.pieza = new VR.Pieza({ vida, player, busy: () => !!(shop.el && shop.el.open), ropero: () => { shop.ropero = true; openShop(); } }); // interior de la pieza (11/11/2026)
   function openShop(tab) { VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; if (tab) shop.tab = tab; shop.open(player.lookData); }
   VR.tienda = VR.crearTienda({ player, busy: () => !!(shop.el && shop.el.open), abrir: (tab) => openShop(tab) }); // interior de la tienda Ao Porã (11/11/2026)
-  VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()); };
+  // efecto de plata (19/11/2026): un «+5.000» que sube desde la billetera cada vez que cobrás (rojo si gastás)
+  { const st = document.createElement('style'); st.textContent = '@keyframes plPop{0%{opacity:0;transform:translateY(6px) scale(.8)}15%{opacity:1;transform:translateY(0) scale(1.15)}100%{opacity:0;transform:translateY(-26px) scale(1)}} .plPop{position:fixed;z-index:30;pointer-events:none;font:800 15px system-ui;text-shadow:0 1px 3px #000;animation:plPop 1.5s ease-out forwards} @keyframes plFl{0%{filter:brightness(1.9)}100%{filter:none}} .plFl{animation:plFl .6s}'; document.head.append(st);
+    let lastPl = null; VR.moneyPop = () => { const el = $('plata'), n = VR.Wallet.get(); if (lastPl === null) { lastPl = n; return; } const d = n - lastPl; lastPl = n; if (!d || !el) return;
+      const r = el.getBoundingClientRect(), t = document.createElement('div'); t.className = 'plPop'; t.textContent = (d > 0 ? '+' : '−') + VR.fmtGs(Math.abs(d)); t.style.color = d > 0 ? '#7dff9a' : '#ff7d7d'; t.style.left = (r.left + 6) + 'px'; t.style.top = (r.bottom - 4) + 'px';
+      document.body.append(t); setTimeout(() => t.remove(), 1600); el.classList.remove('plFl'); void el.offsetWidth; el.classList.add('plFl'); }; }
+  VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()); VR.moneyPop && VR.moneyPop(); };
   VR.Wallet.onChange();
   // HUD de Historia: hora y hambre, saldo y pieza, deuda en rojo
   const vV = $('vVida'), vV2 = $('vVida2'), vD = $('vDeuda'); let vT = 0;
@@ -271,7 +276,7 @@
     if (VR.pjHud) VR.pjHud.barras(hp, vida.s.hambre); vV.hidden = vV2.hidden = false; vV.textContent = vida.hudLinea1(); vV2.textContent = vida.hudLinea2(); vV.classList.toggle('low', vida.s.hambre < 25);
     const d = vida.deudaTotal(); vD.hidden = d <= 0; if (d > 0) vD.textContent = '⚠ Debés ' + VR.fmtGs(d);
   }
-  if (vida) { vidaHud(0, true); VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()) + ' · 🏦 ' + VR.fmtGs(vida.s.banco); vidaHud(0, true); }; VR.Wallet.onChange(); const sy = vida.sync.bind(vida); vida.sync = () => { sy(); $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()) + ' · 🏦 ' + VR.fmtGs(vida.s.banco); }; }
+  if (vida) { vidaHud(0, true); VR.Wallet.onChange = () => { $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()) + ' · 🏦 ' + VR.fmtGs(vida.s.banco); vidaHud(0, true); VR.moneyPop && VR.moneyPop(); }; VR.Wallet.onChange(); const sy = vida.sync.bind(vida); vida.sync = () => { sy(); $('plata').textContent = '💵 ' + VR.fmtGs(VR.Wallet.get()) + ' · 🏦 ' + VR.fmtGs(vida.s.banco); VR.moneyPop && VR.moneyPop(); }; }
 
   // ---------- cámara: sigue al jugador mirando un poco hacia donde camina ----------
   const cam = { x: player.x, y: player.y, px: player.x, py: player.y, lx: 0, ly: 0 };
@@ -817,6 +822,7 @@
       setInterval(() => { const c = mis.biciR; if (!c) return; const o = mis.s.biciR; if (!o || Math.abs(o.x - c.x) > 2 || Math.abs(o.y - c.y) > 2) { mis.s.biciR = { x: Math.round(c.x), y: Math.round(c.y), a: c.a }; mis.save(); } }, 1500); }
     mis.prestaCamion = () => { let c = cars.find((x) => x.firehouse && x.model === 'bomba'); if (!c) { const f = world.firehouse; if (!f) return null; const p = mis.lug.libre(f.x, f.y + 60); c = new VR.Car(world, p.x, p.y, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; cars.push(c); world.addBox(c); } c.mio = true; c.prestada = true; mis.camionK = c; return c; };
     mis.destActual = () => dest; mis.vehiculoMio = () => { const c = (!car && lastCar) || cars.find((x) => x.mio); if (!c) return null; const p = mis.lug.libre(c.x + 22, c.y + 6); return { x: p.x, y: p.y, name: 'tu vehículo' }; };
+    mis.kikeLleva = () => { const d = vida.s.casa; if (!d) return; if (car) exitCar(); const f = $('celFade'); f.textContent = '🏍 Kike te lleva a tu pieza…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y + 26, 'Tu pieza', true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
     { const tp = mis.lug.get(VR.PUNTOS.taxihosp.lugar); if (tp) for (let i = 0; i < 2; i++) { const x = tp.x + i * 28 - 14, y = tp.y - 34, m = 'sedan', c = new VR.Car(world, x, y, Math.PI / 2, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); if (c.contacts && c.contacts(x, y, c.a)) continue; c.taxi = true; cars.push(c); world.addBox(c); } }
     { const sm = mis.s.motoK; if (sm) { const c = mis.prestaMoto(sm); if (c) c.alq = sm.alq; } // la moto de Kike sigue donde la dejaste aunque recargues
