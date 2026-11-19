@@ -16,13 +16,17 @@
 
   D.hit = (c, wx, wy, imp) => {
     if (!ok(c) || imp < 70) return;
-    const m = c.dmg || (c.dmg = { f: 0, r: 0, s: 0, fb: 0, rb: 0, hood: 0, ws: 0, rw: 0, cf: 0, cr: 0, cl: 0, cd: 0 });
+    const m = c.dmg || (c.dmg = { f: 0, r: 0, s: 0, fb: 0, rb: 0, hood: 0, ws: 0, rw: 0, cf: 0, cr: 0, cl: 0, cd: 0, sl: 0, sd: 0, dl: 0, dd: 0 });
     const a = c.a, dx = wx - c.x, dy = wy - c.y;
     const lr = dx * Math.cos(a) + dy * Math.sin(a), lf = dx * Math.sin(a) - dy * Math.cos(a);   // derecha / adelante
     const hl = c.LEN / 2, nf = lf / hl, side = Math.abs(lr) / (c.WID / 2);
     const e = Math.min(260, imp);
     if (side > 0.85 && Math.abs(nf) < 0.75) {                    // golpe de costado: la chapa se hunde y la puerta se va
-      m.s += e; if (lr < 0) m.cl = Math.min(1, m.cl + e / 260); else m.cd = Math.min(1, m.cd + e / 260);
+      m.s += e; const L = lr < 0;
+      if (L) { m.cl = Math.min(1, m.cl + e / 260); m.sl += e; } else { m.cd = Math.min(1, m.cd + e / 260); m.sd += e; }
+      const sa = L ? m.sl : m.sd, dk = L ? 'dl' : 'dd';
+      if (sa > 130) m[dk] = Math.max(m[dk], 1);
+      if (sa > 260 && imp > 120) D.loseDoor(c, L);
     } else if (nf > 0) {                                         // frente
       m.f += e; m.cf = Math.min(1, m.cf + e / 300);
       if (m.f > 120) m.fb = Math.max(m.fb, 1);
@@ -59,6 +63,16 @@
     if (VR.audio && VR.audio.near) { const v = VR.audio.near(px, py) * 0.18; if (v > 0.01) { VR.audio.tone(160, 0.2, { type: 'square', vol: v, f2: 70, lp: 1200 }); VR.audio.noise(0.3, { vol: v, lp: 1600 }); } }
   };
 
+  // puerta que se suelta de costado
+  D.loseDoor = (c, left) => {
+    const m = c.dmg, k = left ? 'dl' : 'dd'; if (!m || m[k] === 2) return; m[k] = 2;
+    const a = c.a, sg = left ? -1 : 1, rx = Math.cos(a) * sg, ry = Math.sin(a) * sg, fx = Math.sin(a), fy = -Math.cos(a), sp = rnd(35, 80);
+    D.debris.push({ k: 'door', x: c.x + rx * c.WID * 0.55 + fx * c.LEN * 0.05, y: c.y + ry * c.WID * 0.55 + fy * c.LEN * 0.05, vx: (c.vx || 0) * 0.5 + rx * sp + rnd(-20, 20), vy: (c.vy || 0) * 0.5 + ry * sp + rnd(-20, 20),
+      a: a + rnd(-0.5, 0.5), w: rnd(-4, 4), L: c.LEN * 0.3, W: 3, col: hex(c), t: 0, life: 70 });
+    if (D.debris.length > 36) D.debris.shift();
+    if (VR.audio && VR.audio.near) { const v = VR.audio.near(c.x, c.y) * 0.18; if (v > 0.01) { VR.audio.tone(130, 0.22, { type: 'square', vol: v, f2: 60, lp: 1000 }); VR.audio.noise(0.25, { vol: v, lp: 1400 }); } }
+  };
+
   D.shards = (c, wx, wy, n) => {
     for (let i = 0; i < n; i++) D.glass.push({ x: wx + rnd(-3, 3), y: wy + rnd(-3, 3), vx: rnd(-70, 70) + (c.vx || 0) * 0.3, vy: rnd(-70, 70) + (c.vy || 0) * 0.3, t: 0, life: rnd(0.5, 1.1), rest: i % 3 === 0 ? 40 : 0 });
     if (D.glass.length > 160) D.glass.splice(0, D.glass.length - 160);
@@ -84,6 +98,9 @@
         ctx.fillStyle = d.col; ctx.fillRect(-d.W / 2, -d.L / 2, d.W, d.L);
         ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fillRect(-d.W / 2, -d.L / 2, d.W, 1);
         ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(-d.W / 2 + 2, -d.L / 2 + 3, 1, d.L - 6); ctx.fillRect(d.W / 2 - 3, -d.L / 2 + 3, 1, d.L - 6);
+      } else if (d.k === 'door') {
+        ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-d.W / 2 + 1, -d.L / 2 + 1.5, d.W + 1, d.L);
+        ctx.fillStyle = d.col; ctx.fillRect(-d.W / 2, -d.L / 2, d.W + 1, d.L); ctx.fillStyle = '#10141a'; ctx.fillRect(-d.W / 2 + 1, -d.L / 2 + 2, 1.5, d.L - 5);
       } else {
         ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-d.L / 2 + 1, -d.W / 2 + 1.5, d.L, d.W);
         ctx.fillStyle = d.col; ctx.fillRect(-d.L / 2, -d.W / 2, d.L, d.W);
@@ -115,6 +132,8 @@
   // se dibuja con el contexto ya trasladado al centro y girado: adelante = -y
   D.drawOn = (ctx, c) => {
     const m = c.dmg; if (!m) return;
+    const A = c._dmgA || 0, LF = c._dmgLift || 0;
+    const low = (k, fn) => { ctx.save(); ctx.rotate(-A); ctx.translate(0, Math.round(LF * k)); ctx.rotate(A); fn(); ctx.restore(); };   // las piezas bajas (trompa, costados) quedan más abajo en pantalla que el techo
     const hl = c.LEN / 2, hw = c.WID / 2, seed = ((c.x * 13 + c.y * 7) % 10) / 10 || 0.37, col = hex(c);
     // chapa arrugada: manchas oscuras y brillos cortados en la trompa / cola / costados
     const crumple = (x0, y0, w, h, k, flip) => {
@@ -125,10 +144,17 @@
       }
       ctx.fillStyle = 'rgba(15,12,12,.4)'; ctx.fillRect(Math.round(x0 + 1), Math.round(flip ? y0 + h - 1.5 : y0), Math.round(w - 2), 1.5);   // borde hundido
     };
-    crumple(-hw + 1, -hl, c.WID - 2, hl * 0.42, m.cf, false);
-    crumple(-hw + 1, hl - hl * 0.42, c.WID - 2, hl * 0.42, m.cr, true);
-    if (m.cl > 0.15) crumple(-hw, -hl * 0.4, 2.5, hl * 0.8, m.cl, false);
-    if (m.cd > 0.15) crumple(hw - 2.5, -hl * 0.4, 2.5, hl * 0.8, m.cd, false);
+    low(0.15, () => {
+      crumple(-hw + 1, -hl, c.WID - 2, hl * 0.42, m.cf, false);
+      crumple(-hw + 1, hl - hl * 0.42, c.WID - 2, hl * 0.42, m.cr, true);
+      if (m.cl > 0.15) crumple(-hw, -hl * 0.4, 2.5, hl * 0.8, m.cl, false);
+      if (m.cd > 0.15) crumple(hw - 2.5, -hl * 0.4, 2.5, hl * 0.8, m.cd, false);
+      // puertas: entreabiertas (hueco oscuro + puerta torcida) o ausentes (hueco hasta el interior)
+      const door = (st, sg) => { if (!st) return; const x0 = sg < 0 ? -hw - 0.5 : hw - 2.2, y0 = -hl * 0.12, h = hl * 0.5;
+        if (st === 1) { ctx.fillStyle = '#0c0d10'; ctx.fillRect(x0, y0, 2.7, h); ctx.save(); ctx.translate(sg < 0 ? -hw - 1 : hw + 1, y0 + h * 0.5); ctx.rotate(0.28 * sg); ctx.fillStyle = col; ctx.fillRect(-1, -h * 0.5, 2, h); ctx.restore(); }
+        else { ctx.fillStyle = '#0c0d10'; ctx.fillRect(x0, y0, 2.7, h); ctx.fillStyle = '#2d2e36'; ctx.fillRect(x0 + (sg < 0 ? 1 : 0), y0 + 1, 1.6, h - 2); } };
+      door(m.dl, -1); door(m.dd, 1);
+    });
     // parabrisas y luneta (el parabrisas queda sobre la cabina, un poco adelante del medio)
     const wsY = -hl * 0.2, rwY = hl * 0.3, gw = c.WID * 0.72, gh = Math.max(3, hl * 0.2);
     if (m.ws) crack(ctx, 0, wsY, gw, gh, m.ws, seed);
@@ -148,7 +174,7 @@
       if (st === 1) { ctx.save(); ctx.translate(dir * 0, yy); ctx.rotate(0.22 * dir * (seed > 0.5 ? 1 : -1)); ctx.fillStyle = '#2a2a30'; ctx.fillRect(-hw, -1, c.WID, 2.2); ctx.fillStyle = 'rgba(200,200,210,.4)'; ctx.fillRect(-hw, -1, c.WID, 0.7); ctx.restore(); }
       else { ctx.fillStyle = '#17151a'; ctx.fillRect(-hw + 1, yy - 1.5, c.WID - 2, 2.2); }
     };
-    bum(-hl + 0.6, m.fb, -1); bum(hl - 0.6, m.rb, 1);
+    low(0.3, () => { bum(-hl + 0.6, m.fb, -1); bum(hl - 0.6, m.rb, 1); });
   };
 
   VR.drawDmg = D.drawOn;

@@ -715,7 +715,7 @@ VR.Car = class {
         ctx.drawImage(SH, Math.round(x - h + ox), Math.round(y - h + oy), F.S, F.S); ctx.globalAlpha = 1;
       } }
     ctx.drawImage(F.get(k), x - h + shake, y - h, F.S, F.S);
-    if (((this.dents && this.dents.length) || this.dmg) && !this.wreck) VR.drawDents(ctx, this, x + shake, y - Math.round(lift * 0.55), ak);
+    if (((this.dents && this.dents.length) || this.dmg) && !this.wreck) { this._dmgA = ak; this._dmgLift = lift; VR.drawDents(ctx, this, x + shake, y - Math.round(lift * 0.55), ak); }
     if (this.pasajero && this.pasajero.L) { // pasajero atrás del conductor (Mbohasa en moto): se dibuja primero, así el conductor le tapa las manos en su cintura
       const R = VR.riderTopFrames(this.pasajero.L, VR.pasGeo(this.spec.rider)), rh = R.S >> 1, ro = (this.spec.riderOff || 0) - 6;
       ctx.drawImage(R.get(k), x - rh + shake + Math.round(Math.sin(a) * ro), y - rh - Math.round(Math.cos(a) * ro), R.S, R.S);

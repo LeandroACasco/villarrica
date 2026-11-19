@@ -583,3 +583,5 @@ Se sacó la puerta de la galería sur (ahora es otro arco; entrada y gente de mi
 
 ### v1.90 · Chapería de los vehículos (19/11/2026)
 Los choques fuertes deforman los autos (`src/game/chaperia.js`, `VR.chap`). Cada auto lleva `c.dmg` con daño por zona (frente, atrás, costados) y estado de piezas: parachoques (colgando → perdido), capó (hundido → abierto → volado), parabrisas y luneta (rajado → telaraña → reventado), chapa arrugada. Las piezas perdidas quedan tiradas en la calle ~70 s (`VR.chap.debris`) y saltan vidrios. Se dibuja encima del sprite, junto con las abolladuras (`drawDents`), sin tocar los 64 ángulos. No aplica a motos, karumbe ni vehículos grandes. El taller lo repara (`VR.repairDmg`). Probado en PC; falta ajustar umbrales jugando y probar en el teléfono.
+
+v1.90b (19/11/2026): puertas que se aflojan (entreabiertas) y se sueltan con golpes de costado (`dl`/`dd`, `VR.chap.loseDoor`, pieza suelta en la calle); las piezas bajas (trompa, costados, parachoques) se dibujan más abajo que el techo para que se lean en el volumen de la vista oblicua (`c._dmgA`/`c._dmgLift`).
