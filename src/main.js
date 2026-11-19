@@ -8,7 +8,7 @@
   // Cambiar de modo recarga la página con sessionStorage 'go': así arranca todo limpio con el guardado que corresponde.
   let goMode = null; try { goMode = sessionStorage.getItem('villarrica:go'); sessionStorage.removeItem('villarrica:go'); } catch (e) {}
   VR.modo = goMode || (/[?&]historia\b/.test(location.search) ? 'historia' : /[?&](libre|juego|prueba)\b/.test(location.search) ? 'libre' : VR.store.get('modo', 'libre')); // el cambio desde el título manda sobre la URL
-  VR.store.ns = VR.modo === 'historia' ? 'h:' : '';
+  VR.store.ns = VR.modo === 'historia' ? VR.store.hns(VR.store.slot) : '';
   document.body.classList.toggle('historia', VR.modo === 'historia');
   const vida = VR.vida = VR.modo === 'historia' ? new VR.Vida() : null;
   const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), clima: VR.store.get('clima', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque'), calidad: VR.store.get('calidad', 'normal') };
@@ -790,8 +790,8 @@
   }
   // empezar la Historia de cero (en Configuración)
   { let sure = 0; const bh = $('btnBorraH'); bh.onclick = () => {
-    if (performance.now() > sure) { sure = performance.now() + 4000; bh.textContent = '⚠ ¿Seguro? Se borra todo lo de Historia · tocá otra vez'; setTimeout(() => { if (performance.now() > sure - 100) bh.textContent = '🗑 Empezar la Historia de cero'; }, 4100); return; }
-    VR.wiped = true; VR.store.wipeHistoria(); try { sessionStorage.removeItem('villarrica:onl'); } catch (e) {} try { online.stop(); } catch (e) {} bh.textContent = '🗑 Empezar la Historia de cero'; sure = 0;
+    if (performance.now() > sure) { sure = performance.now() + 4000; bh.textContent = '⚠ ¿Seguro? Se borra todo lo de Historia · tocá otra vez'; setTimeout(() => { if (performance.now() > sure - 100) bh.textContent = '🗑 Empezar esta partida de cero'; }, 4100); return; }
+    VR.wiped = true; VR.store.wipeHistoria(); try { sessionStorage.removeItem('villarrica:onl'); } catch (e) {} try { online.stop(); } catch (e) {} bh.textContent = '🗑 Empezar esta partida de cero'; sure = 0;
     if (vida) { toast('🗑 Historia borrada: arrancá de nuevo'); try { sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) {} setTimeout(() => location.reload(), 600); } else { toast('🗑 Historia borrada'); tagHist(); }
   }; }
   VR.Guardado.init({ toast, flush: () => { try { savePos(); } catch (e) {} if (vida) vida.save(); if (mis) mis.save(); } });
@@ -839,10 +839,11 @@
     // Kike te lleva (19/11/2026, pedido de Leandro): desde donde estés a la plaza, o desde la plaza a tu pieza. Los primeros 3 viajes gratis, después 5.000 Gs.
     mis.kikeRuta = () => { const pl = mis.lug.get('plaza'), casa = vida.s.casa, f = car || player; if (!pl || !casa) return null; const aCasa = Math.hypot(f.x - pl.x, f.y - pl.y) < 420; return { aCasa, d: aCasa ? { x: casa.x, y: casa.y + 26, name: 'Tu pieza' } : (() => { const k = mis.dondeEsta('kike') || pl, p = mis.lug.libre(k.x + 26, k.y + 30); return { x: p.x, y: p.y, name: 'la plaza' }; })() }; };
     mis.kikeViaje = () => { const r = mis.kikeRuta(); if (!r) return null; const n = vida.s.kikeViajes || 0; vida.s.kikeViajes = n + 1; let txt;
-    VR.Buzon.ctx = { vida, kikeRuta: () => mis.kikeRuta(), kikeViaje: () => setTimeout(() => mis.kikeViaje(), 2600) };
-    VR.Buzon.onChange = (id) => { if (celDlg.open && (celApp === 'msj' || celApp === 'agenda' || celApp === 'msj:' + id)) paintCel(); };
       if (n < 3) txt = '🏍 Viaje de regalo (' + (n + 1) + '/3)'; else { vida.cobrarODeber(5000, 'Kike te llevó'); txt = '🏍 Viaje con Kike · ' + VR.fmtGs(5000); }
       if (car) exitCar(); const f = $('celFade'); f.textContent = txt + ' · ' + (r.aCasa ? 'a tu pieza…' : 'a la plaza…'); f.classList.add('on'); setTimeout(() => { teleport(r.d.x, r.d.y, r.d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); return null; };
+    VR.Buzon.ctx = { vida, kikeRuta: () => mis.kikeRuta(), kikeViaje: () => setTimeout(() => mis.kikeViaje(), 2600) };
+    mis.agendarViejas();
+    VR.Buzon.onChange = (id) => { if (celDlg.open && (celApp === 'msj' || celApp === 'agenda' || celApp === 'msj:' + id)) paintCel(); };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
     { const tp = mis.lug.get(VR.PUNTOS.taxihosp.lugar); if (tp) for (let i = 0; i < 2; i++) { const x = tp.x + i * 28 - 14, y = tp.y - 34, m = 'sedan', c = new VR.Car(world, x, y, Math.PI / 2, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); if (c.contacts && c.contacts(x, y, c.a)) continue; c.taxi = true; cars.push(c); world.addBox(c); } }
     { const sm = mis.s.motoK; if (sm) { const c = mis.prestaMoto(sm); if (c) c.alq = sm.alq; } // la moto de Kike sigue donde la dejaste aunque recargues
@@ -1331,15 +1332,51 @@
     setTimeout(() => location.reload(), 450);
   }
   // resumen de la partida en el botón grande: día y hora, plata y misión en curso (se lee del guardado, sirva el modo que sirva)
-  const tagHist = () => { const g = $('tHistTag'), tit = $('tHistTit'), res = $('tResumen'), cu = $('tCuenta'), hay = VR.store.hasHistoria(); if (g) g.hidden = true; if (tit) tit.textContent = hay ? 'Continuar' : 'Nueva Historia';
-    if (res) { res.textContent = 'Villarrica te espera: empezá tu historia'; try { const sn = hay && VR.Guardado.snapshot(), P = VR.Guardado.PFX;
+  const tagHist = () => { const g = $('tHistTag'), tit = $('tHistTit'), res = $('tResumen'), cu = $('tCuenta'), hay = VR.store.hasHistoria(); if (g) g.hidden = true; if (tit) tit.textContent = hay ? 'Continuar · Partida ' + VR.store.slot : 'Nueva Historia';
+    if (res) { res.textContent = 'Villarrica te espera: empezá tu historia'; try { const sn = hay && VR.Guardado.snapshot(), P = VR.Guardado.CAN;
       if (sn) { const v = JSON.parse(sn.d[P + 'vida']), pl = JSON.parse(sn.d[P + 'plata'] || '0'), m = sn.d[P + 'mis'] ? JSON.parse(sn.d[P + 'mis']) : null, mi = m && m.act && VR.MISIONES && VR.MISIONES[m.act.id], mm = Math.floor(v.min % 1440);
         res.textContent = 'Día ' + (Math.floor(v.min / 1440) + 1) + ' · ' + Math.floor(mm / 60) + ':' + String(mm % 60).padStart(2, '0') + ' · 💵 ' + VR.fmtGs(pl) + (mi ? '\n📌 ' + mi.titulo : ''); res.style.whiteSpace = 'pre-line'; } } catch (e) { /* sin resumen */ } }
     if (cu) { let n = false; try { n = !!VR.Guardado.mem('uid'); } catch (e) { /* sin nube */ } cu.textContent = n ? '☁ Partida en la nube activa' : '☁ Guardado solo en este dispositivo (Ajustes → Partida)'; } };
+  // ---- varias partidas (19/11/2026): 3 ranuras de Historia. La ranura que está en marcha es VR.store.slot; cambiar de ranura recarga el juego ----
+  const slDlg = $('slDlg'), slList = $('slList'); let slSure = 0, slSureN = 0;
+  const slResumen = (n) => { try { const sn = VR.store.hasHistoria(n) && VR.Guardado.snapshot(n), P = VR.Guardado.CAN; if (!sn) return null;
+    const v = JSON.parse(sn.d[P + 'vida']), pl = JSON.parse(sn.d[P + 'plata'] || '0'), m = sn.d[P + 'mis'] ? JSON.parse(sn.d[P + 'mis']) : null, mi = m && m.act && VR.MISIONES && VR.MISIONES[m.act.id], mm = Math.floor(v.min % 1440);
+    return 'Día ' + (Math.floor(v.min / 1440) + 1) + ' · ' + Math.floor(mm / 60) + ':' + String(mm % 60).padStart(2, '0') + ' · 💵 ' + VR.fmtGs(pl) + (mi ? '\n📌 ' + mi.titulo : ''); } catch (e) { return 'Partida guardada'; } };
+  function paintSlots() {
+    slList.innerHTML = '';
+    for (let n = 1; n <= VR.store.NSLOT; n++) {
+      const r = slResumen(n), row = document.createElement('div'); row.className = 'slRow' + (n === VR.store.slot ? ' on' : '');
+      row.innerHTML = '<div class="slTx"><b>' + (n === VR.store.slot ? '★ ' : '') + 'Partida ' + n + '</b>' + (r || 'Vacía · empezá una Historia nueva') + '</div>';
+      const go = document.createElement('button'); go.className = 'btn primary'; go.textContent = r ? '▶ Jugar' : '🆕 Empezar'; go.onclick = () => jugarRanura(n); row.append(go);
+      if (r) { const del = document.createElement('button'); del.className = 'btn bad'; del.textContent = (slSureN === n && performance.now() < slSure) ? '¿Seguro?' : '🗑';
+        del.onclick = () => { if (slSureN === n && performance.now() < slSure) { borrarRanura(n); return; } slSureN = n; slSure = performance.now() + 4000; paintSlots(); setTimeout(() => { if (slSureN === n && performance.now() >= slSure) paintSlots(); }, 4100); }; row.append(del); }
+      slList.append(row);
+    }
+  }
+  function jugarRanura(n) {
+    if (tGoing) return; slDlg.close();
+    if (n === VR.store.slot) { ACT.historia(); return; }
+    tGoing = true; fadeEl.style.opacity = 1;
+    try { VR.Guardado.fl(); } catch (e) { /* sin nada que guardar */ } // guarda la ranura que estaba en marcha antes de cambiar
+    VR.store.elegir(n);
+    try { sessionStorage.removeItem('villarrica:onl'); sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) { location.href = location.pathname + '?historia'; return; }
+    setTimeout(() => location.reload(), 450);
+  }
+  function borrarRanura(n) {
+    slSure = 0; const enMarcha = n === VR.store.slot;
+    if (enMarcha) VR.wiped = true; // la que está en marcha no tiene que volver a escribirse al salir
+    VR.store.wipeHistoria(n); try { if (enMarcha) online.stop(); } catch (e) { /* sin online */ }
+    toast('🗑 Partida ' + n + ' borrada');
+    if (enMarcha && VR.modo === 'historia') { slDlg.close(); tGoing = true; fadeEl.style.opacity = 1; try { sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) { /* sin sessionStorage */ } setTimeout(() => location.reload(), 450); return; }
+    paintSlots(); tagHist();
+  }
+  slDlg.addEventListener('close', () => resume());
+  $('slClose').onclick = () => slDlg.close();
   const ACT = {
     historia: () => VR.modo === 'historia' ? startGame() : switchModo('historia'),
     multi: () => VR.modo === 'libre' ? startGame(() => { VR.input.releaseAll(); $('onDlg').showModal(); }) : switchModo('libre', true), // Online siempre juega en Libre
     libre: () => VR.modo === 'libre' ? startGame() : switchModo('libre'),
+    slots: () => { VR.input.releaseAll(); VR.input.enabled = false; slSure = 0; paintSlots(); slDlg.showModal(); },
     config: () => openConfig('title'),
     creditos: () => { VR.input.releaseAll(); VR.input.enabled = false; credits.showModal(); },
   };

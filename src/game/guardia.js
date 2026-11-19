@@ -6,7 +6,7 @@ VR.Guardia = class {
   // o: { world, peds, changas, mis, vida, setDest, toast, getCar, player, cars }
   constructor(o) { Object.assign(this, o); this.job = null; this.rnd = Math.random; }
   static get VALOR() { return { fuego: 36000, herido: 34000, gato: 10000 }; }
-  hechoHoy() { const k = VR.store.get('guardia', null); return !!(k && k.dia === this.vida.dia); }
+  hechoHoy() { VR.store.heredar('guardia'); const k = VR.store.get('guardia', null); return !!(k && k.dia === this.vida.dia); }
   abierta() { return this.mis.hecha('m3'); }
   cuartel() { return this.mis.lug.get('cuartel'); }
   start() {

@@ -260,6 +260,14 @@ VR.Misiones = class {
     else { q.rifa = 'no'; di(pick(['Nahániri', 'Otro día', 'Ya compré en otro lado'])); }
     return true;
   }
+  // Partidas anteriores a la agenda (v1.94): agrega solos los contactos que ya tendrías según lo que avanzaste, sin mensajes de saludo.
+  // Se mira el paso actual de la M1 (Ña Ramona al terminar el primer paso, Doña Chela con «chela2», Kike con «kike2») y las misiones hechas.
+  agendarViejas() { const B = VR.Buzon; if (!B) return; const M1 = VR.MISIONES.m1, a = this.s.act, ids = [];
+    const paso = (id) => M1.pasos.findIndex((p) => p.id === id);
+    const pasada = (id) => this.hecha('m1') || (a && a.id === 'm1' && paso(id) >= 0 && a.paso > paso(id)) || this.s.hechas.some((h) => h !== 'm1');
+    if (pasada('ramona')) ids.push('ramona'); if (pasada('chela2')) ids.push('chela'); if (pasada('kike2')) ids.push('kike');
+    for (const h of this.s.hechas) { const M = VR.MISIONES[h]; if (M && M.agenda) ids.push(...M.agenda); }
+    const q = VR.toast; VR.toast = null; let n = 0; for (const id of ids) if (B.agendar(id)) n++; VR.toast = q; return n; }
   // al cambiar el día: Kike cobra otro día de alquiler (si seguís con la moto) y recuerda las deudas, todo por mensaje
   chequeaDia() { const V = this.vida, B = VR.Buzon; if (!V || !B) return; const b = B.load();
     if (!b.dia) { b.dia = V.dia; B.save(); return; } if (V.dia === b.dia) return;

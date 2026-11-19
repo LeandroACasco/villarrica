@@ -16,15 +16,24 @@ VR.rng = (seed) => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>
 // Guardados separados por modo (J1, 10/11/2026): en Historia el progreso (posición, plata, ropa, vida…) lleva el prefijo
 // 'h:'; los ajustes (sonido, vibración, fps…) son los mismos en los dos modos. VR.store.ns lo fija main.js al arrancar.
 VR.store = {
-  ns: '', PROG: /^(pos:|dest:|plata$|ropa:mia$|look:propio$|pj$|vida$|mis$)/,
+  ns: '', PROG: /^(pos:|dest:|plata$|ropa:mia$|look:propio$|pj$|vida$|mis$|buzon$|stats$|guardia$)/,
+  // Partidas de Historia (19/11/2026, pedido de Leandro): 3 ranuras. La 1 usa el prefijo de siempre ('h:') para no perder nada;
+  // la 2 y la 3 usan 'h2:' y 'h3:'. La ranura elegida se guarda aparte y VR.store.slot es la que quedó activa al abrir el juego.
+  NSLOT: 3, slot: 1,
+  hns(n) { return n === 1 ? 'h:' : 'h' + n + ':'; },
+  elegida() { try { const n = +localStorage.getItem('villarrica:slot'); return n >= 1 && n <= this.NSLOT ? n : 1; } catch (e) { return 1; } },
+  elegir(n) { try { localStorage.setItem('villarrica:slot', String(n)); } catch (e) {} },
   key(k) { return 'villarrica:' + (this.ns && this.PROG.test(k) ? this.ns : '') + k; },
+  // la Partida 1 hereda lo que antes se guardaba sin prefijo (buzón, estadísticas, guardia: v1.94 y anteriores)
+  heredar(k) { try { if (this.ns !== 'h:') return; const n = this.key(k), v = localStorage.getItem('villarrica:' + k); if (localStorage.getItem(n) === null && v !== null) localStorage.setItem(n, v); } catch (e) {} },
   get(k, d) { try { const v = localStorage.getItem(this.key(k)); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(this.key(k), JSON.stringify(v)); if (this.ns && this.PROG.test(k) && !VR.wiped) localStorage.setItem('villarrica:' + this.ns + '_t', String(Date.now())); } catch (e) {} },
   del(k) { try { localStorage.removeItem(this.key(k)); } catch (e) {} },
-  // ¿hay una partida de Historia guardada? (se mira sin cambiar de modo)
-  hasHistoria() { try { return localStorage.getItem('villarrica:h:vida') !== null; } catch (e) { return false; } },
-  wipeHistoria() { try { Object.keys(localStorage).filter((k) => k.startsWith('villarrica:h:')).forEach((k) => localStorage.removeItem(k)); } catch (e) {} },
+  // ¿hay una partida de Historia guardada en esa ranura? (se mira sin cambiar de modo)
+  hasHistoria(n) { try { return localStorage.getItem('villarrica:' + this.hns(n || this.slot) + 'vida') !== null; } catch (e) { return false; } },
+  wipeHistoria(n) { try { const p = 'villarrica:' + this.hns(n || this.slot); Object.keys(localStorage).filter((k) => k.startsWith(p)).forEach((k) => localStorage.removeItem(k)); } catch (e) {} },
 };
+VR.store.slot = VR.store.elegida();
 VR.modo = 'libre'; // 'libre' (el juego de siempre) | 'historia' (hora del juego, hambre, pieza…)
 VR.canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return c; };
 

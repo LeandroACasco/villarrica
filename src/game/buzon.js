@@ -8,7 +8,7 @@ VR.STATS = [ // [clave, ícono, texto]
 ];
 VR.Stats = {
   s: null,
-  load() { if (!this.s) this.s = VR.store.get('stats', null) || {}; return this.s; },
+  load() { if (!this.s) this.s = (VR.store.heredar('stats'), VR.store.get('stats', null)) || {}; return this.s; },
   inc(k, n) { const s = this.load(); s[k] = (s[k] || 0) + (n || 1); if (!VR.wiped) VR.store.set('stats', s); },
   get(k) { return this.load()[k] || 0; },
   html() { const g = VR.fmtGs; return VR.STATS.map(([k, i, t]) => '<div class="row2"><span>' + i + ' ' + t + '</span><span>' + (k === 'gastado' ? g(this.get(k)) : this.get(k)) + '</span></div>').join(''); },
@@ -29,7 +29,7 @@ VR.Buzon = {
   PERS: { kike: ['Kike', '🏍'], ramona: ['Ña Ramona', '🏠'], chela: ['Doña Chela', '🥐'], lucas: ['Lucas (Marimer)', '🍦'], mirta: ['Mirta (Ao Porã)', '🪖'], sis: ['Aviso', '📣'], benitez: ['Suboficial Benítez', '🚒'] },
   nombre(id) { return (this.PERS[id] || [id])[0]; },
   ico(id) { return (this.PERS[id] || [0, '💬'])[1]; },
-  load() { if (!this.s) this.s = Object.assign({ msgs: [], dia: 0, ag: {}, rec: {} }, VR.store.get('buzon', null) || {}); if (!this.s.ag) this.s.ag = {}; if (!this.s.rec) this.s.rec = {}; return this.s; },
+  load() { if (!this.s) this.s = Object.assign({ msgs: [], dia: 0, ag: {}, rec: {} }, (VR.store.heredar('buzon'), VR.store.get('buzon', null)) || {}); if (!this.s.ag) this.s.ag = {}; if (!this.s.rec) this.s.rec = {}; return this.s; },
   save() { if (!VR.wiped) VR.store.set('buzon', this.s); },
   vida() { return this.ctx && this.ctx.vida; },
   // ---- agenda ----
@@ -60,7 +60,7 @@ VR.Buzon = {
   hacer(a) { const c = this.ctx; if (!c) return; if (a === 'kikeViaje' && c.kikeViaje) c.kikeViaje(); },
   // recordatorios de los contactos (se llaman al cambiar el día)
   recordatorios(M) { const s = this.load(), v = this.vida(); if (!v) return; const dia = v.dia, ok = (id, cada) => this.tiene(id) && dia - (s.rec[id] || -99) >= cada, marca = (id) => { s.rec[id] = dia; this.save(); };
-    if (ok('ramona', 2)) { const p = v.s.pieza, dias = Math.ceil((p.vence - v.min) / 1440); if (p.saldo > 0 && dias <= 3 && dias >= 0) { marca('ramona'); this.add('ramona', dias <= 0 ? 'Mitã, hoy vence la pieza. ¿Tenés para el alquiler?' : 'Mitã, en ' + dias + ' día' + (dias > 1 ? 's' : '') + ' vence la pieza (' + VR.fmtGs(p.saldo) + '). ¿Vas a tener, ajépa?', v, 'ramonaPaga'); } }
+    if (ok('ramona', 2)) { const p = v.s.pieza, dias = Math.ceil((p.vence - v.s.min) / 1440); if (p.saldo > 0 && dias <= 3 && dias >= 0) { marca('ramona'); this.add('ramona', dias <= 0 ? 'Mitã, hoy vence la pieza. ¿Tenés para el alquiler?' : 'Mitã, en ' + dias + ' día' + (dias > 1 ? 's' : '') + ' vence la pieza (' + VR.fmtGs(p.saldo) + '). ¿Vas a tener, ajépa?', v, 'ramonaPaga'); } }
     if (ok('kike', 3) && Math.random() < 0.6) { marca('kike'); this.add('kike', ['Estoy en la plaza tomando tereré. Si necesitás que te lleve, avisame, che ra\'a.', 'Ey, ¿todo bien? Acá estoy en la plaza. Si estás lejos te paso a buscar.'][(Math.random() * 2) | 0], v, 'kikeOferta'); }
     if (ok('chela', 3) && v.s.fiado > 0) { marca('chela'); this.add('chela', '¿Y mi platita, che memby? Me debés ' + VR.fmtGs(v.s.fiado) + ' de la chipa.', v, 'chelaDebe'); }
     if (ok('chela', 4) && v.s.canasto && v.s.stock <= 2 && !(v.s.fiado > 0)) { marca('chela'); this.add('chela', 'Che memby, hoy salió buena la chipa. Si querés reponer el canasto, vení temprano.', v, 'chelaOferta'); } },

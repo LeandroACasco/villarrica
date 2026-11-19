@@ -295,6 +295,12 @@
   .tBtn.tCard i, .tBtn.tIco i { font-style: normal; font-size: 26px; line-height: 1; } .tBtn.tCard em { font: 600 11px system-ui; text-transform: none; letter-spacing: 0; opacity: .7; }
   .tIcos { display: flex; gap: 10px; justify-content: center; } .tBtn.tIco { flex-direction: column; gap: 1px; min-height: 58px; flex: 1; font-size: 11px; padding: 4px 6px; }
   .tBtn.sel em, .tBtn.sel .tRes { opacity: 1; } .tBtn.tMain.sel { background: linear-gradient(180deg, #ffc247, #e08a10); }
+  .slRow { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 6px 0; border-radius: 10px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
+  .slRow.on { border-color: #ffd84a; background: rgba(255,216,74,.12); }
+  #slDlg .dlg { max-height: 86vh; overflow-y: auto; }
+  .slRow .slTx { flex: 1 1 auto; min-width: 0; font: 600 12px system-ui; white-space: pre-line; line-height: 1.35; } .slRow .slTx b { display: block; font-size: 13px; }
+  .slRow .btn { flex: 0 0 auto; padding: 8px 12px; font-size: 12px; white-space: nowrap; } .slRow .btn.bad { background: #7a2a2a; }
+  .slNota { font-size: 11px; opacity: .7; margin: 8px 0 4px; }
   .tCuenta { text-align: center; font: 600 11px system-ui; color: rgba(255,255,255,.75); text-shadow: 0 1px 2px #000; }
   .tVer { position: absolute; left: calc(env(safe-area-inset-left) + 10px); bottom: calc(env(safe-area-inset-bottom) + 6px); font: 11px system-ui; color: rgba(255,255,255,.55); text-shadow: 0 1px 2px #000; }
   @media (orientation: landscape) and (max-height: 540px) { #title { flex-direction: row; gap: 5vw; } #tLogo { width: min(46vw, 440px); } #tMenu, .tSlot { width: min(40vw, 280px); } .tBtn { min-height: 40px; font-size: 14px; } }
@@ -428,6 +434,9 @@
   <p><b>☁ Nube</b><br><span id="nbCloud"></span></p><p><b>📱 Este dispositivo</b><br><span id="nbLocal"></span></p>
   <div class="row"><button class="btn primary" id="nbUsaNube">☁ Usar la de la nube</button><button class="btn" id="nbUsaLocal">📱 Usar la de este dispositivo</button></div>
   <div class="row"><button class="btn" id="nbNada">Decidir después</button></div></div></dialog>
+<dialog id="slDlg"><div class="dlg"><h2>📂 Tus partidas</h2><div id="slList"></div>
+  <p class="slNota">Cada partida es una Historia aparte (plata, misiones, celular, todo). La nube sincroniza la Partida 1.</p>
+  <div class="row"><button class="btn" id="slClose">Cerrar</button></div></div></dialog>
 <dialog id="onDlg"><h2>🌐 Online</h2><div id="onSlot"></div><div class="seg"><button id="onClose">Cerrar</button></div></dialog>
 <div id="chatLog"></div>
 <form id="chatBox" hidden><input id="chatIn" maxlength="80" placeholder="Escribí y apretá Enter" autocomplete="off"></form>
@@ -471,13 +480,14 @@
         <button class="tBtn tCard" data-a="libre"><i>🚶</i><span>Paseo libre</span><em>Sin misiones</em></button>
       </div>
       <div class="tIcos">
+        <button class="tBtn tIco" data-a="slots"><i>📂</i><span>Partidas</span></button>
         <button class="tBtn tIco" data-a="config"><i>⚙</i><span>Ajustes</span></button>
         <button class="tBtn tIco" data-a="creditos"><i>★</i><span>Créditos</span></button>
       </div>
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 419a8d41 · 2026-11-19</div>
+  <div class="tVer">Versión d64f36d5 · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -548,7 +558,7 @@
     <div class="seg" id="segCalidad"><button data-v="normal">Normal</button><button data-v="alta">Alta</button></div>
     <p class="hint">Alta dibuja autos, personas y calles con más detalle (en pantallas densas). Gasta más memoria y batería: si el juego se pone lento, volvé a Normal. Al cambiarla se reinicia el dibujo y volvés al menú principal.</p>
     <h3>Modo Historia</h3>
-    <div class="row"><button class="btn" id="btnBorraH">🗑 Empezar la Historia de cero</button></div>
+    <div class="row"><button class="btn" id="btnBorraH">🗑 Empezar esta partida de cero</button></div>
     <h3>Pasar la Historia a otro dispositivo</h3>
     <p class="hint">Guardá tu partida en un archivo o en un código y cargala en el otro teléfono o compu. Reemplaza la Historia del dispositivo donde la cargues.</p>
     <div class="row"><button class="btn" id="gxArch">💾 Guardar en un archivo</button><label class="btn" style="text-align:center;cursor:pointer">📂 Cargar un archivo<input type="file" id="gxFile" accept=".json,application/json" hidden></label></div>
@@ -592,7 +602,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 419a8d41 · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión d64f36d5 · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -735,15 +745,24 @@ VR.rng = (seed) => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>
 // Guardados separados por modo (J1, 10/11/2026): en Historia el progreso (posición, plata, ropa, vida…) lleva el prefijo
 // 'h:'; los ajustes (sonido, vibración, fps…) son los mismos en los dos modos. VR.store.ns lo fija main.js al arrancar.
 VR.store = {
-  ns: '', PROG: /^(pos:|dest:|plata$|ropa:mia$|look:propio$|pj$|vida$|mis$)/,
+  ns: '', PROG: /^(pos:|dest:|plata$|ropa:mia$|look:propio$|pj$|vida$|mis$|buzon$|stats$|guardia$)/,
+  // Partidas de Historia (19/11/2026, pedido de Leandro): 3 ranuras. La 1 usa el prefijo de siempre ('h:') para no perder nada;
+  // la 2 y la 3 usan 'h2:' y 'h3:'. La ranura elegida se guarda aparte y VR.store.slot es la que quedó activa al abrir el juego.
+  NSLOT: 3, slot: 1,
+  hns(n) { return n === 1 ? 'h:' : 'h' + n + ':'; },
+  elegida() { try { const n = +localStorage.getItem('villarrica:slot'); return n >= 1 && n <= this.NSLOT ? n : 1; } catch (e) { return 1; } },
+  elegir(n) { try { localStorage.setItem('villarrica:slot', String(n)); } catch (e) {} },
   key(k) { return 'villarrica:' + (this.ns && this.PROG.test(k) ? this.ns : '') + k; },
+  // la Partida 1 hereda lo que antes se guardaba sin prefijo (buzón, estadísticas, guardia: v1.94 y anteriores)
+  heredar(k) { try { if (this.ns !== 'h:') return; const n = this.key(k), v = localStorage.getItem('villarrica:' + k); if (localStorage.getItem(n) === null && v !== null) localStorage.setItem(n, v); } catch (e) {} },
   get(k, d) { try { const v = localStorage.getItem(this.key(k)); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(this.key(k), JSON.stringify(v)); if (this.ns && this.PROG.test(k) && !VR.wiped) localStorage.setItem('villarrica:' + this.ns + '_t', String(Date.now())); } catch (e) {} },
   del(k) { try { localStorage.removeItem(this.key(k)); } catch (e) {} },
-  // ¿hay una partida de Historia guardada? (se mira sin cambiar de modo)
-  hasHistoria() { try { return localStorage.getItem('villarrica:h:vida') !== null; } catch (e) { return false; } },
-  wipeHistoria() { try { Object.keys(localStorage).filter((k) => k.startsWith('villarrica:h:')).forEach((k) => localStorage.removeItem(k)); } catch (e) {} },
+  // ¿hay una partida de Historia guardada en esa ranura? (se mira sin cambiar de modo)
+  hasHistoria(n) { try { return localStorage.getItem('villarrica:' + this.hns(n || this.slot) + 'vida') !== null; } catch (e) { return false; } },
+  wipeHistoria(n) { try { const p = 'villarrica:' + this.hns(n || this.slot); Object.keys(localStorage).filter((k) => k.startsWith(p)).forEach((k) => localStorage.removeItem(k)); } catch (e) {} },
 };
+VR.store.slot = VR.store.elegida();
 VR.modo = 'libre'; // 'libre' (el juego de siempre) | 'historia' (hora del juego, hambre, pieza…)
 VR.canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return c; };
 
@@ -10703,6 +10722,14 @@ VR.Misiones = class {
     else { q.rifa = 'no'; di(pick(['Nahániri', 'Otro día', 'Ya compré en otro lado'])); }
     return true;
   }
+  // Partidas anteriores a la agenda (v1.94): agrega solos los contactos que ya tendrías según lo que avanzaste, sin mensajes de saludo.
+  // Se mira el paso actual de la M1 (Ña Ramona al terminar el primer paso, Doña Chela con «chela2», Kike con «kike2») y las misiones hechas.
+  agendarViejas() { const B = VR.Buzon; if (!B) return; const M1 = VR.MISIONES.m1, a = this.s.act, ids = [];
+    const paso = (id) => M1.pasos.findIndex((p) => p.id === id);
+    const pasada = (id) => this.hecha('m1') || (a && a.id === 'm1' && paso(id) >= 0 && a.paso > paso(id)) || this.s.hechas.some((h) => h !== 'm1');
+    if (pasada('ramona')) ids.push('ramona'); if (pasada('chela2')) ids.push('chela'); if (pasada('kike2')) ids.push('kike');
+    for (const h of this.s.hechas) { const M = VR.MISIONES[h]; if (M && M.agenda) ids.push(...M.agenda); }
+    const q = VR.toast; VR.toast = null; let n = 0; for (const id of ids) if (B.agendar(id)) n++; VR.toast = q; return n; }
   // al cambiar el día: Kike cobra otro día de alquiler (si seguís con la moto) y recuerda las deudas, todo por mensaje
   chequeaDia() { const V = this.vida, B = VR.Buzon; if (!V || !B) return; const b = B.load();
     if (!b.dia) { b.dia = V.dia; B.save(); return; } if (V.dia === b.dia) return;
@@ -15876,36 +15903,40 @@ VR.Mbohasa = class {
 // Los ajustes y las fotos del celular no viajan. Todo original.
 'use strict';
 VR.Guardado = {
-  PFX: 'villarrica:h:', FBV: '10.14.1',
+  // CAN: prefijo "canónico" con el que viajan las instantáneas (archivo, código, nube), sea cual sea la ranura de origen.
+  // pfx(n): el prefijo real de la ranura n en este dispositivo. La nube guarda siempre la Partida 1 (CS).
+  CAN: 'villarrica:h:', CS: 1, FBV: '10.14.1',
+  pfx(n) { return 'villarrica:' + VR.store.hns(n || VR.store.slot); },
   fl: () => {}, toast: (m) => {},
   // ---------- instantánea local ----------
-  stamp() { try { localStorage.setItem(this.PFX + '_t', String(Date.now())); } catch (e) {} },
-  localT() { try { return +localStorage.getItem(this.PFX + '_t') || 0; } catch (e) { return 0; } },
-  snapshot() {
+  stamp() { try { localStorage.setItem(this.pfx() + '_t', String(Date.now())); } catch (e) {} },
+  localT(n) { try { return +localStorage.getItem(this.pfx(n) + '_t') || 0; } catch (e) { return 0; } },
+  snapshot(n) {
     this.fl();
-    const d = {}; try { Object.keys(localStorage).filter((k) => k.startsWith(this.PFX)).forEach((k) => { d[k] = localStorage.getItem(k); }); } catch (e) {}
-    return d[this.PFX + 'vida'] ? { v: 1, app: 'villarrica', t: this.localT() || Date.now(), d } : null;
+    const P = this.pfx(n), d = {}; try { Object.keys(localStorage).filter((k) => k.startsWith(P)).forEach((k) => { d[this.CAN + k.slice(P.length)] = localStorage.getItem(k); }); } catch (e) {}
+    return d[this.CAN + 'vida'] ? { v: 1, app: 'villarrica', t: this.localT(n) || Date.now(), d } : null;
   },
   resumen(snap) {
     if (!snap) return 'sin partida';
     try {
-      const v = JSON.parse(snap.d[this.PFX + 'vida']), p = JSON.parse(snap.d[this.PFX + 'plata'] || '0'), g = (n) => Math.round(n).toLocaleString('es-PY').replace(/,/g, '.');
+      const v = JSON.parse(snap.d[this.CAN + 'vida']), p = JSON.parse(snap.d[this.CAN + 'plata'] || '0'), g = (n) => Math.round(n).toLocaleString('es-PY').replace(/,/g, '.');
       return 'Día ' + (Math.floor(v.min / 1440) + 1) + ' · 💵 ' + g(p) + ' Gs. · 🏦 ' + g(v.banco || 0) + ' Gs. · ' + new Date(snap.t).toLocaleString('es-PY', { dateStyle: 'short', timeStyle: 'short' });
     } catch (e) { return 'partida guardada'; }
   },
   valida(snap) {
     if (!snap || snap.app !== 'villarrica' || !snap.d || typeof snap.d !== 'object') return false;
     const ks = Object.keys(snap.d); if (!ks.length || ks.length > 80) return false;
-    if (!ks.every((k) => k.startsWith(this.PFX) && typeof snap.d[k] === 'string')) return false;
+    if (!ks.every((k) => k.startsWith(this.CAN) && typeof snap.d[k] === 'string')) return false;
     if (JSON.stringify(snap.d).length > 900000) return false;
-    try { JSON.parse(snap.d[this.PFX + 'vida']); } catch (e) { return false; }
+    try { JSON.parse(snap.d[this.CAN + 'vida']); } catch (e) { return false; }
     return true;
   },
   // Reemplaza el progreso de Historia por la instantánea y reinicia el juego en Historia
-  aplicar(snap, extra) {
+  aplicar(snap, extra, n) {
     if (!this.valida(snap)) { this.toast('⚠ Esa partida no es válida'); return false; }
-    VR.wiped = true; VR.store.wipeHistoria();
-    try { for (const k of Object.keys(snap.d)) localStorage.setItem(k, snap.d[k]); localStorage.setItem(this.PFX + '_t', String(snap.t || Date.now())); } catch (e) { this.toast('⚠ No se pudo escribir la partida'); return false; }
+    n = n || VR.store.slot; const P = this.pfx(n);
+    VR.wiped = true; VR.store.wipeHistoria(n);
+    try { for (const k of Object.keys(snap.d)) localStorage.setItem(P + k.slice(this.CAN.length), snap.d[k]); localStorage.setItem(P + '_t', String(snap.t || Date.now())); VR.store.elegir(n); } catch (e) { this.toast('⚠ No se pudo escribir la partida'); return false; }
     if (extra) extra();
     try { sessionStorage.removeItem('villarrica:onl'); sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) {}
     this.toast('✅ Partida cargada: reiniciando…'); setTimeout(() => location.reload(), 700); return true;
@@ -15955,7 +15986,7 @@ VR.Guardado = {
   mem(k, v) { try { if (v === undefined) return localStorage.getItem('villarrica:cloud:' + k); localStorage.setItem('villarrica:cloud:' + k, String(v)); } catch (e) {} },
   paint() {
     const u = this.nube.user, $ = (i) => document.getElementById(i); if (!$('nbEstado')) return;
-    $('nbEstado').textContent = u ? '☁ Conectado como ' + (u.email || u.displayName) : '☁ Sin conectar. Iniciá sesión para guardar tu partida en la nube';
+    $('nbEstado').textContent = u ? '☁ Conectado como ' + (u.email || u.displayName) + ' · sincroniza la Partida 1' : '☁ Sin conectar. Iniciá sesión para guardar tu partida en la nube';
     $('nbIn').style.display = u ? 'none' : ''; $('nbOut').style.display = u ? '' : 'none'; $('nbUp').style.display = $('nbDown').style.display = $('nbAutoL').style.display = u ? '' : 'none';
   },
   say(t) { const e = document.getElementById('nbMsg'); if (e) e.textContent = t; },
@@ -15963,24 +15994,24 @@ VR.Guardado = {
   async revisar(auto) {
     if (!this.nube.user) return;
     try {
-      const c = await this.bajar(), loc = this.snapshot(), lastRev = +this.mem('rev') || 0, mismo = this.mem('uid') === this.nube.user.uid, cambio = loc && this.localT() > (+this.mem('syncT') || 0);
+      const c = await this.bajar(), loc = this.snapshot(this.CS), lastRev = +this.mem('rev') || 0, mismo = this.mem('uid') === this.nube.user.uid, cambio = loc && this.localT(this.CS) > (+this.mem('syncT') || 0);
       if (!c && !loc) { this.say('No hay partida ni acá ni en la nube.'); return; }
       if (!c) { if (auto && !this.nube.auto) { this.say('Hay partida en este dispositivo y nada en la nube. Podés subirla.'); return; } await this.hacerSubir(loc, 0); return; }
       if (!loc) { this.pregunta(c, null, 'En la nube hay una partida y este dispositivo no tiene ninguna.'); return; }
       if (mismo && c.rev === lastRev) { if (cambio && this.nube.auto) await this.hacerSubir(loc, c.rev); else this.say(cambio ? 'Tenés cambios sin subir.' : '✔ Todo al día con la nube.'); return; }
       if (mismo && !cambio) { this.pregunta(c, loc, 'En la nube hay una partida más nueva (jugaste desde otro dispositivo).'); return; }
-      if (JSON.stringify(c.snap.d) === JSON.stringify(loc.d)) { this.mem('rev', c.rev); this.mem('uid', this.nube.user.uid); this.mem('syncT', this.localT()); this.say('✔ Todo al día con la nube.'); return; }
+      if (JSON.stringify(c.snap.d) === JSON.stringify(loc.d)) { this.mem('rev', c.rev); this.mem('uid', this.nube.user.uid); this.mem('syncT', this.localT(this.CS)); this.say('✔ Todo al día con la nube.'); return; }
       this.pregunta(c, loc, 'La partida de la nube y la de este dispositivo son distintas.');
     } catch (e) { this.say('⚠ No se pudo hablar con la nube: ' + (e.message || e)); }
   },
   async hacerSubir(loc, rev) {
-    try { await this.subir(loc, rev + 1); this.mem('rev', rev + 1); this.mem('uid', this.nube.user.uid); this.mem('syncT', this.localT()); this.say('⬆ Partida subida · ' + new Date().toLocaleTimeString('es-PY', { timeStyle: 'short' })); }
+    try { await this.subir(loc, rev + 1); this.mem('rev', rev + 1); this.mem('uid', this.nube.user.uid); this.mem('syncT', this.localT(this.CS)); this.say('⬆ Partida subida · ' + new Date().toLocaleTimeString('es-PY', { timeStyle: 'short' })); }
     catch (e) { this.say('⚠ No se pudo subir: ' + (e.message || e)); }
   },
   pregunta(c, loc, motivo) {
     const dlg = document.getElementById('nbDlg'), $ = (i) => document.getElementById(i);
     $('nbMotivo').textContent = motivo; $('nbCloud').textContent = this.resumen(c.snap); $('nbLocal').textContent = this.resumen(loc);
-    $('nbUsaNube').onclick = () => { dlg.close(); this.aplicar(c.snap, () => { this.mem('rev', c.rev); this.mem('uid', this.nube.user.uid); this.mem('syncT', c.snap.t); }); };
+    $('nbUsaNube').onclick = () => { dlg.close(); this.aplicar(c.snap, () => { this.mem('rev', c.rev); this.mem('uid', this.nube.user.uid); this.mem('syncT', c.snap.t); }, this.CS); };
     $('nbUsaLocal').style.display = loc ? '' : 'none'; $('nbUsaLocal').onclick = async () => { dlg.close(); await this.hacerSubir(loc, c.rev); };
     $('nbNada').onclick = () => { dlg.close(); this.say('Quedó sin sincronizar. Podés elegir más tarde con ⬆ / ⬇.'); };
     VR.input && VR.input.releaseAll(); if (!dlg.open) dlg.showModal();
@@ -15997,12 +16028,12 @@ VR.Guardado = {
     $('nbAuto').onchange = () => { me.nube.auto = $('nbAuto').checked; me.mem('auto', me.nube.auto ? 1 : 0); if (me.nube.auto) me.revisar(false); };
     $('nbIn').onclick = async () => { try { me.say('Abriendo Google…'); const au = await me.sdk(); await au.signInWithPopup(me.nube.auth, new au.GoogleAuthProvider()); } catch (e) { me.say(/popup/.test(e.code || '') ? '⚠ El navegador bloqueó la ventana de Google. Permitila e intentá de nuevo.' : '⚠ No se pudo iniciar sesión (' + (e.code || e.message || e) + ')'); } };
     $('nbOut').onclick = async () => { try { await me.nube.mod.signOut(me.nube.auth); me._ya = false; me.say('Sesión cerrada.'); } catch (e) {} };
-    $('nbUp').onclick = async () => { const loc = me.snapshot(); if (!loc) { me.say('No hay partida de Historia para subir.'); return; } try { const c = await me.bajar(); if (c && c.snap && c.rev !== (+me.mem('rev') || 0) && JSON.stringify(c.snap.d) !== JSON.stringify(loc.d)) { me.pregunta(c, loc, 'La nube tiene otra partida distinta de la última que sincronizaste.'); return; } await me.hacerSubir(loc, c ? c.rev : 0); } catch (e) { me.say('⚠ ' + (e.message || e)); } };
-    $('nbDown').onclick = async () => { try { const c = await me.bajar(); if (!c) { me.say('En la nube todavía no hay partida.'); return; } me.pregunta(c, me.snapshot(), 'Elegí qué partida querés conservar.'); } catch (e) { me.say('⚠ ' + (e.message || e)); } };
+    $('nbUp').onclick = async () => { const loc = me.snapshot(me.CS); if (!loc) { me.say('No hay partida de Historia para subir.'); return; } try { const c = await me.bajar(); if (c && c.snap && c.rev !== (+me.mem('rev') || 0) && JSON.stringify(c.snap.d) !== JSON.stringify(loc.d)) { me.pregunta(c, loc, 'La nube tiene otra partida distinta de la última que sincronizaste.'); return; } await me.hacerSubir(loc, c ? c.rev : 0); } catch (e) { me.say('⚠ ' + (e.message || e)); } };
+    $('nbDown').onclick = async () => { try { const c = await me.bajar(); if (!c) { me.say('En la nube todavía no hay partida.'); return; } me.pregunta(c, me.snapshot(me.CS), 'Elegí qué partida querés conservar.'); } catch (e) { me.say('⚠ ' + (e.message || e)); } };
     // sesión guardada: si ya había iniciado, se reconecta sola al abrir el juego
     if (this.mem('uid')) this.sdk().catch(() => {});
-    setInterval(() => { if (me.nube.user && me.nube.auto && !document.hidden && me.localT() > (+me.mem('syncT') || 0)) me.revisar(true); }, 120000);
-    document.addEventListener('visibilitychange', () => { if (document.hidden && me.nube.user && me.nube.auto) { const loc = me.snapshot(); if (loc && me.localT() > (+me.mem('syncT') || 0)) me.revisar(true); } });
+    setInterval(() => { if (me.nube.user && me.nube.auto && !document.hidden && me.localT(me.CS) > (+me.mem('syncT') || 0)) me.revisar(true); }, 120000);
+    document.addEventListener('visibilitychange', () => { if (document.hidden && me.nube.user && me.nube.auto) { const loc = me.snapshot(me.CS); if (loc && me.localT(me.CS) > (+me.mem('syncT') || 0)) me.revisar(true); } });
     this.paint();
   },
 };
@@ -16018,7 +16049,7 @@ VR.STATS = [ // [clave, ícono, texto]
 ];
 VR.Stats = {
   s: null,
-  load() { if (!this.s) this.s = VR.store.get('stats', null) || {}; return this.s; },
+  load() { if (!this.s) this.s = (VR.store.heredar('stats'), VR.store.get('stats', null)) || {}; return this.s; },
   inc(k, n) { const s = this.load(); s[k] = (s[k] || 0) + (n || 1); if (!VR.wiped) VR.store.set('stats', s); },
   get(k) { return this.load()[k] || 0; },
   html() { const g = VR.fmtGs; return VR.STATS.map(([k, i, t]) => '<div class="row2"><span>' + i + ' ' + t + '</span><span>' + (k === 'gastado' ? g(this.get(k)) : this.get(k)) + '</span></div>').join(''); },
@@ -16039,7 +16070,7 @@ VR.Buzon = {
   PERS: { kike: ['Kike', '🏍'], ramona: ['Ña Ramona', '🏠'], chela: ['Doña Chela', '🥐'], lucas: ['Lucas (Marimer)', '🍦'], mirta: ['Mirta (Ao Porã)', '🪖'], sis: ['Aviso', '📣'], benitez: ['Suboficial Benítez', '🚒'] },
   nombre(id) { return (this.PERS[id] || [id])[0]; },
   ico(id) { return (this.PERS[id] || [0, '💬'])[1]; },
-  load() { if (!this.s) this.s = Object.assign({ msgs: [], dia: 0, ag: {}, rec: {} }, VR.store.get('buzon', null) || {}); if (!this.s.ag) this.s.ag = {}; if (!this.s.rec) this.s.rec = {}; return this.s; },
+  load() { if (!this.s) this.s = Object.assign({ msgs: [], dia: 0, ag: {}, rec: {} }, (VR.store.heredar('buzon'), VR.store.get('buzon', null)) || {}); if (!this.s.ag) this.s.ag = {}; if (!this.s.rec) this.s.rec = {}; return this.s; },
   save() { if (!VR.wiped) VR.store.set('buzon', this.s); },
   vida() { return this.ctx && this.ctx.vida; },
   // ---- agenda ----
@@ -16070,7 +16101,7 @@ VR.Buzon = {
   hacer(a) { const c = this.ctx; if (!c) return; if (a === 'kikeViaje' && c.kikeViaje) c.kikeViaje(); },
   // recordatorios de los contactos (se llaman al cambiar el día)
   recordatorios(M) { const s = this.load(), v = this.vida(); if (!v) return; const dia = v.dia, ok = (id, cada) => this.tiene(id) && dia - (s.rec[id] || -99) >= cada, marca = (id) => { s.rec[id] = dia; this.save(); };
-    if (ok('ramona', 2)) { const p = v.s.pieza, dias = Math.ceil((p.vence - v.min) / 1440); if (p.saldo > 0 && dias <= 3 && dias >= 0) { marca('ramona'); this.add('ramona', dias <= 0 ? 'Mitã, hoy vence la pieza. ¿Tenés para el alquiler?' : 'Mitã, en ' + dias + ' día' + (dias > 1 ? 's' : '') + ' vence la pieza (' + VR.fmtGs(p.saldo) + '). ¿Vas a tener, ajépa?', v, 'ramonaPaga'); } }
+    if (ok('ramona', 2)) { const p = v.s.pieza, dias = Math.ceil((p.vence - v.s.min) / 1440); if (p.saldo > 0 && dias <= 3 && dias >= 0) { marca('ramona'); this.add('ramona', dias <= 0 ? 'Mitã, hoy vence la pieza. ¿Tenés para el alquiler?' : 'Mitã, en ' + dias + ' día' + (dias > 1 ? 's' : '') + ' vence la pieza (' + VR.fmtGs(p.saldo) + '). ¿Vas a tener, ajépa?', v, 'ramonaPaga'); } }
     if (ok('kike', 3) && Math.random() < 0.6) { marca('kike'); this.add('kike', ['Estoy en la plaza tomando tereré. Si necesitás que te lleve, avisame, che ra\'a.', 'Ey, ¿todo bien? Acá estoy en la plaza. Si estás lejos te paso a buscar.'][(Math.random() * 2) | 0], v, 'kikeOferta'); }
     if (ok('chela', 3) && v.s.fiado > 0) { marca('chela'); this.add('chela', '¿Y mi platita, che memby? Me debés ' + VR.fmtGs(v.s.fiado) + ' de la chipa.', v, 'chelaDebe'); }
     if (ok('chela', 4) && v.s.canasto && v.s.stock <= 2 && !(v.s.fiado > 0)) { marca('chela'); this.add('chela', 'Che memby, hoy salió buena la chipa. Si querés reponer el canasto, vení temprano.', v, 'chelaOferta'); } },
@@ -16180,7 +16211,7 @@ VR.Guardia = class {
   // o: { world, peds, changas, mis, vida, setDest, toast, getCar, player, cars }
   constructor(o) { Object.assign(this, o); this.job = null; this.rnd = Math.random; }
   static get VALOR() { return { fuego: 36000, herido: 34000, gato: 10000 }; }
-  hechoHoy() { const k = VR.store.get('guardia', null); return !!(k && k.dia === this.vida.dia); }
+  hechoHoy() { VR.store.heredar('guardia'); const k = VR.store.get('guardia', null); return !!(k && k.dia === this.vida.dia); }
   abierta() { return this.mis.hecha('m3'); }
   cuartel() { return this.mis.lug.get('cuartel'); }
   start() {
@@ -16577,7 +16608,7 @@ VR.Titulo = class {
   // Cambiar de modo recarga la página con sessionStorage 'go': así arranca todo limpio con el guardado que corresponde.
   let goMode = null; try { goMode = sessionStorage.getItem('villarrica:go'); sessionStorage.removeItem('villarrica:go'); } catch (e) {}
   VR.modo = goMode || (/[?&]historia\b/.test(location.search) ? 'historia' : /[?&](libre|juego|prueba)\b/.test(location.search) ? 'libre' : VR.store.get('modo', 'libre')); // el cambio desde el título manda sobre la URL
-  VR.store.ns = VR.modo === 'historia' ? 'h:' : '';
+  VR.store.ns = VR.modo === 'historia' ? VR.store.hns(VR.store.slot) : '';
   document.body.classList.toggle('historia', VR.modo === 'historia');
   const vida = VR.vida = VR.modo === 'historia' ? new VR.Vida() : null;
   const settings = { touch: VR.store.get('touch', 'auto'), fps: VR.store.get('fps', false), vib: VR.store.get('vib', true), hora: VR.store.get('hora', 'real'), clima: VR.store.get('clima', 'real'), pj: VR.store.get('pj', 'generico'), manejo: VR.store.get('manejo', 'facil'), fondo: VR.store.get('fondo', 'parque'), calidad: VR.store.get('calidad', 'normal') };
@@ -17359,8 +17390,8 @@ VR.Titulo = class {
   }
   // empezar la Historia de cero (en Configuración)
   { let sure = 0; const bh = $('btnBorraH'); bh.onclick = () => {
-    if (performance.now() > sure) { sure = performance.now() + 4000; bh.textContent = '⚠ ¿Seguro? Se borra todo lo de Historia · tocá otra vez'; setTimeout(() => { if (performance.now() > sure - 100) bh.textContent = '🗑 Empezar la Historia de cero'; }, 4100); return; }
-    VR.wiped = true; VR.store.wipeHistoria(); try { sessionStorage.removeItem('villarrica:onl'); } catch (e) {} try { online.stop(); } catch (e) {} bh.textContent = '🗑 Empezar la Historia de cero'; sure = 0;
+    if (performance.now() > sure) { sure = performance.now() + 4000; bh.textContent = '⚠ ¿Seguro? Se borra todo lo de Historia · tocá otra vez'; setTimeout(() => { if (performance.now() > sure - 100) bh.textContent = '🗑 Empezar esta partida de cero'; }, 4100); return; }
+    VR.wiped = true; VR.store.wipeHistoria(); try { sessionStorage.removeItem('villarrica:onl'); } catch (e) {} try { online.stop(); } catch (e) {} bh.textContent = '🗑 Empezar esta partida de cero'; sure = 0;
     if (vida) { toast('🗑 Historia borrada: arrancá de nuevo'); try { sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) {} setTimeout(() => location.reload(), 600); } else { toast('🗑 Historia borrada'); tagHist(); }
   }; }
   VR.Guardado.init({ toast, flush: () => { try { savePos(); } catch (e) {} if (vida) vida.save(); if (mis) mis.save(); } });
@@ -17408,10 +17439,11 @@ VR.Titulo = class {
     // Kike te lleva (19/11/2026, pedido de Leandro): desde donde estés a la plaza, o desde la plaza a tu pieza. Los primeros 3 viajes gratis, después 5.000 Gs.
     mis.kikeRuta = () => { const pl = mis.lug.get('plaza'), casa = vida.s.casa, f = car || player; if (!pl || !casa) return null; const aCasa = Math.hypot(f.x - pl.x, f.y - pl.y) < 420; return { aCasa, d: aCasa ? { x: casa.x, y: casa.y + 26, name: 'Tu pieza' } : (() => { const k = mis.dondeEsta('kike') || pl, p = mis.lug.libre(k.x + 26, k.y + 30); return { x: p.x, y: p.y, name: 'la plaza' }; })() }; };
     mis.kikeViaje = () => { const r = mis.kikeRuta(); if (!r) return null; const n = vida.s.kikeViajes || 0; vida.s.kikeViajes = n + 1; let txt;
-    VR.Buzon.ctx = { vida, kikeRuta: () => mis.kikeRuta(), kikeViaje: () => setTimeout(() => mis.kikeViaje(), 2600) };
-    VR.Buzon.onChange = (id) => { if (celDlg.open && (celApp === 'msj' || celApp === 'agenda' || celApp === 'msj:' + id)) paintCel(); };
       if (n < 3) txt = '🏍 Viaje de regalo (' + (n + 1) + '/3)'; else { vida.cobrarODeber(5000, 'Kike te llevó'); txt = '🏍 Viaje con Kike · ' + VR.fmtGs(5000); }
       if (car) exitCar(); const f = $('celFade'); f.textContent = txt + ' · ' + (r.aCasa ? 'a tu pieza…' : 'a la plaza…'); f.classList.add('on'); setTimeout(() => { teleport(r.d.x, r.d.y, r.d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); return null; };
+    VR.Buzon.ctx = { vida, kikeRuta: () => mis.kikeRuta(), kikeViaje: () => setTimeout(() => mis.kikeViaje(), 2600) };
+    mis.agendarViejas();
+    VR.Buzon.onChange = (id) => { if (celDlg.open && (celApp === 'msj' || celApp === 'agenda' || celApp === 'msj:' + id)) paintCel(); };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
     { const tp = mis.lug.get(VR.PUNTOS.taxihosp.lugar); if (tp) for (let i = 0; i < 2; i++) { const x = tp.x + i * 28 - 14, y = tp.y - 34, m = 'sedan', c = new VR.Car(world, x, y, Math.PI / 2, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); if (c.contacts && c.contacts(x, y, c.a)) continue; c.taxi = true; cars.push(c); world.addBox(c); } }
     { const sm = mis.s.motoK; if (sm) { const c = mis.prestaMoto(sm); if (c) c.alq = sm.alq; } // la moto de Kike sigue donde la dejaste aunque recargues
@@ -17900,15 +17932,51 @@ VR.Titulo = class {
     setTimeout(() => location.reload(), 450);
   }
   // resumen de la partida en el botón grande: día y hora, plata y misión en curso (se lee del guardado, sirva el modo que sirva)
-  const tagHist = () => { const g = $('tHistTag'), tit = $('tHistTit'), res = $('tResumen'), cu = $('tCuenta'), hay = VR.store.hasHistoria(); if (g) g.hidden = true; if (tit) tit.textContent = hay ? 'Continuar' : 'Nueva Historia';
-    if (res) { res.textContent = 'Villarrica te espera: empezá tu historia'; try { const sn = hay && VR.Guardado.snapshot(), P = VR.Guardado.PFX;
+  const tagHist = () => { const g = $('tHistTag'), tit = $('tHistTit'), res = $('tResumen'), cu = $('tCuenta'), hay = VR.store.hasHistoria(); if (g) g.hidden = true; if (tit) tit.textContent = hay ? 'Continuar · Partida ' + VR.store.slot : 'Nueva Historia';
+    if (res) { res.textContent = 'Villarrica te espera: empezá tu historia'; try { const sn = hay && VR.Guardado.snapshot(), P = VR.Guardado.CAN;
       if (sn) { const v = JSON.parse(sn.d[P + 'vida']), pl = JSON.parse(sn.d[P + 'plata'] || '0'), m = sn.d[P + 'mis'] ? JSON.parse(sn.d[P + 'mis']) : null, mi = m && m.act && VR.MISIONES && VR.MISIONES[m.act.id], mm = Math.floor(v.min % 1440);
         res.textContent = 'Día ' + (Math.floor(v.min / 1440) + 1) + ' · ' + Math.floor(mm / 60) + ':' + String(mm % 60).padStart(2, '0') + ' · 💵 ' + VR.fmtGs(pl) + (mi ? '\n📌 ' + mi.titulo : ''); res.style.whiteSpace = 'pre-line'; } } catch (e) { /* sin resumen */ } }
     if (cu) { let n = false; try { n = !!VR.Guardado.mem('uid'); } catch (e) { /* sin nube */ } cu.textContent = n ? '☁ Partida en la nube activa' : '☁ Guardado solo en este dispositivo (Ajustes → Partida)'; } };
+  // ---- varias partidas (19/11/2026): 3 ranuras de Historia. La ranura que está en marcha es VR.store.slot; cambiar de ranura recarga el juego ----
+  const slDlg = $('slDlg'), slList = $('slList'); let slSure = 0, slSureN = 0;
+  const slResumen = (n) => { try { const sn = VR.store.hasHistoria(n) && VR.Guardado.snapshot(n), P = VR.Guardado.CAN; if (!sn) return null;
+    const v = JSON.parse(sn.d[P + 'vida']), pl = JSON.parse(sn.d[P + 'plata'] || '0'), m = sn.d[P + 'mis'] ? JSON.parse(sn.d[P + 'mis']) : null, mi = m && m.act && VR.MISIONES && VR.MISIONES[m.act.id], mm = Math.floor(v.min % 1440);
+    return 'Día ' + (Math.floor(v.min / 1440) + 1) + ' · ' + Math.floor(mm / 60) + ':' + String(mm % 60).padStart(2, '0') + ' · 💵 ' + VR.fmtGs(pl) + (mi ? '\n📌 ' + mi.titulo : ''); } catch (e) { return 'Partida guardada'; } };
+  function paintSlots() {
+    slList.innerHTML = '';
+    for (let n = 1; n <= VR.store.NSLOT; n++) {
+      const r = slResumen(n), row = document.createElement('div'); row.className = 'slRow' + (n === VR.store.slot ? ' on' : '');
+      row.innerHTML = '<div class="slTx"><b>' + (n === VR.store.slot ? '★ ' : '') + 'Partida ' + n + '</b>' + (r || 'Vacía · empezá una Historia nueva') + '</div>';
+      const go = document.createElement('button'); go.className = 'btn primary'; go.textContent = r ? '▶ Jugar' : '🆕 Empezar'; go.onclick = () => jugarRanura(n); row.append(go);
+      if (r) { const del = document.createElement('button'); del.className = 'btn bad'; del.textContent = (slSureN === n && performance.now() < slSure) ? '¿Seguro?' : '🗑';
+        del.onclick = () => { if (slSureN === n && performance.now() < slSure) { borrarRanura(n); return; } slSureN = n; slSure = performance.now() + 4000; paintSlots(); setTimeout(() => { if (slSureN === n && performance.now() >= slSure) paintSlots(); }, 4100); }; row.append(del); }
+      slList.append(row);
+    }
+  }
+  function jugarRanura(n) {
+    if (tGoing) return; slDlg.close();
+    if (n === VR.store.slot) { ACT.historia(); return; }
+    tGoing = true; fadeEl.style.opacity = 1;
+    try { VR.Guardado.fl(); } catch (e) { /* sin nada que guardar */ } // guarda la ranura que estaba en marcha antes de cambiar
+    VR.store.elegir(n);
+    try { sessionStorage.removeItem('villarrica:onl'); sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) { location.href = location.pathname + '?historia'; return; }
+    setTimeout(() => location.reload(), 450);
+  }
+  function borrarRanura(n) {
+    slSure = 0; const enMarcha = n === VR.store.slot;
+    if (enMarcha) VR.wiped = true; // la que está en marcha no tiene que volver a escribirse al salir
+    VR.store.wipeHistoria(n); try { if (enMarcha) online.stop(); } catch (e) { /* sin online */ }
+    toast('🗑 Partida ' + n + ' borrada');
+    if (enMarcha && VR.modo === 'historia') { slDlg.close(); tGoing = true; fadeEl.style.opacity = 1; try { sessionStorage.setItem('villarrica:go', 'historia'); } catch (e) { /* sin sessionStorage */ } setTimeout(() => location.reload(), 450); return; }
+    paintSlots(); tagHist();
+  }
+  slDlg.addEventListener('close', () => resume());
+  $('slClose').onclick = () => slDlg.close();
   const ACT = {
     historia: () => VR.modo === 'historia' ? startGame() : switchModo('historia'),
     multi: () => VR.modo === 'libre' ? startGame(() => { VR.input.releaseAll(); $('onDlg').showModal(); }) : switchModo('libre', true), // Online siempre juega en Libre
     libre: () => VR.modo === 'libre' ? startGame() : switchModo('libre'),
+    slots: () => { VR.input.releaseAll(); VR.input.enabled = false; slSure = 0; paintSlots(); slDlg.showModal(); },
     config: () => openConfig('title'),
     creditos: () => { VR.input.releaseAll(); VR.input.enabled = false; credits.showModal(); },
   };
