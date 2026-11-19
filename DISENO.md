@@ -580,3 +580,6 @@ Entrada por el portón de la fachada oeste (atrio de piedra dibujado en `catedra
 
 ### v1.89 — Catedral: sin entrada sur, ventiladores, palmeras y luces de noche (19/11/2026)
 Se sacó la puerta de la galería sur (ahora es otro arco; entrada y gente de misa solo por el portón oeste: decal `iglesia` con `pref:'w'` y `findDoor` respeta `d.pref`). Ventiladores de techo con 4 aspas rectas que giran (antes parecían hojas). Ocho palmeras en dos filas frente a la fachada oeste (converter). Luces de noche (`decorTop.catedral`): dos reflectores en el piso, faroles del portón y faroles de la galería sur. Sin probar en el teléfono.
+
+### v1.90 · Chapería de los vehículos (19/11/2026)
+Los choques fuertes deforman los autos (`src/game/chaperia.js`, `VR.chap`). Cada auto lleva `c.dmg` con daño por zona (frente, atrás, costados) y estado de piezas: parachoques (colgando → perdido), capó (hundido → abierto → volado), parabrisas y luneta (rajado → telaraña → reventado), chapa arrugada. Las piezas perdidas quedan tiradas en la calle ~70 s (`VR.chap.debris`) y saltan vidrios. Se dibuja encima del sprite, junto con las abolladuras (`drawDents`), sin tocar los 64 ángulos. No aplica a motos, karumbe ni vehículos grandes. El taller lo repara (`VR.repairDmg`). Probado en PC; falta ajustar umbrales jugando y probar en el teléfono.

@@ -198,7 +198,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       d.querySelector('#garFix').onclick = () => { // reparar: 1.500 Gs. por punto de vida
         const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.say('Si está joya, ¿qué querés que le repare? Dejalo así, po.', 'duda', 5); return; }
         const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.say('Reparar te sale ' + VR.fmtGs(n) + '. Y vos tenés ' + VR.fmtGs(VR.Wallet.get()) + '. Las cuentas no cierran, amigo.', 'triste', 7); return; }
-        VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.say('¡Chapa y pintura! Quedó como recién salido de fábrica. Son ' + VR.fmtGs(n) + ', amigo.', 'feliz', 6); this.fx = { t: 0, rgb: '255,230,120', kind: 'spark' }; this.total(); };
+        VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (VR.repairDmg) VR.repairDmg(c); if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.say('¡Chapa y pintura! Quedó como recién salido de fábrica. Son ' + VR.fmtGs(n) + ', amigo.', 'feliz', 6); this.fx = { t: 0, rgb: '255,230,120', kind: 'spark' }; this.total(); };
       addEventListener('keydown', (e) => { if (!this.d.hidden && e.key === 'Escape') this.close(); });
       addEventListener('resize', () => { if (!this.d.hidden) this.size(); });
     }

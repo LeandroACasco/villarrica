@@ -13,6 +13,7 @@
   // abolladura en el vehículo: posición local (derecha / adelante) respecto de su centro. Se mete hacia adentro de la chapa
   // (no queda pegada al borde, que se vería como una defensa) y los golpes cercanos se juntan en una sola abolladura más fea.
   VR.addDent = (c, wx, wy, imp) => {
+    if (VR.chap) VR.chap.hit(c, wx, wy, imp);
     if (!c.spec || c.spec.noFire) return; const D = c.dents || (c.dents = []);
     const a = c.a, dx = wx - c.x, dy = wy - c.y, lr = dx * Math.cos(a) + dy * Math.sin(a), lf = dx * Math.sin(a) - dy * Math.cos(a);
     const hl = c.LEN / 2, hw = c.WID / 2, ix = Math.max(1.2, hw - 2.2), iy = Math.max(1.5, hl - 4.5);
@@ -24,7 +25,7 @@
   };
   VR.drawDents = (ctx, c, x, y, a) => {
     ctx.save(); ctx.translate(x, y); ctx.rotate(a);
-    for (const d of c.dents) {
+    for (const d of (c.dents || [])) {
       const n = 3 + Math.round(d.s * 1.6), ox = Math.round(d.x), oy = Math.round(d.y);
       for (let i = 0; i < n; i++) {   // chapa hundida: pocos píxeles sueltos, oscuros y translúcidos
         const px = ox + Math.round(Math.sin(d.r * 40 + i * 2.1) * d.s * 0.9), py = oy + Math.round(Math.cos(d.r * 31 + i * 1.7) * d.s * 0.9);
@@ -34,6 +35,7 @@
       for (let i = 0; i < L; i++) ctx.fillRect(ox - 1 + i, oy - 2 + ((i + d.k) >> 1), 1, 1);
       if (d.k === 1 && d.s > 1.8) { ctx.fillStyle = 'rgba(130,78,44,.5)'; ctx.fillRect(ox + 1, oy + 1, 1, 1); }   // un toque de óxido
     }
+    if (c.dmg && VR.drawDmg) VR.drawDmg(ctx, c);
     ctx.restore();
   };
 

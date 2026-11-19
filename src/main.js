@@ -411,6 +411,7 @@
       fauna.update(dt, cam, th);
       if (mode === 'game') zoomTick(dt);
       if (caidas && !online.mirror) caidas.update(dt, player);
+      if (VR.chap) VR.chap.update(dt);
       if (!online.mirror) { perros.update(dt, car || player, car); calle.update(dt, car || player); }
     }
     if (weapons) weapons.update(dt, player, car, VR.input);
@@ -453,6 +454,7 @@
     if (VR._late) { for (const b of VR._late) VR.Player.prototype.drawBubble.call(b, ctx, cx, cy, 1); VR._late.length = 0; }   // globos de vendedores y perros, encima de árboles y banderas
     if (weapons) weapons.drawShots(ctx, cx, cy, a);
     if (asalto) asalto.drawFx(ctx, cx, cy);
+    if (VR.chap) VR.chap.draw(ctx, cx, cy);
     if (emer) emer.drawFx(ctx, cx, cy);
     night.update(Math.min(0.1, dt || 0.016), vida ? 'juego' : settings.hora);
     VR.sun.drawTint(ctx, sw, sh); VR.clima.drawGrade(ctx, sw, sh); VR.clima.drawRain(ctx, sw, sh, Math.min(0.1, dt || 0.016));
