@@ -372,11 +372,12 @@
       const nbo = !nc && !nsw && !nv && !np ? bolL.near(player) : null; if (nbo) { const op = VR.bolicheAbierto(); hint = op ? (VR.input.source === 'touch' ? '🎶 ACCIÓN: ' : '🎶 Espacio: ') + nbo.name : '🔒 ' + nbo.name + ' · abre de noche'; hintCar = { x: nbo.x, y: nbo.y - 14 }; }
       const nsu = !nc && !nsw && !nv && !np && !nbo ? superL.near(player) : null; if (nsu) { hint = (VR.input.source === 'touch' ? '🛒 ACCIÓN: ' : '🛒 Espacio: ') + nsu.name; hintCar = { x: nsu.x, y: nsu.y - 14 }; }
       const nme = !nc && !nsw && !nv && !np && !nsu ? mercL.near(player) : null; if (nme) { hint = (VR.input.source === 'touch' ? '🧺 ACCIÓN: mercado' : '🧺 Espacio: mercado'); hintCar = { x: nme.x, y: nme.y - 14 }; }
+      const nca = !nc && !nsw && !nv && !np && !nsu && !nme ? catL.near(player) : null; if (nca) { hint = (VR.input.source === 'touch' ? '⛪ ACCIÓN: entrar a la Catedral' : '⛪ Espacio: entrar a la Catedral'); hintCar = { x: nca.x, y: nca.y - 14 }; }
       if (VR.input.pressed('car')) {
         if (nsw && VR.Wallet.get() < VR.CISNE_PRECIO) toast('💸 El paseo en cisne cuesta ' + VR.fmtGs(VR.CISNE_PRECIO));
         else if (nsw) { VR.Wallet.add(-VR.CISNE_PRECIO); cisnes.board(nsw); toast('🦢 −' + VR.fmtGs(VR.CISNE_PRECIO) + ' · ' + (VR.input.source === 'touch' ? 'Pedaleá con los dos botones (o joystick arriba). Pasá por la boya 1 para largar la vuelta' : 'Pedaleá: A y D (o W los dos). Pasá por la boya 1 para largar la vuelta')); }
         else if (nc) { const no = noRobar(nc); if (no) toast(no); else enterCar(nc); } else toast('Acercate a un auto, una moto o un cisne para subir'); }
-      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (nch) { chespis.talk(nch); return; } if (np) { VR.despensa.entrar(); return; } if (nme) { VR.mercado.entrar(); return; } if (nsu) { VR.super.abrir(nsu.id); return; } if (nbo) { if (VR.bolicheAbierto()) VR.boliche.abrir(nbo.id); else toast('🔒 ' + nbo.name + ': abre de noche'); return; } if (ns) { VR.tienda.entrar(); return; } if (mis && mis.accion(player)) {} else if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
+      else if (VR.input.pressed('action')) { if (nn) { mis.talk(nn, player); return; } if (nch) { chespis.talk(nch); return; } if (np) { VR.despensa.entrar(); return; } if (nme) { VR.mercado.entrar(); return; } if (nca) { VR.catedral.entrar(); return; } if (nsu) { VR.super.abrir(nsu.id); return; } if (nbo) { if (VR.bolicheAbierto()) VR.boliche.abrir(nbo.id); else toast('🔒 ' + nbo.name + ': abre de noche'); return; } if (ns) { VR.tienda.entrar(); return; } if (mis && mis.accion(player)) {} else if (changas.action(player)) {} else if (calle.act(player)) {} else if (perros.pet(player)) {} else player.say(SALUDOS[sayIdx++ % SALUDOS.length]); if (peds) peds.greet(player.x, player.y); }
       } }
     }
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
@@ -830,6 +831,7 @@
   if (mis) VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => mis.dialogo(VR.despensaCompra(mis)) }); // despensa Ñande Róga por dentro
   VR.mercado = VR.crearMercado({ player, busy: () => false, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍽 ' + n + ' · −' + VR.fmtGs(p)); } } }); // Mercado Municipal por dentro (13/11/2026)
+  VR.catedral = VR.crearCatedral({ player, busy: () => false }); // Catedral por dentro (19/11/2026)
   VR.boliche = VR.crearBoliche({ player, busy: () => false, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍹 ' + n + ' · −' + VR.fmtGs(p)); } } }); // boliches por dentro (14/11/2026)
   VR.super = VR.crearSuper({ player, busy: () => false, toast: (m) => toast(m), guarda: vida ? (t, carro, donde) => VR.Inv.compra(t, carro, donde) : null, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
@@ -848,12 +850,14 @@
   const bolL = { pts: () => Object.keys(VR.BOLICHES).map((id) => { const p = lugE.get('boli_' + id); return p && { x: p.x, y: p.y, name: p.name, id }; }).filter(Boolean), near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 46) return p; return null; } }; // boliches y pubs: solo abren de noche
   const superL = { pts: () => Object.keys(VR.SUPERS).map((id) => { const p = lugE.get('super_' + id); return p && { x: p.x, y: p.y, name: p.name, id }; }).filter(Boolean), near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 46) return p; return null; } };
   const mercL = { pts: () => ['mercado1', 'mercado2'].map((k) => lugE.get(k)).filter(Boolean), near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 46) return p; return null; } };
+  const catL = { pts: () => { const d = (world.decals || []).find((q) => q.kind === 'catedral'); return d ? [{ x: (d.x + 17) * VR.TILE + 8, y: d.cols[17][1] * VR.TILE + 6, name: 'Catedral' }] : []; }, near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 40) return p; return null; } }; // portón de la galería sur de la Catedral (19/11/2026)
   const entradas = () => { const o = [];
     if (shopDoor) o.push({ x: shopDoor.x, y: shopDoor.y - 6, ico: '👕', c: '#ff9ed0', name: 'Tienda Ao Porã' });
     if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro' });
     const C = { despensa: '#9fe0a0', pieza: '#ffd84a', cajero: '#7fd8ff', cajero2: '#7fd8ff', financiera: '#ffb36b', celulares: '#c9a0ff' };
     for (const d of (world.decals || [])) if (d.kind === 'estacion') { const k = VR.Estaciones.lay(d).canopy; o.push({ x: k[0] + k[2] / 2, y: k[1] + k[3] / 2, ico: '⛽', c: '#ff8f6b', name: d.name }); }
     for (const p of mercL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🧺', c: '#ffcf6b', name: p.name });
+    for (const p of catL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '⛪', c: '#d8c8ff', name: 'Catedral (entrada)' });
     if (VR.bolicheAbierto()) for (const p of bolL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🎶', c: '#ff7ad0', name: p.name });
     for (const p of superL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🛒', c: '#8fd0ff', name: p.name });
     if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
