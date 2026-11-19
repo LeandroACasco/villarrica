@@ -26,6 +26,13 @@ VR.Flujo = class {
   }
   // puerta: la baldosa de vereda más cercana a la fachada (y al centro del edificio); si entre la fachada y la vereda hay pasto o patio,
   // los que entran y salen lo cruzan sin chocar. Prueba el frente sur primero y después los otros lados.
+  // pasable para este flujo: vereda/plaza, o (en las afueras, sin veredas) pasto, tierra o calle sin obstáculos
+  pass(x, y) {
+    const P = this.peds, W = this.world;
+    if (P.walkable(x, y)) return true;
+    const t = W.get(Math.floor(x / VR.TILE), Math.floor(y / VR.TILE)), T = VR.T;
+    return (t === T.GRASS || t === T.DIRT || t === T.DIRTROAD) && !W.hits(x - 3, y - 3, x + 3, y);
+  }
   findDoor(d) {
     const W = this.world, S = VR.TILE, B = VR.T.BUILDING, P = this.peds, cx = Math.floor(d.x + d.w / 2), cy = Math.floor(d.y + d.h / 2);
     const isB = (x, y) => W.get(x, y) === B;
@@ -42,7 +49,7 @@ VR.Flujo = class {
         for (let g = 1; g <= 6; g++) {
           const tx = bx + nx * g, ty = by + ny * g;
           if (g > 1 && isB(tx, ty)) break;
-          if (!P.walkable(tx * S + 8, ty * S + 8)) continue;
+          if (!this.pass(tx * S + 8, ty * S + 8)) continue;
           const score = (face === 's' ? 0 : 30) + (g - 1) * 12 + Math.abs(off);
           if (!best || score < best.score) {
             const ex = bx * S + 8 + nx * 8, ey = by * S + 8 + ny * 8; // punto del borde del edificio hacia la calle
@@ -102,10 +109,10 @@ VR.Flujo = class {
       let x = door.x, y = door.y, ok = 0;
       if (ev === 'in') { // buscar un punto a 70–200 px por la vereda
         const want = 70 + this.rnd() * 130;
-        for (let d = 8; d <= want; d += 8) { if (!P.walkable(door.x + ax * d, door.y + ay * d)) break; ok = d; }
+        for (let d = 8; d <= want; d += 8) { if (!this.pass(door.x + ax * d, door.y + ay * d)) break; ok = d; }
         if (ok < 50) continue;
         x = door.x + ax * ok; y = door.y + ay * ok;
-      } else { if (!P.free(door.x + ax * 10, door.y + ay * 10)) continue; x = door.ix; y = door.iy; }
+      } else { if (!this.pass(door.x + ax * 10, door.y + ay * 10)) continue; x = door.ix; y = door.iy; }
       const school = l.kind === 'colegio', pair = this.rnd() < (school ? 0.5 : 0.3), grupo = [];
       const mk = (pal, sc, back) => {
         const px = ev === 'in' ? x + ax * back : x - door.nx * back, py = ev === 'in' ? y + ay * back : y - door.ny * back;
