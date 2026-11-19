@@ -434,6 +434,7 @@
     if (VR.shakeT > 0) { VR.shakeT -= dt; const k = VR.shakeA * Math.min(1, VR.shakeT * 4); cx += (Math.random() - 0.5) * k; cy += (Math.random() - 0.5) * k; }   // sacudón del golpe
     ctx.fillStyle = '#2b3a22'; ctx.fillRect(0, 0, sw, sh);
     world.draw(ctx, cx, cy, sw, sh);
+    drawGpsRoute(ctx, cx, cy);
     world.warm(cx, cy, sw, sh);
     changas.drawGround(ctx, cx, cy); if (VR.guardia) VR.guardia.drawGround(ctx, cx, cy);
     if (mis) mis.drawGround(ctx, cx, cy);
@@ -1124,7 +1125,7 @@
 
   // ---------- GPS ----------
   const gps = gpsNet;
-  let dest = null, route = null, routeLen = 0, gpsT = 0, gpsRe = 0;
+  let dest = null, route = null, routeLen = 0, gpsT = 0, gpsRe = 0, turn = null, gpsMsgT = 0;
   function setDest(d, deMision) {
     if (d && !deMision && vida && !VR.Barrios.enPunto(world, d.x, d.y)) { toast('🔒 ' + world.barrioName(d.x, d.y) + ': ' + VR.Barrios.CARTEL + ' (el GPS no marca destinos acá)'); return; }
     dest = d; route = null; gpsRe = 0;
@@ -1136,7 +1137,7 @@
     if (!dest || !gps) return;
     const f = car || player;
     route = gps.route(f.x, f.y, dest.x, dest.y, !!car);
-    routeLen = route ? VR.polyLen(route) : 0;
+    routeLen = route ? VR.polyLen(route) : 0; calcTurn();
   }
   function updateGpsHud() {
     const el = $('gps');
@@ -1144,8 +1145,33 @@
     if (dest) { $('mapDest').style.left = dest.x / 16 + 'px'; $('mapDest').style.top = dest.y / 16 + 'px'; }
     if (!dest) { el.hidden = true; return; }
     el.hidden = false;
-    const m = routeLen / VR.TILE * 2;
-    el.textContent = '🏁 ' + dest.name + ' · ' + (m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : (Math.round(m / 10) * 10) + ' m');
+    const f = car || player, m = (route ? routeLen : Math.hypot(f.x - dest.x, f.y - dest.y)) / VR.TILE * 2, esc = (t) => String(t || '').replace(/[<>&"]/g, '');
+    let l1;
+    if (gpsMsgT > 0) l1 = '↻ Recalculando el camino…';
+    else if (!route) l1 = '🧭 Buscando el camino…';
+    else if (turn) l1 = '<b>' + turn.ico + ' ' + turn.txt + '</b> ' + (turn.m < 15 ? 'ya' : 'en ' + fmtM(turn.m)) + (turn.calle ? ' · ' + esc(turn.calle) : '');
+    else l1 = m < 60 ? '<b>🏁 ¡Ya llegás!</b>' : '<b>⬆ Seguí derecho</b> ' + (m < 400 ? '· ya casi llegás' : '');
+    el.innerHTML = l1 + '<br>🏁 ' + esc(dest.name) + ' · ' + fmtM(m);
+  }
+  const fmtM = (m) => (m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : m >= 100 ? (Math.round(m / 10) * 10) + ' m' : (Math.max(5, Math.round(m / 5) * 5)) + ' m');
+  // próximo giro: se remuestrea el camino cada 12 px y se busca el primer cambio de rumbo fuerte (más de ~38°) en los próximos ~1,2 km
+  function calcTurn() {
+    turn = null; if (!route || route.length < 6) return;
+    const P = [], STEP = 12; let acc = 0, ax = route[0], ay = route[1]; P.push([ax, ay, 0]);
+    for (let i = 2; i + 1 < route.length && acc < 1300; i += 2) {
+      let bx = route[i], by = route[i + 1], L = Math.hypot(bx - ax, by - ay);
+      while (L >= STEP) { const t = STEP / L; ax += (bx - ax) * t; ay += (by - ay) * t; acc += STEP; P.push([ax, ay, acc]); L = Math.hypot(bx - ax, by - ay); }
+    }
+    const dir = (a, b) => Math.atan2(P[b][1] - P[a][1], P[b][0] - P[a][0]);
+    for (let i = 3; i + 3 < P.length; i++) {
+      let d = dir(i, i + 3) - dir(i - 3, i); while (d > Math.PI) d -= 6.2832; while (d < -Math.PI) d += 6.2832;
+      if (Math.abs(d) < 0.66) continue;
+      let k = i, bd = Math.abs(d); // el punto de mayor giro de los siguientes
+      for (let j = i + 1; j <= i + 4 && j + 3 < P.length; j++) { let e = dir(j, j + 3) - dir(j - 3, j); while (e > Math.PI) e -= 6.2832; while (e < -Math.PI) e += 6.2832; if (Math.abs(e) > bd) { bd = Math.abs(e); k = j; d = e; } }
+      const u = Math.abs(d) > 2.5, right = d > 0; // y hacia abajo en pantalla: giro horario = a la derecha
+      turn = { m: P[k][2] / VR.TILE * 2, x: P[k][0], y: P[k][1], ico: u ? '↶' : right ? '↱' : '↰', txt: u ? 'Hacé la vuelta' : right ? 'Girá a la derecha' : 'Girá a la izquierda', calle: world.placeName(P[Math.min(P.length - 1, k + 6)][0], P[Math.min(P.length - 1, k + 6)][1]) };
+      return;
+    }
   }
   function drawMapRoute() {
     const pts = route ? Array.from({ length: route.length / 2 }, (_, i) => (route[i * 2] / 16).toFixed(1) + ',' + (route[i * 2 + 1] / 16).toFixed(1)).join(' ') : '';
@@ -1154,26 +1180,66 @@
   function updateGps(dt) {
     if (!dest || !gps) return;
     gpsT += dt; gpsRe -= dt;
-    if (gpsT < 0.25) return; gpsT = 0;
+    if (gpsT < 0.25) return; gpsMsgT = Math.max(0, gpsMsgT - gpsT); gpsT = 0;
     const f = car || player;
     if (Math.hypot(f.x - dest.x, f.y - dest.y) < 40) { dest = null; route = null; VR.store.set('dest:' + world.id, null); toast('🏁 ¡Llegaste!'); updateGpsHud(); drawMapRoute(); return; }
     if (!route) { if (gpsRe <= 0) { gpsRe = 1; recalc(); } }
     else {
       const [d, i] = VR.polyNear(route, f.x, f.y);
-      if (d > 56 && gpsRe <= 0) { gpsRe = 1; recalc(); }
+      if (d > 56 && gpsRe <= 0) { gpsRe = 1; gpsMsgT = 2; recalc(); }
       else if (d <= 56) { route = [f.x, f.y].concat(route.slice((i + 1) * 2)); routeLen = VR.polyLen(route); }
     }
-    updateGpsHud();
+    calcTurn(); updateGpsHud();
     if (mapOpen) drawMapRoute();
   }
   { const sd = VR.store.get('dest:' + world.id, null); if (sd && gps) { dest = sd; recalc(); updateGpsHud(); } }
 
+  // camino pintado en el piso (19/11/2026): línea celeste con flechitas que avanzan hacia donde seguir; solo los próximos ~1,2 km
+  function drawGpsRoute(ctx, cx, cy) {
+    if (!route || route.length < 4) return;
+    const sw = VR.screen.w, sh = VR.screen.h, t = performance.now() / 1000;
+    ctx.save(); ctx.lineJoin = ctx.lineCap = 'round';
+    const trace = () => { ctx.beginPath(); let acc = 0; ctx.moveTo(route[0] - cx, route[1] - cy); for (let i = 2; i + 1 < route.length && acc < 1200; i += 2) { acc += Math.hypot(route[i] - route[i - 2], route[i + 1] - route[i - 1]); ctx.lineTo(route[i] - cx, route[i + 1] - cy); } };
+    trace(); ctx.strokeStyle = 'rgba(11,42,54,.5)'; ctx.lineWidth = 8; ctx.stroke();
+    trace(); ctx.strokeStyle = 'rgba(63,211,255,.55)'; ctx.lineWidth = 5; ctx.stroke();
+    // flechitas blancas que corren por el camino
+    const GAP = 30; let off = (t * 36) % GAP, n = 0, acc = 0;
+    ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.strokeStyle = 'rgba(11,42,54,.7)'; ctx.lineWidth = 1.2;
+    for (let i = 0; i + 3 < route.length && acc < 1200 && n < 70; i += 2) {
+      const x0 = route[i], y0 = route[i + 1], dx = route[i + 2] - x0, dy = route[i + 3] - y0, L = Math.hypot(dx, dy); if (L < 0.5) continue;
+      const ux = dx / L, uy = dy / L;
+      for (let d = off; d < L; d += GAP) {
+        const x = x0 + ux * d - cx, y = y0 + uy * d - cy; n++;
+        if (x < -20 || y < -20 || x > sw + 20 || y > sh + 20) continue;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(uy, ux)); ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(-2.5, -3.6); ctx.lineTo(-0.8, 0); ctx.lineTo(-2.5, 3.6); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore();
+      }
+      off = GAP - ((L - off) % GAP || GAP); if (off >= GAP) off = 0; acc += L;
+    }
+    ctx.restore();
+  }
   // flecha del GPS alrededor tuyo, apuntando hacia donde sigue el camino (unos 70 px más adelante)
   function drawGpsArrow(ctx, cx, cy, al) {
     if (!dest) return;
     const f = car || player, fx = VR.lerp(f.px, f.x, al), fy = VR.lerp(f.py, f.y, al) - (car ? 0 : 10);
-    // bandera en el destino si está a la vista
-    VR.gfx.text(ctx, '🏁', Math.round(dest.x - cx), Math.round(dest.y - cy - 20), '#fff', { center: true, size: 14 });
+    // destino: anillo en el piso, haz de luz y bandera; si queda fuera de la pantalla, un indicador en el borde con la distancia
+    { const sw = VR.screen.w, sh = VR.screen.h, X = dest.x - cx, Y = dest.y - cy, pl = Math.sin(performance.now() / 300), mt = Math.hypot(fx - dest.x, fy - dest.y) / VR.TILE * 2;
+      if (X > 8 && X < sw - 8 && Y > 22 && Y < sh - 8) {
+        ctx.save();
+        const g = ctx.createLinearGradient(0, Y - 110, 0, Y); g.addColorStop(0, 'rgba(63,211,255,0)'); g.addColorStop(1, 'rgba(63,211,255,.42)');
+        ctx.fillStyle = g; ctx.fillRect(Math.round(X - 5), Math.round(Y - 110), 10, 110);
+        ctx.strokeStyle = 'rgba(63,211,255,.9)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(X, Y, 15 + pl * 2, 8 + pl, 0, 0, 7); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(X, Y, 9, 4.6, 0, 0, 7); ctx.stroke();
+        ctx.restore();
+        VR.gfx.text(ctx, '🏁', Math.round(X), Math.round(Y - 22 + pl * 2), '#fff', { center: true, size: 16 });
+      } else {
+        const ang = Math.atan2(Y - sh / 2, X - sw / 2), dx = X - sw / 2, dy = Y - sh / 2, kk = Math.min((sw / 2 - 24) / (Math.abs(dx) || 1e-6), (dy < 0 ? sh / 2 - 118 : sh / 2 - 62) / (Math.abs(dy) || 1e-6)), px = sw / 2 + dx * kk, py = sh / 2 + dy * kk;
+        ctx.save(); ctx.translate(Math.round(px), Math.round(py));
+        ctx.fillStyle = '#1a1a1e'; ctx.beginPath(); ctx.arc(0, 0, 13, 0, 7); ctx.fill(); ctx.fillStyle = '#3fd3ff'; ctx.beginPath(); ctx.arc(0, 0, 11, 0, 7); ctx.fill();
+        ctx.rotate(ang); ctx.fillStyle = '#1a1a1e'; ctx.beginPath(); ctx.moveTo(19, 0); ctx.lineTo(11, -7); ctx.lineTo(11, 7); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#3fd3ff'; ctx.beginPath(); ctx.moveTo(17, 0); ctx.lineTo(12, -4.5); ctx.lineTo(12, 4.5); ctx.closePath(); ctx.fill();
+        ctx.restore();
+        VR.gfx.text(ctx, '🏁', Math.round(px), Math.round(py + 0.5), '#fff', { center: true, size: 11 });
+        VR.gfx.text(ctx, fmtM(mt), Math.round(px), Math.round(py + (py > sh / 2 ? -22 : 24)), '#e8fbff', { center: true, shadow: '#0b2a36', size: 8 });
+      } }
     if (!route) return;
     let tx = route[route.length - 2], ty = route[route.length - 1], need = car ? 80 : 60;
     for (let i = 0; i + 3 < route.length; i += 2) {

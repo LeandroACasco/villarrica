@@ -47,19 +47,23 @@ VR.GPS = class {
     }
     return best;
   }
-  // devuelve [x0, y0, x1, y1, ...] en px del mapa, desde (fx, fy) hasta (tx, ty), o null
+  // devuelve [x0, y0, x1, y1, ...] en px del mapa, desde (fx, fy) hasta (tx, ty), o null.
+  // 19/11/2026: el camino arranca y termina SOBRE la calle (punto proyectado en el tramo más cercano, con los dos extremos del tramo como
+  // salidas posibles), en vez de ir hasta el nodo más cercano, que podía quedar atrás o a 200 px.
   route(fx, fy, tx, ty, oneway) {
     if (!this.ok) return null;
-    const s = this.nearest(fx, fy), g = this.nearest(tx, ty);
+    const S = this.nearEdge(fx, fy, 160), G = this.nearEdge(tx, ty, 160), s = this.nearest(fx, fy), g = this.nearest(tx, ty);
     if (s < 0 || g < 0) return null;
+    if (S && G && ((S.a === G.a && S.b === G.b) || (S.a === G.b && S.b === G.a))) return [fx, fy, S.px, S.py, G.px, G.py, tx, ty]; // el mismo tramo
     const N = this.N, dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
     const heap = [], push = (d, n) => { heap.push([d, n]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
     const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = i * 2 + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
-    dist[s] = 0; push(0, s);
-    while (heap.length) {
+    for (const [n, d0] of S ? [[S.a, Math.hypot(S.px - this.nx[S.a], S.py - this.ny[S.a])], [S.b, Math.hypot(S.px - this.nx[S.b], S.py - this.ny[S.b])]] : [[s, 0]]) if (d0 < dist[n]) { dist[n] = d0; push(d0, n); }
+    const goals = G ? [G.a, G.b] : [g], left = new Set(goals);
+    while (heap.length && left.size) {
       const [d, n] = pop();
       if (d > dist[n]) continue;
-      if (n === g) break;
+      left.delete(n);
       const A = this.adj[n];
       for (let k = 0; k < A.length; k += 3) {
         if (oneway && A[k + 2]) continue;
@@ -67,12 +71,16 @@ VR.GPS = class {
         if (nd < dist[m]) { dist[m] = nd; prev[m] = n; push(nd, m); }
       }
     }
-    if (dist[g] === Infinity) return oneway ? this.route(fx, fy, tx, ty, false) : null; // sin salida respetando manos: a pie
+    let gn = -1, best = Infinity;
+    for (const n of goals) { const t = dist[n] + (G ? Math.hypot(G.px - this.nx[n], G.py - this.ny[n]) : 0); if (t < best) { best = t; gn = n; } }
+    if (gn < 0 || best === Infinity) return oneway ? this.route(fx, fy, tx, ty, false) : null; // sin salida respetando manos: a pie
     const path = [];
-    for (let n = g; n >= 0; n = prev[n]) path.push(n);
+    for (let n = gn; n >= 0; n = prev[n]) path.push(n);
     path.reverse();
     const pts = [fx, fy];
+    if (S) pts.push(S.px, S.py);
     for (const n of path) pts.push(this.nx[n], this.ny[n]);
+    if (G) pts.push(G.px, G.py);
     pts.push(tx, ty);
     return pts;
   }
