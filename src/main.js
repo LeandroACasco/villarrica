@@ -61,6 +61,7 @@
   const cars = parked.cars;
   const escena = prueba ? null : new VR.Escena(world, cars); // accidente del 14/11/2026 (escena.js)
   let car = null; // auto que estás manejando
+  VR.dbg = { cars, get car() { return car; }, get player() { return player; }, get cam() { return cam; }, get traffic() { return traffic; } };   // para pruebas automáticas
   const WALK_BASE = 270, DRIVE_BASE = 420; // Leandro prefirió la cámara de antes (04/11/2026)
   // Zoom del juego (rueda, pellizco con dos dedos, teclas + y −): multiplica la base de cámara; se recuerda.
   let zoomK = 1; try { zoomK = Math.min(1.8, Math.max(0.55, parseFloat(localStorage.getItem('vr_zoom')) || 1)); } catch (e) {}

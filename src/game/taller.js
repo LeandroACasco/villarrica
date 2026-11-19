@@ -317,7 +317,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     buy() {
       const n = this.cost(); if (this.closing) return; if (n > VR.Wallet.get()) { this.say('No te alcanza la plata, po. Sacale algo o volvé con más billete.', 'triste', 7); return; }
       VR.Wallet.add(-n, 'Taller: tuneo'); const c = this.car; c.tune = { ...this.t };
-      c.frames = VR.vframes(c.type, c.color, c.model, c.tune); c.spec = VR.tuneSpec(VR.vspec(c.type, c.model), c.tune);
+      c.frames = VR.vframes(c.type, c.color, c.model, c.tune, c.mdm); c.spec = VR.tuneSpec(VR.vspec(c.type, c.model), c.tune);
       this.toast(n ? '🔧 ¡Quedó joya! ' + VR.fmtGs(n) : 'Sin cambios'); this.say(n ? R(['¡Listo! Quedó joya. Son ' + VR.fmtGs(n) + '. Llevalo con cuidado, ¿eh?', '¡Terminé! Ahora sí, que se vea quién manda en Villarrica. Son ' + VR.fmtGs(n) + '.']) : 'Nada que cobrar. Fácil, la tuya.', 'feliz', 3); this.closing = true; setTimeout(() => { this.closing = false; this.close(); }, 1900);
     }
     close() { if (this.d.hidden) return; this.d.hidden = true; document.body.classList.remove('adentro'); VR.input.enabled = true; this._l = 0; }

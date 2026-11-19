@@ -157,7 +157,9 @@
     else if (hatch) top.push([yG, hr - (hr - hb) * 0.4], [Ln - 0.8, hb + 0.8], [Ln, hb * 0.8]);
     else top.push([yG, hb], [Ln - 1.4, hb * 0.97], [Ln, hb * 0.76]);
     const lz = [hb * 0.5, hb * 0.86];
-    return { L: Ln, H: hr, top, lift: hr,
+    // vidrios (chapería.js): dónde están el parabrisas y la luneta en el espacio del vehículo (y desde la trompa, altura), para poner las grietas justo encima
+    const glass = { ws: { y0: yH, y1: yW, z0: hb, z1: hr }, rg: van ? { y0: Ln - 0.8, y1: Ln - 0.8, z0: hb + 1.2, z1: hr - 1 } : { y0: yR, y1: yG, z0: hr, z1: hatch ? hr - (hr - hb) * 0.4 : hb }, hood: { y0: 0.6, y1: yH, z: hb } };
+    return { L: Ln, H: hr, top, lift: hr, glass,
       ins: (y, v) => (v > hb + 0.2 ? 1.5 : v > wt ? 0.8 : 0), tin: (y, v) => (v > hb + 0.3 ? 1.1 : 0.75),
       caps: [{ src: [0.5, 2.2], dst: [0, 2.4], v: lz }, { src: [Ln - 2.7, Ln - 0.6], dst: [Ln - 2.4, Ln], v: lz }],
       side(g, H) {

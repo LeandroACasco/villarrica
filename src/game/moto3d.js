@@ -62,6 +62,7 @@
 
   // ---------- Mbojoaju 125 (underbone tipo Fusion 125) ----------
   MESH.cub = (pal, t = {}) => {
+    const dm = t.dm || {};   // piezas perdidas en choques (chaperia.js): el, er = espejos; g = guardabarros delantero; f = faro roto; i = luces de giro
     const C = pal[0], M = new Mesh(), DK = '#26262a', SEAT = '#1e1e22', CH = '#b0b4bc', ENG = '#4a4e56';
     const rim = VR.RIMS ? VR.RIMS[t.llantas || 'serie'] : '#8a8e96', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
     // ruedas
@@ -71,7 +72,7 @@
     M.box(0.72, 1.1, 3.9, 4.7, 2.4, 3.7, '#d8302a');
     // guardabarros delantero (arco concéntrico a la rueda)
     const fz = (y) => 3.1 + Math.sqrt(Math.max(0, 4.1 * 4.1 - (y - 3.2) * (y - 3.2)));
-    M.loft(1.1, 5.6, 0.4, (y) => ({ w: pl([[1.1, 0.9], [3.2, 1.7], [5.6, 1.6]], y), zb: fz(y) - 0.5, zt: fz(y) }), C, 10);
+    if (!dm.g) M.loft(1.1, 5.6, 0.4, (y) => ({ w: pl([[1.1, 0.9], [3.2, 1.7], [5.6, 1.6]], y), zb: fz(y) - 0.5, zt: fz(y) }), C, 10);
     // horquilla (dos botellas) y manubrio
     for (const sg of [-1, 1]) M.tube([sg * 1.0, 3.2, 3.1], [sg * 1.0, 6.9, 11.0], 0.24, CH);
     // escudo tipo underbone: pared delantera finita + dos guardapiernas en chapa; el medio queda abierto (el tanque va debajo del asiento)
@@ -81,7 +82,7 @@
     // cabeza (tapa del manubrio) en cuña, como la Fusion: angosta adelante, con el faro trapezoidal inclinado
     M.loft(6.0, 8.3, 0.3, (y) => ({ w: pl([[6.0, 1.25], [6.9, 1.75], [8.3, 1.9]], y), zb: pl([[6.0, 9.9], [8.3, 10.0]], y), zt: pl([[6.0, 11.3], [7.0, 12.1], [8.3, 11.7]], y) }), C, 14, 2.4);
     const lamp = M.face([[-1.05, 5.97, 11.3], [1.05, 5.97, 11.3], [0.62, 5.97, 10.2], [-0.62, 5.97, 10.2]], '#c9d6e6', [0, 7.1, 10.2]);   // marco plateado del faro
-    lamp.d.push({ p: [[-0.9, 5.95, 11.15], [0.9, 5.95, 11.15], [0.52, 5.95, 10.35], [-0.52, 5.95, 10.35]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.3, 5.93, 10.9], [0.3, 5.93, 10.9], [0.3, 5.93, 10.6], [-0.3, 5.93, 10.6]], c: rgb('#8a7a40') });
+    if (!dm.f) lamp.d.push({ p: [[-0.9, 5.95, 11.15], [0.9, 5.95, 11.15], [0.52, 5.95, 10.35], [-0.52, 5.95, 10.35]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.3, 5.93, 10.9], [0.3, 5.93, 10.9], [0.3, 5.93, 10.6], [-0.3, 5.93, 10.6]], c: rgb('#8a7a40') });
     // cara negra del escudo con las luces de posición en las puntas, como la Fusion
     const cara = M.face([[-1.6, 5.58, 9.3], [1.6, 5.58, 9.3], [1.15, 5.58, 7.4], [-1.15, 5.58, 7.4]], '#14161c', [0, 8, 7]);
     for (const sg of [-1, 1]) cara.d.push({ p: [[sg * 1.5, 5.56, 9.1], [sg * 1.15, 5.56, 8.9], [sg * 1.0, 5.56, 8.2], [sg * 1.3, 5.56, 8.5]], c: rgb('#cfe4ff') });
@@ -90,7 +91,7 @@
     M.tube([-2.9, 7.9, 11.2], [2.9, 7.9, 11.2], 0.2, DK);
     for (const sg of [-1, 1]) {
       M.tube([sg * 2.3, 7.9, 11.2], [sg * 3.1, 7.9, 11.2], 0.34, '#101012'); M.tube([sg * 2.5, 7.9, 11.3], [sg * 2.9, 8.1, 13.0], 0.1, DK, 4);
-      const mir = M.box(sg > 0 ? 2.5 : -3.4, sg > 0 ? 3.4 : -2.5, 8.0, 8.3, 13.0, 14.3, C); mir[3].d.push({ p: [[sg * 2.65, 8.32, 13.15], [sg * 3.25, 8.32, 13.15], [sg * 3.25, 8.32, 14.15], [sg * 2.65, 8.32, 14.15]].map((q) => q), c: rgb('#1b2230') });
+      const mir = dm['e' + (sg > 0 ? 'r' : 'l')] ? null : M.box(sg > 0 ? 2.5 : -3.4, sg > 0 ? 3.4 : -2.5, 8.0, 8.3, 13.0, 14.3, C); if (mir) mir[3].d.push({ p: [[sg * 2.65, 8.32, 13.15], [sg * 3.25, 8.32, 13.15], [sg * 3.25, 8.32, 14.15], [sg * 2.65, 8.32, 14.15]].map((q) => q), c: rgb('#1b2230') });
     }
     M.box(-1.3, 1.3, 7.9, 8.9, 10.4, 11.3, '#1c1d22')[5].d.push({ p: [[-0.8, 8.1, 11.32], [0.8, 8.1, 11.32], [0.8, 8.7, 11.32], [-0.8, 8.7, 11.32]], c: rgb('#6f93c4') }); // tablero
     // piso, motor, chasis y brazo oscilante
@@ -121,6 +122,7 @@
 
   // ---------- Yvytu GT 150 (moto de calle: tanque grande, faro redondo con parabrisas, escape largo) ----------
   MESH.calle = (pal, t = {}) => {
+    const dm = t.dm || {};   // piezas perdidas en choques (chaperia.js): el, er = espejos; g = guardabarros delantero; f = faro roto; i = luces de giro
     const C = pal[0], M = new Mesh(), DK = '#26262a', SEAT = '#1c1c20', CH = '#b0b4bc', BLK = '#15161a', SIL = '#7d828a';
     const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#2c2e34', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
     const FW = 3.1, RW = 17.0, circ = (u, y, z, r, n = 18, plane = 'y') => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push(plane === 'y' ? [u + Math.cos(a) * r, y, z + Math.sin(a) * r] : [u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
@@ -128,12 +130,12 @@
     M.wheel(FW, 3.1, rim, 0.5, wo); M.wheel(RW, 3.1, rim, 0.55, wo);
     M.face(circ(0.62, FW, 3.1, 1.5, 18, 'x'), '#b8bcc6', [0, FW, 3.1]); M.box(0.7, 1.1, FW + 0.7, FW + 1.6, 1.9, 3.2, '#d8302a');   // disco y pinza (derecha)
     const fz = (y) => 3.1 + Math.sqrt(Math.max(0, 3.6 * 3.6 - (y - FW) * (y - FW)));
-    M.loft(1.1, 5.2, 0.35, (y) => ({ w: pl([[1.1, 0.9], [3.1, 1.3], [5.2, 1.2]], y), zb: fz(y) - 0.4, zt: fz(y) }), C, 10);               // guardabarros
+    if (!dm.g) M.loft(1.1, 5.2, 0.35, (y) => ({ w: pl([[1.1, 0.9], [3.1, 1.3], [5.2, 1.2]], y), zb: fz(y) - 0.4, zt: fz(y) }), C, 10);               // guardabarros
     for (const sg of [-1, 1]) { M.tube([sg * 0.95, FW, 3.1], [sg * 0.95, 6.5, 8.8], 0.3, '#a6aab2'); M.tube([sg * 0.95, 4.6, 5.6], [sg * 0.95, 6.5, 8.8], 0.36, '#6a6e76'); } // horquilla
     M.box(-1.1, 1.1, 6.3, 6.9, 8.6, 9.1, BLK);
     M.loft(4.4, 6.3, 0.35, () => ({ w: 1.0, zb: 8.2, zt: 10.2 }), BLK, 16, 2);                                                         // cubeta del faro
     const lamp = M.face(circ(0, 4.38, 9.2, 0.98, 20), '#e8eef8', [0, 5.4, 9.2]);
-    lamp.d.push({ p: circ(0, 4.36, 9.2, 0.76, 20), c: rgb('#2a2e38') }, { p: circ(0, 4.34, 9.2, 0.6, 20), c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: circ(0, 4.32, 9.2, 0.25, 12), c: rgb('#8a7a40') });
+    if (!dm.f) lamp.d.push({ p: circ(0, 4.36, 9.2, 0.76, 20), c: rgb('#2a2e38') }, { p: circ(0, 4.34, 9.2, 0.6, 20), c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: circ(0, 4.32, 9.2, 0.25, 12), c: rgb('#8a7a40') });
     M.prism([[4.6, 10.0], [5.9, 11.7], [6.1, 11.6], [4.8, 9.9]], -1.25, 1.25, '#4a382e');                                              // parabrisas ahumado
     for (const sg of [-1, 1]) M.box(sg > 0 ? 1.2 : -1.75, sg > 0 ? 1.75 : -1.2, 5.0, 5.6, 8.35, 8.65, '#f0a020');                      // luces de giro
     const cl = M.box(-1.35, 1.35, 6.2, 7.3, 9.4, 10.3, '#1c1d22'); for (const sg of [-1, 1]) cl[3].d.push({ p: circ(sg * 0.68, 7.32, 9.85, 0.42, 14), c: rgb('#2a3a5a') }); // dos relojes
@@ -141,7 +143,7 @@
     for (const sg of [-1, 1]) {
       M.tube([sg * 2.2, 7.6, 10.1], [sg * 2.9, 8.3, 10.6], 0.2, CH, 5); M.tube([sg * 2.3, 8.3, 10.6], [sg * 3.1, 8.4, 10.6], 0.32, '#101012');
       M.tube([sg * 2.6, 8.2, 10.7], [sg * 3.0, 7.9, 12.3], 0.1, DK, 4);
-      const mir = M.box(sg > 0 ? 2.45 : -3.45, sg > 0 ? 3.45 : -2.45, 7.55, 7.85, 12.2, 13.8, '#1a1a1e'); mir[3].d.push({ p: [[sg * 2.6, 7.87, 12.4], [sg * 3.3, 7.87, 12.4], [sg * 3.3, 7.87, 13.6], [sg * 2.6, 7.87, 13.6]], c: rgb('#3a4048') });
+      const mir = dm['e' + (sg > 0 ? 'r' : 'l')] ? null : M.box(sg > 0 ? 2.45 : -3.45, sg > 0 ? 3.45 : -2.45, 7.55, 7.85, 12.2, 13.8, '#1a1a1e'); if (mir) mir[3].d.push({ p: [[sg * 2.6, 7.87, 12.4], [sg * 3.3, 7.87, 12.4], [sg * 3.3, 7.87, 13.6], [sg * 2.6, 7.87, 13.6]], c: rgb('#3a4048') });
     }
     M.loft(7.1, 12.5, 0.4, (y) => ({ w: pl([[7.1, 1.05], [8.5, 1.45], [11, 1.5], [12.5, 1.15]], y), zb: 7.1, zt: pl([[7.1, 9.0], [8.5, 9.55], [11, 9.5], [12.5, 8.7]], y) }), C, 14, 2.6); // tanque grande
     M.loft(12.0, 19.8, 0.5, (y) => { const zt = pl([[12, 8.5], [14.5, 8.1], [17, 8.4], [19.8, 8.9]], y); return { w: pl([[12, 1.0], [14, 1.5], [19.8, 1.95]], y), zb: zt - 1.3, zt }; }, SEAT, 14, 2.6); // asiento
@@ -163,6 +165,7 @@
 
   // ---------- Tatu 110 (mini moto de ruedas gordas tipo Bravo 150: tanque cuadrado, faro vertical, parabrisas, parrilla) ----------
   MESH.mini = (pal, t = {}) => {
+    const dm = t.dm || {};   // piezas perdidas en choques (chaperia.js): el, er = espejos; g = guardabarros delantero; f = faro roto; i = luces de giro
     const C = pal[0], M = new Mesh(), BLK = '#26272c', GR = '#5a5d65', CH = '#b0b4bc';
     const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#3a3d44', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
     const FW = 2.2, RW = 14.1, R = 2.2, circ = (u, y, z, r, n = 18, plane = 'y') => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push(plane === 'y' ? [u + Math.cos(a) * r, y, z + Math.sin(a) * r] : [u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
@@ -170,12 +173,12 @@
     M.wheel(FW, R, rim, 0.56, wo); M.wheel(RW, R, rim, 0.58, wo);
     M.face(circ(0.6, FW, R, 1.05, 16, 'x'), '#b8bcc6', [0, FW, R]);                                                             // disco delantero
     const fz = (y) => R + Math.sqrt(Math.max(0, 2.85 * 2.85 - (y - FW) * (y - FW)));
-    M.loft(0.6, 4.4, 0.3, (y) => ({ w: pl([[0.6, 0.8], [2.2, 1.05], [4.4, 1.0]], y), zb: fz(y) - 0.3, zt: fz(y) }), C, 10);           // guardabarros azul
+    if (!dm.g) M.loft(0.6, 4.4, 0.3, (y) => ({ w: pl([[0.6, 0.8], [2.2, 1.05], [4.4, 1.0]], y), zb: fz(y) - 0.3, zt: fz(y) }), C, 10);           // guardabarros azul
     for (const sg of [-1, 1]) { M.tube([sg * 0.95, FW, R], [sg * 0.95, 5.0, 7.7], 0.3, BLK); M.tube([sg * 0.95, 3.2, 4.6], [sg * 0.95, 4.6, 7.0], 0.4, '#2a2b2f', 8); } // horquilla con resortes
     // faro vertical con rejilla, aro negro y luces de giro ámbar
     M.loft(2.9, 4.6, 0.3, () => ({ w: 0.8, zb: 6.8, zt: 8.7 }), C, 12, 2.6);
     const lamp = M.face([[-0.65, 2.87, 8.55], [0.65, 2.87, 8.55], [0.65, 2.87, 6.95], [-0.65, 2.87, 6.95]], '#cfd6e0', [0, 3.8, 7.7]);
-    lamp.d.push({ p: [[-0.5, 2.85, 8.4], [0.5, 2.85, 8.4], [0.5, 2.85, 7.1], [-0.5, 2.85, 7.1]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.5, 2.83, 7.8], [0.5, 2.83, 7.8], [0.5, 2.83, 7.7], [-0.5, 2.83, 7.7]], c: rgb('#5a5d65') });
+    if (!dm.f) lamp.d.push({ p: [[-0.5, 2.85, 8.4], [0.5, 2.85, 8.4], [0.5, 2.85, 7.1], [-0.5, 2.85, 7.1]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.5, 2.83, 7.8], [0.5, 2.83, 7.8], [0.5, 2.83, 7.7], [-0.5, 2.83, 7.7]], c: rgb('#5a5d65') });
     for (const sg of [-1, 1]) M.box(sg > 0 ? 1.1 : -1.9, sg > 0 ? 1.9 : -1.1, 3.2, 3.8, 7.5, 8.1, '#f0a020');
     M.prism([[3.2, 8.8], [4.6, 11.0], [4.8, 10.9], [3.4, 8.7]], -1.1, 1.1, '#1d1e22');                                             // parabrisas oscuro
     // manubrio negro, puños y espejos
@@ -183,7 +186,7 @@
     for (const sg of [-1, 1]) {
       M.tube([sg * 1.4, 5.8, 9.5], [sg * 2.7, 6.4, 10.1], 0.2, BLK, 5); M.tube([sg * 2.2, 6.4, 10.1], [sg * 3.0, 6.5, 10.1], 0.3, '#101012');
       M.tube([sg * 2.6, 6.4, 10.2], [sg * 2.9, 6.2, 11.6], 0.1, '#2a2a2e', 4);
-      const mir = M.box(sg > 0 ? 2.35 : -3.35, sg > 0 ? 3.35 : -2.35, 6.1, 6.4, 11.5, 12.9, '#1a1a1e'); mir[3].d.push({ p: [[sg * 2.5, 6.42, 11.7], [sg * 3.2, 6.42, 11.7], [sg * 3.2, 6.42, 12.7], [sg * 2.5, 6.42, 12.7]], c: rgb('#8a929c') });
+      const mir = dm['e' + (sg > 0 ? 'r' : 'l')] ? null : M.box(sg > 0 ? 2.35 : -3.35, sg > 0 ? 3.35 : -2.35, 6.1, 6.4, 11.5, 12.9, '#1a1a1e'); if (mir) mir[3].d.push({ p: [[sg * 2.5, 6.42, 11.7], [sg * 3.2, 6.42, 11.7], [sg * 3.2, 6.42, 12.7], [sg * 2.5, 6.42, 12.7]], c: rgb('#8a929c') });
     }
     // tanque cuadrado, banda gris, asiento plano y parrilla
     M.loft(5.0, 11.4, 0.4, (y) => ({ w: pl([[5.0, 1.2], [6.5, 1.65], [10, 1.7], [11.4, 1.3]], y), zb: pl([[5.0, 6.2], [11.4, 5.3]], y), zt: pl([[5.0, 8.2], [6.5, 8.4], [9, 8.3], [11.4, 7.9]], y) }), C, 14, 3.2);
@@ -209,6 +212,7 @@
 
   // ---------- Kárga Guasu 200 (motocarga de tres ruedas tipo Transporter 180: moto adelante, caja con barandas atrás) ----------
   MESH.carga = (pal, t = {}) => {
+    const dm = t.dm || {};
     const C = pal[0], M = new Mesh(), BLK = '#1d1e22', CH = '#b8bcc4', RED = '#c83a3a', BD = VR.shadeHex ? VR.shadeHex(C, 0.78) : C, BD2 = VR.shadeHex ? VR.shadeHex(C, 0.62) : C;
     const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#d4d8de', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
     const FW = 2.5, RW = 23.8, R = 2.5, RR = 2.6, circ = (u, y, z, r, n = 18, plane = 'y') => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push(plane === 'y' ? [u + Math.cos(a) * r, y, z + Math.sin(a) * r] : [u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
@@ -222,13 +226,13 @@
     for (const sg of [-1, 1]) { M.tube([sg * 1.15, FW, R], [sg * 1.15, 6.2, 8.8], 0.34, '#c8ccd4'); M.tube([sg * 1.15, 3.9, 5.2], [sg * 1.15, 5.5, 7.4], 0.55, RED, 8); }
     M.box(-1.7, 1.7, 5.6, 6.5, 8.5, 9.1, '#202226');
     M.loft(3.9, 5.5, 0.3, () => ({ w: 0.95, zb: 8.3, zt: 10.2 }), '#c8ccd4', 16, 2);
-    const lamp = M.face(circ(0, 3.88, 9.25, 0.95, 20), '#dfe6ee', [0, 4.8, 9.2]); lamp.d.push({ p: circ(0, 3.86, 9.25, 0.72, 20), c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: circ(0, 3.84, 9.25, 0.25, 12), c: rgb('#8a8e96') });
+    const lamp = M.face(circ(0, 3.88, 9.25, 0.95, 20), '#dfe6ee', [0, 4.8, 9.2]); if (!dm.f) lamp.d.push({ p: circ(0, 3.86, 9.25, 0.72, 20), c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: circ(0, 3.84, 9.25, 0.25, 12), c: rgb('#8a8e96') });
     for (const sg of [-1, 1]) M.box(sg > 0 ? 1.2 : -1.8, sg > 0 ? 1.8 : -1.2, 5.0, 5.7, 8.7, 9.2, '#f0a020');
     M.box(-0.95, 0.95, 6.4, 7.6, 9.8, 10.7, '#26272b');                                                                          // relojes
     M.tube([-2.6, 8.7, 10.3], [-1.0, 7.0, 9.9], 0.2, CH, 5); M.tube([-1.0, 7.0, 9.9], [1.0, 7.0, 9.9], 0.2, CH, 5); M.tube([1.0, 7.0, 9.9], [2.6, 8.7, 10.3], 0.2, CH, 5);
     for (const sg of [-1, 1]) {
       M.tube([sg * 2.2, 8.9, 10.4], [sg * 3.2, 9.2, 10.5], 0.32, '#101012'); M.tube([sg * 2.7, 8.9, 10.5], [sg * 3.0, 8.6, 12.8], 0.1, '#2a2a2e', 4);
-      const mir = M.box(sg > 0 ? 2.4 : -3.6, sg > 0 ? 3.6 : -2.4, 8.4, 8.7, 12.7, 14.0, '#1a1a1e'); mir[3].d.push({ p: [[sg * 2.55, 8.72, 12.85], [sg * 3.45, 8.72, 12.85], [sg * 3.45, 8.72, 13.85], [sg * 2.55, 8.72, 13.85]], c: rgb('#6a727c') });
+      const mir = dm['e' + (sg > 0 ? 'r' : 'l')] ? null : M.box(sg > 0 ? 2.4 : -3.6, sg > 0 ? 3.6 : -2.4, 8.4, 8.7, 12.7, 14.0, '#1a1a1e'); if (mir) mir[3].d.push({ p: [[sg * 2.55, 8.72, 12.85], [sg * 3.45, 8.72, 12.85], [sg * 3.45, 8.72, 13.85], [sg * 2.55, 8.72, 13.85]], c: rgb('#6a727c') });
     }
     // tanque, motor, paneles y asiento de la cabina
     M.loft(6.0, 10.8, 0.4, (y) => ({ w: pl([[6.0, 1.0], [7.5, 1.4], [10.8, 1.3]], y), zb: 6.3, zt: pl([[6.0, 8.9], [8, 9.1], [10.8, 8.5]], y) }), C, 14, 2.6);
@@ -257,6 +261,7 @@
   // Bicicleta urbana (13/11/2026): cuadro con tubo superior, horquilla, manubrio con puños, asiento, parrilla, pedales y
   // rueda finita con rayos. 8 unidades ≈ 1 m: rodado ~27", base de ruedas ~1,05 m. `pal[0]` pinta el cuadro.
   MESH.bici = (pal, t = {}) => {
+    const dm = t.dm || {};
     const C = pal[0], dama = !!pal.dama, M = new Mesh(), BLK = '#202126', CH = '#c4c8d0', GR = '#8a8e96';
     const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#c4c8d0';
     const FW = 2.7, RW = 11.2, R = 2.7, BB = [7.4, 1.9], ST = [9.3, 9.0], HT = [3.6, 9.4], HB = [3.9, 7.6];

@@ -558,7 +558,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 80953454 · 2026-11-19</div>
+  <div class="tVer">Versión 60ebb4d2 · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -673,7 +673,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 80953454 · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 60ebb4d2 · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -5562,7 +5562,7 @@ VR.rotFrames = (base, S, outline = true) => {
   if (OB) S += 2 * OB.extra(base);
   // Cada ángulo se dibuja recién cuando hace falta (y se guarda): antes se armaban los 64 de una vez cada vez
   // que aparecía un vehículo de un color nuevo, y eso trababa el juego (sobre todo en el teléfono).
-  const N = 64, f = { img: new Array(N), shadow: new Array(N), S, lift: OB ? base.prof.lift * OB.kz : 0 };
+  const N = 64, f = { img: new Array(N), shadow: new Array(N), S, lift: OB ? base.prof.lift * OB.kz : 0, prof: OB ? base.prof : null };
   const ss = base.ss || 1, SR = Math.round(S * (VR.RES || 1)); // tamaño en el lienzo (resolución ×2)
   let src = null;
   const makeGen = function* (k) {
@@ -5666,10 +5666,11 @@ VR.vspec = (() => {
 })();
 VR.vframes = (() => {
   const cache = new Map();
-  return (type, color, model, tune) => {
-    const key = type + ':' + (model || '') + ':' + (tune ? 't' + VR.tuneKey(tune) : color);
+  return (type, color, model, tune, dm) => {   // dm: piezas perdidas de una moto (espejos, guardabarros, faro; ver chaperia.js)
+    const dk = dm ? Object.keys(dm).filter((q) => dm[q]).sort().join('') : '';
+    const key = type + ':' + (model || '') + ':' + (tune ? 't' + VR.tuneKey(tune) : color) + (dk ? ':d' + dk : '');
     let f = cache.get(key);
-    if (!f) { const sp = VR.vspec(type, model); f = VR.rotFrames(sp.base(tune ? VR.tunePal(tune.color) : sp.colors[color % sp.colors.length], tune || {}), sp.S); cache.set(key, f); }
+    if (!f) { const sp = VR.vspec(type, model); f = VR.rotFrames(sp.base(tune ? VR.tunePal(tune.color) : sp.colors[color % sp.colors.length], dk ? Object.assign({}, tune || {}, { dm }) : (tune || {})), sp.S); cache.set(key, f); }
     return f;
   };
 })();
@@ -5952,7 +5953,7 @@ VR.Car = class {
         const tries = [[this.vx, this.vy, na], [this.vx, this.vy, a0], [tvx, tvy, na], [tvx, tvy, a0]];
         for (const [sx, sy, sa] of tries) { const qx = this.x + sx * h, qy = this.y + sy * h; if (!this.contacts(qx, qy, sa)) { this.x = qx; this.y = qy; this.a = sa; break; } } }
       if (this.driven && impact > 45) this.bounceT = Math.min(0.4, 0.1 + impact / 600);   // tras un golpe fuerte el motor «suelta» un instante: el auto rebota en vez de empujarse contra lo que chocó
-      if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); if (this.driven && this.type === 'moto' && impact > 140 && VR.onEject) VR.onEject(this, impact); else if (this.ai && this.type === 'moto' && impact > 110 && VR.caidas) VR.caidas.motoDown(this, impact); if (impact > 55 && VR.addDent) { VR.addDent(this, mx, my, impact); if (o) VR.addDent(o, mx, my, impact * 0.8); } }
+      if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); if (this.driven && this.type === 'moto' && impact > 58 && VR.onEject) VR.onEject(this, impact); else if (this.type === 'moto' && !this.driven && impact > 55 && VR.caidas) { if (this.ai && this.rider) VR.caidas.motoDown(this, impact); else if (!this.rider && !this.fallen && this.spec && !this.spec.noFire && this.model !== 'bici' && this.model !== 'pati') { this.fallen = { t: 0, side: Math.random() < 0.5 ? -1 : 1 }; if (this.ai) this.ai.stun = 1e6; } } if (impact > 55 && VR.addDent) { VR.addDent(this, mx, my, impact); if (o) VR.addDent(o, mx, my, impact * 0.8); } }
       // no se mete en la pared: si el giro solo ya lo traba, no gira; y si quedó pegado, se separa un poco
       if (!this.contacts(this.x, this.y, na)) this.a = na;
       else if (this.contacts(this.x, this.y, this.a)) {
@@ -6870,7 +6871,9 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     else if (hatch) top.push([yG, hr - (hr - hb) * 0.4], [Ln - 0.8, hb + 0.8], [Ln, hb * 0.8]);
     else top.push([yG, hb], [Ln - 1.4, hb * 0.97], [Ln, hb * 0.76]);
     const lz = [hb * 0.5, hb * 0.86];
-    return { L: Ln, H: hr, top, lift: hr,
+    // vidrios (chapería.js): dónde están el parabrisas y la luneta en el espacio del vehículo (y desde la trompa, altura), para poner las grietas justo encima
+    const glass = { ws: { y0: yH, y1: yW, z0: hb, z1: hr }, rg: van ? { y0: Ln - 0.8, y1: Ln - 0.8, z0: hb + 1.2, z1: hr - 1 } : { y0: yR, y1: yG, z0: hr, z1: hatch ? hr - (hr - hb) * 0.4 : hb }, hood: { y0: 0.6, y1: yH, z: hb } };
+    return { L: Ln, H: hr, top, lift: hr, glass,
       ins: (y, v) => (v > hb + 0.2 ? 1.5 : v > wt ? 0.8 : 0), tin: (y, v) => (v > hb + 0.3 ? 1.1 : 0.75),
       caps: [{ src: [0.5, 2.2], dst: [0, 2.4], v: lz }, { src: [Ln - 2.7, Ln - 0.6], dst: [Ln - 2.4, Ln], v: lz }],
       side(g, H) {
@@ -7154,6 +7157,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
 
   // ---------- Mbojoaju 125 (underbone tipo Fusion 125) ----------
   MESH.cub = (pal, t = {}) => {
+    const dm = t.dm || {};   // piezas perdidas en choques (chaperia.js): el, er = espejos; g = guardabarros delantero; f = faro roto; i = luces de giro
     const C = pal[0], M = new Mesh(), DK = '#26262a', SEAT = '#1e1e22', CH = '#b0b4bc', ENG = '#4a4e56';
     const rim = VR.RIMS ? VR.RIMS[t.llantas || 'serie'] : '#8a8e96', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
     // ruedas
@@ -7163,7 +7167,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     M.box(0.72, 1.1, 3.9, 4.7, 2.4, 3.7, '#d8302a');
     // guardabarros delantero (arco concéntrico a la rueda)
     const fz = (y) => 3.1 + Math.sqrt(Math.max(0, 4.1 * 4.1 - (y - 3.2) * (y - 3.2)));
-    M.loft(1.1, 5.6, 0.4, (y) => ({ w: pl([[1.1, 0.9], [3.2, 1.7], [5.6, 1.6]], y), zb: fz(y) - 0.5, zt: fz(y) }), C, 10);
+    if (!dm.g) M.loft(1.1, 5.6, 0.4, (y) => ({ w: pl([[1.1, 0.9], [3.2, 1.7], [5.6, 1.6]], y), zb: fz(y) - 0.5, zt: fz(y) }), C, 10);
     // horquilla (dos botellas) y manubrio
     for (const sg of [-1, 1]) M.tube([sg * 1.0, 3.2, 3.1], [sg * 1.0, 6.9, 11.0], 0.24, CH);
     // escudo tipo underbone: pared delantera finita + dos guardapiernas en chapa; el medio queda abierto (el tanque va debajo del asiento)
@@ -7173,7 +7177,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     // cabeza (tapa del manubrio) en cuña, como la Fusion: angosta adelante, con el faro trapezoidal inclinado
     M.loft(6.0, 8.3, 0.3, (y) => ({ w: pl([[6.0, 1.25], [6.9, 1.75], [8.3, 1.9]], y), zb: pl([[6.0, 9.9], [8.3, 10.0]], y), zt: pl([[6.0, 11.3], [7.0, 12.1], [8.3, 11.7]], y) }), C, 14, 2.4);
     const lamp = M.face([[-1.05, 5.97, 11.3], [1.05, 5.97, 11.3], [0.62, 5.97, 10.2], [-0.62, 5.97, 10.2]], '#c9d6e6', [0, 7.1, 10.2]);   // marco plateado del faro
-    lamp.d.push({ p: [[-0.9, 5.95, 11.15], [0.9, 5.95, 11.15], [0.52, 5.95, 10.35], [-0.52, 5.95, 10.35]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.3, 5.93, 10.9], [0.3, 5.93, 10.9], [0.3, 5.93, 10.6], [-0.3, 5.93, 10.6]], c: rgb('#8a7a40') });
+    if (!dm.f) lamp.d.push({ p: [[-0.9, 5.95, 11.15], [0.9, 5.95, 11.15], [0.52, 5.95, 10.35], [-0.52, 5.95, 10.35]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.3, 5.93, 10.9], [0.3, 5.93, 10.9], [0.3, 5.93, 10.6], [-0.3, 5.93, 10.6]], c: rgb('#8a7a40') });
     // cara negra del escudo con las luces de posición en las puntas, como la Fusion
     const cara = M.face([[-1.6, 5.58, 9.3], [1.6, 5.58, 9.3], [1.15, 5.58, 7.4], [-1.15, 5.58, 7.4]], '#14161c', [0, 8, 7]);
     for (const sg of [-1, 1]) cara.d.push({ p: [[sg * 1.5, 5.56, 9.1], [sg * 1.15, 5.56, 8.9], [sg * 1.0, 5.56, 8.2], [sg * 1.3, 5.56, 8.5]], c: rgb('#cfe4ff') });
@@ -7182,7 +7186,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     M.tube([-2.9, 7.9, 11.2], [2.9, 7.9, 11.2], 0.2, DK);
     for (const sg of [-1, 1]) {
       M.tube([sg * 2.3, 7.9, 11.2], [sg * 3.1, 7.9, 11.2], 0.34, '#101012'); M.tube([sg * 2.5, 7.9, 11.3], [sg * 2.9, 8.1, 13.0], 0.1, DK, 4);
-      const mir = M.box(sg > 0 ? 2.5 : -3.4, sg > 0 ? 3.4 : -2.5, 8.0, 8.3, 13.0, 14.3, C); mir[3].d.push({ p: [[sg * 2.65, 8.32, 13.15], [sg * 3.25, 8.32, 13.15], [sg * 3.25, 8.32, 14.15], [sg * 2.65, 8.32, 14.15]].map((q) => q), c: rgb('#1b2230') });
+      const mir = dm['e' + (sg > 0 ? 'r' : 'l')] ? null : M.box(sg > 0 ? 2.5 : -3.4, sg > 0 ? 3.4 : -2.5, 8.0, 8.3, 13.0, 14.3, C); if (mir) mir[3].d.push({ p: [[sg * 2.65, 8.32, 13.15], [sg * 3.25, 8.32, 13.15], [sg * 3.25, 8.32, 14.15], [sg * 2.65, 8.32, 14.15]].map((q) => q), c: rgb('#1b2230') });
     }
     M.box(-1.3, 1.3, 7.9, 8.9, 10.4, 11.3, '#1c1d22')[5].d.push({ p: [[-0.8, 8.1, 11.32], [0.8, 8.1, 11.32], [0.8, 8.7, 11.32], [-0.8, 8.7, 11.32]], c: rgb('#6f93c4') }); // tablero
     // piso, motor, chasis y brazo oscilante
@@ -7213,6 +7217,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
 
   // ---------- Yvytu GT 150 (moto de calle: tanque grande, faro redondo con parabrisas, escape largo) ----------
   MESH.calle = (pal, t = {}) => {
+    const dm = t.dm || {};   // piezas perdidas en choques (chaperia.js): el, er = espejos; g = guardabarros delantero; f = faro roto; i = luces de giro
     const C = pal[0], M = new Mesh(), DK = '#26262a', SEAT = '#1c1c20', CH = '#b0b4bc', BLK = '#15161a', SIL = '#7d828a';
     const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#2c2e34', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
     const FW = 3.1, RW = 17.0, circ = (u, y, z, r, n = 18, plane = 'y') => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push(plane === 'y' ? [u + Math.cos(a) * r, y, z + Math.sin(a) * r] : [u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
@@ -7220,12 +7225,12 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     M.wheel(FW, 3.1, rim, 0.5, wo); M.wheel(RW, 3.1, rim, 0.55, wo);
     M.face(circ(0.62, FW, 3.1, 1.5, 18, 'x'), '#b8bcc6', [0, FW, 3.1]); M.box(0.7, 1.1, FW + 0.7, FW + 1.6, 1.9, 3.2, '#d8302a');   // disco y pinza (derecha)
     const fz = (y) => 3.1 + Math.sqrt(Math.max(0, 3.6 * 3.6 - (y - FW) * (y - FW)));
-    M.loft(1.1, 5.2, 0.35, (y) => ({ w: pl([[1.1, 0.9], [3.1, 1.3], [5.2, 1.2]], y), zb: fz(y) - 0.4, zt: fz(y) }), C, 10);               // guardabarros
+    if (!dm.g) M.loft(1.1, 5.2, 0.35, (y) => ({ w: pl([[1.1, 0.9], [3.1, 1.3], [5.2, 1.2]], y), zb: fz(y) - 0.4, zt: fz(y) }), C, 10);               // guardabarros
     for (const sg of [-1, 1]) { M.tube([sg * 0.95, FW, 3.1], [sg * 0.95, 6.5, 8.8], 0.3, '#a6aab2'); M.tube([sg * 0.95, 4.6, 5.6], [sg * 0.95, 6.5, 8.8], 0.36, '#6a6e76'); } // horquilla
     M.box(-1.1, 1.1, 6.3, 6.9, 8.6, 9.1, BLK);
     M.loft(4.4, 6.3, 0.35, () => ({ w: 1.0, zb: 8.2, zt: 10.2 }), BLK, 16, 2);                                                         // cubeta del faro
     const lamp = M.face(circ(0, 4.38, 9.2, 0.98, 20), '#e8eef8', [0, 5.4, 9.2]);
-    lamp.d.push({ p: circ(0, 4.36, 9.2, 0.76, 20), c: rgb('#2a2e38') }, { p: circ(0, 4.34, 9.2, 0.6, 20), c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: circ(0, 4.32, 9.2, 0.25, 12), c: rgb('#8a7a40') });
+    if (!dm.f) lamp.d.push({ p: circ(0, 4.36, 9.2, 0.76, 20), c: rgb('#2a2e38') }, { p: circ(0, 4.34, 9.2, 0.6, 20), c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: circ(0, 4.32, 9.2, 0.25, 12), c: rgb('#8a7a40') });
     M.prism([[4.6, 10.0], [5.9, 11.7], [6.1, 11.6], [4.8, 9.9]], -1.25, 1.25, '#4a382e');                                              // parabrisas ahumado
     for (const sg of [-1, 1]) M.box(sg > 0 ? 1.2 : -1.75, sg > 0 ? 1.75 : -1.2, 5.0, 5.6, 8.35, 8.65, '#f0a020');                      // luces de giro
     const cl = M.box(-1.35, 1.35, 6.2, 7.3, 9.4, 10.3, '#1c1d22'); for (const sg of [-1, 1]) cl[3].d.push({ p: circ(sg * 0.68, 7.32, 9.85, 0.42, 14), c: rgb('#2a3a5a') }); // dos relojes
@@ -7233,7 +7238,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     for (const sg of [-1, 1]) {
       M.tube([sg * 2.2, 7.6, 10.1], [sg * 2.9, 8.3, 10.6], 0.2, CH, 5); M.tube([sg * 2.3, 8.3, 10.6], [sg * 3.1, 8.4, 10.6], 0.32, '#101012');
       M.tube([sg * 2.6, 8.2, 10.7], [sg * 3.0, 7.9, 12.3], 0.1, DK, 4);
-      const mir = M.box(sg > 0 ? 2.45 : -3.45, sg > 0 ? 3.45 : -2.45, 7.55, 7.85, 12.2, 13.8, '#1a1a1e'); mir[3].d.push({ p: [[sg * 2.6, 7.87, 12.4], [sg * 3.3, 7.87, 12.4], [sg * 3.3, 7.87, 13.6], [sg * 2.6, 7.87, 13.6]], c: rgb('#3a4048') });
+      const mir = dm['e' + (sg > 0 ? 'r' : 'l')] ? null : M.box(sg > 0 ? 2.45 : -3.45, sg > 0 ? 3.45 : -2.45, 7.55, 7.85, 12.2, 13.8, '#1a1a1e'); if (mir) mir[3].d.push({ p: [[sg * 2.6, 7.87, 12.4], [sg * 3.3, 7.87, 12.4], [sg * 3.3, 7.87, 13.6], [sg * 2.6, 7.87, 13.6]], c: rgb('#3a4048') });
     }
     M.loft(7.1, 12.5, 0.4, (y) => ({ w: pl([[7.1, 1.05], [8.5, 1.45], [11, 1.5], [12.5, 1.15]], y), zb: 7.1, zt: pl([[7.1, 9.0], [8.5, 9.55], [11, 9.5], [12.5, 8.7]], y) }), C, 14, 2.6); // tanque grande
     M.loft(12.0, 19.8, 0.5, (y) => { const zt = pl([[12, 8.5], [14.5, 8.1], [17, 8.4], [19.8, 8.9]], y); return { w: pl([[12, 1.0], [14, 1.5], [19.8, 1.95]], y), zb: zt - 1.3, zt }; }, SEAT, 14, 2.6); // asiento
@@ -7255,6 +7260,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
 
   // ---------- Tatu 110 (mini moto de ruedas gordas tipo Bravo 150: tanque cuadrado, faro vertical, parabrisas, parrilla) ----------
   MESH.mini = (pal, t = {}) => {
+    const dm = t.dm || {};   // piezas perdidas en choques (chaperia.js): el, er = espejos; g = guardabarros delantero; f = faro roto; i = luces de giro
     const C = pal[0], M = new Mesh(), BLK = '#26272c', GR = '#5a5d65', CH = '#b0b4bc';
     const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#3a3d44', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
     const FW = 2.2, RW = 14.1, R = 2.2, circ = (u, y, z, r, n = 18, plane = 'y') => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push(plane === 'y' ? [u + Math.cos(a) * r, y, z + Math.sin(a) * r] : [u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
@@ -7262,12 +7268,12 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     M.wheel(FW, R, rim, 0.56, wo); M.wheel(RW, R, rim, 0.58, wo);
     M.face(circ(0.6, FW, R, 1.05, 16, 'x'), '#b8bcc6', [0, FW, R]);                                                             // disco delantero
     const fz = (y) => R + Math.sqrt(Math.max(0, 2.85 * 2.85 - (y - FW) * (y - FW)));
-    M.loft(0.6, 4.4, 0.3, (y) => ({ w: pl([[0.6, 0.8], [2.2, 1.05], [4.4, 1.0]], y), zb: fz(y) - 0.3, zt: fz(y) }), C, 10);           // guardabarros azul
+    if (!dm.g) M.loft(0.6, 4.4, 0.3, (y) => ({ w: pl([[0.6, 0.8], [2.2, 1.05], [4.4, 1.0]], y), zb: fz(y) - 0.3, zt: fz(y) }), C, 10);           // guardabarros azul
     for (const sg of [-1, 1]) { M.tube([sg * 0.95, FW, R], [sg * 0.95, 5.0, 7.7], 0.3, BLK); M.tube([sg * 0.95, 3.2, 4.6], [sg * 0.95, 4.6, 7.0], 0.4, '#2a2b2f', 8); } // horquilla con resortes
     // faro vertical con rejilla, aro negro y luces de giro ámbar
     M.loft(2.9, 4.6, 0.3, () => ({ w: 0.8, zb: 6.8, zt: 8.7 }), C, 12, 2.6);
     const lamp = M.face([[-0.65, 2.87, 8.55], [0.65, 2.87, 8.55], [0.65, 2.87, 6.95], [-0.65, 2.87, 6.95]], '#cfd6e0', [0, 3.8, 7.7]);
-    lamp.d.push({ p: [[-0.5, 2.85, 8.4], [0.5, 2.85, 8.4], [0.5, 2.85, 7.1], [-0.5, 2.85, 7.1]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.5, 2.83, 7.8], [0.5, 2.83, 7.8], [0.5, 2.83, 7.7], [-0.5, 2.83, 7.7]], c: rgb('#5a5d65') });
+    if (!dm.f) lamp.d.push({ p: [[-0.5, 2.85, 8.4], [0.5, 2.85, 8.4], [0.5, 2.85, 7.1], [-0.5, 2.85, 7.1]], c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: [[-0.5, 2.83, 7.8], [0.5, 2.83, 7.8], [0.5, 2.83, 7.7], [-0.5, 2.83, 7.7]], c: rgb('#5a5d65') });
     for (const sg of [-1, 1]) M.box(sg > 0 ? 1.1 : -1.9, sg > 0 ? 1.9 : -1.1, 3.2, 3.8, 7.5, 8.1, '#f0a020');
     M.prism([[3.2, 8.8], [4.6, 11.0], [4.8, 10.9], [3.4, 8.7]], -1.1, 1.1, '#1d1e22');                                             // parabrisas oscuro
     // manubrio negro, puños y espejos
@@ -7275,7 +7281,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     for (const sg of [-1, 1]) {
       M.tube([sg * 1.4, 5.8, 9.5], [sg * 2.7, 6.4, 10.1], 0.2, BLK, 5); M.tube([sg * 2.2, 6.4, 10.1], [sg * 3.0, 6.5, 10.1], 0.3, '#101012');
       M.tube([sg * 2.6, 6.4, 10.2], [sg * 2.9, 6.2, 11.6], 0.1, '#2a2a2e', 4);
-      const mir = M.box(sg > 0 ? 2.35 : -3.35, sg > 0 ? 3.35 : -2.35, 6.1, 6.4, 11.5, 12.9, '#1a1a1e'); mir[3].d.push({ p: [[sg * 2.5, 6.42, 11.7], [sg * 3.2, 6.42, 11.7], [sg * 3.2, 6.42, 12.7], [sg * 2.5, 6.42, 12.7]], c: rgb('#8a929c') });
+      const mir = dm['e' + (sg > 0 ? 'r' : 'l')] ? null : M.box(sg > 0 ? 2.35 : -3.35, sg > 0 ? 3.35 : -2.35, 6.1, 6.4, 11.5, 12.9, '#1a1a1e'); if (mir) mir[3].d.push({ p: [[sg * 2.5, 6.42, 11.7], [sg * 3.2, 6.42, 11.7], [sg * 3.2, 6.42, 12.7], [sg * 2.5, 6.42, 12.7]], c: rgb('#8a929c') });
     }
     // tanque cuadrado, banda gris, asiento plano y parrilla
     M.loft(5.0, 11.4, 0.4, (y) => ({ w: pl([[5.0, 1.2], [6.5, 1.65], [10, 1.7], [11.4, 1.3]], y), zb: pl([[5.0, 6.2], [11.4, 5.3]], y), zt: pl([[5.0, 8.2], [6.5, 8.4], [9, 8.3], [11.4, 7.9]], y) }), C, 14, 3.2);
@@ -7301,6 +7307,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
 
   // ---------- Kárga Guasu 200 (motocarga de tres ruedas tipo Transporter 180: moto adelante, caja con barandas atrás) ----------
   MESH.carga = (pal, t = {}) => {
+    const dm = t.dm || {};
     const C = pal[0], M = new Mesh(), BLK = '#1d1e22', CH = '#b8bcc4', RED = '#c83a3a', BD = VR.shadeHex ? VR.shadeHex(C, 0.78) : C, BD2 = VR.shadeHex ? VR.shadeHex(C, 0.62) : C;
     const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#d4d8de', S2 = VR.tunePal && t.franja && t.franja !== 'no' ? VR.tunePal(t.color2 ?? 11)[0] : null;
     const FW = 2.5, RW = 23.8, R = 2.5, RR = 2.6, circ = (u, y, z, r, n = 18, plane = 'y') => { const o = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832; o.push(plane === 'y' ? [u + Math.cos(a) * r, y, z + Math.sin(a) * r] : [u, y + Math.cos(a) * r, z + Math.sin(a) * r]); } return o; };
@@ -7314,13 +7321,13 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
     for (const sg of [-1, 1]) { M.tube([sg * 1.15, FW, R], [sg * 1.15, 6.2, 8.8], 0.34, '#c8ccd4'); M.tube([sg * 1.15, 3.9, 5.2], [sg * 1.15, 5.5, 7.4], 0.55, RED, 8); }
     M.box(-1.7, 1.7, 5.6, 6.5, 8.5, 9.1, '#202226');
     M.loft(3.9, 5.5, 0.3, () => ({ w: 0.95, zb: 8.3, zt: 10.2 }), '#c8ccd4', 16, 2);
-    const lamp = M.face(circ(0, 3.88, 9.25, 0.95, 20), '#dfe6ee', [0, 4.8, 9.2]); lamp.d.push({ p: circ(0, 3.86, 9.25, 0.72, 20), c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: circ(0, 3.84, 9.25, 0.25, 12), c: rgb('#8a8e96') });
+    const lamp = M.face(circ(0, 3.88, 9.25, 0.95, 20), '#dfe6ee', [0, 4.8, 9.2]); if (!dm.f) lamp.d.push({ p: circ(0, 3.86, 9.25, 0.72, 20), c: rgb(t.faros === 'xenon' ? '#e6f2ff' : '#fff4c0') }, { p: circ(0, 3.84, 9.25, 0.25, 12), c: rgb('#8a8e96') });
     for (const sg of [-1, 1]) M.box(sg > 0 ? 1.2 : -1.8, sg > 0 ? 1.8 : -1.2, 5.0, 5.7, 8.7, 9.2, '#f0a020');
     M.box(-0.95, 0.95, 6.4, 7.6, 9.8, 10.7, '#26272b');                                                                          // relojes
     M.tube([-2.6, 8.7, 10.3], [-1.0, 7.0, 9.9], 0.2, CH, 5); M.tube([-1.0, 7.0, 9.9], [1.0, 7.0, 9.9], 0.2, CH, 5); M.tube([1.0, 7.0, 9.9], [2.6, 8.7, 10.3], 0.2, CH, 5);
     for (const sg of [-1, 1]) {
       M.tube([sg * 2.2, 8.9, 10.4], [sg * 3.2, 9.2, 10.5], 0.32, '#101012'); M.tube([sg * 2.7, 8.9, 10.5], [sg * 3.0, 8.6, 12.8], 0.1, '#2a2a2e', 4);
-      const mir = M.box(sg > 0 ? 2.4 : -3.6, sg > 0 ? 3.6 : -2.4, 8.4, 8.7, 12.7, 14.0, '#1a1a1e'); mir[3].d.push({ p: [[sg * 2.55, 8.72, 12.85], [sg * 3.45, 8.72, 12.85], [sg * 3.45, 8.72, 13.85], [sg * 2.55, 8.72, 13.85]], c: rgb('#6a727c') });
+      const mir = dm['e' + (sg > 0 ? 'r' : 'l')] ? null : M.box(sg > 0 ? 2.4 : -3.6, sg > 0 ? 3.6 : -2.4, 8.4, 8.7, 12.7, 14.0, '#1a1a1e'); if (mir) mir[3].d.push({ p: [[sg * 2.55, 8.72, 12.85], [sg * 3.45, 8.72, 12.85], [sg * 3.45, 8.72, 13.85], [sg * 2.55, 8.72, 13.85]], c: rgb('#6a727c') });
     }
     // tanque, motor, paneles y asiento de la cabina
     M.loft(6.0, 10.8, 0.4, (y) => ({ w: pl([[6.0, 1.0], [7.5, 1.4], [10.8, 1.3]], y), zb: 6.3, zt: pl([[6.0, 8.9], [8, 9.1], [10.8, 8.5]], y) }), C, 14, 2.6);
@@ -7349,6 +7356,7 @@ VR.obbCorners = (A) => [[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([l, w]) => [A.x
   // Bicicleta urbana (13/11/2026): cuadro con tubo superior, horquilla, manubrio con puños, asiento, parrilla, pedales y
   // rueda finita con rayos. 8 unidades ≈ 1 m: rodado ~27", base de ruedas ~1,05 m. `pal[0]` pinta el cuadro.
   MESH.bici = (pal, t = {}) => {
+    const dm = t.dm || {};
     const C = pal[0], dama = !!pal.dama, M = new Mesh(), BLK = '#202126', CH = '#c4c8d0', GR = '#8a8e96';
     const rim = t.llantas && VR.RIMS ? VR.RIMS[t.llantas] : '#c4c8d0';
     const FW = 2.7, RW = 11.2, R = 2.7, BB = [7.4, 1.9], ST = [9.3, 9.0], HT = [3.6, 9.4], HB = [3.9, 7.6];
@@ -10272,7 +10280,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     buy() {
       const n = this.cost(); if (this.closing) return; if (n > VR.Wallet.get()) { this.say('No te alcanza la plata, po. Sacale algo o volvé con más billete.', 'triste', 7); return; }
       VR.Wallet.add(-n, 'Taller: tuneo'); const c = this.car; c.tune = { ...this.t };
-      c.frames = VR.vframes(c.type, c.color, c.model, c.tune); c.spec = VR.tuneSpec(VR.vspec(c.type, c.model), c.tune);
+      c.frames = VR.vframes(c.type, c.color, c.model, c.tune, c.mdm); c.spec = VR.tuneSpec(VR.vspec(c.type, c.model), c.tune);
       this.toast(n ? '🔧 ¡Quedó joya! ' + VR.fmtGs(n) : 'Sin cambios'); this.say(n ? R(['¡Listo! Quedó joya. Son ' + VR.fmtGs(n) + '. Llevalo con cuidado, ¿eh?', '¡Terminé! Ahora sí, que se vea quién manda en Villarrica. Son ' + VR.fmtGs(n) + '.']) : 'Nada que cobrar. Fácil, la tuya.', 'feliz', 3); this.closing = true; setTimeout(() => { this.closing = false; this.close(); }, 1900);
     }
     close() { if (this.d.hidden) return; this.d.hidden = true; document.body.classList.remove('adentro'); VR.input.enabled = true; this._l = 0; }
@@ -13761,7 +13769,38 @@ VR.Cisnes = class {
   // ¿se puede deformar? (no motos, ni el karumbe, ni camiones/colectivos grandes)
   const ok = (c) => c && c.spec && c.type !== 'moto' && !c.spec.noFire && !(c.spec.mass > 2) && !c.wreck;
 
+  // ---------- motos (19/11/2026, pedido de Leandro): con cualquier golpe pierden pedazos que quedan tirados en la calle ----------
+  // espejos (el = izquierdo, er = derecho), faro roto (f), guardabarros delantero (g). La moto se vuelve a dibujar sin esas piezas
+  // (otro juego de cuadros, VR.vframes con `dm`), así se ven bien desde cualquier ángulo.
+  const MOTOS = { cub: 1, calle: 1, mini: 1, carga: 1 };
+  D.refreshMoto = (c) => { c.frames = VR.vframes(c.type, c.color, c.model, c.tune, c.mdm); };
+  D.hitMoto = (c, wx, wy, imp) => {
+    if (!MOTOS[c.model] || c.wreck || imp < 55) return;
+    const m = c.mdm || (c.mdm = { el: 0, er: 0, f: 0, g: 0 });
+    const a = c.a, dx = wx - c.x, dy = wy - c.y, lr = dx * Math.cos(a) + dy * Math.sin(a), lf = dx * Math.sin(a) - dy * Math.cos(a), hl = c.LEN / 2;
+    const front = lf > hl * 0.15, rear = lf < -hl * 0.35, right = lr > 0;
+    let ch = false;
+    const piece = (k, kind, L, W, col, fw, sd) => {   // sale una pieza despedida
+      const sx = Math.sin(a) * fw, sy = -Math.cos(a) * fw, rx = Math.cos(a) * sd, ry = Math.sin(a) * sd, sp = rnd(25, 80);
+      D.debris.push({ k: 'part', x: c.x + sx * hl * 0.6 + rx * 4, y: c.y + sy * hl * 0.6 + ry * 4, vx: (c.vx || 0) * 0.5 + sx * sp * 0.6 + rx * sp * 0.5 + rnd(-20, 20), vy: (c.vy || 0) * 0.5 + sy * sp * 0.6 + ry * sp * 0.5 + rnd(-20, 20),
+        a: rnd(0, 6.28), w: rnd(-9, 9), L, W, col, t: 0, life: 70 });
+      if (D.debris.length > 40) D.debris.shift(); ch = true;
+    };
+    const mir = (k, sd) => { if (m[k]) return; m[k] = 1; piece(k, 'mirror', 3.4, 1.6, '#1a1a1e', front ? 1 : 0.2, sd); };
+    // espejos: el del lado del golpe casi siempre; de frente, los dos
+    if (front) { if (Math.random() < 0.85) mir(right ? 'er' : 'el', right ? 1 : -1); if (Math.random() < 0.55) mir(right ? 'el' : 'er', right ? -1 : 1); }
+    else if (!rear || imp > 90) { if (Math.random() < 0.9) mir(right ? 'er' : 'el', right ? 1 : -1); }
+    if (front && imp > 75 && !m.f) { m.f = 1; D.shards(c, wx, wy, 5); ch = true; }
+    if (front && imp > 100 && !m.g && Math.random() < 0.75) { m.g = 1; piece('g', 'fender', 5.5, 2.6, hex(c), 1, 0); }
+    if (imp > 110) D.shards(c, wx, wy, Math.min(8, 2 + imp / 40));
+    if (ch) {
+      D.refreshMoto(c);
+      if (VR.audio && VR.audio.near) { const v = VR.audio.near(wx, wy) * 0.15; if (v > 0.01) { VR.audio.tone(210, 0.12, { type: 'square', vol: v, f2: 90, lp: 1500 }); VR.audio.noise(0.2, { vol: v, lp: 2200 }); } }
+    }
+  };
+
   D.hit = (c, wx, wy, imp) => {
+    if (c && c.type === 'moto') return D.hitMoto(c, wx, wy, imp);
     if (!ok(c) || imp < 70) return;
     const m = c.dmg || (c.dmg = { f: 0, r: 0, s: 0, fb: 0, rb: 0, hood: 0, ws: 0, rw: 0, cf: 0, cr: 0, cl: 0, cd: 0, sl: 0, sd: 0, dl: 0, dd: 0, seed: Math.random() * 0.9 + 0.05 });
     const a = c.a, dx = wx - c.x, dy = wy - c.y;
@@ -13904,8 +13943,24 @@ VR.Cisnes = class {
     });
     // parabrisas y luneta (el parabrisas queda sobre la cabina, un poco adelante del medio)
     const wsY = -hl * 0.2, rwY = hl * 0.3, gw = c.WID * 0.72, gh = Math.max(3, hl * 0.2);
-    if (m.ws) crack(ctx, 0, wsY, gw, gh, m.ws, seed);
-    if (m.rw) crack(ctx, 0, rwY, gw, gh * 0.8, m.rw, seed + 0.5);
+    const PR = c.frames && c.frames.prof, GG = PR && PR.glass;
+    if (GG && VR.OBL) {   // vidrios en su lugar de verdad: cada punto (a lo largo, altura) se proyecta como lo hace la vista oblicua (gira con el vehículo y sube con la altura)
+      ctx.save(); ctx.rotate(-A); ctx.translate(0, Math.round(LF * 0.55));   // pantalla sin girar, en el centro del vehículo
+      const ca = Math.cos(A), sa = Math.sin(A), kz = VR.OBL.kz, L2 = PR.L / 2, gx = Math.max(3, c.WID / 2 - 2.1);
+      const P = (lx, y, z) => [lx * ca - (y - L2) * sa, lx * sa + (y - L2) * ca - z * kz];
+      const quad = (g, lvl, sd) => {
+        const q = [P(-gx, g.y0, g.z0), P(gx, g.y0, g.z0), P(gx, g.y1, g.z1), P(-gx, g.y1, g.z1)];
+        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const [x, y] of q) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+        ctx.save(); ctx.beginPath(); q.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.clip();
+        crack(ctx, (x0 + x1) / 2, (y0 + y1) / 2, Math.max(2, x1 - x0), Math.max(2, y1 - y0), lvl, sd); ctx.restore();
+      };
+      if (m.ws) quad(GG.ws, m.ws, seed);
+      if (m.rw) quad(GG.rg, m.rw, seed + 0.5);
+      ctx.restore();
+    } else {
+      if (m.ws) crack(ctx, 0, wsY, gw, gh, m.ws, seed);
+      if (m.rw) crack(ctx, 0, rwY, gw, gh * 0.8, m.rw, seed + 0.5);
+    }
     // capó: hundido (arrugas), abierto (se levanta y se ve el motor oscuro) o volado (hueco con motor)
     const hy0 = -hl + 1.2, hh = hl * 0.4;
     if (m.hood === 1) { ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(-hw + 1.5, hy0 + 1, c.WID - 3, hh * 0.5); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(-hw + 2, hy0 + 1, c.WID - 4, 1); }
@@ -13926,7 +13981,7 @@ VR.Cisnes = class {
 
   VR.drawDmg = D.drawOn;
   // reparado en el taller: vuelve todo a la normalidad
-  VR.repairDmg = (c) => { c.dmg = null; c.dents = null; };
+  VR.repairDmg = (c) => { c.dmg = null; c.dents = null; if (c.mdm) { c.mdm = null; D.refreshMoto(c); } };
 })();
 
 // ===== game/caidas.js =====
@@ -17381,6 +17436,7 @@ VR.Titulo = class {
   const cars = parked.cars;
   const escena = prueba ? null : new VR.Escena(world, cars); // accidente del 14/11/2026 (escena.js)
   let car = null; // auto que estás manejando
+  VR.dbg = { cars, get car() { return car; }, get player() { return player; }, get cam() { return cam; }, get traffic() { return traffic; } };   // para pruebas automáticas
   const WALK_BASE = 270, DRIVE_BASE = 420; // Leandro prefirió la cámara de antes (04/11/2026)
   // Zoom del juego (rueda, pellizco con dos dedos, teclas + y −): multiplica la base de cámara; se recuerda.
   let zoomK = 1; try { zoomK = Math.min(1.8, Math.max(0.55, parseFloat(localStorage.getItem('vr_zoom')) || 1)); } catch (e) {}

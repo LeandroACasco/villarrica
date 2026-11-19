@@ -14,7 +14,38 @@
   // ¿se puede deformar? (no motos, ni el karumbe, ni camiones/colectivos grandes)
   const ok = (c) => c && c.spec && c.type !== 'moto' && !c.spec.noFire && !(c.spec.mass > 2) && !c.wreck;
 
+  // ---------- motos (19/11/2026, pedido de Leandro): con cualquier golpe pierden pedazos que quedan tirados en la calle ----------
+  // espejos (el = izquierdo, er = derecho), faro roto (f), guardabarros delantero (g). La moto se vuelve a dibujar sin esas piezas
+  // (otro juego de cuadros, VR.vframes con `dm`), así se ven bien desde cualquier ángulo.
+  const MOTOS = { cub: 1, calle: 1, mini: 1, carga: 1 };
+  D.refreshMoto = (c) => { c.frames = VR.vframes(c.type, c.color, c.model, c.tune, c.mdm); };
+  D.hitMoto = (c, wx, wy, imp) => {
+    if (!MOTOS[c.model] || c.wreck || imp < 55) return;
+    const m = c.mdm || (c.mdm = { el: 0, er: 0, f: 0, g: 0 });
+    const a = c.a, dx = wx - c.x, dy = wy - c.y, lr = dx * Math.cos(a) + dy * Math.sin(a), lf = dx * Math.sin(a) - dy * Math.cos(a), hl = c.LEN / 2;
+    const front = lf > hl * 0.15, rear = lf < -hl * 0.35, right = lr > 0;
+    let ch = false;
+    const piece = (k, kind, L, W, col, fw, sd) => {   // sale una pieza despedida
+      const sx = Math.sin(a) * fw, sy = -Math.cos(a) * fw, rx = Math.cos(a) * sd, ry = Math.sin(a) * sd, sp = rnd(25, 80);
+      D.debris.push({ k: 'part', x: c.x + sx * hl * 0.6 + rx * 4, y: c.y + sy * hl * 0.6 + ry * 4, vx: (c.vx || 0) * 0.5 + sx * sp * 0.6 + rx * sp * 0.5 + rnd(-20, 20), vy: (c.vy || 0) * 0.5 + sy * sp * 0.6 + ry * sp * 0.5 + rnd(-20, 20),
+        a: rnd(0, 6.28), w: rnd(-9, 9), L, W, col, t: 0, life: 70 });
+      if (D.debris.length > 40) D.debris.shift(); ch = true;
+    };
+    const mir = (k, sd) => { if (m[k]) return; m[k] = 1; piece(k, 'mirror', 3.4, 1.6, '#1a1a1e', front ? 1 : 0.2, sd); };
+    // espejos: el del lado del golpe casi siempre; de frente, los dos
+    if (front) { if (Math.random() < 0.85) mir(right ? 'er' : 'el', right ? 1 : -1); if (Math.random() < 0.55) mir(right ? 'el' : 'er', right ? -1 : 1); }
+    else if (!rear || imp > 90) { if (Math.random() < 0.9) mir(right ? 'er' : 'el', right ? 1 : -1); }
+    if (front && imp > 75 && !m.f) { m.f = 1; D.shards(c, wx, wy, 5); ch = true; }
+    if (front && imp > 100 && !m.g && Math.random() < 0.75) { m.g = 1; piece('g', 'fender', 5.5, 2.6, hex(c), 1, 0); }
+    if (imp > 110) D.shards(c, wx, wy, Math.min(8, 2 + imp / 40));
+    if (ch) {
+      D.refreshMoto(c);
+      if (VR.audio && VR.audio.near) { const v = VR.audio.near(wx, wy) * 0.15; if (v > 0.01) { VR.audio.tone(210, 0.12, { type: 'square', vol: v, f2: 90, lp: 1500 }); VR.audio.noise(0.2, { vol: v, lp: 2200 }); } }
+    }
+  };
+
   D.hit = (c, wx, wy, imp) => {
+    if (c && c.type === 'moto') return D.hitMoto(c, wx, wy, imp);
     if (!ok(c) || imp < 70) return;
     const m = c.dmg || (c.dmg = { f: 0, r: 0, s: 0, fb: 0, rb: 0, hood: 0, ws: 0, rw: 0, cf: 0, cr: 0, cl: 0, cd: 0, sl: 0, sd: 0, dl: 0, dd: 0, seed: Math.random() * 0.9 + 0.05 });
     const a = c.a, dx = wx - c.x, dy = wy - c.y;
@@ -157,8 +188,24 @@
     });
     // parabrisas y luneta (el parabrisas queda sobre la cabina, un poco adelante del medio)
     const wsY = -hl * 0.2, rwY = hl * 0.3, gw = c.WID * 0.72, gh = Math.max(3, hl * 0.2);
-    if (m.ws) crack(ctx, 0, wsY, gw, gh, m.ws, seed);
-    if (m.rw) crack(ctx, 0, rwY, gw, gh * 0.8, m.rw, seed + 0.5);
+    const PR = c.frames && c.frames.prof, GG = PR && PR.glass;
+    if (GG && VR.OBL) {   // vidrios en su lugar de verdad: cada punto (a lo largo, altura) se proyecta como lo hace la vista oblicua (gira con el vehículo y sube con la altura)
+      ctx.save(); ctx.rotate(-A); ctx.translate(0, Math.round(LF * 0.55));   // pantalla sin girar, en el centro del vehículo
+      const ca = Math.cos(A), sa = Math.sin(A), kz = VR.OBL.kz, L2 = PR.L / 2, gx = Math.max(3, c.WID / 2 - 2.1);
+      const P = (lx, y, z) => [lx * ca - (y - L2) * sa, lx * sa + (y - L2) * ca - z * kz];
+      const quad = (g, lvl, sd) => {
+        const q = [P(-gx, g.y0, g.z0), P(gx, g.y0, g.z0), P(gx, g.y1, g.z1), P(-gx, g.y1, g.z1)];
+        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const [x, y] of q) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+        ctx.save(); ctx.beginPath(); q.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.clip();
+        crack(ctx, (x0 + x1) / 2, (y0 + y1) / 2, Math.max(2, x1 - x0), Math.max(2, y1 - y0), lvl, sd); ctx.restore();
+      };
+      if (m.ws) quad(GG.ws, m.ws, seed);
+      if (m.rw) quad(GG.rg, m.rw, seed + 0.5);
+      ctx.restore();
+    } else {
+      if (m.ws) crack(ctx, 0, wsY, gw, gh, m.ws, seed);
+      if (m.rw) crack(ctx, 0, rwY, gw, gh * 0.8, m.rw, seed + 0.5);
+    }
     // capó: hundido (arrugas), abierto (se levanta y se ve el motor oscuro) o volado (hueco con motor)
     const hy0 = -hl + 1.2, hh = hl * 0.4;
     if (m.hood === 1) { ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(-hw + 1.5, hy0 + 1, c.WID - 3, hh * 0.5); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(-hw + 2, hy0 + 1, c.WID - 4, 1); }
@@ -179,5 +226,5 @@
 
   VR.drawDmg = D.drawOn;
   // reparado en el taller: vuelve todo a la normalidad
-  VR.repairDmg = (c) => { c.dmg = null; c.dents = null; };
+  VR.repairDmg = (c) => { c.dmg = null; c.dents = null; if (c.mdm) { c.mdm = null; D.refreshMoto(c); } };
 })();

@@ -301,7 +301,7 @@ VR.rotFrames = (base, S, outline = true) => {
   if (OB) S += 2 * OB.extra(base);
   // Cada ángulo se dibuja recién cuando hace falta (y se guarda): antes se armaban los 64 de una vez cada vez
   // que aparecía un vehículo de un color nuevo, y eso trababa el juego (sobre todo en el teléfono).
-  const N = 64, f = { img: new Array(N), shadow: new Array(N), S, lift: OB ? base.prof.lift * OB.kz : 0 };
+  const N = 64, f = { img: new Array(N), shadow: new Array(N), S, lift: OB ? base.prof.lift * OB.kz : 0, prof: OB ? base.prof : null };
   const ss = base.ss || 1, SR = Math.round(S * (VR.RES || 1)); // tamaño en el lienzo (resolución ×2)
   let src = null;
   const makeGen = function* (k) {
@@ -405,10 +405,11 @@ VR.vspec = (() => {
 })();
 VR.vframes = (() => {
   const cache = new Map();
-  return (type, color, model, tune) => {
-    const key = type + ':' + (model || '') + ':' + (tune ? 't' + VR.tuneKey(tune) : color);
+  return (type, color, model, tune, dm) => {   // dm: piezas perdidas de una moto (espejos, guardabarros, faro; ver chaperia.js)
+    const dk = dm ? Object.keys(dm).filter((q) => dm[q]).sort().join('') : '';
+    const key = type + ':' + (model || '') + ':' + (tune ? 't' + VR.tuneKey(tune) : color) + (dk ? ':d' + dk : '');
     let f = cache.get(key);
-    if (!f) { const sp = VR.vspec(type, model); f = VR.rotFrames(sp.base(tune ? VR.tunePal(tune.color) : sp.colors[color % sp.colors.length], tune || {}), sp.S); cache.set(key, f); }
+    if (!f) { const sp = VR.vspec(type, model); f = VR.rotFrames(sp.base(tune ? VR.tunePal(tune.color) : sp.colors[color % sp.colors.length], dk ? Object.assign({}, tune || {}, { dm }) : (tune || {})), sp.S); cache.set(key, f); }
     return f;
   };
 })();
@@ -691,7 +692,7 @@ VR.Car = class {
         const tries = [[this.vx, this.vy, na], [this.vx, this.vy, a0], [tvx, tvy, na], [tvx, tvy, a0]];
         for (const [sx, sy, sa] of tries) { const qx = this.x + sx * h, qy = this.y + sy * h; if (!this.contacts(qx, qy, sa)) { this.x = qx; this.y = qy; this.a = sa; break; } } }
       if (this.driven && impact > 45) this.bounceT = Math.min(0.4, 0.1 + impact / 600);   // tras un golpe fuerte el motor «suelta» un instante: el auto rebota en vez de empujarse contra lo que chocó
-      if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); if (this.driven && this.type === 'moto' && impact > 140 && VR.onEject) VR.onEject(this, impact); else if (this.ai && this.type === 'moto' && impact > 110 && VR.caidas) VR.caidas.motoDown(this, impact); if (impact > 55 && VR.addDent) { VR.addDent(this, mx, my, impact); if (o) VR.addDent(o, mx, my, impact * 0.8); } }
+      if (impact > 50) { this.hit = Math.min(0.35, impact / 300); if (this.driven && VR.input.buzz) VR.input.buzz(Math.min(60, impact / 4)); if (this.onImpact) this.onImpact(impact, o); if (VR.onCarHit) VR.onCarHit(this, impact, o); if (this.driven && this.type === 'moto' && impact > 58 && VR.onEject) VR.onEject(this, impact); else if (this.type === 'moto' && !this.driven && impact > 55 && VR.caidas) { if (this.ai && this.rider) VR.caidas.motoDown(this, impact); else if (!this.rider && !this.fallen && this.spec && !this.spec.noFire && this.model !== 'bici' && this.model !== 'pati') { this.fallen = { t: 0, side: Math.random() < 0.5 ? -1 : 1 }; if (this.ai) this.ai.stun = 1e6; } } if (impact > 55 && VR.addDent) { VR.addDent(this, mx, my, impact); if (o) VR.addDent(o, mx, my, impact * 0.8); } }
       // no se mete en la pared: si el giro solo ya lo traba, no gira; y si quedó pegado, se separa un poco
       if (!this.contacts(this.x, this.y, na)) this.a = na;
       else if (this.contacts(this.x, this.y, this.a)) {
