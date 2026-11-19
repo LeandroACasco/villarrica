@@ -574,3 +574,6 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 
 ### v1.87 — Colegio Don Bosco con diseño propio (19/11/2026)
 `src/world/donbosco.js` (fotos y video de Leandro): iglesia de ladrillo con fachada escalonada (vitral de la paloma, nicho con Don Bosco y un chico, franjas verdes, banderas, campanario verde en `decorTop`), colegio crema con galería de pilares y zócalo bordó, y patio rojo con líneas de cancha, escudo «1950» y dos aros. Converter: decals `donbosco_iglesia/_colegio/_patio` + `iglesia` nodraw para la gente de misa; el patio quita árboles y pone baldosa de patio. Sin probar en el teléfono; falta el interior de la iglesia (fotos: vitrales, ventiladores, bancos).
+
+### v1.88 — Catedral: entrada por el oeste e interior grande (19/11/2026)
+Entrada por el portón de la fachada oeste (atrio de piedra dibujado en `catedral.js`); la puerta de la galería sur sigue funcionando. `VR.Salon` ahora admite `cfg.view = [ancho, alto]`: la sala puede ser más grande que la pantalla y la cámara sigue al jugador. Interior de 480×640: presbiterio con retablo, crucero con altares del Sagrado Corazón y San Roque, 14 filas de bancos, columnas, naves laterales con confesionarios, Virgen, bautisterio, avisos y alcancía, sacristía, cura y sacristán. Sin probar en el teléfono.

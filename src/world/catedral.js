@@ -121,6 +121,10 @@
     for (let i = 0; i < n; i++) { const x = X0 + i * S, t = cols[i][0] * S; if (!d.cols[i - 1] || cols[i - 1][0] > cols[i][0]) R(g, 'rgba(255,255,255,.28)', x, t, 1, 2); }
     R(g, 'rgba(0,0,0,.3)', X0, maxB - 2, n * S, 2);
     g.restore();
+    // atrio de la fachada oeste: escalones de piedra y el portón de madera (se ve desde arriba como una franja oscura entre las gradas)
+    { const c2 = cols[2] || cols[1], ym = ((c2[0] + c2[1]) / 2) * S, ph = 44;
+      for (let k = 0; k < 3; k++) { const w = 5 - k, x = X0 - 3 - (2 - k) * 5 + 0; R(g, k % 2 ? '#cfc8b4' : '#ded7c2', x, ym - ph / 2 - k * 1.5, w + 5, ph + k * 3); R(g, 'rgba(0,0,0,.2)', x, ym - ph / 2 - k * 1.5, 1, ph + k * 3); }
+      R(g, '#5a3a22', X0 - 3, ym - 13, 4, 26); R(g, '#7a5232', X0 - 3, ym - 12, 2, 24); R(g, '#d8b84a', X0 - 2, ym - 1, 1, 2); R(g, 'rgba(255,230,160,.5)', X0 - 8, ym - 16, 3, 32); }
   };
 
   // ---------------------------------------------------------------- Torre con reloj y cúpula + pináculos (con altura)

@@ -10,7 +10,7 @@
       const d = this.el = document.createElement('div'); d.id = 'salonView'; d.hidden = true; d.innerHTML = '<canvas></canvas><div id="svHint"></div><button id="svOut">🚪 Salir</button>'; document.body.append(d);
       this.cv = d.querySelector('canvas'); this.g = this.cv.getContext('2d'); this.hint = d.querySelector('#svHint'); d.querySelector('#svOut').onclick = () => this.salir(); addEventListener('resize', () => this.fit());
     }
-    fit() { const W = this.W, H_ = this.H, u = Math.max(1, Math.min(innerWidth / W, (innerHeight - 52) / H_) * 0.96), dpr = Math.min(2, window.devicePixelRatio || 1); this.u = u; this.s = u * dpr; this.cv.width = Math.round(W * u * dpr); this.cv.height = Math.round(H_ * u * dpr); this.cv.style.width = Math.round(W * u) + 'px'; this.cv.style.height = Math.round(H_ * u) + 'px'; this.bgKey = null; }
+    fit() { const W = this.cfg.view ? this.cfg.view[0] : this.W, H_ = this.cfg.view ? this.cfg.view[1] : this.H, u = Math.max(1, Math.min(innerWidth / W, (innerHeight - 52) / H_) * 0.96), dpr = Math.min(2, window.devicePixelRatio || 1); this.u = u; this.s = u * dpr; this.vw = W; this.vh = H_; this.cv.width = Math.round(W * u * dpr); this.cv.height = Math.round(H_ * u * dpr); this.cv.style.width = Math.round(W * u) + 'px'; this.cv.style.height = Math.round(H_ * u) + 'px'; this.bgKey = null; }   // 19/11/2026: cfg.view = [ancho, alto] visibles; si la sala es más grande, la cámara sigue al jugador
     entrar() {
       if (this.on) return; this.on = true; this.el.hidden = false; document.body.classList.add('adentro'); this.fit(); VR.input.releaseAll(); VR.input.enabled = true; VR.loop.paused = true;
       const st = this.cfg.start; this.px = st.x; this.py = st.y; this.dir = st.dir || 'up'; this.anim = 0; this.moving = false; this.last = performance.now(); if (this.cfg.enter) this.cfg.enter(this); requestAnimationFrame((t) => this.loop(t));
@@ -36,8 +36,9 @@
     }
     draw() {
       const c = this.g, s = this.s, cfg = this.cfg; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, this.cv.width, this.cv.height);
-      const key = s + '|' + (cfg.key ? cfg.key(this) : ''); if (key !== this.bgKey || !this.bg) { this.bgKey = key; const cv = this.bg || (this.bg = document.createElement('canvas')); cv.width = this.cv.width; cv.height = this.cv.height; const g = cv.getContext('2d'); g.setTransform(s, 0, 0, s, 0, 0); g.lineJoin = 'round'; cfg.bg(g, s, this); }
-      c.drawImage(this.bg, 0, 0); c.save(); c.scale(s, s); c.imageSmoothingEnabled = true;
+      const key = s + '|' + (cfg.key ? cfg.key(this) : ''); if (key !== this.bgKey || !this.bg) { this.bgKey = key; const cv = this.bg || (this.bg = document.createElement('canvas')); cv.width = Math.round(this.W * s); cv.height = Math.round(this.H * s); const g = cv.getContext('2d'); g.setTransform(s, 0, 0, s, 0, 0); g.lineJoin = 'round'; cfg.bg(g, s, this); }
+      const cx = Math.max(0, Math.min(this.W - this.vw, this.px - this.vw / 2)), cy = Math.max(0, Math.min(this.H - this.vh, this.py - this.vh * 0.58)); this.camx = cx; this.camy = cy;
+      c.drawImage(this.bg, -cx * s, -cy * s); c.save(); c.scale(s, s); c.translate(-cx, -cy); c.imageSmoothingEnabled = true;
       const items = cfg.items(this); items.push({ sy: this.py, f: (g) => this.drawPlayer(g) }); items.sort((a, b) => a.sy - b.sy).forEach((i) => i.f(c)); if (cfg.over) cfg.over(c, this); c.restore();
       if (this.say) { c.setTransform(1, 0, 0, 1, 0, 0); const kk = s / this.u, w = Math.min(this.cv.width - 20, 520 * kk), x = (this.cv.width - w) / 2, y = 10 * kk; c.font = '700 ' + Math.max(12 * kk, 5.5 * s) + 'px system-ui'; const words = this.say.t.split(' '); let lines = [], ln = ''; for (const wd of words) { if (c.measureText(ln + wd).width > w - 24 * kk) { lines.push(ln); ln = ''; } ln += wd + ' '; } lines.push(ln); const lh = Math.max(15 * kk, 7 * s);
         c.fillStyle = 'rgba(14,16,24,.92)'; c.strokeStyle = '#ffd84a'; c.lineWidth = 2 * kk; c.beginPath(); c.roundRect(x, y, w, lines.length * lh + 14 * kk, 10 * kk); c.fill(); c.stroke(); c.fillStyle = '#fff'; c.textBaseline = 'top'; lines.forEach((l, i) => c.fillText(l, x + 12 * kk, y + 8 * kk + i * lh)); }
