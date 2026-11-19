@@ -25,7 +25,10 @@ VR.Inventario = class {
     this.dlg.addEventListener('close', () => { if (!this._keep) { VR.loop.paused = false; VR.input.enabled = true; } this._keep = false; });
     addEventListener('keydown', (e) => { if (e.code === 'KeyI' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName) && !document.querySelector('dialog[open]') && VR.loop && !VR.loop.paused) this.abrir(); });
   }
-  abrir() { if (this.dlg.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; this.pinta(); this.dlg.showModal(); }
+  // objetos nuevos (todavía no mirados en la mochila): `vida.s.invVisto` guarda lo ya visto; la 1ª vez se marca todo lo que ya tenías
+  nuevos() { const s = this.vida.s, F = this.fichas(); if (!Array.isArray(s.invVisto)) { s.invVisto = F.map((f) => f.k); this.vida.save(); return []; } return F.filter((f) => !s.invVisto.includes(f.k)); }
+  marcaVistos() { const s = this.vida.s, F = this.fichas(); if (!Array.isArray(s.invVisto)) s.invVisto = []; if (F.some((f) => !s.invVisto.includes(f.k))) { s.invVisto = Array.from(new Set(s.invVisto.concat(F.map((f) => f.k)))); this.vida.save(); } }
+  abrir() { if (this.dlg.open) return; this.nv = this.nuevos().map((f) => f.k); this.marcaVistos(); VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; this.pinta(); this.dlg.showModal(); }
   fichas() { const V = this.vida, s = V.s, f = [], eq = (k, ico, n, st, on, bot) => ({ k, ico, n, st, tipo: 'equipo', on, bot });
     if (s.casco) f.push(eq('casco', '🪖', 'Casco de moto', V.cascoPuesto ? 'Puesto' : 'Guardado', V.cascoPuesto, V.cascoPuesto ? 'Sacar' : 'Poner'));
     if (s.canasto) f.push(eq('canasto', '🧺', 'Canasto de chipa', s.stock + ' chipas' + (s.equipo === 'canasto' ? ' · en la mano' : ''), s.equipo === 'canasto', s.equipo === 'canasto' ? 'Guardar' : 'Llevar'));
@@ -36,7 +39,7 @@ VR.Inventario = class {
   pinta() { const $ = this.$, V = this.vida, T = [['todo', '🎒', 'Todo'], ['equipo', '🧍', 'Equipo'], ['comida', '🍽', 'Comida'], ['objeto', '🎁', 'Objetos'], ['clave', '🔑', 'Clave']];
     $('invTabs').innerHTML = T.map(([k, i, n]) => '<button data-t="' + k + '" class="' + (k === this.tab ? 'on' : '') + '"><i>' + i + '</i><span>' + n + '</span></button>').join('');
     const F = this.fichas().filter((f) => this.tab === 'todo' || f.tipo === this.tab);
-    $('invLista').innerHTML = F.length ? F.map((f) => '<div class="pjSlot"><i' + (f.col ? ' style="text-shadow:0 0 0 ' + f.col + ';color:' + f.col + '"' : '') + '>' + f.ico + '</i><div><b>' + f.n + '</b><em>' + f.st + '</em></div>' + (f.bot ? '<button class="cbtn" data-k="' + f.k + '">' + f.bot + '</button>' : '') + '</div>').join('')
+    $('invLista').innerHTML = F.length ? F.map((f) => '<div class="pjSlot' + (this.nv && this.nv.includes(f.k) ? ' nuevo' : '') + '"><i' + (f.col ? ' style="text-shadow:0 0 0 ' + f.col + ';color:' + f.col + '"' : '') + '>' + f.ico + '</i><div><b>' + f.n + (this.nv && this.nv.includes(f.k) ? ' <u class="nvTag">NUEVO</u>' : '') + '</b><em>' + f.st + '</em></div>' + (f.bot ? '<button class="cbtn" data-k="' + f.k + '">' + f.bot + '</button>' : '') + '</div>').join('')
       : '<p class="hint">' + (this.tab === 'comida' ? 'No tenés comida guardada. Lo que comprás en el súper queda acá para comer cuando quieras.' : 'No tenés nada de este tipo todavía.') + '</p>';
     $('invLista').querySelectorAll('[data-k]').forEach((b) => b.onclick = () => { const k = b.dataset.k; if (k === 'casco') this.toggleCasco(); else if (k === 'canasto') this.toggleEq(); else VR.Inv.come(k); this.pinta(); });
     const P = V.s.pieza && V.s.pieza.items ? VR.PIEZA_ITEMS.filter((i) => V.s.pieza.items[i.k]) : [];

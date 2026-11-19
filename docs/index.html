@@ -68,6 +68,7 @@
   .pjCuerpo { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; } .pjVista { text-align: center; } #pjCv { width: 220px; height: 280px; background: radial-gradient(circle at 50% 70%, #3a4f78, #1a2236); border-radius: 14px; image-rendering: pixelated; }
   .pjCtl { display: flex; gap: 6px; justify-content: center; margin-top: 8px; } .pjDer { flex: 1; min-width: 230px; } .pjDer h4 { margin: 10px 0 6px; opacity: .8; }
   .pjEst { display: flex; flex-wrap: wrap; gap: 6px; } .pjEst span { background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; font-size: 13px; } .pjEst .mal { background: #6b2430; }
+  .pjSlot.nuevo { box-shadow: 0 0 0 1.5px #ff3b5c inset; } .nvTag { text-decoration: none; background: #ff3b5c; color: #fff; font: 700 9px system-ui; padding: 1px 5px; border-radius: 6px; margin-left: 4px; vertical-align: middle; }
   .pjSlot { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px; margin-bottom: 6px; } .pjSlot i { font-style: normal; font-size: 24px; } .pjSlot div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; } .pjSlot small { opacity: .6; } .pjSlot em { font-style: normal; opacity: .85; font-size: 12px; }
   #pjMoch { margin-top: 6px; width: 100%; }
   /* retrato del personaje con barras de vida y hambre (estilo GTA), arriba a la izquierda */
@@ -179,6 +180,30 @@
     width: var(--mini, 112px); height: var(--mini, 112px); border-radius: 50%; border: 3px solid #1a1a1e;
     box-shadow: 0 0 0 2px rgba(255,214,94,.85), 0 3px 8px rgba(0,0,0,.5); background: #2b3a22; cursor: pointer; touch-action: none; }
   @media (max-height: 420px) { #mini { --mini: 92px; } }
+  /* dock bajo el minimapa (Historia): celular, mochila y objeto equipado */
+  #dock { position: fixed; right: calc(env(safe-area-inset-right) + 10px); top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px); width: var(--mini, 112px); z-index: 4; display: flex; flex-direction: column; gap: 6px; }
+  #dock[hidden] { display: none; }
+  .dkRow { display: flex; gap: 6px; }
+  .dkB { position: relative; flex: 1; height: 40px; background: rgba(238,232,214,.88); border: 1px solid rgba(255,214,94,.6); border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 20px; touch-action: manipulation; backdrop-filter: blur(4px); }
+  .dkB:active { background: rgba(255,214,94,.95); transform: scale(.96); }
+  #dkInvCv { width: 26px; height: 26px; image-rendering: pixelated; }
+  .dkBdg { position: absolute; top: -7px; right: -5px; min-width: 18px; height: 18px; border-radius: 9px; background: #ff3b5c; color: #fff; font: 700 11px/18px system-ui, sans-serif; text-align: center; padding: 0 4px; box-sizing: border-box; box-shadow: 0 1px 4px rgba(0,0,0,.6), 0 0 0 2px rgba(15,15,18,.8); }
+  .dkBdg[hidden] { display: none; }
+  .dkBdg.pop { animation: dkpop .5s ease-out; }
+  @keyframes dkpop { 0% { transform: scale(.3); } 55% { transform: scale(1.5); } 100% { transform: scale(1); } }
+  #dkEq { position: relative; display: flex; align-items: center; height: 52px; background: rgba(15,15,18,.62); border: 1px solid rgba(255,214,94,.45); border-radius: 12px; touch-action: none; backdrop-filter: blur(4px); overflow: hidden; cursor: pointer; }
+  #dkEq .dkA { flex: 0 0 24px; height: 100%; background: none; border: 0; color: #ffd75e; font: 700 22px/1 system-ui, sans-serif; padding: 0; cursor: pointer; }
+  #dkEq.uno .dkA { opacity: .25; }
+  #dkEq .dkC { flex: 1; min-width: 0; text-align: center; line-height: 1; pointer-events: none; }
+  #dkEq .dkC i { font-style: normal; font-size: 24px; display: block; }
+  #dkEq .dkC small { display: block; margin-top: 3px; font: 700 9.5px system-ui, sans-serif; color: #e8e4da; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #dkEq .dkC.der { animation: dkder .18s ease-out; } #dkEq .dkC.izq { animation: dkizq .18s ease-out; }
+  @keyframes dkder { from { transform: translateX(18px); opacity: .2; } } @keyframes dkizq { from { transform: translateX(-18px); opacity: .2; } }
+  #dkEq .dkP { position: absolute; bottom: 1px; left: 0; right: 0; text-align: center; font: 7px/8px system-ui, sans-serif; color: #ffd75e; letter-spacing: 1px; pointer-events: none; }
+  body.historia #btnInv, body.historia #btnCel { display: none !important; }
+  body.historia #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px + 104px); }
+  body.adentro #dock { visibility: hidden; }
+  @media (max-height: 420px) { #dock { gap: 4px; top: calc(env(safe-area-inset-top) + 56px + var(--mini, 92px) + 6px); } #dkEq { height: 40px; } #dkEq .dkC i { font-size: 19px; } #dkEq .dkC small { font-size: 8.5px; margin-top: 1px; } #dkEq .dkP { display: none; } .dkB { height: 33px; font-size: 17px; } #dkInvCv { width: 22px; height: 22px; } body.historia #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 92px) + 6px + 84px); } }
   #speed { position: fixed; right: calc(env(safe-area-inset-right) + 10px); top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 12px); z-index: 4; width: var(--mini, 112px);
     text-align: center !important;
     font: 900 26px/1 system-ui, sans-serif; color: #ffd75e; text-shadow: 2px 2px 0 #1a1a1e; text-align: right; pointer-events: none; }
@@ -421,7 +446,6 @@
     <button class="tb c" data-b="car"><span class="ico">🚗</span>AUTO</button>
     <button class="tb e" data-b="pedL" hidden><span class="ico">🦶</span>IZQ</button>
     <button class="tb f" data-b="pedR" hidden><span class="ico">🦶</span>DER</button>
-    <button class="tb g" id="btnEq" hidden><span class="ico">🧺</span>CANASTO</button>
     <button class="tb d" data-b="fire" hidden><span class="ico">💥</span>DISPARAR</button>
   </div>
 </div>
@@ -433,6 +457,10 @@
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
 <div id="onHud" hidden></div>
+<div id="dock" hidden>
+  <div class="dkRow"><button class="dkB" id="dkCel" title="Celular (C)"><span>📱</span><b class="dkBdg" id="dkCelB" hidden></b></button><button class="dkB" id="dkInv" title="Mochila (I)"><canvas id="dkInvCv" width="16" height="16"></canvas><b class="dkBdg" id="dkInvB" hidden></b></button></div>
+  <div id="dkEq" title="Objeto equipado (G)"><button class="dkA" data-d="-1" aria-label="Anterior">‹</button><div class="dkC"></div><button class="dkA" data-d="1" aria-label="Siguiente">›</button><div class="dkP"></div></div>
+</div>
 <dialog id="nbDlg"><div class="dlg"><h2>☁ ¿Qué partida conservás?</h2><p id="nbMotivo"></p>
   <p><b>☁ Nube</b><br><span id="nbCloud"></span></p><p><b>📱 Este dispositivo</b><br><span id="nbLocal"></span></p>
   <div class="row"><button class="btn primary" id="nbUsaNube">☁ Usar la de la nube</button><button class="btn" id="nbUsaLocal">📱 Usar la de este dispositivo</button></div>
@@ -491,7 +519,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 301f1877 · 2026-11-19</div>
+  <div class="tVer">Versión 8288e888 · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -606,7 +634,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 301f1877 · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 8288e888 · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -16416,7 +16444,10 @@ VR.Inventario = class {
     this.dlg.addEventListener('close', () => { if (!this._keep) { VR.loop.paused = false; VR.input.enabled = true; } this._keep = false; });
     addEventListener('keydown', (e) => { if (e.code === 'KeyI' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName) && !document.querySelector('dialog[open]') && VR.loop && !VR.loop.paused) this.abrir(); });
   }
-  abrir() { if (this.dlg.open) return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; this.pinta(); this.dlg.showModal(); }
+  // objetos nuevos (todavía no mirados en la mochila): `vida.s.invVisto` guarda lo ya visto; la 1ª vez se marca todo lo que ya tenías
+  nuevos() { const s = this.vida.s, F = this.fichas(); if (!Array.isArray(s.invVisto)) { s.invVisto = F.map((f) => f.k); this.vida.save(); return []; } return F.filter((f) => !s.invVisto.includes(f.k)); }
+  marcaVistos() { const s = this.vida.s, F = this.fichas(); if (!Array.isArray(s.invVisto)) s.invVisto = []; if (F.some((f) => !s.invVisto.includes(f.k))) { s.invVisto = Array.from(new Set(s.invVisto.concat(F.map((f) => f.k)))); this.vida.save(); } }
+  abrir() { if (this.dlg.open) return; this.nv = this.nuevos().map((f) => f.k); this.marcaVistos(); VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; this.pinta(); this.dlg.showModal(); }
   fichas() { const V = this.vida, s = V.s, f = [], eq = (k, ico, n, st, on, bot) => ({ k, ico, n, st, tipo: 'equipo', on, bot });
     if (s.casco) f.push(eq('casco', '🪖', 'Casco de moto', V.cascoPuesto ? 'Puesto' : 'Guardado', V.cascoPuesto, V.cascoPuesto ? 'Sacar' : 'Poner'));
     if (s.canasto) f.push(eq('canasto', '🧺', 'Canasto de chipa', s.stock + ' chipas' + (s.equipo === 'canasto' ? ' · en la mano' : ''), s.equipo === 'canasto', s.equipo === 'canasto' ? 'Guardar' : 'Llevar'));
@@ -16427,12 +16458,39 @@ VR.Inventario = class {
   pinta() { const $ = this.$, V = this.vida, T = [['todo', '🎒', 'Todo'], ['equipo', '🧍', 'Equipo'], ['comida', '🍽', 'Comida'], ['objeto', '🎁', 'Objetos'], ['clave', '🔑', 'Clave']];
     $('invTabs').innerHTML = T.map(([k, i, n]) => '<button data-t="' + k + '" class="' + (k === this.tab ? 'on' : '') + '"><i>' + i + '</i><span>' + n + '</span></button>').join('');
     const F = this.fichas().filter((f) => this.tab === 'todo' || f.tipo === this.tab);
-    $('invLista').innerHTML = F.length ? F.map((f) => '<div class="pjSlot"><i' + (f.col ? ' style="text-shadow:0 0 0 ' + f.col + ';color:' + f.col + '"' : '') + '>' + f.ico + '</i><div><b>' + f.n + '</b><em>' + f.st + '</em></div>' + (f.bot ? '<button class="cbtn" data-k="' + f.k + '">' + f.bot + '</button>' : '') + '</div>').join('')
+    $('invLista').innerHTML = F.length ? F.map((f) => '<div class="pjSlot' + (this.nv && this.nv.includes(f.k) ? ' nuevo' : '') + '"><i' + (f.col ? ' style="text-shadow:0 0 0 ' + f.col + ';color:' + f.col + '"' : '') + '>' + f.ico + '</i><div><b>' + f.n + (this.nv && this.nv.includes(f.k) ? ' <u class="nvTag">NUEVO</u>' : '') + '</b><em>' + f.st + '</em></div>' + (f.bot ? '<button class="cbtn" data-k="' + f.k + '">' + f.bot + '</button>' : '') + '</div>').join('')
       : '<p class="hint">' + (this.tab === 'comida' ? 'No tenés comida guardada. Lo que comprás en el súper queda acá para comer cuando quieras.' : 'No tenés nada de este tipo todavía.') + '</p>';
     $('invLista').querySelectorAll('[data-k]').forEach((b) => b.onclick = () => { const k = b.dataset.k; if (k === 'casco') this.toggleCasco(); else if (k === 'canasto') this.toggleEq(); else VR.Inv.come(k); this.pinta(); });
     const P = V.s.pieza && V.s.pieza.items ? VR.PIEZA_ITEMS.filter((i) => V.s.pieza.items[i.k]) : [];
     $('invPieza').innerHTML = P.length ? '<h4>🏠 En tu pieza</h4>' + P.map((i) => '<span class="pjChip">' + i.ico + ' ' + i.n + '</span>').join('') : '';
     $('invCnt').textContent = VR.Inv.total() + ' cosas guardadas'; }
+};
+
+// ===== game/dock.js =====
+// Dock bajo el minimapa (Historia): 📱 Celular y 🎒 Mochila con globito de novedades + ranura de objeto equipado que rota
+// (tocá, flechas, rueda del mouse, deslizar de costado o tecla G). Sin nada en la mano: la mano abierta 🖐️.
+VR.Dock = class {
+  constructor(o) { Object.assign(this, o); // { $, abrirCel, abrirInv, msgs: () => n, nuevos: () => n, equipables: () => [{k,ico,n}], actual: () => k, equipar: (k) => void, visible: () => bool }
+    const $ = this.$; this.el = $('dock'); this.last = { cel: 0, inv: 0 }; this.ek = null; VR.drawMochilaIcon($('dkInvCv'));
+    $('dkCel').onclick = () => this.abrirCel(); $('dkInv').onclick = () => this.abrirInv();
+    const eq = this.eq = $('dkEq'); let x0 = null, moved = false;
+    eq.querySelectorAll('.dkA').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); this.rota(+b.dataset.d); }));
+    eq.addEventListener('pointerdown', (e) => { if (e.target.closest('.dkA')) return; x0 = e.clientX; moved = false; try { eq.setPointerCapture(e.pointerId); } catch (_) { /* sin captura */ } });
+    eq.addEventListener('pointerup', (e) => { if (x0 === null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 14) this.rota(dx < 0 ? 1 : -1); else this.rota(1); });
+    eq.addEventListener('pointercancel', () => { x0 = null; });
+    eq.addEventListener('wheel', (e) => { e.preventDefault(); e.stopPropagation(); this.rota(e.deltaY > 0 || e.deltaX > 0 ? 1 : -1); }, { passive: false });
+    this.pinta(); setInterval(() => this.pinta(), 400);
+  }
+  lista() { const L = this.equipables(); return L.length ? L : [{ k: 'mano', ico: '🖐️', n: 'Mano libre' }]; }
+  rota(d) { const L = this.lista(); if (L.length < 2) { this.toast && this.toast('🖐️ Solo tenés la mano libre: conseguí algo para llevar'); return; }
+    const a = this.actual(), i = Math.max(0, L.findIndex((q) => q.k === a)), n = L[(i + d + L.length) % L.length]; this.dir = d; this.equipar(n.k); this.pinta(true); }
+  badge(id, n, k) { const b = this.$(id); b.hidden = !n; b.textContent = n > 9 ? '9+' : n; if (n > this.last[k]) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); } this.last[k] = n; }
+  pinta(anim) { const v = this.visible(); this.el.hidden = !v; if (!v) return;
+    this.badge('dkCelB', this.msgs(), 'cel'); this.badge('dkInvB', this.nuevos(), 'inv');
+    const L = this.lista(), a = this.actual() || 'mano', it = L.find((q) => q.k === a) || L[0], key = it.k + '|' + it.n, c = this.eq.querySelector('.dkC');
+    this.eq.classList.toggle('uno', L.length < 2);
+    if (key !== this.ek) { this.ek = key; c.innerHTML = '<i>' + it.ico + '</i><small>' + it.n + '</small>'; c.title = 'Equipado: ' + it.n; if (anim) { c.classList.remove('izq', 'der'); void c.offsetWidth; c.classList.add(this.dir < 0 ? 'izq' : 'der'); } }
+    this.eq.querySelector('.dkP').textContent = L.length > 1 ? L.map((q) => q.k === it.k ? '●' : '○').join(' ') : ''; }
 };
 
 // ===== game/menutabs.js =====
@@ -16713,7 +16771,7 @@ VR.Titulo = class {
     baseCur *= Math.pow(tgt / baseCur, 1 - Math.exp(-11 * dt));
     VR.screen.setLive(baseCur);
   }
-  addEventListener('wheel', (e) => { if (mapOpen || mode !== 'game' || e.target.closest && e.target.closest('#mapView')) return; setZoom(zoomK * Math.exp(-e.deltaY * 0.0012)); }, { passive: true });
+  addEventListener('wheel', (e) => { if (mapOpen || mode !== 'game' || e.target.closest && e.target.closest('#mapView') || e.target.closest('#dock')) return; setZoom(zoomK * Math.exp(-e.deltaY * 0.0012)); }, { passive: true });
   addEventListener('keydown', (e) => {
     if (mapOpen || mode !== 'game') return;
     if (e.code === 'Equal' || e.code === 'NumpadAdd') setZoom(zoomK * 1.2);
@@ -16799,16 +16857,15 @@ VR.Titulo = class {
     return vida.s.herr ? null : '🔧 Para abrir un vehículo estacionado necesitás herramientas';
   }
   // canasto de chipa en la mano (G, o el botón 🧺): con el canasto, ACCIÓN vende al lado de la gente
-  const btnEq = $('btnEq'), btnA = document.querySelector('[data-b="action"]'); let eqTxt = '';
+  const btnA = document.querySelector('[data-b="action"]'); let eqTxt = '';
   function toggleEq() { if (!vida || !vida.s.canasto) return; vida.s.equipo = vida.s.equipo === 'canasto' ? null : 'canasto'; vida.save(); if (!vida.s.equipo && changas.job && changas.job.k === 'chipa') { changas.job = null; changas.hud.hidden = true; } toast(vida.s.equipo ? '🧺 Canasto en la mano · ' + vida.s.stock + ' chipas · ACCIÓN al lado de la gente para vender' : '🧺 Guardaste el canasto'); }
-  btnEq.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleEq(); });
   // casco equipable: tecla H o desde la Mochila del celular
   function toggleCasco() { if (!vida) return; if (vida.ponCasco() && car && car.rider) car.rider = me(); }
   addEventListener('keydown', (e) => { if (e.code === 'KeyH' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleCasco(); });
-  addEventListener('keydown', (e) => { if (e.code === 'KeyG' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleEq(); });
+  addEventListener('keydown', (e) => { if (e.code === 'KeyG' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) { if (VR.dock) VR.dock.rota(1); else toggleEq(); } });
   function syncEq() {
     const eq = vida && vida.s.equipo, t = eq === 'canasto' && !car ? '🥐|VENDER' : '✋|ACCIÓN';
-    player.equipo = car ? null : eq; btnEq.hidden = !(vida && vida.s.canasto) || !!car; btnEq.classList.toggle('down', eq === 'canasto');
+    player.equipo = car ? null : eq;
     if (t !== eqTxt) { eqTxt = t; const [i, n] = t.split('|'); btnA.innerHTML = '<span class="ico">' + i + '</span>' + n; }
   }
   function enterCar(c) {
@@ -17248,6 +17305,10 @@ VR.Titulo = class {
   const inv = vida ? new VR.Inventario({ vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), hayMoto: () => !!(mis && mis.motoK) }) : null;
   const pj = VR.pjHud = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => inv.abrir() }) : null;
   $('btnCel').onclick = () => openCel();
+  // dock bajo el minimapa: novedades del celular y la mochila + objeto equipado (mano libre, canasto...)
+  if (vida) VR.dock = new VR.Dock({ $, toast: (m) => toast(m), abrirCel: () => openCel(), abrirInv: () => inv.abrir(), msgs: () => VR.Buzon.sinLeer(), nuevos: () => inv.nuevos().length,
+    equipables: () => (vida.s.canasto ? [{ k: 'mano', ico: '🖐️', n: 'Mano libre' }, { k: 'canasto', ico: '🧺', n: 'Canasto · ' + vida.s.stock }] : []), actual: () => vida.s.equipo || 'mano',
+    equipar: (k) => { if ((k === 'canasto') !== (vida.s.equipo === 'canasto')) toggleEq(); }, visible: () => !$('mini').hidden && mode === 'game' });
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
   $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else if (celApp.startsWith('msj:')) { celApp = 'msj'; paintCel(); } else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra

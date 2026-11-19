@@ -68,6 +68,7 @@
   .pjCuerpo { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; } .pjVista { text-align: center; } #pjCv { width: 220px; height: 280px; background: radial-gradient(circle at 50% 70%, #3a4f78, #1a2236); border-radius: 14px; image-rendering: pixelated; }
   .pjCtl { display: flex; gap: 6px; justify-content: center; margin-top: 8px; } .pjDer { flex: 1; min-width: 230px; } .pjDer h4 { margin: 10px 0 6px; opacity: .8; }
   .pjEst { display: flex; flex-wrap: wrap; gap: 6px; } .pjEst span { background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px 8px; font-size: 13px; } .pjEst .mal { background: #6b2430; }
+  .pjSlot.nuevo { box-shadow: 0 0 0 1.5px #ff3b5c inset; } .nvTag { text-decoration: none; background: #ff3b5c; color: #fff; font: 700 9px system-ui; padding: 1px 5px; border-radius: 6px; margin-left: 4px; vertical-align: middle; }
   .pjSlot { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px; margin-bottom: 6px; } .pjSlot i { font-style: normal; font-size: 24px; } .pjSlot div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; } .pjSlot small { opacity: .6; } .pjSlot em { font-style: normal; opacity: .85; font-size: 12px; }
   #pjMoch { margin-top: 6px; width: 100%; }
   /* retrato del personaje con barras de vida y hambre (estilo GTA), arriba a la izquierda */
@@ -179,6 +180,30 @@
     width: var(--mini, 112px); height: var(--mini, 112px); border-radius: 50%; border: 3px solid #1a1a1e;
     box-shadow: 0 0 0 2px rgba(255,214,94,.85), 0 3px 8px rgba(0,0,0,.5); background: #2b3a22; cursor: pointer; touch-action: none; }
   @media (max-height: 420px) { #mini { --mini: 92px; } }
+  /* dock bajo el minimapa (Historia): celular, mochila y objeto equipado */
+  #dock { position: fixed; right: calc(env(safe-area-inset-right) + 10px); top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px); width: var(--mini, 112px); z-index: 4; display: flex; flex-direction: column; gap: 6px; }
+  #dock[hidden] { display: none; }
+  .dkRow { display: flex; gap: 6px; }
+  .dkB { position: relative; flex: 1; height: 40px; background: rgba(238,232,214,.88); border: 1px solid rgba(255,214,94,.6); border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 20px; touch-action: manipulation; backdrop-filter: blur(4px); }
+  .dkB:active { background: rgba(255,214,94,.95); transform: scale(.96); }
+  #dkInvCv { width: 26px; height: 26px; image-rendering: pixelated; }
+  .dkBdg { position: absolute; top: -7px; right: -5px; min-width: 18px; height: 18px; border-radius: 9px; background: #ff3b5c; color: #fff; font: 700 11px/18px system-ui, sans-serif; text-align: center; padding: 0 4px; box-sizing: border-box; box-shadow: 0 1px 4px rgba(0,0,0,.6), 0 0 0 2px rgba(15,15,18,.8); }
+  .dkBdg[hidden] { display: none; }
+  .dkBdg.pop { animation: dkpop .5s ease-out; }
+  @keyframes dkpop { 0% { transform: scale(.3); } 55% { transform: scale(1.5); } 100% { transform: scale(1); } }
+  #dkEq { position: relative; display: flex; align-items: center; height: 52px; background: rgba(15,15,18,.62); border: 1px solid rgba(255,214,94,.45); border-radius: 12px; touch-action: none; backdrop-filter: blur(4px); overflow: hidden; cursor: pointer; }
+  #dkEq .dkA { flex: 0 0 24px; height: 100%; background: none; border: 0; color: #ffd75e; font: 700 22px/1 system-ui, sans-serif; padding: 0; cursor: pointer; }
+  #dkEq.uno .dkA { opacity: .25; }
+  #dkEq .dkC { flex: 1; min-width: 0; text-align: center; line-height: 1; pointer-events: none; }
+  #dkEq .dkC i { font-style: normal; font-size: 24px; display: block; }
+  #dkEq .dkC small { display: block; margin-top: 3px; font: 700 9.5px system-ui, sans-serif; color: #e8e4da; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #dkEq .dkC.der { animation: dkder .18s ease-out; } #dkEq .dkC.izq { animation: dkizq .18s ease-out; }
+  @keyframes dkder { from { transform: translateX(18px); opacity: .2; } } @keyframes dkizq { from { transform: translateX(-18px); opacity: .2; } }
+  #dkEq .dkP { position: absolute; bottom: 1px; left: 0; right: 0; text-align: center; font: 7px/8px system-ui, sans-serif; color: #ffd75e; letter-spacing: 1px; pointer-events: none; }
+  body.historia #btnInv, body.historia #btnCel { display: none !important; }
+  body.historia #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px + 104px); }
+  body.adentro #dock { visibility: hidden; }
+  @media (max-height: 420px) { #dock { gap: 4px; top: calc(env(safe-area-inset-top) + 56px + var(--mini, 92px) + 6px); } #dkEq { height: 40px; } #dkEq .dkC i { font-size: 19px; } #dkEq .dkC small { font-size: 8.5px; margin-top: 1px; } #dkEq .dkP { display: none; } .dkB { height: 33px; font-size: 17px; } #dkInvCv { width: 22px; height: 22px; } body.historia #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 92px) + 6px + 84px); } }
   #speed { position: fixed; right: calc(env(safe-area-inset-right) + 10px); top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 12px); z-index: 4; width: var(--mini, 112px);
     text-align: center !important;
     font: 900 26px/1 system-ui, sans-serif; color: #ffd75e; text-shadow: 2px 2px 0 #1a1a1e; text-align: right; pointer-events: none; }
@@ -418,7 +443,6 @@
     <button class="tb c" data-b="car"><span class="ico">🚗</span>AUTO</button>
     <button class="tb e" data-b="pedL" hidden><span class="ico">🦶</span>IZQ</button>
     <button class="tb f" data-b="pedR" hidden><span class="ico">🦶</span>DER</button>
-    <button class="tb g" id="btnEq" hidden><span class="ico">🧺</span>CANASTO</button>
     <button class="tb d" data-b="fire" hidden><span class="ico">💥</span>DISPARAR</button>
   </div>
 </div>
@@ -430,6 +454,10 @@
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
 <div id="onHud" hidden></div>
+<div id="dock" hidden>
+  <div class="dkRow"><button class="dkB" id="dkCel" title="Celular (C)"><span>📱</span><b class="dkBdg" id="dkCelB" hidden></b></button><button class="dkB" id="dkInv" title="Mochila (I)"><canvas id="dkInvCv" width="16" height="16"></canvas><b class="dkBdg" id="dkInvB" hidden></b></button></div>
+  <div id="dkEq" title="Objeto equipado (G)"><button class="dkA" data-d="-1" aria-label="Anterior">‹</button><div class="dkC"></div><button class="dkA" data-d="1" aria-label="Siguiente">›</button><div class="dkP"></div></div>
+</div>
 <dialog id="nbDlg"><div class="dlg"><h2>☁ ¿Qué partida conservás?</h2><p id="nbMotivo"></p>
   <p><b>☁ Nube</b><br><span id="nbCloud"></span></p><p><b>📱 Este dispositivo</b><br><span id="nbLocal"></span></p>
   <div class="row"><button class="btn primary" id="nbUsaNube">☁ Usar la de la nube</button><button class="btn" id="nbUsaLocal">📱 Usar la de este dispositivo</button></div>

@@ -78,7 +78,7 @@
     baseCur *= Math.pow(tgt / baseCur, 1 - Math.exp(-11 * dt));
     VR.screen.setLive(baseCur);
   }
-  addEventListener('wheel', (e) => { if (mapOpen || mode !== 'game' || e.target.closest && e.target.closest('#mapView')) return; setZoom(zoomK * Math.exp(-e.deltaY * 0.0012)); }, { passive: true });
+  addEventListener('wheel', (e) => { if (mapOpen || mode !== 'game' || e.target.closest && e.target.closest('#mapView') || e.target.closest('#dock')) return; setZoom(zoomK * Math.exp(-e.deltaY * 0.0012)); }, { passive: true });
   addEventListener('keydown', (e) => {
     if (mapOpen || mode !== 'game') return;
     if (e.code === 'Equal' || e.code === 'NumpadAdd') setZoom(zoomK * 1.2);
@@ -164,16 +164,15 @@
     return vida.s.herr ? null : '🔧 Para abrir un vehículo estacionado necesitás herramientas';
   }
   // canasto de chipa en la mano (G, o el botón 🧺): con el canasto, ACCIÓN vende al lado de la gente
-  const btnEq = $('btnEq'), btnA = document.querySelector('[data-b="action"]'); let eqTxt = '';
+  const btnA = document.querySelector('[data-b="action"]'); let eqTxt = '';
   function toggleEq() { if (!vida || !vida.s.canasto) return; vida.s.equipo = vida.s.equipo === 'canasto' ? null : 'canasto'; vida.save(); if (!vida.s.equipo && changas.job && changas.job.k === 'chipa') { changas.job = null; changas.hud.hidden = true; } toast(vida.s.equipo ? '🧺 Canasto en la mano · ' + vida.s.stock + ' chipas · ACCIÓN al lado de la gente para vender' : '🧺 Guardaste el canasto'); }
-  btnEq.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleEq(); });
   // casco equipable: tecla H o desde la Mochila del celular
   function toggleCasco() { if (!vida) return; if (vida.ponCasco() && car && car.rider) car.rider = me(); }
   addEventListener('keydown', (e) => { if (e.code === 'KeyH' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleCasco(); });
-  addEventListener('keydown', (e) => { if (e.code === 'KeyG' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleEq(); });
+  addEventListener('keydown', (e) => { if (e.code === 'KeyG' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) { if (VR.dock) VR.dock.rota(1); else toggleEq(); } });
   function syncEq() {
     const eq = vida && vida.s.equipo, t = eq === 'canasto' && !car ? '🥐|VENDER' : '✋|ACCIÓN';
-    player.equipo = car ? null : eq; btnEq.hidden = !(vida && vida.s.canasto) || !!car; btnEq.classList.toggle('down', eq === 'canasto');
+    player.equipo = car ? null : eq;
     if (t !== eqTxt) { eqTxt = t; const [i, n] = t.split('|'); btnA.innerHTML = '<span class="ico">' + i + '</span>' + n; }
   }
   function enterCar(c) {
@@ -613,6 +612,10 @@
   const inv = vida ? new VR.Inventario({ vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), hayMoto: () => !!(mis && mis.motoK) }) : null;
   const pj = VR.pjHud = vida ? new VR.Personaje({ player, vida, $, toggleCasco: () => toggleCasco(), toggleEq: () => toggleEq(), abrirMochila: () => inv.abrir() }) : null;
   $('btnCel').onclick = () => openCel();
+  // dock bajo el minimapa: novedades del celular y la mochila + objeto equipado (mano libre, canasto...)
+  if (vida) VR.dock = new VR.Dock({ $, toast: (m) => toast(m), abrirCel: () => openCel(), abrirInv: () => inv.abrir(), msgs: () => VR.Buzon.sinLeer(), nuevos: () => inv.nuevos().length,
+    equipables: () => (vida.s.canasto ? [{ k: 'mano', ico: '🖐️', n: 'Mano libre' }, { k: 'canasto', ico: '🧺', n: 'Canasto · ' + vida.s.stock }] : []), actual: () => vida.s.equipo || 'mano',
+    equipar: (k) => { if ((k === 'canasto') !== (vida.s.equipo === 'canasto')) toggleEq(); }, visible: () => !$('mini').hidden && mode === 'game' });
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
   $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else if (celApp.startsWith('msj:')) { celApp = 'msj'; paintCel(); } else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
