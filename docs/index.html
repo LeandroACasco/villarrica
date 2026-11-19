@@ -555,7 +555,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 3869b773 · 2026-11-19</div>
+  <div class="tVer">Versión 5d70e08b · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -670,7 +670,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 3869b773 · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 5d70e08b · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -5158,6 +5158,7 @@ VR.Player = class {
     }
   }
   setLook(key) { this.look = key; this.lookData = VR.av2LookOf(key); if (VR.modo === 'historia') this.lookData = Object.assign({}, this.lookData, { mochila: true, packColor: this.lookData.mochila ? this.lookData.packColor : 4 }); // en la Historia siempre llevás mochila
+    if (VR.pjHud && VR.pjHud.icono) VR.pjHud.icono(); // repinta la miniatura del HUD al instante
      this.sprites = this._spB = VR.av2Lazy(this.lookData); this._spC = null; this._cas = false; }
   // casco equipado: se ve también a pie (hoja de sprites aparte, se dibuja al usarla por primera vez)
   setCasco(on) { on = !!on; if (on === !!this._cas) return; this._cas = on; this.sprites = on ? (this._spC || (this._spC = VR.av2Lazy(Object.assign({}, this.lookData, { hat: 'motero', hatColor: 1 })))) : this._spB; }
@@ -16450,7 +16451,8 @@ VR.Personaje = class {
   look() { const L = Object.assign({}, this.player.lookData); if (this.vida.cascoPuesto) { L.hat = 'motero'; L.hatColor = 1; } return L; }
   frame(d, a, i, k) { const L = this.look(), key = JSON.stringify(L) + d + a + i + k; let c = this.cache.get(key);
     if (!c) { c = VR.av2Render(Object.assign({}, VR.AV2_DEFAULT, L), d, a, i / 8, k); this.cache.set(key, c); if (this.cache.size > 300) this.cache.delete(this.cache.keys().next().value); } return c; }
-  barras(hp, ham) { const $ = this.$, v = $('pjHud').querySelector('.vida'), h = $('pjHud').querySelector('.ham');
+  barras(hp, ham) { const sg = JSON.stringify(this.look()); if (sg !== this._sig) { this._sig = sg; this.icono(); } // la miniatura se repinta sola cuando cambia el look (personaje, ropa, casco)
+    const $ = this.$, v = $('pjHud').querySelector('.vida'), h = $('pjHud').querySelector('.ham');
     if (hp !== undefined) { v.firstChild.style.width = Math.max(0, Math.min(100, hp)) + '%'; v.classList.toggle('low', hp < 30); }
     if (ham !== undefined) { h.firstChild.style.width = Math.max(0, Math.min(100, ham)) + '%'; h.classList.toggle('low', ham < 25); } }
   icono() { try { const c = this.ico, g = c.getContext('2d'), im = this.frame('down', 'idle', 0, 4); g.clearRect(0, 0, c.width, c.height); g.imageSmoothingEnabled = false;

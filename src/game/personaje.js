@@ -14,7 +14,8 @@ VR.Personaje = class {
   look() { const L = Object.assign({}, this.player.lookData); if (this.vida.cascoPuesto) { L.hat = 'motero'; L.hatColor = 1; } return L; }
   frame(d, a, i, k) { const L = this.look(), key = JSON.stringify(L) + d + a + i + k; let c = this.cache.get(key);
     if (!c) { c = VR.av2Render(Object.assign({}, VR.AV2_DEFAULT, L), d, a, i / 8, k); this.cache.set(key, c); if (this.cache.size > 300) this.cache.delete(this.cache.keys().next().value); } return c; }
-  barras(hp, ham) { const $ = this.$, v = $('pjHud').querySelector('.vida'), h = $('pjHud').querySelector('.ham');
+  barras(hp, ham) { const sg = JSON.stringify(this.look()); if (sg !== this._sig) { this._sig = sg; this.icono(); } // la miniatura se repinta sola cuando cambia el look (personaje, ropa, casco)
+    const $ = this.$, v = $('pjHud').querySelector('.vida'), h = $('pjHud').querySelector('.ham');
     if (hp !== undefined) { v.firstChild.style.width = Math.max(0, Math.min(100, hp)) + '%'; v.classList.toggle('low', hp < 30); }
     if (ham !== undefined) { h.firstChild.style.width = Math.max(0, Math.min(100, ham)) + '%'; h.classList.toggle('low', ham < 25); } }
   icono() { try { const c = this.ico, g = c.getContext('2d'), im = this.frame('down', 'idle', 0, 4); g.clearRect(0, 0, c.width, c.height); g.imageSmoothingEnabled = false;
