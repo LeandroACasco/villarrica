@@ -486,8 +486,10 @@ VR.MISIONES = {
       { id: 'ramona', obj: 'Hablá con Ña Ramona', hablar: 'ramona', punto: true,
         charla: [['ramona', "¡Mitã! Ko pieza nahániri gratis. Sábado pe che cobráta, ¿oíchepa? Ani reñemokañy."],
           ['yo', 'Sí, Ña Ramona... el sábado le pago.'],
-          ['ramona', "Ha mba'éicha piko repagáta, nde pirapire'ỹ. Eho Centro-pe, oĩ hína tembiapo upépe. Ha ani rejapo tavy."]] },
-      { id: 'centro', obj: 'Andá a pie a la Plaza de los Héroes', ir: 'plaza', r: 120, punto: true },
+          ['ramona', "Ha mba'éicha piko repagáta, nde pirapire'ỹ. Eho Centro-pe, oĩ hína tembiapo upépe. Ha ani rejapo tavy."],
+          ['ramona', "Ah, y llevate mi bici vieja, la que está acá al lado. Está medio fea pero anda. Cuidala, ¿ajépa? Es para ir y volver, no para hacer trompos."]],
+        alTerminar: (M) => { if (M.prestaBici) M.prestaBici(); } },
+      { id: 'centro', obj: 'Andá a la Plaza de los Héroes en la bici de Ña Ramona (ACCIÓN al lado para subirte)', ir: 'plaza', r: 120, punto: true },
       { id: 'chipa', obj: 'Tenés hambre: comprale una chipa a Doña Chela', hablar: 'chela',
         charla: [{ quien: 'chela', txt: "¡Chipa, chipa calentita! ¿Mboýpa reipota, che memby?", op: [
           ['Una chipa (' + VR.fmtGs(5000) + ')', (M) => M.vida.come(VR.PRECIOS.chipa, 15, 'Chipa de Doña Chela') ? [['chela', 'Tomá, piro\'y porã. Ani rejapo pochy, ¿ajépa?']] : false],

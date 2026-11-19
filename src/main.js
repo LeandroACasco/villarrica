@@ -810,6 +810,11 @@
   if (mis) {
     mis.prestaMoto = (r) => { if (mis.motoK) return mis.motoK; const k = r || mis.dondeEsta('kike'); if (!k) return null; const p = r ? { x: r.x, y: r.y } : mis.lug.libre(k.x + 34, k.y + 12), c = new VR.Car(world, p.x, p.y, 0, 4, 'moto', 'cub');
       c.prestada = true; c.mio = true; c.alq = vida.dia; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.motoK = c; if (r) c.a = c.pa = r.a || 0; else toast('🏍 La moto de Kike te espera al lado suyo'); return c; };
+    // bici vieja de Ña Ramona (19/11/2026): para que la primera misión no sea 2 km a pie; es tuya, queda donde la dejes y se guarda
+    mis.prestaBici = (r) => { if (mis.biciR) return mis.biciR; const k = r || mis.dondeEsta('ramona'); if (!k) return null; const p = r ? { x: r.x, y: r.y } : mis.lug.libre(k.x + 30, k.y + 14), c = new VR.Car(world, p.x, p.y, 0, 1, 'moto', 'bici');
+      c.mio = true; world.removeBox(c); c.x = c.px = p.x; c.y = c.py = p.y; cars.push(c); world.addBox(c); mis.biciR = c; if (r) c.a = c.pa = r.a || 0; else toast('🚲 La bici vieja de Ña Ramona te espera al lado suyo'); return c; };
+    { const sb = mis.s.biciR; if (sb) mis.prestaBici(sb);
+      setInterval(() => { const c = mis.biciR; if (!c) return; const o = mis.s.biciR; if (!o || Math.abs(o.x - c.x) > 2 || Math.abs(o.y - c.y) > 2) { mis.s.biciR = { x: Math.round(c.x), y: Math.round(c.y), a: c.a }; mis.save(); } }, 1500); }
     mis.prestaCamion = () => { let c = cars.find((x) => x.firehouse && x.model === 'bomba'); if (!c) { const f = world.firehouse; if (!f) return null; const p = mis.lug.libre(f.x, f.y + 60); c = new VR.Car(world, p.x, p.y, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; cars.push(c); world.addBox(c); } c.mio = true; c.prestada = true; mis.camionK = c; return c; };
     mis.destActual = () => dest; mis.vehiculoMio = () => { const c = (!car && lastCar) || cars.find((x) => x.mio); if (!c) return null; const p = mis.lug.libre(c.x + 22, c.y + 6); return { x: p.x, y: p.y, name: 'tu vehículo' }; };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
