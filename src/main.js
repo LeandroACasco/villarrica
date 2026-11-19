@@ -168,6 +168,7 @@
   function toggleEq() { if (!vida || !vida.s.canasto) return; vida.s.equipo = vida.s.equipo === 'canasto' ? null : 'canasto'; vida.save(); if (!vida.s.equipo && changas.job && changas.job.k === 'chipa') { changas.job = null; changas.hud.hidden = true; } toast(vida.s.equipo ? '🧺 Canasto en la mano · ' + vida.s.stock + ' chipas · ACCIÓN al lado de la gente para vender' : '🧺 Guardaste el canasto'); }
   // casco equipable: tecla H o desde la Mochila del celular
   function toggleCasco() { if (!vida) return; if (vida.ponCasco() && car && car.rider) car.rider = me(); }
+  addEventListener('keydown', (e) => { if (e.code === 'KeyR' && mode === 'game' && vida && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName) && !document.querySelector('dialog[open]')) VR.Radio.sig(); });
   addEventListener('keydown', (e) => { if (e.code === 'KeyH' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) toggleCasco(); });
   addEventListener('keydown', (e) => { if (e.code === 'KeyG' && mode === 'game' && !e.repeat && !/INPUT|TEXTAREA/.test(e.target.tagName)) { if (VR.dock) VR.dock.rota(1); else toggleEq(); } });
   function syncEq() {
@@ -191,6 +192,7 @@
   // vida del jugador (11/11/2026): los golpes de vehículos la bajan, se recupera sola; en 0 te llevan al hospital
   let hp = 100, hpQuiet = 0; const hpEl = $('hpBar');
   function hpShow() { if (VR.pjHud) VR.pjHud.barras(hp); hpEl.hidden = !!vida || hp >= 99.5; hpEl.textContent = '❤ ' + Math.max(0, Math.round(hp)) + '%'; }
+  VR.getHp = () => hp;
   VR.shake = (t, amp) => { VR.shakeT = Math.max(VR.shakeT || 0, t); VR.shakeA = amp; };
   VR.heal = (n) => { hp = Math.min(100, hp + n); hpShow(); };
   function hurtPlayer(dmg) {
@@ -618,7 +620,7 @@
     equipar: (k) => { if ((k === 'canasto') !== (vida.s.equipo === 'canasto')) toggleEq(); }, visible: () => !$('mini').hidden && mode === 'game' });
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
-  $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else if (celApp.startsWith('msj:')) { celApp = 'msj'; paintCel(); } else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
+  $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else if (celApp.startsWith('msj:')) { celApp = 'msj'; paintCel(); } else if (celApp.startsWith('deliv:')) { celApp = 'deliv'; paintCel(); } else if (celApp.startsWith('call:')) { celApp = 'agenda'; paintCel(); } else if (['tateti', 'memoria', 'bloques', 'rebote', 'culebra'].includes(celApp)) { celApp = 'juegos'; paintCel(); } else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
   $('celClose').onclick = () => celDlg.close();
   celDlg.addEventListener('close', () => { unmapCel(); if (celStop) { celStop(); celStop = null; } if (!celDlg._keep) { VR.loop.paused = false; VR.input.enabled = true; } celDlg._keep = false; });
   function openCel(app) { if (!vida || mode !== 'game') return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; celApp = app || 'home'; paintCel(); if (!celDlg.open) celDlg.showModal(); }
@@ -627,6 +629,8 @@
   // devuelve el juego andando; si f solo marca algo (GPS), el juego queda andando. (Antes quedaba todo en pausa: se "colgaba" al marcar la misión.)
   // Si f falla, no se deja el juego congelado: se avisa y se sigue.
   const celGo = (f) => { celDlg._keep = true; celDlg.close(); resume(); try { f(); } catch (e) { console.error(e); toast('⚠ No se pudo hacer eso (' + (e && e.message || e) + ')'); VR.loop.paused = false; VR.input.enabled = true; } };
+  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); } };
+  if (vida) VR.CelX.arrancar(vida, CX);
   function paintCel() {
     const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0; celDlg.classList.toggle('roto', vida.celuRoto());
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
@@ -634,7 +638,8 @@
     if (celApp === 'home') {
       const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['agenda', '📒', 'Contactos', '#7fe08a', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
-        ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
+        ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true],
+        ...VR.CelX.APPS.map(([k, i, n, c, red]) => [k, i, n, c, !red || net])];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
       h = '<h3>🛵 Mbohasa</h3>';
@@ -677,34 +682,38 @@
       const i = +celApp.slice(4), f = VR.Fotos.list()[i];
       h = f ? '<h3>🖼 ' + esc(f.c) + '</h3><img src="' + f.u + '" style="width:100%;border-radius:8px;image-rendering:pixelated"><a class="cbtn" style="text-align:center;text-decoration:none;box-sizing:border-box;background:#3cc87a;color:#06210f" download="villarrica-' + f.t + '.jpg" href="' + f.u + '">⬇ Guardar en el teléfono</a><button class="cbtn sec" data-del="' + i + '">🗑 Borrar</button>' : '<p>No está más.</p>';
     } else if (celApp === 'camara') {
-      h = '<div class="camBox"><canvas id="camVf" width="320" height="180"></canvas><div id="camFl"></div><div id="camTxt"></div><div class="camBt"><button id="camShot" title="Sacar foto (F)"></button><button id="camGal" title="Galería">🖼</button></div></div>';
+      h = '<div class="camBox"><canvas id="camVf" width="320" height="180"></canvas><div id="camFl"></div><div id="camTxt"></div><div class="camBt"><button id="camSelf" title="Selfie" class="sm">🤳</button><button id="camShot" title="Sacar foto (F)"></button><button id="camFil" title="Filtro" class="sm">🎨</button><button id="camGal" title="Galería">🖼</button></div></div>';
     } else if (celApp === 'culebra') {
       h = '';
+    } else if (VR.CelX.has(celApp)) {
+      h = VR.CelX.html(celApp, CX);
     } else if (celApp === 'msj') {
       const B = VR.Buzon, ids = B.chats();
       h = '<h3>💬 Mensajes</h3>' + (ids.length ? ids.map((id) => { const m = B.ultimo(id), n = B.sinLeerDe(id), tx = (m.yo ? 'Vos: ' : '') + m.txt;
         return '<button class="chatRow" data-chat="' + id + '"><i class="chAv">' + B.ico(id) + '</i><span class="chTx"><b>' + esc(B.nombre(id)) + '</b><small>' + esc(tx.length > 44 ? tx.slice(0, 42) + '…' : tx) + '</small></span><span class="chMeta"><small>' + esc(m.hora || '') + '</small>' + (n ? '<b class="bdg2">' + n + '</b>' : '') + '</span></button>'; }).join('') : '<p>Todavía no tenés mensajes. Agendá contactos y te van a escribir.</p>');
     } else if (typeof celApp === 'string' && celApp.startsWith('msj:')) {
       const B = VR.Buzon, id = celApp.slice(4), hilo = B.hilo(id); B.leerDe(id); let dia = null;
-      h = '<h3><span class="chAv sm">' + B.ico(id) + '</span> ' + esc(B.nombre(id)) + '</h3><div class="chat">' + (hilo.length ? hilo.map((m) => { let sep = ''; if (m.dia !== dia) { dia = m.dia; sep = '<div class="chDia">' + (VR.DIAS ? VR.DIAS[(Math.max(1, m.dia) - 1) % 7] + ' · ' : '') + 'día ' + Math.max(1, m.dia) + '</div>'; }
+      h = '<h3><span class="chAv sm">' + B.ico(id) + '</span> ' + esc(B.nombre(id)) + (VR.CONTACTOS[id] ? '<button class="cbtn mini" style="float:right;margin:0" data-call="' + id + '">📞</button>' : '') + '</h3><div class="chat">' + (hilo.length ? hilo.map((m) => { let sep = ''; if (m.dia !== dia) { dia = m.dia; sep = '<div class="chDia">' + (VR.DIAS ? VR.DIAS[(Math.max(1, m.dia) - 1) % 7] + ' · ' : '') + 'día ' + Math.max(1, m.dia) + '</div>'; }
         return sep + '<div class="bub ' + (m.yo ? 'yo' : 'el') + '">' + esc(m.txt) + '<small>' + esc(m.hora || '') + (m.yo ? ' ✓✓' : '') + '</small></div>'; }).join('') : '<p>Escribile algo.</p>') + '</div>' +
         '<div class="chRep">' + B.opciones(id).map((o, k) => '<button class="rep" data-rp="' + k + '">' + esc(o.t) + '</button>').join('') + '</div>';
     } else if (celApp === 'agenda') {
       const B = VR.Buzon, ids = B.contactos();
       h = '<h3>📒 Contactos</h3>' + (ids.length ? ids.map((id) => { const c = VR.CONTACTOS[id];
-        return '<div class="ctc"><i class="chAv">' + c[1] + '</i><span class="chTx"><b>' + esc(c[0]) + '</b><small>' + esc(c[3]) + '</small><small class="num">📞 ' + esc(c[2]) + '</small></span><button class="cbtn mini" data-chat="' + id + '">💬</button></div>'; }).join('') : '<p>Tu agenda está vacía. Los personajes te van a ir pasando su número.</p>');
+        return '<div class="ctc"><i class="chAv">' + c[1] + '</i><span class="chTx"><b>' + esc(c[0]) + '</b><small>' + esc(c[3]) + '</small><small class="num">📞 ' + esc(c[2]) + '</small></span><button class="cbtn mini" data-call="' + id + '">📞</button><button class="cbtn mini" data-chat="' + id + '">💬</button></div>'; }).join('') : '<p>Tu agenda está vacía. Los personajes te van a ir pasando su número.</p>');
     } else if (celApp === 'stats') {
       h = '<h3>📊 Estadísticas</h3>' + VR.Stats.html();
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
     celBody.querySelectorAll('[data-chat]').forEach((b) => b.onclick = () => { celApp = 'msj:' + b.dataset.chat; paintCel(); });
+    celBody.querySelectorAll('[data-call]').forEach((b) => b.onclick = () => { if (!(vida.s.saldo > 0)) { toast('📵 Sin saldo para llamar'); return; } VR.CelX.llamar(b.dataset.call); celApp = 'call:' + b.dataset.call; paintCel(); });
     celBody.querySelectorAll('[data-rp]').forEach((b) => b.onclick = () => { const id = celApp.slice(4), a = VR.Buzon.responder(id, +b.dataset.rp); if (a) celGo(() => VR.Buzon.hacer(a)); else paintCel(); });
     if (typeof celApp === 'string' && celApp.startsWith('msj:')) { const ch = celBody.querySelector('.chat'); celBody.scrollTop = celBody.scrollHeight; if (ch) ch.scrollTop = ch.scrollHeight; }
     celBody.querySelectorAll('[data-ch]').forEach((b) => b.onclick = () => celGo(() => changas.start(b.dataset.ch)));
     if (celApp === 'mis' && mis) paintMis(celBody, true);
     if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
     if (celApp === 'culebra') celStop = VR.Culebra(celBody);
+    if (VR.CelX.has(celApp)) celStop = VR.CelX.init(celApp, celBody, CX);
     if (celApp === 'camara') celStop = camStart();
     if (celApp === 'jaha' && mbh.activo) celStop = mbhLive();
     celBody.querySelectorAll('[data-buy]').forEach((b) => b.onclick = () => { const it = VR.PIEZA_ITEMS.find((q) => q.k === b.dataset.buy); if (!it || !vida.pagaBanco(it.p, 'Mercadito: ' + it.n)) { paintCel(); return; } vida.s.pieza.items = vida.s.pieza.items || {}; vida.s.pieza.items[it.k] = 1; vida.save(); toast('📦 ' + it.n + ': te lo dejan en la pieza'); paintCel(); });
@@ -768,12 +777,14 @@
   // El juego sigue andando detrás pero sin control (para encuadrar distinto, salí del celular, caminá y volvé a abrirla). También en la pieza.
   const camSrc = () => (VR.pieza && VR.pieza.on ? VR.pieza.cv : $('game')), camLugar = () => ((VR.pieza && VR.pieza.on) ? 'Mi pieza' : ($('zone').textContent || 'Villarrica'));
   function camStart() {
-    const vf = $('camVf'), g = vf.getContext('2d'); let raf = 0, alive = true;
+    const vf = $('camVf'), g = vf.getContext('2d'); let raf = 0, alive = true, selfie = false, fil = 0; const FIL = [['Normal', 'none'], ['Sepia', 'sepia(1)'], ['Blanco y negro', 'grayscale(1) contrast(1.1)'], ['Vintage', 'sepia(.5) contrast(1.2) saturate(1.4)'], ['Frío', 'hue-rotate(170deg) saturate(1.2)'], ['Cálido', 'sepia(.35) saturate(1.6) hue-rotate(-12deg)']];
     if (!(VR.pieza && VR.pieza.on)) VR.loop.paused = false; // visor en vivo (el control sigue apagado)
-    const tick = () => { if (!alive) return; const s0 = camSrc(); try { if (vf.width !== s0.width || vf.height !== s0.height) { vf.width = s0.width; vf.height = s0.height; } g.imageSmoothingEnabled = false; g.drawImage(s0, 0, 0); } catch (e) {} const t = $('camTxt'); if (t) t.textContent = '📍 ' + camLugar(); raf = requestAnimationFrame(tick); };
+    const tick = () => { if (!alive) return; const s0 = camSrc(); try { if (vf.width !== s0.width || vf.height !== s0.height) { vf.width = s0.width; vf.height = s0.height; } g.imageSmoothingEnabled = false; g.filter = FIL[fil][1];
+      if (selfie) { const k = 2.4, sw = s0.width / k, sh = s0.height / k; g.drawImage(s0, s0.width / 2 - sw / 2, s0.height / 2 - sh * 0.5, sw, sh, 0, 0, vf.width, vf.height); } else g.drawImage(s0, 0, 0); g.filter = 'none'; } catch (e) {} const t = $('camTxt'); if (t) t.textContent = (selfie ? '🤳 ' : '📍 ') + camLugar() + (fil ? ' · ' + FIL[fil][0] : ''); raf = requestAnimationFrame(tick); };
     tick();
     const shot = () => { const f = $('camFl'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 80);
-      try { VR.Fotos.snap(camSrc(), camLugar() + ' · ' + (vida ? vida.diaSemana + ' ' + vida.hhmm : '')); toast('📸 Foto guardada en la Galería'); } catch (e) { toast('No se pudo sacar la foto'); } };
+      try { VR.Fotos.snap(vf, (selfie ? 'Selfie · ' : '') + camLugar() + ' · ' + (vida ? vida.diaSemana + ' ' + vida.hhmm : '')); toast('📸 Foto guardada en la Galería'); } catch (e) { toast('No se pudo sacar la foto'); } };
+    $('camSelf').onclick = () => { selfie = !selfie; $('camSelf').classList.toggle('on', selfie); }; $('camFil').onclick = () => { fil = (fil + 1) % FIL.length; toast('🎨 Filtro: ' + FIL[fil][0]); };
     $('camShot').onclick = shot; $('camGal').onclick = () => { celApp = 'galeria'; paintCel(); };
     const key = (e) => { if (e.code === 'KeyF' && !e.repeat) { e.preventDefault(); shot(); } };
     addEventListener('keydown', key);
