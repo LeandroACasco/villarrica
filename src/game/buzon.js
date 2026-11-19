@@ -16,13 +16,13 @@ VR.Stats = {
 // Mensajes y agenda del celular (19/11/2026, pedido de Leandro): funciona como un teléfono de hoy. La agenda (📒) tiene los contactos que
 // te van dando su número (Ña Ramona al empezar, Kike después, y así); los mensajes (💬) son charlas por contacto, con burbujas, hora y
 // no leídos; los contactos te escriben con recordatorios cada tanto y vos contestás con 2 o 3 respuestas preestablecidas.
-VR.CONTACTOS = { // id: [nombre, ícono, número (inventado), quién es]
-  ramona: ['Ña Ramona', '🏠', '0971 330 507', 'Alquila tu pieza en Santa Lucía'],
-  kike: ['Kike', '🏍', '0981 245 118', 'Amigo · te lleva en su moto'],
-  chela: ['Doña Chela', '🥐', '0985 612 094', 'Chipa en la plaza'],
-  lucas: ['Lucas (Marimer)', '🍦', '0982 905 661', 'Heladería Marimer'],
-  mirta: ['Mirta (Ao Porã)', '🪖', '0961 480 215', 'Tienda de ropa'],
-  benitez: ['Suboficial Benítez', '🚒', '0991 702 033', 'Bomberos voluntarios'],
+VR.CONTACTOS = { // id: [nombre, ícono, número censurado a propósito: nunca poner números reales de Paraguay, quién es]
+  ramona: ['Ña Ramona', '🏠', '09•• ••• •••', 'Alquila tu pieza en Santa Lucía'],
+  kike: ['Kike', '🏍', '09•• ••• •••', 'Amigo · te lleva en su moto'],
+  chela: ['Doña Chela', '🥐', '09•• ••• •••', 'Chipa en la plaza'],
+  lucas: ['Lucas (Marimer)', '🍦', '09•• ••• •••', 'Heladería Marimer'],
+  mirta: ['Mirta (Ao Porã)', '🪖', '09•• ••• •••', 'Tienda de ropa'],
+  benitez: ['Suboficial Benítez', '🚒', '09•• ••• •••', 'Bomberos voluntarios'],
 };
 VR.Buzon = {
   s: null, ctx: null, onChange: null,
