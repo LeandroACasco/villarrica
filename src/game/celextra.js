@@ -78,7 +78,7 @@ VR.CelX = (() => {
   const cfg = () => (V.s.cel = V.s.cel || { fondo: 'noche', tono: 'cl', fondos: ['noche'], tonos: ['cl'], orden: [] });
   const NOTAS = { cl: [[440, 480]], gu: [[64, 67, 71, 69, 67, 64].map(mf)], cu: [[57, 60, 64, 60].map(mf)], di: [[880, 1175, 880, 1175]], ro: [[82, 98, 82, 123]] };
   function sonarTono(id) { const t = id || cfg().tono, L = NOTAS[t] ? NOTAS[t][0] : NOTAS.cl[0]; L.forEach((f, i) => setTimeout(() => { try { A().tone(f, t === 'cl' ? 0.9 : 0.22, { type: t === 'ro' ? 'sawtooth' : t === 'di' ? 'square' : 'sine', vol: 0.05 }); } catch (e) { /* sin audio */ } }, t === 'cl' ? 0 : i * 240)); }
-  const GAMES = [['culebra', '🐍', 'Culebra', '#9bbc0f'], ['tateti', '❌', 'Ta-te-tí', '#ff8a8a'], ['memoria', '🃏', 'Memoria', '#ffd84a'], ['bloques', '🧱', 'Bloques', '#5ac8fa'], ['rebote', '🏓', 'Rebote', '#7fe08a']];
+  const GAMES = [['culebra', '🐍', 'Culebra', '#9bbc0f'], ['tateti', '❌', 'Ta-te-tí', '#ff8a8a'], ['memoria', '🃏', 'Memoria', '#ffd84a'], ['bloques', '🧱', 'Bloques', '#5ac8fa'], ['rebote', '🏓', 'Rebote', '#7fe08a'], ['dinarun', '🐱', 'Dina Run', '#ff7ab8']];
   let V = null, X0 = null;
 
   // ---------------- Radio: tres emisoras inventadas, música propia sintetizada (guarania, polca y cumbia) ----------------

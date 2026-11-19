@@ -553,7 +553,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión ce4e74ec · 2026-11-19</div>
+  <div class="tVer">Versión f7f317a2 · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -668,7 +668,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión ce4e74ec · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión f7f317a2 · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -16616,7 +16616,7 @@ VR.CelX = (() => {
   const cfg = () => (V.s.cel = V.s.cel || { fondo: 'noche', tono: 'cl', fondos: ['noche'], tonos: ['cl'], orden: [] });
   const NOTAS = { cl: [[440, 480]], gu: [[64, 67, 71, 69, 67, 64].map(mf)], cu: [[57, 60, 64, 60].map(mf)], di: [[880, 1175, 880, 1175]], ro: [[82, 98, 82, 123]] };
   function sonarTono(id) { const t = id || cfg().tono, L = NOTAS[t] ? NOTAS[t][0] : NOTAS.cl[0]; L.forEach((f, i) => setTimeout(() => { try { A().tone(f, t === 'cl' ? 0.9 : 0.22, { type: t === 'ro' ? 'sawtooth' : t === 'di' ? 'square' : 'sine', vol: 0.05 }); } catch (e) { /* sin audio */ } }, t === 'cl' ? 0 : i * 240)); }
-  const GAMES = [['culebra', '🐍', 'Culebra', '#9bbc0f'], ['tateti', '❌', 'Ta-te-tí', '#ff8a8a'], ['memoria', '🃏', 'Memoria', '#ffd84a'], ['bloques', '🧱', 'Bloques', '#5ac8fa'], ['rebote', '🏓', 'Rebote', '#7fe08a']];
+  const GAMES = [['culebra', '🐍', 'Culebra', '#9bbc0f'], ['tateti', '❌', 'Ta-te-tí', '#ff8a8a'], ['memoria', '🃏', 'Memoria', '#ffd84a'], ['bloques', '🧱', 'Bloques', '#5ac8fa'], ['rebote', '🏓', 'Rebote', '#7fe08a'], ['dinarun', '🐱', 'Dina Run', '#ff7ab8']];
   let V = null, X0 = null;
 
   // ---------------- Radio: tres emisoras inventadas, música propia sintetizada (guarania, polca y cumbia) ----------------
@@ -17025,7 +17025,69 @@ VR.Juegos = (() => {
     addEventListener('keydown', kd); addEventListener('keyup', ku); reset(true); raf = requestAnimationFrame(tick);
     return () => { alive = false; cancelAnimationFrame(raf); removeEventListener('keydown', kd); removeEventListener('keyup', ku); };
   }
-  return { tateti, memoria, bloques, rebote };
+  // ---- Dina Run (versión «Java 2006»): mini port del runner de Kiut Studio, con splash, carga, menú con softkeys y pixel art propio (176×208) ----
+  function dinarun(box) {
+    const W = 176, H = 208, GY = 150, ST = 'bold ', MENU = ['Jugar', 'Récords', 'Ayuda', 'Salir'];
+    pad(box, '🐱 Dina Run', '<canvas id="drCv" width="' + W + '" height="' + H + '" style="width:88%;display:block;margin:0 auto;border:3px solid #222;border-radius:12px;background:#000;touch-action:none;image-rendering:pixelated"></canvas><p style="font-size:11px;text-align:center">Tocá / Espacio: saltar (doble salto en el aire) · ⬆⬇ menú · B: atrás</p>');
+    const cv = box.querySelector('#drCv'), g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+    const A = () => VR.audio, snd = (f) => { try { if (A()) A()[f](); } catch (e) { /* sin audio */ } };
+    let st = 'splash', t0 = performance.now(), sel = 0, raf = 0, alive = true, last = performance.now(), sc = 0, bl = 0;
+    let y, vy, sj, spd, dist, sp, ob, fr, fresas, inv, dina, msg, msgT, hit2, nuevoRec;
+    const rc = (x, yy, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(yy), w, h); };
+    const tx = (s2, x, yy, sz, col, al, out) => { g.font = ST + sz + 'px monospace'; g.textAlign = al || 'left'; g.textBaseline = 'top'; if (out) { g.fillStyle = out; for (const [a, b] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) g.fillText(s2, x + a, yy + b); } g.fillStyle = col; g.fillText(s2, x, yy); };
+    const reset = () => { y = GY; vy = 0; sj = 0; spd = 85; dist = 0; sp = 120; ob = []; fr = []; fresas = 0; inv = 0; dina = { on: false, t: 0 }; msg = ''; msgT = 0; nuevoRec = false; };
+    const noche = () => Math.floor(dist / 8 / 250) % 2 === 1;
+    // ---- dibujos ----
+    function nube(x, yy) { rc(x, yy + 4, 28, 8, '#fff'); rc(x + 5, yy, 14, 8, '#fff'); rc(x + 16, yy + 2, 10, 8, '#fff'); }
+    function fondo(t, n) { const q = g.createLinearGradient(0, 0, 0, GY); q.addColorStop(0, n ? '#1a1040' : '#ff9fcf'); q.addColorStop(1, n ? '#5a2a7a' : '#fff0f8'); g.fillStyle = q; g.fillRect(0, 0, W, GY);
+      if (n) { for (let i = 0; i < 18; i++) rc((i * 47 + 13) % W, (i * 31) % 80, 1, 1, '#fff'); g.fillStyle = '#ffe9a8'; g.beginPath(); g.arc(138, 30, 12, 0, 7); g.fill(); g.fillStyle = '#5a2a7a'; g.beginPath(); g.arc(143, 27, 11, 0, 7); g.fill(); }
+      else for (let i = 0; i < 3; i++) nube(((i * 90 - t * 6) % (W + 60) + W + 60) % (W + 60) - 30, 22 + i * 24);
+      rc(0, GY, W, H - GY, n ? '#2a6a4a' : '#7ad07a'); rc(0, GY, W, 3, n ? '#3a8a5a' : '#9ae89a'); for (let i = 0; i < 12; i++) rc(((i * 29 - t * 40) % W + W) % W, GY + 14 + (i % 3) * 12, 8, 2, n ? '#1f5a3a' : '#5ab85a'); }
+    function chica(x, by, run, fl) { if (fl && Math.floor(performance.now() / 70) % 2) return; const f = run ? Math.floor(performance.now() / 110) % 2 : 0, t = by - 22;
+      rc(x + 1, t, 9, 3, '#5a3418'); rc(x, t + 2, 3, 8, '#5a3418'); rc(x + 8, t + 2, 3, 6, '#5a3418'); rc(x + 2, t + 3, 7, 6, '#f6c8a0'); rc(x + 3, t + 5, 1, 2, '#222'); rc(x + 7, t + 5, 1, 2, '#222');
+      rc(x + 1, t + 9, 9, 7, '#ff5a9a'); rc(x + 3, t + 16, 2, 4 - (f ? 1 : 0), '#f6c8a0'); rc(x + 7, t + 16, 2, 3 + (f ? 1 : 0), '#f6c8a0'); rc(x + 2, by - 3 - (f ? 1 : 0), 3, 3, '#fff'); rc(x + 7, by - 3 - (f ? 0 : 1), 3, 3, '#fff'); }
+    function gata(x, by, f) { const c = '#f09a3a'; rc(x, by - 9, 18, 8, c); rc(x + 14, by - 15, 9, 9, c); rc(x + 14, by - 18, 3, 4, c); rc(x + 20, by - 18, 3, 4, c); rc(x + 17, by - 12, 2, 2, '#222'); rc(x + 21, by - 12, 2, 2, '#222'); rc(x + 19, by - 9, 2, 1, '#ff7a8a'); rc(x - 4, by - 12 + (f ? 2 : 0), 5, 3, c); rc(x + 2, by - 2 + (f ? 1 : 0), 3, 2, '#c87820'); rc(x + 11, by - 2 + (f ? 0 : 1), 3, 2, '#c87820'); rc(x + 4, by - 9, 2, 8, '#c87820'); rc(x + 9, by - 9, 2, 8, '#c87820'); }
+    function torta(x, h) { for (let k = 0; k < h / 12; k++) { const by = GY - k * 12; rc(x, by - 9, 12, 9, '#f4d8a0'); rc(x, by - 12, 12, 4, '#fff'); rc(x + 1, by - 12, 4, 2, '#ff8fb8'); rc(x, by - 2, 12, 2, '#c8884a'); if (k === h / 12 - 1) rc(x + 5, by - 16, 2, 4, '#d82a3a'); } }
+    function fresa(x, yy) { rc(x + 1, yy + 2, 6, 6, '#e8303a'); rc(x + 2, yy + 8, 4, 1, '#e8303a'); rc(x + 2, yy, 4, 2, '#3aa83a'); rc(x + 3, yy + 4, 1, 1, '#ffe6a0'); rc(x + 5, yy + 5, 1, 1, '#ffe6a0'); }
+    function marco(l, r) { rc(0, H - 16, W, 16, '#1a1a22'); rc(0, H - 17, W, 1, '#5a5a6a'); tx(l, 4, H - 13, 9, '#9fe0ff', 'left'); tx(r, W - 4, H - 13, 9, '#9fe0ff', 'right'); }
+    // ---- lógica ----
+    const spawn = () => { const m = dist / 8, r = Math.random(), x = W + 12; if (r < 0.15 && m > 120) ob.push({ x, w: 12, h: 24 }); else if (r < 0.4) { ob.push({ x, w: 12, h: 12 }); ob.push({ x: x + 14, w: 12, h: 12 }); } else ob.push({ x, w: 12, h: 12 });
+      const gap = spd * (0.75 + Math.random() * 0.5) + 36; sp = gap; if (Math.random() < 0.8) { const cx = x + gap / 2 - 10, by = GY - 26 - Math.random() * 26; for (let i = 0; i < 3; i++) fr.push({ x: cx + i * 12, y: by - (i === 1 ? 5 : 0) }); } };
+    const salta = () => { if (st !== 'juego') return; if (y >= GY) { vy = -300; sj = 1; snd('blip'); } else if (sj < 2) { vy = -270; sj = 2; snd('blip'); } };
+    const fin = () => { st = 'fin'; const m = Math.floor(dist / 8); nuevoRec = m > (best('dina') || 0); best('dina', m); best('dinaf', fresas); snd('coin'); };
+    const choque = () => { if (inv > 0) return; if (dina.on) { try { A().tone(120, 0.3, { type: 'sawtooth', vol: 0.06 }); } catch (e) { /* sin audio */ } fin(); return; } dina.on = true; dina.t = 0; spd = Math.max(70, spd * 0.55); inv = 1.4; msg = '¡Tropezaste! Dina viene…'; msgT = 2; try { A().tone(160, 0.2, { type: 'square', vol: 0.05 }); } catch (e) { /* sin audio */ } };
+    const step = (dt) => { if (st !== 'juego') return; dist += spd * dt; spd = Math.min(210, spd + (spd < 130 ? 7 : 2.4) * dt); vy += 900 * dt; y += vy * dt; if (y >= GY) { y = GY; vy = 0; sj = 0; }
+      for (const o of ob) o.x -= spd * dt; for (const f of fr) f.x -= spd * dt; ob = ob.filter((o) => o.x > -30); fr = fr.filter((f) => f.x > -12); sp -= spd * dt; if (sp <= 0) spawn();
+      inv = Math.max(0, inv - dt); msgT = Math.max(0, msgT - dt); if (dina.on) { dina.t += dt; if (dina.t > 6) { dina.on = false; msg = 'Dina se cansó'; msgT = 1.5; } }
+      for (const o of ob) if (32 + 9 > o.x + 2 && 33 < o.x + o.w - 2 && y > GY - o.h + 3) { choque(); break; }
+      fr = fr.filter((f) => { if (f.x < 43 && f.x + 8 > 31 && f.y + 8 > y - 22 && f.y < y) { fresas++; snd('coin'); return false; } return true; }); if (st === 'juego') { /* ok */ } };
+    // ---- pantallas ----
+    const dibuja = (now) => { const e = (now - t0) / 1000, n = st === 'juego' || st === 'pausa' || st === 'fin' ? noche() : false; g.globalAlpha = 1; g.textAlign = 'left';
+      if (st === 'splash') { g.fillStyle = '#000'; g.fillRect(0, 0, W, H); const a = Math.min(1, e / 0.5, Math.max(0, (2.3 - e) / 0.5)); g.globalAlpha = Math.max(0, a); gata(76, 96, 0); tx('KIUT', W / 2, 108, 22, '#fff', 'center'); tx('STUDIO', W / 2, 132, 12, '#ff7ab8', 'center'); tx('presenta', W / 2, 150, 9, '#9a9aaa', 'center'); g.globalAlpha = 1; if (e > 2.4) { st = 'carga'; t0 = now; } return; }
+      if (st === 'carga') { g.fillStyle = '#10101a'; g.fillRect(0, 0, W, H); tx('Cargando...', W / 2, 90, 12, '#fff', 'center'); rc(28, 112, 120, 10, '#444'); rc(30, 114, Math.min(116, e / 1.4 * 116), 6, '#ff7ab8'); tx('© 2026 Kiut Studio', W / 2, 176, 9, '#888', 'center'); tx('Hecho en Villarrica', W / 2, 188, 9, '#888', 'center'); if (e > 1.6) { st = 'titulo'; t0 = now; } return; }
+      fondo(e, n);
+      if (st === 'titulo') { tx('DINA', W / 2, 24, 30, '#ff3a8a', 'center', '#fff'); tx('RUN', W / 2, 54, 30, '#ff3a8a', 'center', '#fff'); gata(30 + (e * 40) % 120, GY - 4, Math.floor(e * 6) % 2); chica(22 + (e * 40) % 120 + 40, GY - 4, true, false); if (Math.floor(e * 2) % 2) tx('Presioná OK', W / 2, 100, 11, '#fff', 'center', '#222'); tx('v1.0 · Java 2006', W / 2, 188 - 20, 8, '#444', 'center'); marco('', 'Menú'); return; }
+      if (st === 'menu') { tx('MENÚ', W / 2, 20, 16, '#fff', 'center', '#d82a7a'); MENU.forEach((m, i) => { rc(30, 56 + i * 24, 116, 20, i === sel ? '#ff3a8a' : 'rgba(0,0,0,.35)'); tx(m, W / 2, 60 + i * 24, 12, '#fff', 'center'); }); marco('Elegir', 'Atrás'); return; }
+      if (st === 'records') { tx('RÉCORDS', W / 2, 20, 16, '#fff', 'center', '#d82a7a'); tx('Distancia', W / 2, 62, 11, '#222', 'center'); tx((best('dina') || 0) + ' m', W / 2, 78, 18, '#d82a7a', 'center'); tx('Frutillas (partida)', W / 2, 106, 11, '#222', 'center'); tx(String(best('dinaf') || 0), W / 2, 122, 18, '#d82a7a', 'center'); marco('', 'Atrás'); return; }
+      if (st === 'ayuda') { tx('AYUDA', W / 2, 14, 16, '#fff', 'center', '#d82a7a'); ['Tocá la pantalla o', 'apretá Espacio para', 'saltar. En el aire', 'saltá de nuevo: doble', 'salto.', '', 'Esquivá las tortas y', 'juntá frutillas.', 'Si chocás, Dina te', 'corre. Si chocás de', 'nuevo, perdés.'].forEach((l, i) => tx(l, W / 2, 44 + i * 12, 10, '#222', 'center')); marco('', 'Atrás'); return; }
+      // juego / pausa / fin
+      for (const o of ob) torta(o.x, o.h); for (const f of fr) fresa(f.x, f.y); if (dina.on) { const ax = Math.min(26, -20 + dina.t * 30 * (dina.t < 5.4 ? 1 : -1)); gata(dina.t > 5.4 ? 26 - (dina.t - 5.4) * 60 : ax, GY, Math.floor(now / 90) % 2); }
+      chica(32, y, y >= GY && st === 'juego', inv > 0); const m = Math.floor(dist / 8); rc(0, 0, W, 14, 'rgba(0,0,0,.35)'); fresa(3, 3); tx('x' + fresas, 14, 3, 9, '#fff', 'left'); tx(m + ' m', W - 4, 3, 9, '#fff', 'right'); if (dina.on) tx('DINA!', W / 2, 3, 9, '#ffd84a', 'center'); if (msgT > 0) tx(msg, W / 2, 40, 10, '#fff', 'center', '#222');
+      if (st === 'pausa') { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, 0, W, H - 16); tx('PAUSA', W / 2, 80, 20, '#fff', 'center'); marco('Seguir', 'Menú'); }
+      else if (st === 'fin') { g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(0, 0, W, H - 16); tx('¡TE ALCANZÓ', W / 2, 50, 14, '#ffd84a', 'center'); tx('DINA!', W / 2, 66, 14, '#ffd84a', 'center'); tx(m + ' m · ' + fresas + ' fr.', W / 2, 96, 12, '#fff', 'center'); tx(nuevoRec ? '¡NUEVO RÉCORD!' : 'Récord: ' + (best('dina') || 0) + ' m', W / 2, 116, 11, nuevoRec ? '#7fe08a' : '#ccc', 'center'); marco('Reintentar', 'Menú'); }
+      else marco('Pausa', ''); };
+    // ---- entradas ----
+    const ok = () => { if (st === 'titulo') { st = 'menu'; sel = 0; } else if (st === 'menu') { const m = MENU[sel]; if (m === 'Jugar') { reset(); st = 'juego'; } else if (m === 'Récords') st = 'records'; else if (m === 'Ayuda') st = 'ayuda'; else { st = 'splash'; t0 = performance.now(); } } else if (st === 'juego') salta(); else if (st === 'pausa') st = 'juego'; else if (st === 'fin') { reset(); st = 'juego'; } };
+    const atras = () => { if (st === 'menu' || st === 'titulo') st = 'titulo'; else if (st === 'records' || st === 'ayuda' || st === 'pausa' || st === 'fin') st = 'menu'; else if (st === 'juego') st = 'pausa'; };
+    cv.addEventListener('pointerdown', (e) => { const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, yy = (e.clientY - r.top) / r.height * H;
+      if (yy > H - 16) { if (x < W / 2) { if (st === 'juego') st = 'pausa'; else ok(); } else atras(); return; }
+      if (st === 'menu') { const i = Math.floor((yy - 56) / 24); if (i >= 0 && i < MENU.length) { sel = i; ok(); } return; } if (st === 'splash' || st === 'carga') return; ok(); e.preventDefault(); });
+    const kd = (e) => { if (/INPUT|TEXTAREA/.test(e.target.tagName)) return; if (e.code === 'Space' || e.code === 'Enter' || (e.code === 'ArrowUp' && st !== 'menu')) ok(); else if (e.code === 'ArrowUp' && st === 'menu') sel = (sel + MENU.length - 1) % MENU.length; else if (e.code === 'ArrowDown' && st === 'menu') sel = (sel + 1) % MENU.length; else if (e.code === 'Backspace' || e.code === 'KeyB') atras(); else return; e.preventDefault(); };
+    addEventListener('keydown', kd); reset();
+    const tick = (t) => { if (!alive) return; const dt = Math.min(0.04, (t - last) / 1000); last = t; step(dt); dibuja(t); raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick);
+    return () => { alive = false; cancelAnimationFrame(raf); removeEventListener('keydown', kd); };
+  }
+  return { tateti, memoria, bloques, rebote, dinarun };
 })();
 
 // ===== game/menutabs.js =====
