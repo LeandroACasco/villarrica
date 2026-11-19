@@ -498,7 +498,7 @@
     if (emer) { const w = $('wanted'), L = emer.level, key = L + ':' + (emer.lost > 0.5 ? 1 : 0);
       if (w._k !== key) { w._k = key; w.hidden = !L; w.innerHTML = '<b>' + '★'.repeat(L) + '</b>' + '☆'.repeat(5 - L); w.classList.toggle('lost', emer.lost > 0.5); } }
     if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
-      if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
+      if (wb._k !== key) { wb._k = key; wb.hidden = true; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
     { const bt = cisnes.riding; for (const b of ['pedL', 'pedR']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden === bt) el.hidden = !bt; }
       for (const b of ['action', 'run']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden !== bt) el.hidden = bt; } }
@@ -618,6 +618,13 @@
   if (vida) VR.dock = new VR.Dock({ $, toast: (m) => toast(m), abrirCel: () => openCel(), abrirInv: () => inv.abrir(), msgs: () => VR.Buzon.sinLeer(), nuevos: () => inv.nuevos().length,
     equipables: () => (vida.s.canasto ? [{ k: 'mano', ico: '🖐️', n: 'Mano libre' }, { k: 'canasto', ico: '🧺', n: 'Canasto · ' + vida.s.stock }] : []), actual: () => vida.s.equipo || 'mano',
     equipar: (k) => { if ((k === 'canasto') !== (vida.s.equipo === 'canasto')) toggleEq(); }, visible: () => !$('mini').hidden && mode === 'game' });
+  else if (weapons) { // modo Libre: la misma ranura, con las armas (la mano libre las guarda); sin celular ni mochila
+    $('dock').classList.add('libre');
+    const syncArm = () => { try { $('optArmas').checked = weapons.enabled; $('segArma').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === weapons.cur)); } catch (e) { /* menú aún sin armar */ } };
+    VR.dock = new VR.Dock({ $, toast: (m) => toast(m), abrirCel: () => {}, abrirInv: () => {}, msgs: () => 0, nuevos: () => 0,
+      equipables: () => [{ k: 'mano', ico: '🖐️', n: 'Mano libre' }].concat(VR.WEAPON_ORDER.map((k) => ({ k, ico: VR.WEAPONS[k].ico, n: VR.WEAPONS[k].name }))), actual: () => (weapons.enabled ? weapons.cur : 'mano'),
+      equipar: (k) => { if (k === 'mano') weapons.setEnabled(false); else { weapons.select(k); weapons.setEnabled(true); } syncArm(); }, visible: () => !$('mini').hidden && mode === 'game' });
+  }
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
   $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else if (celApp.startsWith('msj:')) { celApp = 'msj'; paintCel(); } else if (celApp.startsWith('deliv:')) { celApp = 'deliv'; paintCel(); } else if (celApp.startsWith('call:')) { celApp = 'agenda'; paintCel(); } else if (['tateti', 'memoria', 'bloques', 'rebote', 'culebra'].includes(celApp)) { celApp = 'juegos'; paintCel(); } else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
@@ -629,7 +636,7 @@
   // devuelve el juego andando; si f solo marca algo (GPS), el juego queda andando. (Antes quedaba todo en pausa: se "colgaba" al marcar la misión.)
   // Si f falla, no se deja el juego congelado: se avisa y se sigue.
   const celGo = (f) => { celDlg._keep = true; celDlg.close(); resume(); try { f(); } catch (e) { console.error(e); toast('⚠ No se pudo hacer eso (' + (e && e.message || e) + ')'); VR.loop.paused = false; VR.input.enabled = true; } };
-  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); } };
+  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); }, cel: (a) => openCel(a) };
   if (vida) VR.CelX.arrancar(vida, CX);
   function paintCel() {
     const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0; celDlg.classList.toggle('roto', vida.celuRoto());

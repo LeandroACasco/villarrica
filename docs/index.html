@@ -223,6 +223,11 @@
   body.historia #btnInv, body.historia #btnCel { display: none !important; }
   body.historia #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px + 104px); }
   body.adentro #dock { visibility: hidden; }
+  #dock.libre .dkRow { display: none; } body:not(.historia) #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px + 58px); }
+  .inOv { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 65; display: flex; align-items: center; gap: 12px; background: #1b2130; border: 2px solid #6fe08a; border-radius: 40px; padding: 8px 10px 8px 12px; color: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.6); animation: inpu 1s ease-in-out infinite; min-width: 250px; }
+  .inOv .chAv { width: 44px; height: 44px; font-size: 24px; } .inOv > div { flex: 1; display: flex; flex-direction: column; } .inOv b { font: 800 15px system-ui; } .inOv span { font-size: 12px; color: #9fe0a0; }
+  .inOv button { width: 44px; height: 44px; border: 0; border-radius: 50%; font-size: 20px; cursor: pointer; } .inOv .no { background: #ff4a5a; } .inOv .si { background: #3cc87a; }
+  @keyframes inpu { 50% { box-shadow: 0 8px 30px rgba(0,0,0,.6), 0 0 0 8px rgba(111,224,138,.2); } }
   @media (max-height: 420px) { #dock { gap: 4px; top: calc(env(safe-area-inset-top) + 56px + var(--mini, 92px) + 6px); } #dkEq { height: 40px; } #dkEq .dkC i { font-size: 19px; } #dkEq .dkC small { font-size: 8.5px; margin-top: 1px; } #dkEq .dkP { display: none; } .dkB { height: 33px; font-size: 17px; } #dkInvCv { width: 22px; height: 22px; } body.historia #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 92px) + 6px + 84px); } }
   #speed { position: fixed; right: calc(env(safe-area-inset-right) + 10px); top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 12px); z-index: 4; width: var(--mini, 112px);
     text-align: center !important;
@@ -539,7 +544,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 4f702f4f · 2026-11-19</div>
+  <div class="tVer">Versión 59f70a14 · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -654,7 +659,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 4f702f4f · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 59f70a14 · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -9168,13 +9173,13 @@ VR.Weapons = class {
     player.holding = !!(this.enabled && !car);
     this.t += dt; if (this.cool > 0) this.cool -= dt; if (this.flash > 0) this.flash -= dt;
     let flaming = false;
+    if (this.libre && !car && input.pressed('weapon')) { if (VR.dock) VR.dock.rota(1); else if (this.enabled) this.next(); } // Q / LB: rota la ranura de equipado (mano libre, pistola, lanzallamas)
     if (this.enabled && !car) {
-      if (input.pressed('weapon')) this.next();
       const W = this.weapon;
       if (this.cur === 'pistola' && input.down('fire') && this.cool <= 0) { this.aim = this.aimAngle(player, input); this.shoot(player); this.cool = W.cool; }
       if (this.cur === 'lanzallamas' && input.down('fire')) { this.aim = this.aimAngle(player, input); flaming = true; this.flame(dt, player); }
       if (input.down('fire')) { player.dir = Math.abs(Math.sin(this.aim)) > Math.abs(Math.cos(this.aim)) ? (Math.sin(this.aim) > 0 ? 'right' : 'left') : (Math.cos(this.aim) > 0 ? 'up' : 'down'); }
-    } else if (input.pressed('weapon') && !this.enabled && !car && this.libre) this.toast('Las armas están apagadas (Menú → Desarrollador)');
+    }
     if (flaming !== this.flaming) { this.flaming = flaming; VR.audio.flame(flaming); }
     this.updateShots(dt);
   }
@@ -16165,7 +16170,8 @@ VR.Buzon = {
   hora() { const v = this.vida(); return v ? v.hhmm : ''; },
   add(de, txt, vida, tag, quiet) { const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
     s.msgs.unshift({ de, txt, dia: v ? v.dia : 0, hora: v ? v.hhmm : '', leido: false, tag: tag || null }); if (s.msgs.length > 200) s.msgs.length = 200; this.save();
-    if (!quiet && VR.toast) VR.toast('💬 ' + p[0] + ': ' + (txt.length > 70 ? txt.slice(0, 68) + '…' : txt)); if (VR.audio && VR.audio.beep) VR.audio.beep(); if (this.onChange) this.onChange(de); },
+    const llama = !quiet && tag && VR.CelX && VR.CelX.entrante ? VR.CelX.entrante(de, txt, 0.55) : false; // los recordatorios a veces llegan como llamada (celextra.js)
+    if (!quiet && !llama && VR.toast) VR.toast('💬 ' + p[0] + ': ' + (txt.length > 70 ? txt.slice(0, 68) + '…' : txt)); if (VR.audio && VR.audio.beep) VR.audio.beep(); if (this.onChange) this.onChange(de); },
   sinLeer() { return this.load().msgs.filter((m) => !m.leido && !m.yo).length; },
   sinLeerDe(id) { return this.load().msgs.filter((m) => !m.leido && !m.yo && m.de === id).length; },
   leerTodo() { const s = this.load(); let c = false; for (const m of s.msgs) if (!m.leido) { m.leido = true; c = true; } if (c) this.save(); },
@@ -16621,8 +16627,19 @@ VR.CelX = (() => {
       VR.store.set('climaSem', JSON.stringify({ t: Date.now(), d: SEM })); }).catch(() => { SEM = false; }).finally(() => { semLoad = false; if (X.app() === 'clima') X.paint(); });
   }
   // ---------------- llamadas ----------------
-  let call = null, rt = []; const HOLA = { kike: '¡Ey, hermano! ¿Qué necesitás?', ramona: 'Hola, hijo. ¿Todo bien con la pieza?', chela: 'Mba’éichapa, ¿querés chipa?', lucas: 'Marimer, buenas. ¿Qué le sirvo?', mirta: 'Ao Porã, buenas. ¿En qué le ayudo?', benitez: 'Bomberos voluntarios, dígame.' };
+  let call = null, rt = [], inc = null; const HOLA = { kike: '¡Ey, hermano! ¿Qué necesitás?', ramona: 'Hola, hijo. ¿Todo bien con la pieza?', chela: 'Mba’éichapa, ¿querés chipa?', lucas: 'Marimer, buenas. ¿Qué le sirvo?', mirta: 'Ao Porã, buenas. ¿En qué le ayudo?', benitez: 'Bomberos voluntarios, dígame.' };
 
+  // llamada entrante (19/11/2026): un contacto con un recordatorio a veces llama en vez de escribir. Suena 14 s; si no atendés queda la llamada perdida
+  // y el mensaje sin leer. Al atender se abre el celular en la llamada y su primera frase es el mismo mensaje. Solo con saldo y con el juego andando.
+  function entrante(id, txt, prob) {
+    const c = VR.CONTACTOS[id]; if (!c || !V || inc || call || !(V.s.saldo > 0) || (prob !== undefined && Math.random() > prob)) return false;
+    if (VR.loop.paused || document.querySelector('dialog[open]') || (VR.Dialogo && VR.Dialogo.abierto)) return false;
+    const ov = document.createElement('div'); ov.className = 'inOv'; ov.innerHTML = '<i class="chAv">' + c[1] + '</i><div><b>' + X0.esc(c[0]) + '</b><span>📞 te está llamando…</span></div><button class="no" data-no title="Rechazar">📵</button><button class="si" data-si title="Atender">📞</button>'; document.body.append(ov);
+    const ring = () => { A().tone(440, 0.9, { type: 'sine', vol: 0.05 }); A().tone(480, 0.9, { type: 'sine', vol: 0.05 }); try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) { /* sin vibración */ } };
+    const fin = () => { clearInterval(iv); clearTimeout(to); ov.remove(); inc = null; }; ring(); const iv = setInterval(ring, 2200), to = setTimeout(() => { fin(); X0.toast('📵 Llamada perdida de ' + c[0]); }, 14000);
+    ov.querySelector('[data-no]').onclick = fin; ov.querySelector('[data-si]').onclick = () => { fin(); X0.B.leerDe(id); call = { id, st: 'on', yo: '', resp: '', hola: txt }; A().blip(); X0.cel('call:' + id); };
+    inc = { fin }; return true;
+  }
   const has = (k) => typeof k === 'string' && (APPS.some((a) => a[0] === k) || k === 'juegos' || k.startsWith('call:') || k.startsWith('deliv:') || GAMES.some((g) => g[0] === k && k !== 'culebra'));
   const bar = (v, c) => '<div class="sBar"><i style="width:' + Math.max(0, Math.min(100, v)) + '%;background:' + c + '"></i></div>';
 
@@ -16667,7 +16684,7 @@ VR.CelX = (() => {
     } else if (k.startsWith('call:')) {
       const id = k.slice(5), B = X.B, c = VR.CONTACTOS[id]; if (!c) return '<p>No existe ese contacto.</p>';
       h = '<div class="callBox"><i class="chAv big">' + c[1] + '</i><b>' + esc(c[0]) + '</b><span>' + (call && call.st === 'on' ? '📞 En llamada' : call && call.st === 'fin' ? 'Llamada terminada' : '📞 Llamando…') + '</span>';
-      if (call && call.st === 'on') { h += '<div class="bub el">' + esc(HOLA[id] || 'Hola, ¿qué tal?') + '</div>' + (call.resp ? '<div class="bub yo">' + esc(call.yo) + '</div><div class="bub el">' + esc(call.resp) + '</div>' : '');
+      if (call && call.st === 'on') { h += '<div class="bub el">' + esc(call.hola || HOLA[id] || 'Hola, ¿qué tal?') + '</div>' + (call.resp ? '<div class="bub yo">' + esc(call.yo) + '</div><div class="bub el">' + esc(call.resp) + '</div>' : '');
         if (!call.yo) h += '<div class="chRep">' + B.opciones(id).map((o, q) => '<button class="rep" data-cr="' + q + '">' + esc(o.t) + '</button>').join('') + '</div>'; }
       h += '<button class="cbtn hang" data-hang>' + (call && call.st === 'fin' ? '⬅ Volver' : '📵 Colgar') + '</button></div>';
     }
@@ -16704,7 +16721,7 @@ VR.CelX = (() => {
     }
     return null;
   }
-  return { APPS, GAMES, has, html, init, Radio, llamar: (id) => { call = { id, st: 'ring', yo: '', resp: '' }; },
+  return { APPS, GAMES, has, html, init, Radio, llamar: (id) => { call = { id, st: 'ring', yo: '', resp: '' }; }, entrante,
     arrancar(vida, X) { V = vida; X0 = X; last = Math.floor(V.s.min);
       setInterval(() => { const cur = Math.floor(V.s.min); if (cur !== last) { for (let t = Math.max(last + 1, cur - 180); t <= cur; t++) { const L = alarmas(), a = L.find((q) => q.on && q.m === t % 1440); if (a) { if (a.tmp) L.splice(L.indexOf(a), 1); V.save(); suena(a); break; } } last = cur; } entregas(); }, 400); } };
 })();
@@ -17487,7 +17504,7 @@ VR.Titulo = class {
     if (emer) { const w = $('wanted'), L = emer.level, key = L + ':' + (emer.lost > 0.5 ? 1 : 0);
       if (w._k !== key) { w._k = key; w.hidden = !L; w.innerHTML = '<b>' + '★'.repeat(L) + '</b>' + '☆'.repeat(5 - L); w.classList.toggle('lost', emer.lost > 0.5); } }
     if (weapons) { const wb = $('weapon'), show = weapons.enabled && !car, key = show + weapons.cur + VR.input.source;
-      if (wb._k !== key) { wb._k = key; wb.hidden = !show; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
+      if (wb._k !== key) { wb._k = key; wb.hidden = true; $('btns').querySelector('[data-b="fire"]').hidden = !show; const W = weapons.weapon; wb.innerHTML = W.ico + ' ' + W.name + '<small>' + (VR.input.source === 'touch' ? 'tocá para cambiar' : VR.input.source === 'pad' ? 'LB cambia' : 'Q cambia') + '</small>'; } }
     const spd = $('speed');
     { const bt = cisnes.riding; for (const b of ['pedL', 'pedR']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden === bt) el.hidden = !bt; }
       for (const b of ['action', 'run']) { const el = $('btns').querySelector('[data-b="' + b + '"]'); if (el.hidden !== bt) el.hidden = bt; } }
@@ -17607,6 +17624,13 @@ VR.Titulo = class {
   if (vida) VR.dock = new VR.Dock({ $, toast: (m) => toast(m), abrirCel: () => openCel(), abrirInv: () => inv.abrir(), msgs: () => VR.Buzon.sinLeer(), nuevos: () => inv.nuevos().length,
     equipables: () => (vida.s.canasto ? [{ k: 'mano', ico: '🖐️', n: 'Mano libre' }, { k: 'canasto', ico: '🧺', n: 'Canasto · ' + vida.s.stock }] : []), actual: () => vida.s.equipo || 'mano',
     equipar: (k) => { if ((k === 'canasto') !== (vida.s.equipo === 'canasto')) toggleEq(); }, visible: () => !$('mini').hidden && mode === 'game' });
+  else if (weapons) { // modo Libre: la misma ranura, con las armas (la mano libre las guarda); sin celular ni mochila
+    $('dock').classList.add('libre');
+    const syncArm = () => { try { $('optArmas').checked = weapons.enabled; $('segArma').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === weapons.cur)); } catch (e) { /* menú aún sin armar */ } };
+    VR.dock = new VR.Dock({ $, toast: (m) => toast(m), abrirCel: () => {}, abrirInv: () => {}, msgs: () => 0, nuevos: () => 0,
+      equipables: () => [{ k: 'mano', ico: '🖐️', n: 'Mano libre' }].concat(VR.WEAPON_ORDER.map((k) => ({ k, ico: VR.WEAPONS[k].ico, n: VR.WEAPONS[k].name }))), actual: () => (weapons.enabled ? weapons.cur : 'mano'),
+      equipar: (k) => { if (k === 'mano') weapons.setEnabled(false); else { weapons.select(k); weapons.setEnabled(true); } syncArm(); }, visible: () => !$('mini').hidden && mode === 'game' });
+  }
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
   $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else if (celApp.startsWith('msj:')) { celApp = 'msj'; paintCel(); } else if (celApp.startsWith('deliv:')) { celApp = 'deliv'; paintCel(); } else if (celApp.startsWith('call:')) { celApp = 'agenda'; paintCel(); } else if (['tateti', 'memoria', 'bloques', 'rebote', 'culebra'].includes(celApp)) { celApp = 'juegos'; paintCel(); } else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
@@ -17618,7 +17642,7 @@ VR.Titulo = class {
   // devuelve el juego andando; si f solo marca algo (GPS), el juego queda andando. (Antes quedaba todo en pausa: se "colgaba" al marcar la misión.)
   // Si f falla, no se deja el juego congelado: se avisa y se sigue.
   const celGo = (f) => { celDlg._keep = true; celDlg.close(); resume(); try { f(); } catch (e) { console.error(e); toast('⚠ No se pudo hacer eso (' + (e && e.message || e) + ')'); VR.loop.paused = false; VR.input.enabled = true; } };
-  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); } };
+  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); }, cel: (a) => openCel(a) };
   if (vida) VR.CelX.arrancar(vida, CX);
   function paintCel() {
     const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0; celDlg.classList.toggle('roto', vida.celuRoto());

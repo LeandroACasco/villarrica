@@ -43,13 +43,13 @@ VR.Weapons = class {
     player.holding = !!(this.enabled && !car);
     this.t += dt; if (this.cool > 0) this.cool -= dt; if (this.flash > 0) this.flash -= dt;
     let flaming = false;
+    if (this.libre && !car && input.pressed('weapon')) { if (VR.dock) VR.dock.rota(1); else if (this.enabled) this.next(); } // Q / LB: rota la ranura de equipado (mano libre, pistola, lanzallamas)
     if (this.enabled && !car) {
-      if (input.pressed('weapon')) this.next();
       const W = this.weapon;
       if (this.cur === 'pistola' && input.down('fire') && this.cool <= 0) { this.aim = this.aimAngle(player, input); this.shoot(player); this.cool = W.cool; }
       if (this.cur === 'lanzallamas' && input.down('fire')) { this.aim = this.aimAngle(player, input); flaming = true; this.flame(dt, player); }
       if (input.down('fire')) { player.dir = Math.abs(Math.sin(this.aim)) > Math.abs(Math.cos(this.aim)) ? (Math.sin(this.aim) > 0 ? 'right' : 'left') : (Math.cos(this.aim) > 0 ? 'up' : 'down'); }
-    } else if (input.pressed('weapon') && !this.enabled && !car && this.libre) this.toast('Las armas están apagadas (Menú → Desarrollador)');
+    }
     if (flaming !== this.flaming) { this.flaming = flaming; VR.audio.flame(flaming); }
     this.updateShots(dt);
   }

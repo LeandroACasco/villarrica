@@ -41,7 +41,8 @@ VR.Buzon = {
   hora() { const v = this.vida(); return v ? v.hhmm : ''; },
   add(de, txt, vida, tag, quiet) { const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
     s.msgs.unshift({ de, txt, dia: v ? v.dia : 0, hora: v ? v.hhmm : '', leido: false, tag: tag || null }); if (s.msgs.length > 200) s.msgs.length = 200; this.save();
-    if (!quiet && VR.toast) VR.toast('💬 ' + p[0] + ': ' + (txt.length > 70 ? txt.slice(0, 68) + '…' : txt)); if (VR.audio && VR.audio.beep) VR.audio.beep(); if (this.onChange) this.onChange(de); },
+    const llama = !quiet && tag && VR.CelX && VR.CelX.entrante ? VR.CelX.entrante(de, txt, 0.55) : false; // los recordatorios a veces llegan como llamada (celextra.js)
+    if (!quiet && !llama && VR.toast) VR.toast('💬 ' + p[0] + ': ' + (txt.length > 70 ? txt.slice(0, 68) + '…' : txt)); if (VR.audio && VR.audio.beep) VR.audio.beep(); if (this.onChange) this.onChange(de); },
   sinLeer() { return this.load().msgs.filter((m) => !m.leido && !m.yo).length; },
   sinLeerDe(id) { return this.load().msgs.filter((m) => !m.leido && !m.yo && m.de === id).length; },
   leerTodo() { const s = this.load(); let c = false; for (const m of s.msgs) if (!m.leido) { m.leido = true; c = true; } if (c) this.save(); },
