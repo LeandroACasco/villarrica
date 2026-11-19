@@ -417,6 +417,6 @@ VR.CelX = (() => {
     // cada llamada que hacés gasta 0,1 día de saldo (las que te hacen son gratis)
     cobraLlamada() { if (!(V.s.saldo >= 0.1)) { X0.toast('📵 No te alcanza el saldo para llamar'); return false; } V.s.saldo = Math.max(0, V.s.saldo - 0.1); V.save(); return true; },
     arrancar(vida, X) { V = vida; X0 = X; last = Math.floor(V.s.min); pedidos().forEach((p) => { delete p.rep; delete p.espera; });
-      setInterval(() => { const hud = document.getElementById('radioHud'), sp = document.getElementById('speed'); if (!hud || !sp) return; const on = Radio.k && !sp.hidden; hud.hidden = !on; if (on) { const E = Radio.E[Radio.k]; hud.textContent = '📻 ' + E.fm + ' · ' + (Radio.k === 'noti' && Radio.linea ? Radio.linea.slice(0, 60) : E.n); hud.style.top = (sp.getBoundingClientRect().bottom + 4) + 'px'; } }, 500);
+      setInterval(() => { const hud = document.getElementById('radioHud'), sp = document.getElementById('tab'); if (!hud || !sp) return; const on = Radio.k && !sp.hidden; hud.hidden = !on; if (on) { const E = Radio.E[Radio.k]; hud.textContent = '📻 ' + E.fm + ' · ' + (Radio.k === 'noti' && Radio.linea ? Radio.linea.slice(0, 60) : E.n); hud.style.top = (sp.getBoundingClientRect().bottom + 4) + 'px'; } }, 500);
       setInterval(() => { const cur = Math.floor(V.s.min); if (cur !== last) { for (let t = Math.max(last + 1, cur - 180); t <= cur; t++) { const L = alarmas(), a = L.find((q) => q.on && q.m === t % 1440); if (a) { if (a.tmp) L.splice(L.indexOf(a), 1); V.save(); suena(a); break; } } last = cur; } entregas(); }, 400); } };
 })();

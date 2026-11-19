@@ -236,6 +236,7 @@ VR.Misiones = class {
     this.lug = new VR.Lugares(this.world); VR.lugares = this.lug;
     const d = { cap: 1, barrios: VR.BARRIOS_INICIO.slice(), act: null, hechas: [], changas: [] };
     const s = VR.store.get('mis', null); this.s = Object.assign(d, s || {});
+    if (this.s.hechas.includes('m3') && !this.s.barrios.includes('Lomas Valentinas')) this.s.barrios.push('Lomas Valentinas'); // el cuartel de la guardia queda ahí (arregla partidas viejas)
     this.npcs = {}; this.hT = 0; this.hud = document.createElement('div'); this.hud.id = 'misHud'; this.hud.hidden = true; document.body.append(this.hud);
     this.ox = 0;
   }
@@ -601,7 +602,7 @@ VR.MISIONES = {
           M.vida.mueve(pago, 'Premio de los bomberos (Benítez)'); VR.pastizal.limpiar();
           M.toast('🚒 Benítez te dio ' + VR.fmtGs(pago) + (dmg > 5 ? ' (descontó los golpes al camión)' : ' · ¡camión impecable!')); } },
     ],
-    premio: { barrios: ['Yvaroty'], changas: ['guardia'], texto: 'El barrio Yvaroty ya está abierto en el mapa y Benítez te ofrece la guardia en el cuartel (📋 Changas). Los bomberos te deben una.' },
+    premio: { barrios: ['Yvaroty', 'Lomas Valentinas'], changas: ['guardia'], texto: 'Los barrios Yvaroty y Lomas Valentinas (donde está el cuartel) ya están abiertos en el mapa y Benítez te ofrece la guardia en el cuartel (📋 Changas). Los bomberos te deben una.' },
   },
 };
 

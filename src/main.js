@@ -506,6 +506,7 @@
     $('gearBtns').hidden = !(car && VR.drive === 'manual' && VR.input.source === 'touch') || !!VR.autoBox;
     dpanel.update(car, VR.input.source === 'touch');
     VR.Tab.update(car, !!(car && VR.drive === 'manual' && VR.input.source === 'touch')); // tablero (tablero.js); en manual táctil el minipanel muestra la velocidad
+    { const tb = $('tab'), dk = $('dock'); if (tb && !tb.hidden && dk && !dk.hidden) { const y = Math.round(dk.getBoundingClientRect().bottom + 6); if (tb._y !== y) { tb._y = y; tb.style.top = y + 'px'; } } } // el tablero va justo debajo del dock (no encima del celular y la mochila)
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
     $('dbg').hidden = false;
@@ -878,7 +879,11 @@
       kikeViaje: () => setTimeout(() => VR.Buzon.add('kike', '¡Ya llegué! Estoy ahí afuera, salí que nos vamos.', vida, 'kikeLlego', false, 1), 3500), // primero avisa por llamada y recién ahí te lleva
       kikeSube: () => setTimeout(() => mis.kikeViaje(), 400),
       chelaCarga: () => { const n = vida.llenaCanasto(10, true); if (n) toast('🥐 Doña Chela te cargó ' + n + ' chipas (anotadas)'); },
-      guardiaGps: () => { const cu = VR.guardia && VR.guardia.cuartel(); if (cu) setDest({ x: cu.x, y: cu.y, name: 'Cuartel de bomberos' }); } };
+      guardiaGps: () => { const G = VR.guardia, cu = G && G.cuartel(); if (!cu) return; if (G.hechoHoy()) { toast('🚒 Hoy ya hiciste tu guardia: volvé mañana'); return; } setDest({ x: cu.x, y: cu.y, name: 'Cuartel de bomberos' }); VR.guardiaPend = true; toast('🚒 Cuando llegues al cuartel arranca tu turno de guardia'); } };
+  setInterval(() => { // si Benítez te mandó al cuartel por la guardia, el turno arranca solo al llegar
+    const G = VR.guardia; if (!VR.guardiaPend || !G) return; const cu = G.cuartel(); if (!cu || G.job) { if (G.job) VR.guardiaPend = false; return; }
+    const f = car || player; if (Math.hypot(f.x - cu.x, f.y - cu.y) < 380) { VR.guardiaPend = false; G.start(); }
+  }, 800);
     mis.agendarViejas();
     VR.Buzon.onChange = (id) => { if (celDlg.open && (celApp === 'msj' || celApp === 'agenda' || celApp === 'msj:' + id)) paintCel(); };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
@@ -1383,6 +1388,7 @@
       car: c ? { i, type: c.type, model: c.model, color: c.color, tune: c.tune || null, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
   };
   setInterval(savePos, 3000);
+  setInterval(() => { if ((VR.loop && VR.loop.paused) || document.body.classList.contains('adentro')) VR.audio.calla(); }, 120); // menús e interiores: que no quede el motor / agua / grillos sonando
   document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } VR.audio.hold(document.hidden); });
   window.addEventListener('pagehide', () => VR.audio.hold(true)); window.addEventListener('pageshow', () => VR.audio.hold(document.hidden));
   addEventListener('pagehide', savePos);

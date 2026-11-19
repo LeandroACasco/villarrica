@@ -20,6 +20,8 @@ VR.audio = {
   setVol(v) { this.vol = Math.max(0, Math.min(1, v)); if (this.master) this.master.gain.value = this.on ? this.vol * this.vol : 0; },
   // al minimizar o cambiar de pestaña se congela todo el audio (si no, el motor y la sirena quedan sonando colgados)
   hold(h) { const ac = this.ac; if (!ac) return; if (h) ac.suspend().catch(() => {}); else if (this.on) ac.resume().catch(() => {}); },
+  // baja a cero todos los sonidos continuos (motor, agua, grillos, lago, fuego): se usa en menús y en interiores, donde nadie los vuelve a actualizar
+  calla() { const ac = this.ac, L = this.loops; if (!ac || !L) return; for (const k in L) { const g = L[k].g && L[k].g.gain; if (g && g.value > 0.0005) g.setTargetAtTime(0, ac.currentTime, 0.06); } },
   resume() { const ac = this.ctx(); if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); },
   // volumen según la distancia (px del mapa) al punto que mira la cámara
   near(x, y, far = 520) { const c = VR.audioCam; if (!c) return 1; const d = Math.hypot(x - c.x, y - c.y); return Math.max(0, 1 - d / far); },

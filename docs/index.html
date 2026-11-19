@@ -555,7 +555,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 5d70e08b · 2026-11-19</div>
+  <div class="tVer">Versión b631ed72 · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -670,7 +670,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 5d70e08b · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión b631ed72 · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -1143,6 +1143,8 @@ VR.audio = {
   setVol(v) { this.vol = Math.max(0, Math.min(1, v)); if (this.master) this.master.gain.value = this.on ? this.vol * this.vol : 0; },
   // al minimizar o cambiar de pestaña se congela todo el audio (si no, el motor y la sirena quedan sonando colgados)
   hold(h) { const ac = this.ac; if (!ac) return; if (h) ac.suspend().catch(() => {}); else if (this.on) ac.resume().catch(() => {}); },
+  // baja a cero todos los sonidos continuos (motor, agua, grillos, lago, fuego): se usa en menús y en interiores, donde nadie los vuelve a actualizar
+  calla() { const ac = this.ac, L = this.loops; if (!ac || !L) return; for (const k in L) { const g = L[k].g && L[k].g.gain; if (g && g.value > 0.0005) g.setTargetAtTime(0, ac.currentTime, 0.06); } },
   resume() { const ac = this.ctx(); if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); },
   // volumen según la distancia (px del mapa) al punto que mira la cámara
   near(x, y, far = 520) { const c = VR.audioCam; if (!c) return 1; const d = Math.hypot(x - c.x, y - c.y); return Math.max(0, 1 - d / far); },
@@ -10785,6 +10787,7 @@ VR.Misiones = class {
     this.lug = new VR.Lugares(this.world); VR.lugares = this.lug;
     const d = { cap: 1, barrios: VR.BARRIOS_INICIO.slice(), act: null, hechas: [], changas: [] };
     const s = VR.store.get('mis', null); this.s = Object.assign(d, s || {});
+    if (this.s.hechas.includes('m3') && !this.s.barrios.includes('Lomas Valentinas')) this.s.barrios.push('Lomas Valentinas'); // el cuartel de la guardia queda ahí (arregla partidas viejas)
     this.npcs = {}; this.hT = 0; this.hud = document.createElement('div'); this.hud.id = 'misHud'; this.hud.hidden = true; document.body.append(this.hud);
     this.ox = 0;
   }
@@ -11150,7 +11153,7 @@ VR.MISIONES = {
           M.vida.mueve(pago, 'Premio de los bomberos (Benítez)'); VR.pastizal.limpiar();
           M.toast('🚒 Benítez te dio ' + VR.fmtGs(pago) + (dmg > 5 ? ' (descontó los golpes al camión)' : ' · ¡camión impecable!')); } },
     ],
-    premio: { barrios: ['Yvaroty'], changas: ['guardia'], texto: 'El barrio Yvaroty ya está abierto en el mapa y Benítez te ofrece la guardia en el cuartel (📋 Changas). Los bomberos te deben una.' },
+    premio: { barrios: ['Yvaroty', 'Lomas Valentinas'], changas: ['guardia'], texto: 'Los barrios Yvaroty y Lomas Valentinas (donde está el cuartel) ya están abiertos en el mapa y Benítez te ofrece la guardia en el cuartel (📋 Changas). Los bomberos te deben una.' },
   },
 };
 
@@ -16969,7 +16972,7 @@ VR.CelX = (() => {
     // cada llamada que hacés gasta 0,1 día de saldo (las que te hacen son gratis)
     cobraLlamada() { if (!(V.s.saldo >= 0.1)) { X0.toast('📵 No te alcanza el saldo para llamar'); return false; } V.s.saldo = Math.max(0, V.s.saldo - 0.1); V.save(); return true; },
     arrancar(vida, X) { V = vida; X0 = X; last = Math.floor(V.s.min); pedidos().forEach((p) => { delete p.rep; delete p.espera; });
-      setInterval(() => { const hud = document.getElementById('radioHud'), sp = document.getElementById('speed'); if (!hud || !sp) return; const on = Radio.k && !sp.hidden; hud.hidden = !on; if (on) { const E = Radio.E[Radio.k]; hud.textContent = '📻 ' + E.fm + ' · ' + (Radio.k === 'noti' && Radio.linea ? Radio.linea.slice(0, 60) : E.n); hud.style.top = (sp.getBoundingClientRect().bottom + 4) + 'px'; } }, 500);
+      setInterval(() => { const hud = document.getElementById('radioHud'), sp = document.getElementById('tab'); if (!hud || !sp) return; const on = Radio.k && !sp.hidden; hud.hidden = !on; if (on) { const E = Radio.E[Radio.k]; hud.textContent = '📻 ' + E.fm + ' · ' + (Radio.k === 'noti' && Radio.linea ? Radio.linea.slice(0, 60) : E.n); hud.style.top = (sp.getBoundingClientRect().bottom + 4) + 'px'; } }, 500);
       setInterval(() => { const cur = Math.floor(V.s.min); if (cur !== last) { for (let t = Math.max(last + 1, cur - 180); t <= cur; t++) { const L = alarmas(), a = L.find((q) => q.on && q.m === t % 1440); if (a) { if (a.tmp) L.splice(L.indexOf(a), 1); V.save(); suena(a); break; } } last = cur; } entregas(); }, 400); } };
 })();
 
@@ -17821,6 +17824,7 @@ VR.Titulo = class {
     $('gearBtns').hidden = !(car && VR.drive === 'manual' && VR.input.source === 'touch') || !!VR.autoBox;
     dpanel.update(car, VR.input.source === 'touch');
     VR.Tab.update(car, !!(car && VR.drive === 'manual' && VR.input.source === 'touch')); // tablero (tablero.js); en manual táctil el minipanel muestra la velocidad
+    { const tb = $('tab'), dk = $('dock'); if (tb && !tb.hidden && dk && !dk.hidden) { const y = Math.round(dk.getBoundingClientRect().bottom + 6); if (tb._y !== y) { tb._y = y; tb.style.top = y + 'px'; } } } // el tablero va justo debajo del dock (no encima del celular y la mochila)
     if (!settings.fps) { $('dbg').hidden = true; return; }
     if (performance.now() - hudT < 250) return; hudT = performance.now();
     $('dbg').hidden = false;
@@ -18193,7 +18197,11 @@ VR.Titulo = class {
       kikeViaje: () => setTimeout(() => VR.Buzon.add('kike', '¡Ya llegué! Estoy ahí afuera, salí que nos vamos.', vida, 'kikeLlego', false, 1), 3500), // primero avisa por llamada y recién ahí te lleva
       kikeSube: () => setTimeout(() => mis.kikeViaje(), 400),
       chelaCarga: () => { const n = vida.llenaCanasto(10, true); if (n) toast('🥐 Doña Chela te cargó ' + n + ' chipas (anotadas)'); },
-      guardiaGps: () => { const cu = VR.guardia && VR.guardia.cuartel(); if (cu) setDest({ x: cu.x, y: cu.y, name: 'Cuartel de bomberos' }); } };
+      guardiaGps: () => { const G = VR.guardia, cu = G && G.cuartel(); if (!cu) return; if (G.hechoHoy()) { toast('🚒 Hoy ya hiciste tu guardia: volvé mañana'); return; } setDest({ x: cu.x, y: cu.y, name: 'Cuartel de bomberos' }); VR.guardiaPend = true; toast('🚒 Cuando llegues al cuartel arranca tu turno de guardia'); } };
+  setInterval(() => { // si Benítez te mandó al cuartel por la guardia, el turno arranca solo al llegar
+    const G = VR.guardia; if (!VR.guardiaPend || !G) return; const cu = G.cuartel(); if (!cu || G.job) { if (G.job) VR.guardiaPend = false; return; }
+    const f = car || player; if (Math.hypot(f.x - cu.x, f.y - cu.y) < 380) { VR.guardiaPend = false; G.start(); }
+  }, 800);
     mis.agendarViejas();
     VR.Buzon.onChange = (id) => { if (celDlg.open && (celApp === 'msj' || celApp === 'agenda' || celApp === 'msj:' + id)) paintCel(); };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
@@ -18698,6 +18706,7 @@ VR.Titulo = class {
       car: c ? { i, type: c.type, model: c.model, color: c.color, tune: c.tune || null, x: Math.round(c.x), y: Math.round(c.y), a: +c.a.toFixed(3), in: !!car } : null });
   };
   setInterval(savePos, 3000);
+  setInterval(() => { if ((VR.loop && VR.loop.paused) || document.body.classList.contains('adentro')) VR.audio.calla(); }, 120); // menús e interiores: que no quede el motor / agua / grillos sonando
   document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(); VR.input.releaseAll(); } VR.audio.hold(document.hidden); });
   window.addEventListener('pagehide', () => VR.audio.hold(true)); window.addEventListener('pageshow', () => VR.audio.hold(document.hidden));
   addEventListener('pagehide', savePos);
