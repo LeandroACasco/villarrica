@@ -460,7 +460,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 1a524a54 · 2026-11-19</div>
+  <div class="tVer">Versión 08a64a4c · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -575,7 +575,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 1a524a54 · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 08a64a4c · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -10535,7 +10535,7 @@ VR.PERSONAJES = {
   ramona: { nombre: 'Ña Ramona', color: '#f29ac8', lugar: { en: 'pieza', dx: 30, dy: 0 }, dir: 'left',
     look: { gender: 'f', skin: 2, build: 'panza', hair: 'rodete', hairColor: 5, top: 'camisaCorta', topColor: 7, bottom: 'pollera', bottomColor: 13, shoes: 'chinelas', shoesColor: 3, anteojos: true },
     charla: ['¿Ha upéi, mitã? Sábado pe che cobráta, ani nde resarái.', "Ko ára hakueterei, ¿nderehaʼúi piko tereré?"], menu: (M) => VR.menuRamona(M) },
-  kike: { nombre: 'Kike', color: '#7fe08a', lugar: { en: 'plaza', dx: -150, dy: -60 }, dir: 'down',
+  kike: { nombre: 'Kike', color: '#7fe08a', lugar: { en: 'plaza', dx: -70, dy: -100 }, dir: 'down',
     look: { gender: 'm', skin: 3, build: 'flaco', hair: 'corto', hairColor: 0, beard: 'bigote', top: 'musculosa', topColor: 2, bottom: 'bermuda', bottomColor: 3, shoes: 'chinelas', shoesColor: 3, hat: 'gorraAtras', hatColor: 0, termo: true },
     charla: ['Tengo una idea para hacernos ricos... después te cuento.', "¿Jaha jaikutu peteĩ tereré? Ko termo ro'ysã porã."], menu: (M) => VR.menuKike(M) },
   chela: { nombre: 'Doña Chela', color: '#ffb36b', lugar: { en: 'plaza', dx: 12, dy: -100 }, dir: 'down',
@@ -10943,8 +10943,9 @@ VR.MISIONES = {
         dlg: [['kike', '¡Epa, vendiste todo! Cargá saldo al celular en la despensa, así te llegan changas por la app.']] },
       { id: 'kike2', obj: 'Kike se ofrece a llevarte de vuelta: hablale', hablar: 'kike', punto: true,
         charla: [{ quien: 'kike', txt: "¡Epa, vendedor! Ya es tarde y Santa Lucía queda lejos. ¿Querés que te lleve en mi moto hasta tu pieza? Pasá un tereré después, ¿ajépa?", op: [
-          ['Sí, llevame (dejo la bici acá)', (M) => { if (M.kikeLleva) M.kikeLleva(); return [['kike', '¡Agarrate fuerte, po! Ani rejapo tavy.']]; }],
-          ['No, vuelvo en la bici', () => [['kike', 'Bueno, che ra\'a. Ojo con los pozos.']]]] }] },
+          ['Sí, llevame (dejo la bici acá)', (M) => [['kike', '¡Agarrate fuerte, po! Ani rejapo tavy.']].concat(M.kikeViaje ? (M.kikeViaje() || []) : [])],
+          ['No, vuelvo en la bici', () => [['kike', 'Bueno, che ra\'a. Ojo con los pozos.']]]] }],
+        alTerminar: (M) => { M.vida.s.kikeTel = true; if (VR.Buzon) VR.Buzon.add('kike', 'Guardá mi número, che ra\'a: desde el celu me llamás y te busco donde estés y te llevo a la plaza, o desde la plaza a tu pieza. Los primeros 3 viajes van de regalo; después ' + VR.fmtGs(5000) + ' por ser vos. 🏍', M.vida); M.toast('📱 Kike te guardó su número: app «Llamar a Kike» en el celular'); } },
       { id: 'volver', obj: 'Volvé a la pieza antes de la noche y hablá con Ña Ramona', hablar: 'ramona', punto: true,
         charla: [{ quien: 'ramona', txt: "¿Ha? ¿Ya volviste? Sábado pe che cobráta, pero si querés adelantar algo...", op: [
           ['Adelantarle lo que tengo', (M) => { const n = Math.min(VR.Wallet.get(), M.vida.s.pieza.saldo > 0 ? M.vida.s.pieza.saldo : VR.PRECIOS.pieza); if (n < 1000) return [['ramona', "Ndaipóri piko? Bueno, sábado pe."]]; M.vida.mueve(-n, 'Pieza (adelanto a Ña Ramona)'); M.vida.s.pieza.saldo -= n; return [['ramona', 'Me diste ' + VR.fmtGs(n) + ". ¡Aguyje, mitã! Rejapo porã."]]; }],
@@ -11122,8 +11123,10 @@ VR.menuMirta = (M) => { const V = M.vida, P = VR.PRECIOS, op = [];
   return [{ quien: 'mirta', txt: 'Los cascos están ahí. Uno integral con visor sale ' + VR.fmtGs(P.casco) + '. Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op }];
 };
 VR.menuKike = (M) => { const V = M.vida, P = VR.PRECIOS;
-  if (!M.hecha('m2') && !(V.s.debe > 0)) return [['kike', 'Tengo una idea para hacernos ricos... después te cuento.']];
-  const op = []; if (V.s.debe > 0) op.push(['Pagar mi deuda (' + VR.fmtGs(V.s.debe) + ')', () => { V.pagaDeuda(); return false; }]);
+  const nv = V.s.kikeViajes || 0, ruta = M.kikeRuta ? M.kikeRuta() : null;
+  const viaje = () => ruta ? ['🏍 Llevame ' + (ruta.aCasa ? 'a mi pieza' : 'a la plaza') + ' · ' + (nv < 3 ? 'gratis (' + (3 - nv) + ' de regalo)' : VR.fmtGs(5000)), () => [['kike', '¡Dale, subí!']].concat(M.kikeViaje ? (M.kikeViaje() || []) : [])] : null;
+  if (!M.hecha('m2') && !(V.s.debe > 0)) { const o = [], v = viaje(); if (v) o.push(v); o.push(['Nada, Kike', () => false]); return [{ quien: 'kike', txt: 'Tengo una idea para hacernos ricos... después te cuento. Mientras, si necesitás que te lleve, avisá.', op: o }]; }
+  const op = []; { const v = viaje(); if (v) op.push(v); } if (V.s.debe > 0) op.push(['Pagar mi deuda (' + VR.fmtGs(V.s.debe) + ')', () => { V.pagaDeuda(); return false; }]);
   if (!M.motoK) op.push(['Alquilar la moto · ' + VR.fmtGs(P.alquilerMoto) + ' por el día', () => { if (!V.s.casco) return [['kike', 'Sin casco no te la presto. Comprate uno en Ao Porã.']]; if (!V.gasta(P.alquilerMoto, 'Alquiler de la moto de Kike')) return false; if (M.prestaMoto) M.prestaMoto(); return [['kike', 'Está al lado mío. La devolvés al amanecer, ¿ajépa?']]; }]);
   if (M.motoK) op.push(['Devolverle la moto', () => { if (M.getCar() === M.motoK) return [['kike', 'Bajate primero de la moto, amigo.']]; M.quitaMoto(); return [['kike', 'Listo, gracias. Cuando la necesites, ya sabés.']]; }]);
   op.push(['Nada, Kike', () => false]);
@@ -17118,7 +17121,7 @@ VR.Titulo = class {
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
     if (celApp === 'home') {
-      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
+      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ...(vida && vida.s.kikeTel ? [['kike', '🏍', 'Llamar a Kike', '#7fe08a', true]] : []), ['metas', '📝', 'Notas', '#ffe27a', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
@@ -17168,11 +17171,15 @@ VR.Titulo = class {
       h = '';
     } else if (celApp === 'msj') {
       h = '<h3>💬 Mensajes</h3>' + VR.Buzon.html(); VR.Buzon.leerTodo();
+    } else if (celApp === 'kike') {
+      const rt = mis.kikeRuta(), nv = vida.s.kikeViajes || 0;
+      h = '<h3>🏍 Kike</h3><div style="font-size:13px;opacity:.9;margin:6px 0">' + (rt ? 'Te busca donde estés y te lleva ' + (rt.aCasa ? '<b>a tu pieza</b> (estás cerca de la plaza).' : '<b>a la plaza</b>.') : 'No hay ruta ahora.') + '<br>' + (nv < 3 ? '🎁 Viajes de regalo que quedan: <b>' + (3 - nv) + '</b>' : 'Cada viaje: <b>' + VR.fmtGs(5000) + '</b> (por ser amigos)') + '</div><button class="cbtn" id="kkGo" style="background:#7fe08a;color:#06210f">📞 Llamar a Kike</button>';
     } else if (celApp === 'stats') {
       h = '<h3>📊 Estadísticas</h3>' + VR.Stats.html();
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
+    { const kg = celBody.querySelector('#kkGo'); if (kg) kg.onclick = () => celGo(() => mis.kikeViaje()); }
     celBody.querySelectorAll('[data-ch]').forEach((b) => b.onclick = () => celGo(() => changas.start(b.dataset.ch)));
     if (celApp === 'mis' && mis) paintMis(celBody, true);
     if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
@@ -17312,7 +17319,11 @@ VR.Titulo = class {
       setInterval(() => { const c = mis.biciR; if (!c) return; const o = mis.s.biciR; if (!o || Math.abs(o.x - c.x) > 2 || Math.abs(o.y - c.y) > 2) { mis.s.biciR = { x: Math.round(c.x), y: Math.round(c.y), a: c.a }; mis.save(); } }, 1500); }
     mis.prestaCamion = () => { let c = cars.find((x) => x.firehouse && x.model === 'bomba'); if (!c) { const f = world.firehouse; if (!f) return null; const p = mis.lug.libre(f.x, f.y + 60); c = new VR.Car(world, p.x, p.y, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; cars.push(c); world.addBox(c); } c.mio = true; c.prestada = true; mis.camionK = c; return c; };
     mis.destActual = () => dest; mis.vehiculoMio = () => { const c = (!car && lastCar) || cars.find((x) => x.mio); if (!c) return null; const p = mis.lug.libre(c.x + 22, c.y + 6); return { x: p.x, y: p.y, name: 'tu vehículo' }; };
-    mis.kikeLleva = () => { const d = vida.s.casa; if (!d) return; if (car) exitCar(); const f = $('celFade'); f.textContent = '🏍 Kike te lleva a tu pieza…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y + 26, 'Tu pieza', true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); };
+    // Kike te lleva (19/11/2026, pedido de Leandro): desde donde estés a la plaza, o desde la plaza a tu pieza. Los primeros 3 viajes gratis, después 5.000 Gs.
+    mis.kikeRuta = () => { const pl = mis.lug.get('plaza'), casa = vida.s.casa, f = car || player; if (!pl || !casa) return null; const aCasa = Math.hypot(f.x - pl.x, f.y - pl.y) < 420; return { aCasa, d: aCasa ? { x: casa.x, y: casa.y + 26, name: 'Tu pieza' } : (() => { const k = mis.dondeEsta('kike') || pl, p = mis.lug.libre(k.x + 26, k.y + 30); return { x: p.x, y: p.y, name: 'la plaza' }; })() }; };
+    mis.kikeViaje = () => { const r = mis.kikeRuta(); if (!r) return null; const n = vida.s.kikeViajes || 0; vida.s.kikeViajes = n + 1; let txt;
+      if (n < 3) txt = '🏍 Viaje de regalo (' + (n + 1) + '/3)'; else { vida.cobrarODeber(5000, 'Kike te llevó'); txt = '🏍 Viaje con Kike · ' + VR.fmtGs(5000); }
+      if (car) exitCar(); const f = $('celFade'); f.textContent = txt + ' · ' + (r.aCasa ? 'a tu pieza…' : 'a la plaza…'); f.classList.add('on'); setTimeout(() => { teleport(r.d.x, r.d.y, r.d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); return null; };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
     { const tp = mis.lug.get(VR.PUNTOS.taxihosp.lugar); if (tp) for (let i = 0; i < 2; i++) { const x = tp.x + i * 28 - 14, y = tp.y - 34, m = 'sedan', c = new VR.Car(world, x, y, Math.PI / 2, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); if (c.contacts && c.contacts(x, y, c.a)) continue; c.taxi = true; cars.push(c); world.addBox(c); } }
     { const sm = mis.s.motoK; if (sm) { const c = mis.prestaMoto(sm); if (c) c.alq = sm.alq; } // la moto de Kike sigue donde la dejaste aunque recargues

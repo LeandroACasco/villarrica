@@ -109,7 +109,7 @@ VR.PERSONAJES = {
   ramona: { nombre: 'Ña Ramona', color: '#f29ac8', lugar: { en: 'pieza', dx: 30, dy: 0 }, dir: 'left',
     look: { gender: 'f', skin: 2, build: 'panza', hair: 'rodete', hairColor: 5, top: 'camisaCorta', topColor: 7, bottom: 'pollera', bottomColor: 13, shoes: 'chinelas', shoesColor: 3, anteojos: true },
     charla: ['¿Ha upéi, mitã? Sábado pe che cobráta, ani nde resarái.', "Ko ára hakueterei, ¿nderehaʼúi piko tereré?"], menu: (M) => VR.menuRamona(M) },
-  kike: { nombre: 'Kike', color: '#7fe08a', lugar: { en: 'plaza', dx: -150, dy: -60 }, dir: 'down',
+  kike: { nombre: 'Kike', color: '#7fe08a', lugar: { en: 'plaza', dx: -70, dy: -100 }, dir: 'down',
     look: { gender: 'm', skin: 3, build: 'flaco', hair: 'corto', hairColor: 0, beard: 'bigote', top: 'musculosa', topColor: 2, bottom: 'bermuda', bottomColor: 3, shoes: 'chinelas', shoesColor: 3, hat: 'gorraAtras', hatColor: 0, termo: true },
     charla: ['Tengo una idea para hacernos ricos... después te cuento.', "¿Jaha jaikutu peteĩ tereré? Ko termo ro'ysã porã."], menu: (M) => VR.menuKike(M) },
   chela: { nombre: 'Doña Chela', color: '#ffb36b', lugar: { en: 'plaza', dx: 12, dy: -100 }, dir: 'down',
@@ -517,8 +517,9 @@ VR.MISIONES = {
         dlg: [['kike', '¡Epa, vendiste todo! Cargá saldo al celular en la despensa, así te llegan changas por la app.']] },
       { id: 'kike2', obj: 'Kike se ofrece a llevarte de vuelta: hablale', hablar: 'kike', punto: true,
         charla: [{ quien: 'kike', txt: "¡Epa, vendedor! Ya es tarde y Santa Lucía queda lejos. ¿Querés que te lleve en mi moto hasta tu pieza? Pasá un tereré después, ¿ajépa?", op: [
-          ['Sí, llevame (dejo la bici acá)', (M) => { if (M.kikeLleva) M.kikeLleva(); return [['kike', '¡Agarrate fuerte, po! Ani rejapo tavy.']]; }],
-          ['No, vuelvo en la bici', () => [['kike', 'Bueno, che ra\'a. Ojo con los pozos.']]]] }] },
+          ['Sí, llevame (dejo la bici acá)', (M) => [['kike', '¡Agarrate fuerte, po! Ani rejapo tavy.']].concat(M.kikeViaje ? (M.kikeViaje() || []) : [])],
+          ['No, vuelvo en la bici', () => [['kike', 'Bueno, che ra\'a. Ojo con los pozos.']]]] }],
+        alTerminar: (M) => { M.vida.s.kikeTel = true; if (VR.Buzon) VR.Buzon.add('kike', 'Guardá mi número, che ra\'a: desde el celu me llamás y te busco donde estés y te llevo a la plaza, o desde la plaza a tu pieza. Los primeros 3 viajes van de regalo; después ' + VR.fmtGs(5000) + ' por ser vos. 🏍', M.vida); M.toast('📱 Kike te guardó su número: app «Llamar a Kike» en el celular'); } },
       { id: 'volver', obj: 'Volvé a la pieza antes de la noche y hablá con Ña Ramona', hablar: 'ramona', punto: true,
         charla: [{ quien: 'ramona', txt: "¿Ha? ¿Ya volviste? Sábado pe che cobráta, pero si querés adelantar algo...", op: [
           ['Adelantarle lo que tengo', (M) => { const n = Math.min(VR.Wallet.get(), M.vida.s.pieza.saldo > 0 ? M.vida.s.pieza.saldo : VR.PRECIOS.pieza); if (n < 1000) return [['ramona', "Ndaipóri piko? Bueno, sábado pe."]]; M.vida.mueve(-n, 'Pieza (adelanto a Ña Ramona)'); M.vida.s.pieza.saldo -= n; return [['ramona', 'Me diste ' + VR.fmtGs(n) + ". ¡Aguyje, mitã! Rejapo porã."]]; }],
@@ -696,8 +697,10 @@ VR.menuMirta = (M) => { const V = M.vida, P = VR.PRECIOS, op = [];
   return [{ quien: 'mirta', txt: 'Los cascos están ahí. Uno integral con visor sale ' + VR.fmtGs(P.casco) + '. Tenés ' + VR.fmtGs(VR.Wallet.get()) + '.', op }];
 };
 VR.menuKike = (M) => { const V = M.vida, P = VR.PRECIOS;
-  if (!M.hecha('m2') && !(V.s.debe > 0)) return [['kike', 'Tengo una idea para hacernos ricos... después te cuento.']];
-  const op = []; if (V.s.debe > 0) op.push(['Pagar mi deuda (' + VR.fmtGs(V.s.debe) + ')', () => { V.pagaDeuda(); return false; }]);
+  const nv = V.s.kikeViajes || 0, ruta = M.kikeRuta ? M.kikeRuta() : null;
+  const viaje = () => ruta ? ['🏍 Llevame ' + (ruta.aCasa ? 'a mi pieza' : 'a la plaza') + ' · ' + (nv < 3 ? 'gratis (' + (3 - nv) + ' de regalo)' : VR.fmtGs(5000)), () => [['kike', '¡Dale, subí!']].concat(M.kikeViaje ? (M.kikeViaje() || []) : [])] : null;
+  if (!M.hecha('m2') && !(V.s.debe > 0)) { const o = [], v = viaje(); if (v) o.push(v); o.push(['Nada, Kike', () => false]); return [{ quien: 'kike', txt: 'Tengo una idea para hacernos ricos... después te cuento. Mientras, si necesitás que te lleve, avisá.', op: o }]; }
+  const op = []; { const v = viaje(); if (v) op.push(v); } if (V.s.debe > 0) op.push(['Pagar mi deuda (' + VR.fmtGs(V.s.debe) + ')', () => { V.pagaDeuda(); return false; }]);
   if (!M.motoK) op.push(['Alquilar la moto · ' + VR.fmtGs(P.alquilerMoto) + ' por el día', () => { if (!V.s.casco) return [['kike', 'Sin casco no te la presto. Comprate uno en Ao Porã.']]; if (!V.gasta(P.alquilerMoto, 'Alquiler de la moto de Kike')) return false; if (M.prestaMoto) M.prestaMoto(); return [['kike', 'Está al lado mío. La devolvés al amanecer, ¿ajépa?']]; }]);
   if (M.motoK) op.push(['Devolverle la moto', () => { if (M.getCar() === M.motoK) return [['kike', 'Bajate primero de la moto, amigo.']]; M.quitaMoto(); return [['kike', 'Listo, gracias. Cuando la necesites, ya sabés.']]; }]);
   op.push(['Nada, Kike', () => false]);

@@ -628,7 +628,7 @@
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
     if (celApp === 'home') {
-      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
+      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ...(vida && vida.s.kikeTel ? [['kike', '🏍', 'Llamar a Kike', '#7fe08a', true]] : []), ['metas', '📝', 'Notas', '#ffe27a', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
@@ -678,11 +678,15 @@
       h = '';
     } else if (celApp === 'msj') {
       h = '<h3>💬 Mensajes</h3>' + VR.Buzon.html(); VR.Buzon.leerTodo();
+    } else if (celApp === 'kike') {
+      const rt = mis.kikeRuta(), nv = vida.s.kikeViajes || 0;
+      h = '<h3>🏍 Kike</h3><div style="font-size:13px;opacity:.9;margin:6px 0">' + (rt ? 'Te busca donde estés y te lleva ' + (rt.aCasa ? '<b>a tu pieza</b> (estás cerca de la plaza).' : '<b>a la plaza</b>.') : 'No hay ruta ahora.') + '<br>' + (nv < 3 ? '🎁 Viajes de regalo que quedan: <b>' + (3 - nv) + '</b>' : 'Cada viaje: <b>' + VR.fmtGs(5000) + '</b> (por ser amigos)') + '</div><button class="cbtn" id="kkGo" style="background:#7fe08a;color:#06210f">📞 Llamar a Kike</button>';
     } else if (celApp === 'stats') {
       h = '<h3>📊 Estadísticas</h3>' + VR.Stats.html();
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
+    { const kg = celBody.querySelector('#kkGo'); if (kg) kg.onclick = () => celGo(() => mis.kikeViaje()); }
     celBody.querySelectorAll('[data-ch]').forEach((b) => b.onclick = () => celGo(() => changas.start(b.dataset.ch)));
     if (celApp === 'mis' && mis) paintMis(celBody, true);
     if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
@@ -822,7 +826,11 @@
       setInterval(() => { const c = mis.biciR; if (!c) return; const o = mis.s.biciR; if (!o || Math.abs(o.x - c.x) > 2 || Math.abs(o.y - c.y) > 2) { mis.s.biciR = { x: Math.round(c.x), y: Math.round(c.y), a: c.a }; mis.save(); } }, 1500); }
     mis.prestaCamion = () => { let c = cars.find((x) => x.firehouse && x.model === 'bomba'); if (!c) { const f = world.firehouse; if (!f) return null; const p = mis.lug.libre(f.x, f.y + 60); c = new VR.Car(world, p.x, p.y, Math.PI, 0, 'car', 'bomba'); c.firehouse = true; cars.push(c); world.addBox(c); } c.mio = true; c.prestada = true; mis.camionK = c; return c; };
     mis.destActual = () => dest; mis.vehiculoMio = () => { const c = (!car && lastCar) || cars.find((x) => x.mio); if (!c) return null; const p = mis.lug.libre(c.x + 22, c.y + 6); return { x: p.x, y: p.y, name: 'tu vehículo' }; };
-    mis.kikeLleva = () => { const d = vida.s.casa; if (!d) return; if (car) exitCar(); const f = $('celFade'); f.textContent = '🏍 Kike te lleva a tu pieza…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y + 26, 'Tu pieza', true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); };
+    // Kike te lleva (19/11/2026, pedido de Leandro): desde donde estés a la plaza, o desde la plaza a tu pieza. Los primeros 3 viajes gratis, después 5.000 Gs.
+    mis.kikeRuta = () => { const pl = mis.lug.get('plaza'), casa = vida.s.casa, f = car || player; if (!pl || !casa) return null; const aCasa = Math.hypot(f.x - pl.x, f.y - pl.y) < 420; return { aCasa, d: aCasa ? { x: casa.x, y: casa.y + 26, name: 'Tu pieza' } : (() => { const k = mis.dondeEsta('kike') || pl, p = mis.lug.libre(k.x + 26, k.y + 30); return { x: p.x, y: p.y, name: 'la plaza' }; })() }; };
+    mis.kikeViaje = () => { const r = mis.kikeRuta(); if (!r) return null; const n = vida.s.kikeViajes || 0; vida.s.kikeViajes = n + 1; let txt;
+      if (n < 3) txt = '🏍 Viaje de regalo (' + (n + 1) + '/3)'; else { vida.cobrarODeber(5000, 'Kike te llevó'); txt = '🏍 Viaje con Kike · ' + VR.fmtGs(5000); }
+      if (car) exitCar(); const f = $('celFade'); f.textContent = txt + ' · ' + (r.aCasa ? 'a tu pieza…' : 'a la plaza…'); f.classList.add('on'); setTimeout(() => { teleport(r.d.x, r.d.y, r.d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); return null; };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
     { const tp = mis.lug.get(VR.PUNTOS.taxihosp.lugar); if (tp) for (let i = 0; i < 2; i++) { const x = tp.x + i * 28 - 14, y = tp.y - 34, m = 'sedan', c = new VR.Car(world, x, y, Math.PI / 2, 3, 'car', m, { ...VR.tuneDefault(m), color: 3 }); if (c.contacts && c.contacts(x, y, c.a)) continue; c.taxi = true; cars.push(c); world.addBox(c); } }
     { const sm = mis.s.motoK; if (sm) { const c = mis.prestaMoto(sm); if (c) c.alq = sm.alq; } // la moto de Kike sigue donde la dejaste aunque recargues
