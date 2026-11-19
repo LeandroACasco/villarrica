@@ -267,6 +267,7 @@ VR.Misiones = class {
     const k = this.motoK;
     if (k && k.alq !== V.dia) { const n = V.dia - k.alq, fee = n * VR.PRECIOS.alquilerMoto; k.alq = V.dia; V.cobrarODeber(fee, 'Alquiler extra de la moto de Kike');
       B.add('kike', 'Ey, pasó ' + (n > 1 ? n + ' días' : 'otro día') + ' y seguís con mi moto: te cobro ' + VR.fmtGs(fee) + ' más. Si ya no la querés, devolvémela acá y listo.', V); }
+    B.recordatorios(this);
     if (V.s.debe > 0) B.add('kike', 'Acordate que me debés ' + VR.fmtGs(V.s.debe) + ' Pasá por el taller cuando puedas, ¿ajépa?', V); }
   get act() { return this.s.act; }
   get mision() { return this.s.act && VR.MISIONES[this.s.act.id]; }
@@ -365,6 +366,7 @@ VR.Misiones = class {
     for (const c of pr.changas || []) if (!this.s.changas.includes(c)) { this.s.changas.push(c); out.push('📋 Changa nueva: ' + (VR.CHANGA_NOMBRE[c] || c)); }
     if (pr.cap && pr.cap > this.s.cap) { this.s.cap = pr.cap; out.push('📖 Capítulo ' + pr.cap + ': ' + (VR.CAPITULOS[pr.cap] || '')); }
     if (pr.texto) out.push(pr.texto);
+    if (VR.Buzon && M.agenda) for (const id of M.agenda) VR.Buzon.agendar(id);
     this.save(); this.setDest(null, true); this.hud.hidden = true;
     this.cartel('MISIÓN CUMPLIDA', M.titulo);
     if (VR.audio && VR.audio.coin) { VR.audio.coin(); setTimeout(() => VR.audio.coin(), 160); }
@@ -489,7 +491,7 @@ VR.MISIONES = {
           ['yo', 'Sí, Ña Ramona... el sábado le pago.'],
           ['ramona', "Ha mba'éicha piko repagáta, nde pirapire'ỹ. Eho Centro-pe, oĩ hína tembiapo upépe. Ha ani rejapo tavy."],
           ['ramona', "Ah, y llevate mi bici vieja, la que está acá al lado. Está medio fea pero anda. Cuidala, ¿ajépa? Es para ir y volver, no para hacer trompos."]],
-        alTerminar: (M) => { if (M.prestaBici) M.prestaBici(); } },
+        alTerminar: (M) => { if (M.prestaBici) M.prestaBici(); if (VR.Buzon) VR.Buzon.agendar('ramona', 'Este es mi número, mitã. Si necesitás algo o me querés avisar de la pieza, escribime. Ani rejapo tavy.'); } },
       { id: 'centro', obj: 'Andá a la Plaza de los Héroes en la bici de Ña Ramona (ACCIÓN al lado para subirte)', ir: 'plaza', r: 120, punto: true },
       { id: 'chipa', obj: 'Tenés hambre: comprale una chipa a Doña Chela', hablar: 'chela',
         charla: [{ quien: 'chela', txt: "¡Chipa, chipa calentita! ¿Mboýpa reipota, che memby?", op: [
@@ -506,7 +508,7 @@ VR.MISIONES = {
           ['yo', 'No me alcanza, Doña Chela...'],
           ['chela', "Ya sé, che memby. El canasto te lo presto y te fío 8 chipas. Me pagás con la venta, ¿ajépa? Ani rejapo tavy."],
           ['chela', 'Andá por la plaza y frente a la Municipalidad. Parate al lado de la gente y ofrecé. ¡Pero con ganas!']],
-        alTerminar: (M) => { const V = M.vida; if (!V.s.canasto) { V.s.canasto = true; V.log(0, 'Doña Chela te prestó el canasto'); } V.llenaCanasto(8 - V.s.stock, true); M.toast('🧺 Canasto con ' + V.s.stock + ' chipas · le debés ' + VR.fmtGs(V.s.fiado) + ' a Doña Chela'); if (M.changas) M.changas.start('chipa', true); } },
+        alTerminar: (M) => { const V = M.vida; if (VR.Buzon) VR.Buzon.agendar('chela', 'Guardá mi número, che memby, así me escribís por la chipa. 🥐'); if (!V.s.canasto) { V.s.canasto = true; V.log(0, 'Doña Chela te prestó el canasto'); } V.llenaCanasto(8 - V.s.stock, true); M.toast('🧺 Canasto con ' + V.s.stock + ' chipas · le debés ' + VR.fmtGs(V.s.fiado) + ' a Doña Chela'); if (M.changas) M.changas.start('chipa', true); } },
       { id: 'vender', obj: 'Vendé las 8 chipas (ACCIÓN al lado de la gente)', esperar: { ev: 'venta', n: 8 }, punto: true, changa: 'chipa',
         alEmpezar: (M) => { const V = M.vida; if (V.s.stock < 8 - M.s.act.n) V.llenaCanasto(8 - M.s.act.n - V.s.stock, true); if (M.changas && !(M.changas.job && M.changas.job.k === 'chipa')) M.changas.start('chipa', true); } },
       { id: 'pagar', obj: 'Pagale a Doña Chela lo que le debés', hablar: 'chela', cond: (M) => M.vida.s.fiado <= 0,
@@ -519,7 +521,7 @@ VR.MISIONES = {
         charla: [{ quien: 'kike', txt: "¡Epa, vendedor! Ya es tarde y Santa Lucía queda lejos. ¿Querés que te lleve en mi moto hasta tu pieza? Pasá un tereré después, ¿ajépa?", op: [
           ['Sí, llevame (dejo la bici acá)', (M) => [['kike', '¡Agarrate fuerte, po! Ani rejapo tavy.']].concat(M.kikeViaje ? (M.kikeViaje() || []) : [])],
           ['No, vuelvo en la bici', () => [['kike', 'Bueno, che ra\'a. Ojo con los pozos.']]]] }],
-        alTerminar: (M) => { M.vida.s.kikeTel = true; if (VR.Buzon) VR.Buzon.add('kike', 'Guardá mi número, che ra\'a: desde el celu me llamás y te busco donde estés y te llevo a la plaza, o desde la plaza a tu pieza. Los primeros 3 viajes van de regalo; después ' + VR.fmtGs(5000) + ' por ser vos. 🏍', M.vida); M.toast('📱 Kike te guardó su número: app «Llamar a Kike» en el celular'); } },
+        alTerminar: (M) => { if (VR.Buzon) VR.Buzon.agendar('kike', 'Acá tenés mi número, che ra\'a. Escribime cuando quieras que te busque: te llevo a la plaza o a tu pieza. Los primeros 3 viajes van de regalo; después ' + VR.fmtGs(5000) + ' por ser vos. 🏍'); } },
       { id: 'volver', obj: 'Volvé a la pieza antes de la noche y hablá con Ña Ramona', hablar: 'ramona', punto: true,
         charla: [{ quien: 'ramona', txt: "¿Ha? ¿Ya volviste? Sábado pe che cobráta, pero si querés adelantar algo...", op: [
           ['Adelantarle lo que tengo', (M) => { const n = Math.min(VR.Wallet.get(), M.vida.s.pieza.saldo > 0 ? M.vida.s.pieza.saldo : VR.PRECIOS.pieza); if (n < 1000) return [['ramona', "Ndaipóri piko? Bueno, sábado pe."]]; M.vida.mueve(-n, 'Pieza (adelanto a Ña Ramona)'); M.vida.s.pieza.saldo -= n; return [['ramona', 'Me diste ' + VR.fmtGs(n) + ". ¡Aguyje, mitã! Rejapo porã."]]; }],
@@ -531,6 +533,7 @@ VR.MISIONES = {
 
   // M2 «Helado de urgencia» (cap. 1 → 2, J4): Lucas, Kike y su moto, el casco de Ao Porã, la caja de helados que se derrite y el Teatro.
   m2: {
+    agenda: ['lucas', 'mirta'],
     titulo: 'Helado de urgencia', cap: 1, quien: 'lucas', req: { cap: 1, mis: ['m1'] }, desc: 'Lucas necesita llevar 20 potes de helado al Teatro ya. Hay que conseguir moto y casco.',
     oferta: [['lucas', "¡Epa! Hoy hay función en el Teatro y me pidieron 20 potes de helado, pero se me fue el repartidor. Ndaipóri avave."],
       ['yo', 'Yo te los llevo, Lucas. Pero no tengo moto.'],
@@ -559,6 +562,7 @@ VR.MISIONES = {
   },
   // M3 «Tata!» (cap. 2, J5): las rifas del cuartel, el pastizal que se prende en el parque y el camión bomba prestado.
   m3: {
+    agenda: ['benitez'],
     titulo: 'Tata!', cap: 2, quien: 'benitez', req: { cap: 2, mis: ['m2'] }, desc: 'Los bomberos voluntarios necesitan plata para el combustible del camión: vendé sus rifas. Y cuidado con el pasto seco...',
     oferta: [['benitez', "Ore ndorekói sueldo, ñande ha'e voluntario. Ko rifa ñanepytyvõ ñamyenyhẽ hag̃ua el tanque del camión."],
       ['yo', '¿Y yo qué hago?'],

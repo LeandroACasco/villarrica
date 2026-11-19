@@ -614,7 +614,7 @@
   $('btnCel').onclick = () => openCel();
   $('btnSaltaViaje').onclick = () => { mbh.saltear(); $('btnSaltaViaje').hidden = true; };
   $('celHome').onclick = () => { celApp = 'home'; paintCel(); };
-  $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
+  $('celBack').onclick = () => { if (celApp === 'home') celDlg.close(); else if (celApp.startsWith('msj:')) { celApp = 'msj'; paintCel(); } else { celApp = 'home'; paintCel(); } }; // atrás: de una app al inicio; desde el inicio, cierra
   $('celClose').onclick = () => celDlg.close();
   celDlg.addEventListener('close', () => { unmapCel(); if (celStop) { celStop(); celStop = null; } if (!celDlg._keep) { VR.loop.paused = false; VR.input.enabled = true; } celDlg._keep = false; });
   function openCel(app) { if (!vida || mode !== 'game') return; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true; celApp = app || 'home'; paintCel(); if (!celDlg.open) celDlg.showModal(); }
@@ -628,7 +628,7 @@
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
     if (celApp === 'home') {
-      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ...(vida && vida.s.kikeTel ? [['kike', '🏍', 'Llamar a Kike', '#7fe08a', true]] : []), ['metas', '📝', 'Notas', '#ffe27a', true],
+      const A = [['jaha', '🛵', 'Mbohasa', '#ffd84a', net], ['bill', '🏦', 'Billetera', '#3cc87a', true], ['msj', '💬' + (VR.Buzon.sinLeer() ? '<b class="bdg">' + VR.Buzon.sinLeer() + '</b>' : ''), 'Mensajes', '#5ac8fa', true], ['agenda', '📒', 'Contactos', '#7fe08a', true], ['stats', '📊', 'Estadísticas', '#b0b0ff', true], ['metas', '📝', 'Notas', '#ffe27a', true],
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true], ['culebra', '🐍', 'Culebra', '#9bbc0f', true]];
       h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
@@ -677,16 +677,26 @@
     } else if (celApp === 'culebra') {
       h = '';
     } else if (celApp === 'msj') {
-      h = '<h3>💬 Mensajes</h3>' + VR.Buzon.html(); VR.Buzon.leerTodo();
-    } else if (celApp === 'kike') {
-      const rt = mis.kikeRuta(), nv = vida.s.kikeViajes || 0;
-      h = '<h3>🏍 Kike</h3><div style="font-size:13px;opacity:.9;margin:6px 0">' + (rt ? 'Te busca donde estés y te lleva ' + (rt.aCasa ? '<b>a tu pieza</b> (estás cerca de la plaza).' : '<b>a la plaza</b>.') : 'No hay ruta ahora.') + '<br>' + (nv < 3 ? '🎁 Viajes de regalo que quedan: <b>' + (3 - nv) + '</b>' : 'Cada viaje: <b>' + VR.fmtGs(5000) + '</b> (por ser amigos)') + '</div><button class="cbtn" id="kkGo" style="background:#7fe08a;color:#06210f">📞 Llamar a Kike</button>';
+      const B = VR.Buzon, ids = B.chats();
+      h = '<h3>💬 Mensajes</h3>' + (ids.length ? ids.map((id) => { const m = B.ultimo(id), n = B.sinLeerDe(id), tx = (m.yo ? 'Vos: ' : '') + m.txt;
+        return '<button class="chatRow" data-chat="' + id + '"><i class="chAv">' + B.ico(id) + '</i><span class="chTx"><b>' + esc(B.nombre(id)) + '</b><small>' + esc(tx.length > 44 ? tx.slice(0, 42) + '…' : tx) + '</small></span><span class="chMeta"><small>' + esc(m.hora || '') + '</small>' + (n ? '<b class="bdg2">' + n + '</b>' : '') + '</span></button>'; }).join('') : '<p>Todavía no tenés mensajes. Agendá contactos y te van a escribir.</p>');
+    } else if (typeof celApp === 'string' && celApp.startsWith('msj:')) {
+      const B = VR.Buzon, id = celApp.slice(4), hilo = B.hilo(id); B.leerDe(id); let dia = null;
+      h = '<h3><span class="chAv sm">' + B.ico(id) + '</span> ' + esc(B.nombre(id)) + '</h3><div class="chat">' + (hilo.length ? hilo.map((m) => { let sep = ''; if (m.dia !== dia) { dia = m.dia; sep = '<div class="chDia">' + (VR.DIAS ? VR.DIAS[(Math.max(1, m.dia) - 1) % 7] + ' · ' : '') + 'día ' + Math.max(1, m.dia) + '</div>'; }
+        return sep + '<div class="bub ' + (m.yo ? 'yo' : 'el') + '">' + esc(m.txt) + '<small>' + esc(m.hora || '') + (m.yo ? ' ✓✓' : '') + '</small></div>'; }).join('') : '<p>Escribile algo.</p>') + '</div>' +
+        '<div class="chRep">' + B.opciones(id).map((o, k) => '<button class="rep" data-rp="' + k + '">' + esc(o.t) + '</button>').join('') + '</div>';
+    } else if (celApp === 'agenda') {
+      const B = VR.Buzon, ids = B.contactos();
+      h = '<h3>📒 Contactos</h3>' + (ids.length ? ids.map((id) => { const c = VR.CONTACTOS[id];
+        return '<div class="ctc"><i class="chAv">' + c[1] + '</i><span class="chTx"><b>' + esc(c[0]) + '</b><small>' + esc(c[3]) + '</small><small class="num">📞 ' + esc(c[2]) + '</small></span><button class="cbtn mini" data-chat="' + id + '">💬</button></div>'; }).join('') : '<p>Tu agenda está vacía. Los personajes te van a ir pasando su número.</p>');
     } else if (celApp === 'stats') {
       h = '<h3>📊 Estadísticas</h3>' + VR.Stats.html();
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
-    { const kg = celBody.querySelector('#kkGo'); if (kg) kg.onclick = () => celGo(() => mis.kikeViaje()); }
+    celBody.querySelectorAll('[data-chat]').forEach((b) => b.onclick = () => { celApp = 'msj:' + b.dataset.chat; paintCel(); });
+    celBody.querySelectorAll('[data-rp]').forEach((b) => b.onclick = () => { const id = celApp.slice(4), a = VR.Buzon.responder(id, +b.dataset.rp); if (a) celGo(() => VR.Buzon.hacer(a)); else paintCel(); });
+    if (typeof celApp === 'string' && celApp.startsWith('msj:')) { const ch = celBody.querySelector('.chat'); celBody.scrollTop = celBody.scrollHeight; if (ch) ch.scrollTop = ch.scrollHeight; }
     celBody.querySelectorAll('[data-ch]').forEach((b) => b.onclick = () => celGo(() => changas.start(b.dataset.ch)));
     if (celApp === 'mis' && mis) paintMis(celBody, true);
     if (celApp === 'mapa') { celBody.classList.add('mapa'); celBody.innerHTML = ''; $('mapView').classList.add('enCel'); celBody.append($('mapView')); $('mapHelp').innerHTML = 'Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar el destino del GPS'; openMap(); VR.loop.paused = true; VR.input.enabled = false; mv.k = fitK() * 4; const f = car || player; mapCenterOn(f.x, f.y); }
@@ -829,6 +839,8 @@
     // Kike te lleva (19/11/2026, pedido de Leandro): desde donde estés a la plaza, o desde la plaza a tu pieza. Los primeros 3 viajes gratis, después 5.000 Gs.
     mis.kikeRuta = () => { const pl = mis.lug.get('plaza'), casa = vida.s.casa, f = car || player; if (!pl || !casa) return null; const aCasa = Math.hypot(f.x - pl.x, f.y - pl.y) < 420; return { aCasa, d: aCasa ? { x: casa.x, y: casa.y + 26, name: 'Tu pieza' } : (() => { const k = mis.dondeEsta('kike') || pl, p = mis.lug.libre(k.x + 26, k.y + 30); return { x: p.x, y: p.y, name: 'la plaza' }; })() }; };
     mis.kikeViaje = () => { const r = mis.kikeRuta(); if (!r) return null; const n = vida.s.kikeViajes || 0; vida.s.kikeViajes = n + 1; let txt;
+    VR.Buzon.ctx = { vida, kikeRuta: () => mis.kikeRuta(), kikeViaje: () => setTimeout(() => mis.kikeViaje(), 2600) };
+    VR.Buzon.onChange = (id) => { if (celDlg.open && (celApp === 'msj' || celApp === 'agenda' || celApp === 'msj:' + id)) paintCel(); };
       if (n < 3) txt = '🏍 Viaje de regalo (' + (n + 1) + '/3)'; else { vida.cobrarODeber(5000, 'Kike te llevó'); txt = '🏍 Viaje con Kike · ' + VR.fmtGs(5000); }
       if (car) exitCar(); const f = $('celFade'); f.textContent = txt + ' · ' + (r.aCasa ? 'a tu pieza…' : 'a la plaza…'); f.classList.add('on'); setTimeout(() => { teleport(r.d.x, r.d.y, r.d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); return null; };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
