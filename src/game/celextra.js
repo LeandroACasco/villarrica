@@ -6,13 +6,26 @@ VR.CelX = (() => {
   const hm = (m) => pad((m / 60) | 0) + ':' + pad(m % 60);
   const rng = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const APPS = [['alarma', '⏰', 'Alarma', '#ff9a5a', false], ['radio', '📻', 'Radio', '#c8a0ff', false], ['clima', '🌤', 'Clima', '#6ac8ff', true], ['noti', '📰', 'Noticias', '#e6e6e6', true],
-    ['deliv', '🍔', "Ñembo'u", '#ff6b4a', true], ['salud', '❤️', 'Salud', '#ff7a8a', false], ['juegos', '🎮', 'Juegos', '#9bbc0f', false]];
+    ['deliv', '🍔', "Ñembo'u", '#ff6b4a', true], ['salud', '❤️', 'Salud', '#ff7a8a', false], ['juegos', '🎮', 'Juegos', '#9bbc0f', false], ['tere', '🧉', 'Tereré', '#3b9d5a', true], ['ajustes', '⚙️', 'Ajustes', '#9aa3b2', false]];
+  // ---- Tereré: la red social de Villarrica (todo inventado). Feed del día con vecinos; vos publicás y te van llegando likes y comentarios ----
+  const GENTE = [['Cinthia Vera', '👩'], ['Chino Ayala', '🧑'], ['Doña Chela', '👵'], ['Kike Mbohasa', '🛵'], ['Tía Norma', '👩‍🦳'], ['Pablo Ñandú', '🧔'], ['Lorena Ykuá', '👱‍♀️'], ['El Gringo', '🧑‍🦰']];
+  const POSTS = ['Hoy el calor está para tereré con menta. ¿Quién se suma a la plaza?', 'Se me pinchó la goma en la ruta, ¡qué día, ndaje!', 'Chipa recién salida del horno, pasen nomás.', 'Alguien vio mi gato? Es naranja y anda por el barrio Ykuá.', 'Qué lindo atardecer sobre el lago, miren.', 'Mañana feria en el mercado, lleguen temprano.', 'Pedí un Mbohasa y el conductor era un divino, 5 estrellas.', 'Ojo con la zona de la terminal esta noche, mucho movimiento.', 'Cumple de mi abuela, vengan todos al asado.', 'Se corta la luz otra vez... paciencia nomás.', 'Los bomberos hicieron un trabajo bárbaro hoy, gracias.', 'Vendo bici usada, buen estado. Consulten por privado.'];
+  const COMS = ['Jajaja qué grande', '¡Genial!', 'Ahí voy', 'Pavê, me encantó', 'Qué bueno che', 'Totalmente de acuerdo', 'Mba\'éichapa, ¡qué buena!', '👏👏👏'];
+  const mias = () => (V.s.tere = V.s.tere || { mis: [], lk: {} });
+  function feed() { const r = rng(Math.floor(V.s.min / 1440) * 31 + 7), n = 6, L = []; for (let i = 0; i < n; i++) { const g = GENTE[(r() * GENTE.length) | 0], t = POSTS[(r() * POSTS.length) | 0]; L.push({ id: V.dia + '_' + i, g, t, l: 2 + ((r() * 40) | 0), c: r() < 0.5 ? COMS[(r() * COMS.length) | 0] : '', h: (V.s.min % 1440) - ((i * 97) % 600) }); } return L; }
+  function reacc(p) { const T = V.s.min - p.min, r = rng(p.min | 0); return { l: Math.min(60, Math.floor(T / 4) + ((r() * 3) | 0)), cs: Array.from({ length: Math.min(3, Math.floor(T / 25)) }, (_, i) => [GENTE[(r() * GENTE.length) | 0], COMS[(r() * COMS.length) | 0]]) }; }
+  // ---- personalización: fondos, tonos y orden de apps (se guarda en s.cel) ----
+  const FONDOS = [['noche', 'Noche', 'linear-gradient(#10182e,#2a1a4a)', 0], ['lapacho', 'Lapacho', 'linear-gradient(#ff8fc0,#8a2f7a)', 8000], ['ykua', 'Ykuá', 'linear-gradient(#1c5a8a,#7fd0e8)', 8000], ['campo', 'Campo', 'linear-gradient(#2f6a2f,#d8c860)', 8000], ['atardecer', 'Atardecer', 'linear-gradient(#ff6b4a,#3a1a5a)', 12000], ['retro', 'Verde retro', 'linear-gradient(#0f380f,#306230)', 5000]];
+  const TONOS = [['cl', 'Clásico', 0], ['gu', 'Guarania', 12000], ['cu', 'Cumbia', 12000], ['di', 'Digital', 8000], ['ro', 'Rock', 15000]];
+  const cfg = () => (V.s.cel = V.s.cel || { fondo: 'noche', tono: 'cl', fondos: ['noche'], tonos: ['cl'], orden: [] });
+  const NOTAS = { cl: [[440, 480]], gu: [[64, 67, 71, 69, 67, 64].map(mf)], cu: [[57, 60, 64, 60].map(mf)], di: [[880, 1175, 880, 1175]], ro: [[82, 98, 82, 123]] };
+  function sonarTono(id) { const t = id || cfg().tono, L = NOTAS[t] ? NOTAS[t][0] : NOTAS.cl[0]; L.forEach((f, i) => setTimeout(() => { try { A().tone(f, t === 'cl' ? 0.9 : 0.22, { type: t === 'ro' ? 'sawtooth' : t === 'di' ? 'square' : 'sine', vol: 0.05 }); } catch (e) { /* sin audio */ } }, t === 'cl' ? 0 : i * 240)); }
   const GAMES = [['culebra', '🐍', 'Culebra', '#9bbc0f'], ['tateti', '❌', 'Ta-te-tí', '#ff8a8a'], ['memoria', '🃏', 'Memoria', '#ffd84a'], ['bloques', '🧱', 'Bloques', '#5ac8fa'], ['rebote', '🏓', 'Rebote', '#7fe08a']];
   let V = null, X0 = null;
 
   // ---------------- Radio: tres emisoras inventadas, música propia sintetizada (guarania, polca y cumbia) ----------------
   const Radio = VR.Radio = {
-    k: null, tm: 0, step: 0, nx: 0, mel: [], ORDEN: ['guarania', 'polca', 'cumbia'],
+    k: null, tm: 0, step: 0, nx: 0, mel: [], linea: '', ORDEN: ['guarania', 'polca', 'cumbia', 'rock', 'noti'],
     E: {
       guarania: { fm: '98.1', n: 'Ñandutí FM', d: 'Guaranias: arpegios lentos de guitarra', sd: 0.36, len: 6, sc: [57, 59, 60, 62, 64, 65, 68, 69, 72],
         prog: [[45, [57, 60, 64]], [50, [57, 62, 65]], [52, [56, 59, 64]], [45, [57, 60, 64]], [48, [55, 60, 64]], [43, [55, 59, 62]], [52, [56, 59, 64]], [45, [57, 60, 64]]] },
@@ -20,16 +33,25 @@ VR.CelX = (() => {
         prog: [[48, [60, 64, 67]], [43, [59, 62, 67]], [48, [60, 64, 67]], [43, [59, 62, 67]], [48, [60, 64, 67]], [41, [57, 60, 65]], [43, [59, 62, 67]], [48, [60, 64, 67]]] },
       cumbia: { fm: '104.7', n: 'Cumbia del Ykuá', d: 'Cumbia bailable', sd: 0.163, len: 16, sc: [69, 72, 74, 76, 79, 81],
         prog: [[45, [57, 60, 64]], [45, [57, 60, 64]], [50, [57, 62, 65]], [52, [56, 59, 64]]] },
+      rock: { fm: '99.3', n: 'La Poderosa', d: 'Rock con guitarras pesadas', sd: 0.14, len: 16, sc: [64, 67, 69, 71, 74, 76],
+        prog: [[40, [52, 59]], [40, [52, 59]], [45, [57, 64]], [43, [55, 62]]] },
+      noti: { fm: '88.3', n: 'Radio Villarrica · Noticias', d: 'Noticiero con locutor y publicidades', sd: 0.5, len: 16, sc: [60, 64, 67], prog: [[48, [60, 64, 67]], [53, [57, 60, 65]], [55, [59, 62, 67]], [48, [60, 64, 67]]] },
     },
+    // publicidades locales (inventadas) que lee el locutor del noticiero
+    ADS: ['Chipería Doña Chela: la chipa más rica de la plaza, calentita todos los días.', 'Heladería Marimer: el helado que combina con el calor de Villarrica.', 'Ao Porã, ropa y peluquería: lucí bien y usá casco.',
+      'Mbohasa: pedí tu viaje desde el celular y viajá seguro.', 'Ñembo\'u: tu comida en la puerta, sin moverte de casa.', 'Bomberos voluntarios: tu colecta salva vidas.', 'Taller del barrio: revisión gratis de frenos esta semana.', 'Parrilla La Fogata: asado con mandioca, el mejor plan del sábado.'],
+    voz(txt) { try { if (!window.speechSynthesis || !A().on) return; const u = new SpeechSynthesisUtterance(txt), vs = speechSynthesis.getVoices(), v = vs.find((q) => /^es[-_](PY|AR|419|MX|US)/i.test(q.lang)) || vs.find((q) => /^es/i.test(q.lang)); if (v) u.voice = v; u.lang = v ? v.lang : 'es-ES'; u.rate = 0.98; u.volume = Math.min(1, A().vol + 0.2); speechSynthesis.speak(u); } catch (e) { /* sin voz */ } },
+    locutor() { const h = V ? V.hhmm : ''; const L = this.cola && this.cola.length ? this.cola : (this.cola = ['Radio Villarrica, las noticias de las ' + h + '.'].concat(noticias().slice(0, 4), [this.ADS[(Math.random() * this.ADS.length) | 0]]));
+      const t = L.shift(); this.linea = t; this.voz(t); },
     // melodía de un compás: camina por la escala cerca de la nota más alta del acorde; es la misma cada vez que vuelve el compás (la música «gira»)
     compas(E, bar, hook) {
       const r = rng(bar * 131 + (this.k.length * 17) + (hook ? 7 : 0)), ch = E.prog[bar % E.prog.length][1]; let i = Math.max(0, E.sc.findIndex((n) => n >= ch[2])); this.mel = [];
-      for (let j = 0; j < E.len; j++) { const a = r(), b = r(); i = Math.max(0, Math.min(E.sc.length - 1, i + (b < 0.33 ? -1 : b > 0.66 ? 1 : 0))); this.mel.push(a < (this.k === 'polca' ? 0.9 : this.k === 'cumbia' ? 0.45 : 0.62) ? E.sc[i] : null); }
+      for (let j = 0; j < E.len; j++) { const a = r(), b = r(); i = Math.max(0, Math.min(E.sc.length - 1, i + (b < 0.33 ? -1 : b > 0.66 ? 1 : 0))); this.mel.push(a < (this.k === 'polca' ? 0.9 : this.k === 'cumbia' ? 0.45 : this.k === 'rock' ? 0.5 : 0.62) ? E.sc[i] : null); }
     },
     play(E, step, at) {
       const T = (f, d, o) => A().tone(f, d, Object.assign({ at }, o)), bar = Math.floor(step / E.len), i = step % E.len, [root, ch] = E.prog[bar % E.prog.length], sd = E.sd;
       if (i === 0) this.compas(E, bar, this.k === 'cumbia' && bar % 2 === 1);
-      const mel = this.mel[i];
+      const mel = this.k === 'noti' ? null : this.mel[i];
       if (this.k === 'guarania') {
         if (i === 0) T(mf(root), sd * 5, { type: 'triangle', vol: 0.07, lp: 900 });
         if (i === 2 || i === 4) ch.forEach((n, q) => T(mf(n), sd * 1.9, { type: 'triangle', vol: 0.032, lp: 1800, at: at + q * 0.035 }));
@@ -38,6 +60,13 @@ VR.CelX = (() => {
         if (i === 0) T(mf(root), sd * 1.6, { type: 'triangle', vol: 0.08, lp: 800 }); if (i === 3) T(mf(root + 7), sd * 1.6, { type: 'triangle', vol: 0.07, lp: 800 });
         if (i === 1 || i === 2 || i === 4 || i === 5) ch.forEach((n) => T(mf(n), sd * 0.7, { type: 'square', vol: 0.011, lp: 1500 }));
         if (mel) T(mf(mel), sd * 0.9, { type: 'triangle', vol: 0.055, lp: 3200 });
+      } else if (this.k === 'rock') {
+        if (i === 0 || i === 6 || i === 8 || i === 10) T(80, 0.14, { type: 'sine', vol: 0.12, f2: 40 }); if (i === 4 || i === 12) A().noise(0.13, { vol: 0.07, lp: 4500, hp: 900, at }); if (i % 2 === 0) A().noise(0.03, { vol: 0.02, lp: 9000, hp: 6500, at });
+        if (i % 2 === 0) T(mf(root + 12), sd * 1.6, { type: 'sawtooth', vol: 0.04, lp: 1100 }); if (i === 0 || i === 8) ch.forEach((n) => T(mf(n), sd * 6, { type: 'sawtooth', vol: 0.03, lp: 1500 }));
+        if (mel) T(mf(mel), sd * 2.2, { type: 'square', vol: 0.028, lp: 2600 });
+      } else if (this.k === 'noti') {
+        if (i === 0) { ch.forEach((n, q) => T(mf(n), sd * 6, { type: 'sine', vol: 0.02, at: at + q * 0.02 })); if (step % 64 === 0) { [72, 76, 79, 84].forEach((n, q) => T(mf(n), 0.18, { type: 'triangle', vol: 0.05, at: at + q * 0.14 })); } }
+        if (step % 48 === 8) this.locutor();
       } else {
         if (i % 4 === 0) T(90, 0.12, { type: 'sine', vol: 0.09, f2: 50 });
         if (i % 2 === 0) A().noise(0.04, { vol: i % 4 === 2 ? 0.035 : 0.02, lp: 9000, hp: 5000, at }); if (i % 4 === 3) A().noise(0.03, { vol: 0.018, lp: 9000, hp: 6000, at });
@@ -48,7 +77,7 @@ VR.CelX = (() => {
     },
     sched() { const a = A(), ac = a.ctx(); if (!ac || !this.k) return; const E = this.E[this.k]; if (this.nx < ac.currentTime) this.nx = ac.currentTime + 0.05;
       while (this.nx < ac.currentTime + 0.3) { this.play(E, this.step, this.nx - ac.currentTime); this.step++; this.nx += E.sd; } },
-    set(k) { clearInterval(this.tm); this.k = k || null; this.step = 0; this.nx = 0; try { VR.store.set('radio', this.k || ''); } catch (e) { /* sin guardado */ }
+    set(k) { clearInterval(this.tm); try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* sin voz */ } this.cola = null; this.linea = ''; this.k = k || null; this.step = 0; this.nx = 0; try { VR.store.set('radio', this.k || ''); } catch (e) { /* sin guardado */ }
       if (this.k) { A().noise(0.35, { vol: 0.05, lp: 5000, hp: 1200 }); this.tm = setInterval(() => this.sched(), 70); } },
     sig() { const i = this.k ? this.ORDEN.indexOf(this.k) : -1, n = i + 1 < this.ORDEN.length ? this.ORDEN[i + 1] : null; this.set(n); const E = n && this.E[n];
       if (VR.toast) VR.toast(E ? '📻 ' + E.fm + ' FM · ' + E.n : '📻 Radio apagada'); },
@@ -72,12 +101,22 @@ VR.CelX = (() => {
   ];
   let cart = {};
   const pedidos = () => V.s.pedidos || (V.s.pedidos = []);
+  // el pedido llega cuando se cumple la hora; si hay camino, un repartidor en moto sale de una esquina y te lo trae (VR.Reparto); si no, te lo dejan en la puerta
+  function dar(p, enMano) {
+    V.s.pedidos = pedidos().filter((q) => q !== p);
+    for (const it of p.it) VR.Inv.add({ k: 'comida:' + it.k, n: it.n, ico: it.ico, tipo: 'comida', h: it.h, cu: 0 }, it.c);
+    VR.Buzon.add('sis', '🛵 Tu pedido de ' + p.n + (enMano ? ' llegó: el repartidor te lo dio en mano.' : ' llegó: te lo dejaron en la puerta de tu pieza.') + ' Está en la mochila.', V, null, true);
+    if (VR.toast) VR.toast('🛵 ¡Llegó tu pedido de ' + p.n + '! Mirá la mochila'); try { A().coin(); } catch (e) { /* sin audio */ } V.save();
+  }
+  const puedeRepartir = () => !document.body.classList.contains('adentro') && !(VR.pieza && VR.pieza.on);
   function entregas() {
-    const P = pedidos(); if (!P.length) return; const hechos = P.filter((p) => p.t <= V.s.min); if (!hechos.length) return;
-    V.s.pedidos = P.filter((p) => p.t > V.s.min);
-    for (const p of hechos) { for (const it of p.it) VR.Inv.add({ k: 'comida:' + it.k, n: it.n, ico: it.ico, tipo: 'comida', h: it.h, cu: 0 }, it.c);
-      VR.Buzon.add('sis', '🛵 Tu pedido de ' + p.n + ' llegó: está en la mochila.', V); try { A().coin(); } catch (e) { /* sin audio */ } }
-    V.save();
+    const P = pedidos(); if (!P.length) return; const due = P.filter((p) => p.t <= V.s.min); if (!due.length) return; const R = VR.reparto;
+    for (const p of due) {
+      if (p.rep) continue; // ya hay un repartidor en camino con éste
+      if (!R || !puedeRepartir()) { dar(p, false); continue; }
+      if (R.r || R.pend) { if (p.espera === undefined) p.espera = V.s.min; if (V.s.min - p.espera > 20) dar(p, false); continue; } // otro repartidor está en la calle
+      if (R.salir(p)) p.rep = 1; else dar(p, false);
+    }
   }
   // ---------------- Noticias ----------------
   const POOL = ['Vecinos piden más semáforos y cebras en las avenidas del Centro', 'La chipa a 5.000 Gs.: los clientes dicen que «ya está cara», las vendedoras que la harina subió',
@@ -113,12 +152,12 @@ VR.CelX = (() => {
     const c = VR.CONTACTOS[id]; if (!c || !V || inc || call || !(V.s.saldo > 0) || (prob !== undefined && Math.random() > prob)) return false;
     if (VR.loop.paused || document.querySelector('dialog[open]') || (VR.Dialogo && VR.Dialogo.abierto)) return false;
     const ov = document.createElement('div'); ov.className = 'inOv'; ov.innerHTML = '<i class="chAv">' + c[1] + '</i><div><b>' + X0.esc(c[0]) + '</b><span>📞 te está llamando…</span></div><button class="no" data-no title="Rechazar">📵</button><button class="si" data-si title="Atender">📞</button>'; document.body.append(ov);
-    const ring = () => { A().tone(440, 0.9, { type: 'sine', vol: 0.05 }); A().tone(480, 0.9, { type: 'sine', vol: 0.05 }); try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) { /* sin vibración */ } };
+    const ring = () => { sonarTono(); try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) { /* sin vibración */ } };
     const fin = () => { clearInterval(iv); clearTimeout(to); ov.remove(); inc = null; }; ring(); const iv = setInterval(ring, 2200), to = setTimeout(() => { fin(); X0.toast('📵 Llamada perdida de ' + c[0]); }, 14000);
     ov.querySelector('[data-no]').onclick = fin; ov.querySelector('[data-si]').onclick = () => { fin(); X0.B.leerDe(id); call = { id, st: 'on', yo: '', resp: '', hola: txt }; A().blip(); X0.cel('call:' + id); };
     inc = { fin }; return true;
   }
-  const has = (k) => typeof k === 'string' && (APPS.some((a) => a[0] === k) || k === 'juegos' || k.startsWith('call:') || k.startsWith('deliv:') || GAMES.some((g) => g[0] === k && k !== 'culebra'));
+  const has = (k) => typeof k === 'string' && (APPS.some((a) => a[0] === k) || k === 'tere' || k === 'juegos' || k.startsWith('call:') || k.startsWith('deliv:') || GAMES.some((g) => g[0] === k && k !== 'culebra'));
   const bar = (v, c) => '<div class="sBar"><i style="width:' + Math.max(0, Math.min(100, v)) + '%;background:' + c + '"></i></div>';
 
   function html(k, X) {
@@ -128,7 +167,7 @@ VR.CelX = (() => {
         L.map((a, i) => '<div class="alRow"><input type="time" data-al="' + i + '" value="' + hm(a.m) + '"><select data-alb="' + i + '">' + LBL.map((l) => '<option' + (l === a.lbl ? ' selected' : '') + '>' + l + '</option>').join('') + '</select><button data-alt="' + i + '" title="Activar">' + (a.on ? '🔔' : '🔕') + '</button><button data-ald="' + i + '" title="Borrar">🗑</button></div>').join('') +
         (L.length ? '' : '<p>No tenés alarmas. Poné una para no llegar tarde a la misión o al cobro de la pieza.</p>') + '<button class="cbtn" data-aln>➕ Nueva alarma</button>';
     } else if (k === 'radio') {
-      const E = Radio.E, on = Radio.k && E[Radio.k]; h = '<h3>📻 Radio</h3><div class="rdDial"><b>' + (on ? on.fm + ' FM' : '— apagada —') + '</b><span>' + (on ? on.n : 'Elegí una emisora') + '</span><div class="rdBars' + (on ? ' on' : '') + '"><i></i><i></i><i></i><i></i><i></i></div></div>' +
+      const E = Radio.E, on = Radio.k && E[Radio.k]; h = '<h3>📻 Radio</h3><div class="rdDial"><b>' + (on ? on.fm + ' FM' : '— apagada —') + '</b><span>' + (on ? on.n : 'Elegí una emisora') + '</span>' + (Radio.linea ? '<em class="rdLin">🎙 ' + esc(Radio.linea) + '</em>' : '') + '<div class="rdBars' + (on ? ' on' : '') + '"><i></i><i></i><i></i><i></i><i></i></div></div>' +
         Radio.ORDEN.map((q) => '<button class="cbtn opc" data-rd="' + q + '"><span class="oi">📻</span><span class="ot"><b>' + E[q].fm + ' · ' + E[q].n + '</b><small>' + E[q].d + '</small></span><span class="op">' + (Radio.k === q ? '🔊' : '▶') + '</span></button>').join('') +
         (on ? '<button class="cbtn sec" data-rd="">⏹ Apagar</button>' : '') + '<p>Sigue sonando mientras jugás. Con el auto o la moto, la tecla R cambia de emisora.</p>';
     } else if (k === 'clima') {
@@ -157,6 +196,16 @@ VR.CelX = (() => {
         '<div class="row2"><span>📶 Saldo</span><b>' + (s.saldo > 0 ? Math.ceil(s.saldo) + ' días' : 'sin saldo') + '</b></div><div class="row2"><span>💸 Gastado hoy</span><b>' + gs(gasto) + '</b></div>' + (v.deudaTotal() > 0 ? '<div class="row2" style="color:#ff8a7a"><span>⚠ Deudas</span><b>' + gs(v.deudaTotal()) + '</b></div>' : '') +
         '<p>' + (ham < 30 ? '🍽 Tenés hambre: comé algo de la mochila o pedí en Ñembo\'u.' : hp < 50 ? '🩹 Andá más despacio: la vida baja con los golpes y se recupera sola. El hospital es el último recurso.' : '✔ Estás bien. Seguí así.') + '</p>' +
         (ham < 50 ? '<button class="cbtn" data-a="deliv">🍔 Pedir comida</button>' : '');
+    } else if (k === 'tere') {
+      const M = mias(), hm2 = (m) => { m = ((m % 1440) + 1440) % 1440; return pad(Math.floor(m / 60)) + ':' + pad(Math.floor(m % 60)); };
+      h = '<h3>🧉 Tereré</h3><div class="tpub"><input id="tePub" maxlength="120" placeholder="¿Qué estás pensando, che?"><button class="mini" data-tpub>Publicar</button></div>';
+      for (const p of M.mis.slice().reverse().slice(0, 6)) { const R = reacc(p); h += '<div class="tpost yo"><b>🙂 Vos</b> <small>' + hm2(p.min) + '</small><p>' + esc(p.t) + '</p><small>👍 ' + R.l + (R.cs.length ? ' · 💬 ' + R.cs.length : '') + '</small>' + R.cs.map((q) => '<div class="tcom"><b>' + q[0][1] + ' ' + q[0][0] + ':</b> ' + esc(q[1]) + '</div>').join('') + '</div>'; }
+      for (const p of feed()) { const me = M.lk[p.id]; h += '<div class="tpost"><b>' + p.g[1] + ' ' + p.g[0] + '</b> <small>' + hm2(p.h) + '</small><p>' + esc(p.t) + '</p><small><button class="mini" data-tlk="' + p.id + '">' + (me ? '👍 Te gusta' : '👍 Me gusta') + '</button> ' + (p.l + (me ? 1 : 0)) + '</small>' + (p.c ? '<div class="tcom"><b>💬</b> ' + esc(p.c) + '</div>' : '') + '</div>'; }
+    } else if (k === 'ajustes') {
+      const c = cfg(), tr = (n) => (n ? gs(n) : 'gratis');
+      h = '<h3>⚙️ Ajustes</h3><h4>🖼 Fondo de pantalla</h4><div class="fdGr">' + FONDOS.map(([id, n, bg, p]) => '<button class="fd' + (c.fondo === id ? ' sel' : '') + '" data-fd="' + id + '" style="background:' + bg + '"><b>' + n + '</b><small>' + (c.fondos.includes(id) ? (c.fondo === id ? '✔ puesto' : 'tuyo') : gs(p)) + '</small></button>').join('') + '</div>' +
+        '<h4>🔔 Tono de llamada</h4>' + TONOS.map(([id, n, p]) => '<div class="row2"><span>' + (c.tono === id ? '✔ ' : '') + n + '</span><span><button class="mini" data-tp="' + id + '">▶</button> <button class="mini" data-tu="' + id + '">' + (c.tonos.includes(id) ? (c.tono === id ? 'En uso' : 'Usar') : 'Comprar ' + tr(p)) + '</button></span></div>').join('') +
+        '<h4>📱 Orden de las apps</h4><p style="font-size:12px">Tocá ⬆ para llevar una app al principio de la pantalla.</p><div class="fdOrd">' + ordenar(X.todas || []).map(([a, i, n]) => '<button class="mini" data-up="' + a + '">⬆ ' + n.replace(/<[^>]*>/g, '') + '</button>').join('') + '</div><button class="cbtn sec" data-ordr>Restablecer orden</button>';
     } else if (k === 'juegos') {
       h = '<h3>🎮 Juegos</h3><div class="apps">' + GAMES.map(([g, i, n, c]) => '<button class="app" data-a="' + g + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>';
     } else if (k.startsWith('call:')) {
@@ -172,6 +221,21 @@ VR.CelX = (() => {
   function init(k, body, X) {
     if (VR.Juegos && VR.Juegos[k]) return VR.Juegos[k](body);
     const { vida: v } = X, $$ = (sel, f) => body.querySelectorAll(sel).forEach(f);
+    if (k === 'tere') {
+      const M = mias();
+      $$('[data-tpub]', (e) => e.onclick = () => { const t = body.querySelector('#tePub').value.trim(); if (!t) return; M.mis.push({ t, min: v.s.min }); if (M.mis.length > 20) M.mis.shift(); v.save(); try { A().coin(); } catch (x) { /* sin audio */ } X.paint(); });
+      $$('[data-tlk]', (e) => e.onclick = () => { M.lk[e.dataset.tlk] = !M.lk[e.dataset.tlk]; v.save(); X.paint(); });
+      return;
+    }
+    if (k === 'ajustes') {
+      const c = cfg(), sv = () => { v.save(); X.paint(); };
+      $$('[data-fd]', (e) => e.onclick = () => { const f = FONDOS.find((q) => q[0] === e.dataset.fd); if (!c.fondos.includes(f[0])) { if (!v.pagaBanco(f[3], 'Fondo ' + f[1])) return; c.fondos.push(f[0]); } c.fondo = f[0]; sv(); });
+      $$('[data-tp]', (e) => e.onclick = () => sonarTono(e.dataset.tp));
+      $$('[data-tu]', (e) => e.onclick = () => { const t = TONOS.find((q) => q[0] === e.dataset.tu); if (!c.tonos.includes(t[0])) { if (!v.pagaBanco(t[2], 'Tono ' + t[1])) return; c.tonos.push(t[0]); } c.tono = t[0]; sonarTono(t[0]); sv(); });
+      $$('[data-up]', (e) => e.onclick = () => { c.orden = [e.dataset.up].concat((c.orden || []).filter((q) => q !== e.dataset.up)); sv(); });
+      $$('[data-ordr]', (e) => e.onclick = () => { c.orden = []; sv(); });
+      return;
+    }
     if (k === 'alarma') {
       const L = alarmas(), sv = () => v.save();
       $$('[data-al]', (e) => e.onchange = () => { const m = /(\d+):(\d+)/.exec(e.value); if (m) { L[+e.dataset.al].m = +m[1] * 60 + +m[2]; sv(); } });
@@ -192,14 +256,33 @@ VR.CelX = (() => {
       const colgar = () => { tm.forEach(clearTimeout); rt.forEach(clearTimeout); rt = []; call = null; X.go2('agenda'); };
       $$("[data-hang]", (e) => e.onclick = () => { if (call && call.st === 'on') { call.st = 'fin'; } colgar(); });
       $$('[data-cr]', (e) => e.onclick = () => { const q = +e.dataset.cr, o = B.opciones(id)[q]; if (!o) return; call.yo = o.t; call.resp = '…'; const a = B.responder(id, q); X.paint();
-        rt.push(setTimeout(() => { const m = B.ultimo(id); if (!call) return; call.resp = m && !m.yo ? m.txt : 'Dale, hablamos.'; B.leerDe(id); if (X.app() === 'call:' + id) X.paint(); if (a) rt.push(setTimeout(() => X.go(() => B.hacer(a)), 1400)); }, 2100)); });
+        rt.push(setTimeout(() => { const m = B.ultimo(id); if (!call) return; call.resp = m && !m.yo ? m.txt : 'Dale, hablamos.'; B.leerDe(id); if (X.app() === 'call:' + id) X.paint(); if (a) rt.push(setTimeout(() => { if (B.CIERRA.includes(a)) X.go(() => B.hacer(a)); else { B.hacer(a); if (X.app() === 'call:' + id) X.paint(); } }, 1400)); }, 2100)); });
       if (call.st === 'ring') { const ring = () => { A().tone(440, 0.9, { type: 'sine', vol: 0.05 }); A().tone(480, 0.9, { type: 'sine', vol: 0.05 }); }; ring(); tm.push(setTimeout(ring, 1700));
         tm.push(setTimeout(() => { if (!call || call.id !== id) return; call.st = 'on'; A().blip(); if (X.app() === 'call:' + id) X.paint(); }, 3500)); }
       return () => { tm.forEach(clearTimeout); if (!/^call:/.test(X.app())) { rt.forEach(clearTimeout); rt = []; call = null; } };
     }
     return null;
   }
-  return { APPS, GAMES, has, html, init, Radio, llamar: (id) => { call = { id, st: 'ring', yo: '', resp: '' }; }, entrante,
-    arrancar(vida, X) { V = vida; X0 = X; last = Math.floor(V.s.min);
+  // Repartidor de Ñembo'u: un Mbohasa sin pasajero. Sale de una esquina fuera de pantalla, llega hasta vos, te da el pedido y se va por donde vino.
+  VR.Reparto = class extends VR.Mbohasa {
+    constructor(o) { super(Object.assign({ toast: () => {}, dialogo: () => {}, pagar: () => true, yo: () => null, tengoCasco: () => false, manejando: () => false, bajar: () => {} }, o)); this.pend = null; }
+    salir(p) { this.pend = p; if (!this.pedir('moto', 0, { name: 'tu casa' }, { modelo: 'cub', kv: 1.05 })) { this.pend = null; return false; } this.r.home = { x: this.v.x, y: this.v.y }; if (VR.toast) VR.toast('🛵 El repartidor de Ñembo\'u ya va para tu zona'); return true; }
+    quitar() { const p = this.pend; this.pend = null; super.quitar(); if (p) dar(p, false); } // si no pudo llegar, te lo dejan en la puerta
+    update(dt) {
+      const r = this.r, v = this.v;
+      if (r && v && r.st === 'espera' && this.pend) {
+        v.physics(dt, 0, 0, true, true); r.wait += dt; const f = this.player, d = Math.hypot(f.x - v.x, f.y - v.y);
+        if (d < 120 || r.wait > 25) { const p = this.pend; this.pend = null; dar(p, d < 160); const Q = this.ruta(v.x, v.y, r.home.x, r.home.y); if (Q && Q.length >= 6) { r.P = Q; r.st = 'sale'; r.t = 0; } else super.quitar(); }
+        return;
+      }
+      super.update(dt);
+    }
+  };
+  const ordenar = (L) => { const o = (V && V.s.cel && V.s.cel.orden) || []; return L.slice().sort((a, b) => { const x = o.indexOf(a[0]), y = o.indexOf(b[0]); return (x < 0 ? 999 : x) - (y < 0 ? 999 : y); }); };
+  return { APPS, GAMES, has, ordenar, fondo: () => { const f = FONDOS.find((q) => q[0] === cfg().fondo); return f ? f[2] : ''; }, sonarTono, html, init, Radio, llamar: (id) => { call = { id, st: 'ring', yo: '', resp: '' }; }, entrante,
+    // cada llamada que hacés gasta 0,1 día de saldo (las que te hacen son gratis)
+    cobraLlamada() { if (!(V.s.saldo >= 0.1)) { X0.toast('📵 No te alcanza el saldo para llamar'); return false; } V.s.saldo = Math.max(0, V.s.saldo - 0.1); V.save(); return true; },
+    arrancar(vida, X) { V = vida; X0 = X; last = Math.floor(V.s.min); pedidos().forEach((p) => { delete p.rep; delete p.espera; });
+      setInterval(() => { const hud = document.getElementById('radioHud'), sp = document.getElementById('speed'); if (!hud || !sp) return; const on = Radio.k && !sp.hidden; hud.hidden = !on; if (on) { const E = Radio.E[Radio.k]; hud.textContent = '📻 ' + E.fm + ' · ' + (Radio.k === 'noti' && Radio.linea ? Radio.linea.slice(0, 60) : E.n); hud.style.top = (sp.getBoundingClientRect().bottom + 4) + 'px'; } }, 500);
       setInterval(() => { const cur = Math.floor(V.s.min); if (cur !== last) { for (let t = Math.max(last + 1, cur - 180); t <= cur; t++) { const L = alarmas(), a = L.find((q) => q.on && q.m === t % 1440); if (a) { if (a.tmp) L.splice(L.indexOf(a), 1); V.save(); suena(a); break; } } last = cur; } entregas(); }, 400); } };
 })();

@@ -224,6 +224,11 @@
   body.historia #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px + 104px); }
   body.adentro #dock { visibility: hidden; }
   #dock.libre .dkRow { display: none; } body:not(.historia) #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px + 58px); }
+  #radioHud { position: fixed; right: calc(env(safe-area-inset-right) + 10px); width: var(--mini, 112px); box-sizing: border-box; z-index: 4; text-align: center; font: 700 10.5px/1.25 system-ui, sans-serif; color: #d8c0ff; background: rgba(15,15,18,.62); border: 1px solid rgba(200,160,255,.5); border-radius: 10px; padding: 4px 6px; pointer-events: none; }
+  .rdLin { display: block; margin-top: 6px; font-style: normal; font-size: 11px; color: #e8dcff; }
+  #celBody h4 { margin: 10px 0 4px; font-size: 13px; color: #cfd6e4; } .fdGr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .fd { border: 2px solid transparent; border-radius: 10px; padding: 14px 4px 6px; color: #fff; text-shadow: 0 1px 2px #000; font: 700 12px system-ui; display: flex; flex-direction: column; gap: 2px; } .fd small { font-weight: 500; font-size: 10px; } .fd.sel { border-color: #fff; }
+  .fdOrd { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; } .mini { background: #3a4156; color: #fff; border: 0; border-radius: 8px; padding: 4px 8px; font: 600 11px system-ui; }
+  .tpub { display: flex; gap: 6px; margin: 6px 0; } .tpub input { flex: 1; min-width: 0; border: 0; border-radius: 8px; padding: 8px; font: 14px system-ui; } .tpost { background: rgba(255,255,255,.08); border-radius: 10px; padding: 8px 10px; margin: 6px 0; font-size: 13px; } .tpost.yo { border: 1px solid #3b9d5a; } .tpost p { margin: 4px 0; } .tcom { font-size: 12px; background: rgba(0,0,0,.25); border-radius: 6px; padding: 3px 6px; margin-top: 3px; }
   .inOv { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 65; display: flex; align-items: center; gap: 12px; background: #1b2130; border: 2px solid #6fe08a; border-radius: 40px; padding: 8px 10px 8px 12px; color: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.6); animation: inpu 1s ease-in-out infinite; min-width: 250px; }
   .inOv .chAv { width: 44px; height: 44px; font-size: 24px; } .inOv > div { flex: 1; display: flex; flex-direction: column; } .inOv b { font: 800 15px system-ui; } .inOv span { font-size: 12px; color: #9fe0a0; }
   .inOv button { width: 44px; height: 44px; border: 0; border-radius: 50%; font-size: 20px; cursor: pointer; } .inOv .no { background: #ff4a5a; } .inOv .si { background: #3cc87a; }
@@ -481,6 +486,7 @@
 <div id="pjHud" hidden title="Mi personaje"><canvas id="pjHudCv" width="56" height="56"></canvas><div class="pjBar vida"><i></i><b>❤</b></div><div class="pjBar ham"><i></i><b>🍽</b></div></div>
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
+<div id="radioHud" hidden></div>
 <div id="onHud" hidden></div>
 <div id="dock" hidden>
   <div class="dkRow"><button class="dkB" id="dkCel" title="Celular (C)"><span>📱</span><b class="dkBdg" id="dkCelB" hidden></b></button><button class="dkB" id="dkInv" title="Mochila (I)"><canvas id="dkInvCv" width="16" height="16"></canvas><b class="dkBdg" id="dkInvB" hidden></b></button></div>
@@ -544,7 +550,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 59f70a14 · 2026-11-19</div>
+  <div class="tVer">Versión ec675194 · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -659,7 +665,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 59f70a14 · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión ec675194 · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -16168,9 +16174,9 @@ VR.Buzon = {
   contactos() { const s = this.load(); return Object.keys(VR.CONTACTOS).filter((k) => s.ag[k]); },
   // ---- mensajes ----
   hora() { const v = this.vida(); return v ? v.hhmm : ''; },
-  add(de, txt, vida, tag, quiet) { const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
+  add(de, txt, vida, tag, quiet, prob) { const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
     s.msgs.unshift({ de, txt, dia: v ? v.dia : 0, hora: v ? v.hhmm : '', leido: false, tag: tag || null }); if (s.msgs.length > 200) s.msgs.length = 200; this.save();
-    const llama = !quiet && tag && VR.CelX && VR.CelX.entrante ? VR.CelX.entrante(de, txt, 0.55) : false; // los recordatorios a veces llegan como llamada (celextra.js)
+    const llama = !quiet && tag && VR.CelX && VR.CelX.entrante ? VR.CelX.entrante(de, txt, prob === undefined ? 0.55 : prob) : false; // los recordatorios a veces llegan como llamada (celextra.js)
     if (!quiet && !llama && VR.toast) VR.toast('💬 ' + p[0] + ': ' + (txt.length > 70 ? txt.slice(0, 68) + '…' : txt)); if (VR.audio && VR.audio.beep) VR.audio.beep(); if (this.onChange) this.onChange(de); },
   sinLeer() { return this.load().msgs.filter((m) => !m.leido && !m.yo).length; },
   sinLeerDe(id) { return this.load().msgs.filter((m) => !m.leido && !m.yo && m.de === id).length; },
@@ -16187,18 +16193,25 @@ VR.Buzon = {
     s.msgs.unshift({ de: id, yo: true, txt: o.t, dia: v ? v.dia : 0, hora: v ? v.hhmm : '', leido: true }); this.save(); if (this.onChange) this.onChange(id);
     const r = typeof o.r === 'function' ? o.r(this) : o.r; if (r) setTimeout(() => this.add(id, r, null, o.tag || null, true), 1100 + Math.random() * 900);
     return o.a || null; },
-  hacer(a) { const c = this.ctx; if (!c) return; if (a === 'kikeViaje' && c.kikeViaje) c.kikeViaje(); },
+  CIERRA: ['kikeViaje', 'kikeSube'], // estas acciones cierran el celular (las demás se hacen con el celular abierto)
+  hacer(a) { const c = this.ctx; if (!c || !c[a]) return; c[a](); },
   // recordatorios de los contactos (se llaman al cambiar el día)
   recordatorios(M) { const s = this.load(), v = this.vida(); if (!v) return; const dia = v.dia, ok = (id, cada) => this.tiene(id) && dia - (s.rec[id] || -99) >= cada, marca = (id) => { s.rec[id] = dia; this.save(); };
     if (ok('ramona', 2)) { const p = v.s.pieza, dias = Math.ceil((p.vence - v.s.min) / 1440); if (p.saldo > 0 && dias <= 3 && dias >= 0) { marca('ramona'); this.add('ramona', dias <= 0 ? 'Mitã, hoy vence la pieza. ¿Tenés para el alquiler?' : 'Mitã, en ' + dias + ' día' + (dias > 1 ? 's' : '') + ' vence la pieza (' + VR.fmtGs(p.saldo) + '). ¿Vas a tener, ajépa?', v, 'ramonaPaga'); } }
     if (ok('kike', 3) && Math.random() < 0.6) { marca('kike'); this.add('kike', ['Estoy en la plaza tomando tereré. Si necesitás que te lleve, avisame, che ra\'a.', 'Ey, ¿todo bien? Acá estoy en la plaza. Si estás lejos te paso a buscar.'][(Math.random() * 2) | 0], v, 'kikeOferta'); }
     if (ok('chela', 3) && v.s.fiado > 0) { marca('chela'); this.add('chela', '¿Y mi platita, che memby? Me debés ' + VR.fmtGs(v.s.fiado) + ' de la chipa.', v, 'chelaDebe'); }
-    if (ok('chela', 4) && v.s.canasto && v.s.stock <= 2 && !(v.s.fiado > 0)) { marca('chela'); this.add('chela', 'Che memby, hoy salió buena la chipa. Si querés reponer el canasto, vení temprano.', v, 'chelaOferta'); } },
+    if (ok('chela', 4) && v.s.canasto && v.s.stock <= 2 && !(v.s.fiado > 0)) { marca('chela'); this.add('chela', 'Che memby, hoy salió buena la chipa. Si querés reponer el canasto, vení temprano.', v, 'chelaOferta'); }
+    // llamadas con motivo (v2.01): Doña Chela con pedido grande para el finde, el Suboficial Benítez cuando falta gente de guardia
+    if (ok('chela', 5) && v.s.canasto && v.s.stock <= 10 && (dia - 1) % 7 >= 3 && (dia - 1) % 7 <= 5 && !(v.s.fiado > 60000)) { marca('chela'); this.add('chela', 'Che memby, me pidieron un montón de chipa para el finde. Si me ayudás a repartir te dejo 10 chipas más en el canasto, anotadas. ¿Querés?', v, 'chelaPedido', false, 0.85); }
+    if (ok('benitez', 4) && M.hecha && M.hecha('m3') && VR.guardia && !VR.guardia.hechoHoy() && !VR.guardia.job) { marca('benitez'); this.add('benitez', 'Suboficial Benítez. Hoy falta gente en el cuartel de bomberos, ¿podés venir de guardia?', v, 'benitezGuardia', false, 0.85); } },
   RESP: {
     ramonaPaga: () => [{ t: 'Sí, el sábado le pago', r: 'Bueno, mitã. Ani nde resarái.' }, { t: 'Estoy juntando, deme unos días', r: 'Unos días nomás, ¿eh? No puedo esperar mucho.' }, { t: 'Perdón, estoy en apuros', r: 'Hablemos cuando pases por acá, ¿ajépa?' }],
     kikeOferta: (B) => [{ t: '¡Dale, buscame!', r: (b) => b.kikeRespViaje(), a: 'kikeViaje' }, { t: 'Gracias, ahora no', r: 'Dale, cualquier cosa avisá.' }],
     chelaDebe: () => [{ t: 'Mañana le pago, Doña', r: 'Bueno, ¿ajépa? Ani rejapo tavy.' }, { t: 'Ya le llevo a la plaza', r: 'Aguyje, te espero acá.' }],
     chelaOferta: () => [{ t: 'Paso mañana temprano', r: 'Te dejo lo mejor, che memby.' }, { t: 'Ahora no tengo plata', r: 'Cuando puedas, po.' }],
+    kikeLlego: () => [{ t: '¡Ya salgo!', r: '¡Dale, subí! Agarrate fuerte, po.', a: 'kikeSube' }, { t: 'Esperá un ratito', r: 'Dale, avisame cuando estés listo.' }],
+    chelaPedido: () => [{ t: '¡Dale, Doña!', r: 'Aguyje, che memby. Te cargué las chipas en el canasto (anotadas, ¿ajépa?). Vendé tranquilo.', a: 'chelaCarga' }, { t: 'Hoy no puedo', r: 'Otra vez será, po.' }],
+    benitezGuardia: () => [{ t: 'Voy para el cuartel', r: 'Aguyje. Presentate y te asigno el turno. Te marqué el GPS.', a: 'guardiaGps' }, { t: 'Hoy no puedo', r: 'Entendido. Avisame cuando puedas.' }],
   },
   INICIO: {
     kike: (B) => { const o = [{ t: '¿Me venís a buscar?', r: (b) => b.kikeRespViaje(), a: 'kikeViaje' }, { t: '¿Cómo andás?', r: 'Bien, acá en la plaza con el tereré. ¿Y vos?' }]; return o; },
@@ -16528,13 +16541,26 @@ VR.CelX = (() => {
   const hm = (m) => pad((m / 60) | 0) + ':' + pad(m % 60);
   const rng = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const APPS = [['alarma', '⏰', 'Alarma', '#ff9a5a', false], ['radio', '📻', 'Radio', '#c8a0ff', false], ['clima', '🌤', 'Clima', '#6ac8ff', true], ['noti', '📰', 'Noticias', '#e6e6e6', true],
-    ['deliv', '🍔', "Ñembo'u", '#ff6b4a', true], ['salud', '❤️', 'Salud', '#ff7a8a', false], ['juegos', '🎮', 'Juegos', '#9bbc0f', false]];
+    ['deliv', '🍔', "Ñembo'u", '#ff6b4a', true], ['salud', '❤️', 'Salud', '#ff7a8a', false], ['juegos', '🎮', 'Juegos', '#9bbc0f', false], ['tere', '🧉', 'Tereré', '#3b9d5a', true], ['ajustes', '⚙️', 'Ajustes', '#9aa3b2', false]];
+  // ---- Tereré: la red social de Villarrica (todo inventado). Feed del día con vecinos; vos publicás y te van llegando likes y comentarios ----
+  const GENTE = [['Cinthia Vera', '👩'], ['Chino Ayala', '🧑'], ['Doña Chela', '👵'], ['Kike Mbohasa', '🛵'], ['Tía Norma', '👩‍🦳'], ['Pablo Ñandú', '🧔'], ['Lorena Ykuá', '👱‍♀️'], ['El Gringo', '🧑‍🦰']];
+  const POSTS = ['Hoy el calor está para tereré con menta. ¿Quién se suma a la plaza?', 'Se me pinchó la goma en la ruta, ¡qué día, ndaje!', 'Chipa recién salida del horno, pasen nomás.', 'Alguien vio mi gato? Es naranja y anda por el barrio Ykuá.', 'Qué lindo atardecer sobre el lago, miren.', 'Mañana feria en el mercado, lleguen temprano.', 'Pedí un Mbohasa y el conductor era un divino, 5 estrellas.', 'Ojo con la zona de la terminal esta noche, mucho movimiento.', 'Cumple de mi abuela, vengan todos al asado.', 'Se corta la luz otra vez... paciencia nomás.', 'Los bomberos hicieron un trabajo bárbaro hoy, gracias.', 'Vendo bici usada, buen estado. Consulten por privado.'];
+  const COMS = ['Jajaja qué grande', '¡Genial!', 'Ahí voy', 'Pavê, me encantó', 'Qué bueno che', 'Totalmente de acuerdo', 'Mba\'éichapa, ¡qué buena!', '👏👏👏'];
+  const mias = () => (V.s.tere = V.s.tere || { mis: [], lk: {} });
+  function feed() { const r = rng(Math.floor(V.s.min / 1440) * 31 + 7), n = 6, L = []; for (let i = 0; i < n; i++) { const g = GENTE[(r() * GENTE.length) | 0], t = POSTS[(r() * POSTS.length) | 0]; L.push({ id: V.dia + '_' + i, g, t, l: 2 + ((r() * 40) | 0), c: r() < 0.5 ? COMS[(r() * COMS.length) | 0] : '', h: (V.s.min % 1440) - ((i * 97) % 600) }); } return L; }
+  function reacc(p) { const T = V.s.min - p.min, r = rng(p.min | 0); return { l: Math.min(60, Math.floor(T / 4) + ((r() * 3) | 0)), cs: Array.from({ length: Math.min(3, Math.floor(T / 25)) }, (_, i) => [GENTE[(r() * GENTE.length) | 0], COMS[(r() * COMS.length) | 0]]) }; }
+  // ---- personalización: fondos, tonos y orden de apps (se guarda en s.cel) ----
+  const FONDOS = [['noche', 'Noche', 'linear-gradient(#10182e,#2a1a4a)', 0], ['lapacho', 'Lapacho', 'linear-gradient(#ff8fc0,#8a2f7a)', 8000], ['ykua', 'Ykuá', 'linear-gradient(#1c5a8a,#7fd0e8)', 8000], ['campo', 'Campo', 'linear-gradient(#2f6a2f,#d8c860)', 8000], ['atardecer', 'Atardecer', 'linear-gradient(#ff6b4a,#3a1a5a)', 12000], ['retro', 'Verde retro', 'linear-gradient(#0f380f,#306230)', 5000]];
+  const TONOS = [['cl', 'Clásico', 0], ['gu', 'Guarania', 12000], ['cu', 'Cumbia', 12000], ['di', 'Digital', 8000], ['ro', 'Rock', 15000]];
+  const cfg = () => (V.s.cel = V.s.cel || { fondo: 'noche', tono: 'cl', fondos: ['noche'], tonos: ['cl'], orden: [] });
+  const NOTAS = { cl: [[440, 480]], gu: [[64, 67, 71, 69, 67, 64].map(mf)], cu: [[57, 60, 64, 60].map(mf)], di: [[880, 1175, 880, 1175]], ro: [[82, 98, 82, 123]] };
+  function sonarTono(id) { const t = id || cfg().tono, L = NOTAS[t] ? NOTAS[t][0] : NOTAS.cl[0]; L.forEach((f, i) => setTimeout(() => { try { A().tone(f, t === 'cl' ? 0.9 : 0.22, { type: t === 'ro' ? 'sawtooth' : t === 'di' ? 'square' : 'sine', vol: 0.05 }); } catch (e) { /* sin audio */ } }, t === 'cl' ? 0 : i * 240)); }
   const GAMES = [['culebra', '🐍', 'Culebra', '#9bbc0f'], ['tateti', '❌', 'Ta-te-tí', '#ff8a8a'], ['memoria', '🃏', 'Memoria', '#ffd84a'], ['bloques', '🧱', 'Bloques', '#5ac8fa'], ['rebote', '🏓', 'Rebote', '#7fe08a']];
   let V = null, X0 = null;
 
   // ---------------- Radio: tres emisoras inventadas, música propia sintetizada (guarania, polca y cumbia) ----------------
   const Radio = VR.Radio = {
-    k: null, tm: 0, step: 0, nx: 0, mel: [], ORDEN: ['guarania', 'polca', 'cumbia'],
+    k: null, tm: 0, step: 0, nx: 0, mel: [], linea: '', ORDEN: ['guarania', 'polca', 'cumbia', 'rock', 'noti'],
     E: {
       guarania: { fm: '98.1', n: 'Ñandutí FM', d: 'Guaranias: arpegios lentos de guitarra', sd: 0.36, len: 6, sc: [57, 59, 60, 62, 64, 65, 68, 69, 72],
         prog: [[45, [57, 60, 64]], [50, [57, 62, 65]], [52, [56, 59, 64]], [45, [57, 60, 64]], [48, [55, 60, 64]], [43, [55, 59, 62]], [52, [56, 59, 64]], [45, [57, 60, 64]]] },
@@ -16542,16 +16568,25 @@ VR.CelX = (() => {
         prog: [[48, [60, 64, 67]], [43, [59, 62, 67]], [48, [60, 64, 67]], [43, [59, 62, 67]], [48, [60, 64, 67]], [41, [57, 60, 65]], [43, [59, 62, 67]], [48, [60, 64, 67]]] },
       cumbia: { fm: '104.7', n: 'Cumbia del Ykuá', d: 'Cumbia bailable', sd: 0.163, len: 16, sc: [69, 72, 74, 76, 79, 81],
         prog: [[45, [57, 60, 64]], [45, [57, 60, 64]], [50, [57, 62, 65]], [52, [56, 59, 64]]] },
+      rock: { fm: '99.3', n: 'La Poderosa', d: 'Rock con guitarras pesadas', sd: 0.14, len: 16, sc: [64, 67, 69, 71, 74, 76],
+        prog: [[40, [52, 59]], [40, [52, 59]], [45, [57, 64]], [43, [55, 62]]] },
+      noti: { fm: '88.3', n: 'Radio Villarrica · Noticias', d: 'Noticiero con locutor y publicidades', sd: 0.5, len: 16, sc: [60, 64, 67], prog: [[48, [60, 64, 67]], [53, [57, 60, 65]], [55, [59, 62, 67]], [48, [60, 64, 67]]] },
     },
+    // publicidades locales (inventadas) que lee el locutor del noticiero
+    ADS: ['Chipería Doña Chela: la chipa más rica de la plaza, calentita todos los días.', 'Heladería Marimer: el helado que combina con el calor de Villarrica.', 'Ao Porã, ropa y peluquería: lucí bien y usá casco.',
+      'Mbohasa: pedí tu viaje desde el celular y viajá seguro.', 'Ñembo\'u: tu comida en la puerta, sin moverte de casa.', 'Bomberos voluntarios: tu colecta salva vidas.', 'Taller del barrio: revisión gratis de frenos esta semana.', 'Parrilla La Fogata: asado con mandioca, el mejor plan del sábado.'],
+    voz(txt) { try { if (!window.speechSynthesis || !A().on) return; const u = new SpeechSynthesisUtterance(txt), vs = speechSynthesis.getVoices(), v = vs.find((q) => /^es[-_](PY|AR|419|MX|US)/i.test(q.lang)) || vs.find((q) => /^es/i.test(q.lang)); if (v) u.voice = v; u.lang = v ? v.lang : 'es-ES'; u.rate = 0.98; u.volume = Math.min(1, A().vol + 0.2); speechSynthesis.speak(u); } catch (e) { /* sin voz */ } },
+    locutor() { const h = V ? V.hhmm : ''; const L = this.cola && this.cola.length ? this.cola : (this.cola = ['Radio Villarrica, las noticias de las ' + h + '.'].concat(noticias().slice(0, 4), [this.ADS[(Math.random() * this.ADS.length) | 0]]));
+      const t = L.shift(); this.linea = t; this.voz(t); },
     // melodía de un compás: camina por la escala cerca de la nota más alta del acorde; es la misma cada vez que vuelve el compás (la música «gira»)
     compas(E, bar, hook) {
       const r = rng(bar * 131 + (this.k.length * 17) + (hook ? 7 : 0)), ch = E.prog[bar % E.prog.length][1]; let i = Math.max(0, E.sc.findIndex((n) => n >= ch[2])); this.mel = [];
-      for (let j = 0; j < E.len; j++) { const a = r(), b = r(); i = Math.max(0, Math.min(E.sc.length - 1, i + (b < 0.33 ? -1 : b > 0.66 ? 1 : 0))); this.mel.push(a < (this.k === 'polca' ? 0.9 : this.k === 'cumbia' ? 0.45 : 0.62) ? E.sc[i] : null); }
+      for (let j = 0; j < E.len; j++) { const a = r(), b = r(); i = Math.max(0, Math.min(E.sc.length - 1, i + (b < 0.33 ? -1 : b > 0.66 ? 1 : 0))); this.mel.push(a < (this.k === 'polca' ? 0.9 : this.k === 'cumbia' ? 0.45 : this.k === 'rock' ? 0.5 : 0.62) ? E.sc[i] : null); }
     },
     play(E, step, at) {
       const T = (f, d, o) => A().tone(f, d, Object.assign({ at }, o)), bar = Math.floor(step / E.len), i = step % E.len, [root, ch] = E.prog[bar % E.prog.length], sd = E.sd;
       if (i === 0) this.compas(E, bar, this.k === 'cumbia' && bar % 2 === 1);
-      const mel = this.mel[i];
+      const mel = this.k === 'noti' ? null : this.mel[i];
       if (this.k === 'guarania') {
         if (i === 0) T(mf(root), sd * 5, { type: 'triangle', vol: 0.07, lp: 900 });
         if (i === 2 || i === 4) ch.forEach((n, q) => T(mf(n), sd * 1.9, { type: 'triangle', vol: 0.032, lp: 1800, at: at + q * 0.035 }));
@@ -16560,6 +16595,13 @@ VR.CelX = (() => {
         if (i === 0) T(mf(root), sd * 1.6, { type: 'triangle', vol: 0.08, lp: 800 }); if (i === 3) T(mf(root + 7), sd * 1.6, { type: 'triangle', vol: 0.07, lp: 800 });
         if (i === 1 || i === 2 || i === 4 || i === 5) ch.forEach((n) => T(mf(n), sd * 0.7, { type: 'square', vol: 0.011, lp: 1500 }));
         if (mel) T(mf(mel), sd * 0.9, { type: 'triangle', vol: 0.055, lp: 3200 });
+      } else if (this.k === 'rock') {
+        if (i === 0 || i === 6 || i === 8 || i === 10) T(80, 0.14, { type: 'sine', vol: 0.12, f2: 40 }); if (i === 4 || i === 12) A().noise(0.13, { vol: 0.07, lp: 4500, hp: 900, at }); if (i % 2 === 0) A().noise(0.03, { vol: 0.02, lp: 9000, hp: 6500, at });
+        if (i % 2 === 0) T(mf(root + 12), sd * 1.6, { type: 'sawtooth', vol: 0.04, lp: 1100 }); if (i === 0 || i === 8) ch.forEach((n) => T(mf(n), sd * 6, { type: 'sawtooth', vol: 0.03, lp: 1500 }));
+        if (mel) T(mf(mel), sd * 2.2, { type: 'square', vol: 0.028, lp: 2600 });
+      } else if (this.k === 'noti') {
+        if (i === 0) { ch.forEach((n, q) => T(mf(n), sd * 6, { type: 'sine', vol: 0.02, at: at + q * 0.02 })); if (step % 64 === 0) { [72, 76, 79, 84].forEach((n, q) => T(mf(n), 0.18, { type: 'triangle', vol: 0.05, at: at + q * 0.14 })); } }
+        if (step % 48 === 8) this.locutor();
       } else {
         if (i % 4 === 0) T(90, 0.12, { type: 'sine', vol: 0.09, f2: 50 });
         if (i % 2 === 0) A().noise(0.04, { vol: i % 4 === 2 ? 0.035 : 0.02, lp: 9000, hp: 5000, at }); if (i % 4 === 3) A().noise(0.03, { vol: 0.018, lp: 9000, hp: 6000, at });
@@ -16570,7 +16612,7 @@ VR.CelX = (() => {
     },
     sched() { const a = A(), ac = a.ctx(); if (!ac || !this.k) return; const E = this.E[this.k]; if (this.nx < ac.currentTime) this.nx = ac.currentTime + 0.05;
       while (this.nx < ac.currentTime + 0.3) { this.play(E, this.step, this.nx - ac.currentTime); this.step++; this.nx += E.sd; } },
-    set(k) { clearInterval(this.tm); this.k = k || null; this.step = 0; this.nx = 0; try { VR.store.set('radio', this.k || ''); } catch (e) { /* sin guardado */ }
+    set(k) { clearInterval(this.tm); try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* sin voz */ } this.cola = null; this.linea = ''; this.k = k || null; this.step = 0; this.nx = 0; try { VR.store.set('radio', this.k || ''); } catch (e) { /* sin guardado */ }
       if (this.k) { A().noise(0.35, { vol: 0.05, lp: 5000, hp: 1200 }); this.tm = setInterval(() => this.sched(), 70); } },
     sig() { const i = this.k ? this.ORDEN.indexOf(this.k) : -1, n = i + 1 < this.ORDEN.length ? this.ORDEN[i + 1] : null; this.set(n); const E = n && this.E[n];
       if (VR.toast) VR.toast(E ? '📻 ' + E.fm + ' FM · ' + E.n : '📻 Radio apagada'); },
@@ -16594,12 +16636,22 @@ VR.CelX = (() => {
   ];
   let cart = {};
   const pedidos = () => V.s.pedidos || (V.s.pedidos = []);
+  // el pedido llega cuando se cumple la hora; si hay camino, un repartidor en moto sale de una esquina y te lo trae (VR.Reparto); si no, te lo dejan en la puerta
+  function dar(p, enMano) {
+    V.s.pedidos = pedidos().filter((q) => q !== p);
+    for (const it of p.it) VR.Inv.add({ k: 'comida:' + it.k, n: it.n, ico: it.ico, tipo: 'comida', h: it.h, cu: 0 }, it.c);
+    VR.Buzon.add('sis', '🛵 Tu pedido de ' + p.n + (enMano ? ' llegó: el repartidor te lo dio en mano.' : ' llegó: te lo dejaron en la puerta de tu pieza.') + ' Está en la mochila.', V, null, true);
+    if (VR.toast) VR.toast('🛵 ¡Llegó tu pedido de ' + p.n + '! Mirá la mochila'); try { A().coin(); } catch (e) { /* sin audio */ } V.save();
+  }
+  const puedeRepartir = () => !document.body.classList.contains('adentro') && !(VR.pieza && VR.pieza.on);
   function entregas() {
-    const P = pedidos(); if (!P.length) return; const hechos = P.filter((p) => p.t <= V.s.min); if (!hechos.length) return;
-    V.s.pedidos = P.filter((p) => p.t > V.s.min);
-    for (const p of hechos) { for (const it of p.it) VR.Inv.add({ k: 'comida:' + it.k, n: it.n, ico: it.ico, tipo: 'comida', h: it.h, cu: 0 }, it.c);
-      VR.Buzon.add('sis', '🛵 Tu pedido de ' + p.n + ' llegó: está en la mochila.', V); try { A().coin(); } catch (e) { /* sin audio */ } }
-    V.save();
+    const P = pedidos(); if (!P.length) return; const due = P.filter((p) => p.t <= V.s.min); if (!due.length) return; const R = VR.reparto;
+    for (const p of due) {
+      if (p.rep) continue; // ya hay un repartidor en camino con éste
+      if (!R || !puedeRepartir()) { dar(p, false); continue; }
+      if (R.r || R.pend) { if (p.espera === undefined) p.espera = V.s.min; if (V.s.min - p.espera > 20) dar(p, false); continue; } // otro repartidor está en la calle
+      if (R.salir(p)) p.rep = 1; else dar(p, false);
+    }
   }
   // ---------------- Noticias ----------------
   const POOL = ['Vecinos piden más semáforos y cebras en las avenidas del Centro', 'La chipa a 5.000 Gs.: los clientes dicen que «ya está cara», las vendedoras que la harina subió',
@@ -16635,12 +16687,12 @@ VR.CelX = (() => {
     const c = VR.CONTACTOS[id]; if (!c || !V || inc || call || !(V.s.saldo > 0) || (prob !== undefined && Math.random() > prob)) return false;
     if (VR.loop.paused || document.querySelector('dialog[open]') || (VR.Dialogo && VR.Dialogo.abierto)) return false;
     const ov = document.createElement('div'); ov.className = 'inOv'; ov.innerHTML = '<i class="chAv">' + c[1] + '</i><div><b>' + X0.esc(c[0]) + '</b><span>📞 te está llamando…</span></div><button class="no" data-no title="Rechazar">📵</button><button class="si" data-si title="Atender">📞</button>'; document.body.append(ov);
-    const ring = () => { A().tone(440, 0.9, { type: 'sine', vol: 0.05 }); A().tone(480, 0.9, { type: 'sine', vol: 0.05 }); try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) { /* sin vibración */ } };
+    const ring = () => { sonarTono(); try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) { /* sin vibración */ } };
     const fin = () => { clearInterval(iv); clearTimeout(to); ov.remove(); inc = null; }; ring(); const iv = setInterval(ring, 2200), to = setTimeout(() => { fin(); X0.toast('📵 Llamada perdida de ' + c[0]); }, 14000);
     ov.querySelector('[data-no]').onclick = fin; ov.querySelector('[data-si]').onclick = () => { fin(); X0.B.leerDe(id); call = { id, st: 'on', yo: '', resp: '', hola: txt }; A().blip(); X0.cel('call:' + id); };
     inc = { fin }; return true;
   }
-  const has = (k) => typeof k === 'string' && (APPS.some((a) => a[0] === k) || k === 'juegos' || k.startsWith('call:') || k.startsWith('deliv:') || GAMES.some((g) => g[0] === k && k !== 'culebra'));
+  const has = (k) => typeof k === 'string' && (APPS.some((a) => a[0] === k) || k === 'tere' || k === 'juegos' || k.startsWith('call:') || k.startsWith('deliv:') || GAMES.some((g) => g[0] === k && k !== 'culebra'));
   const bar = (v, c) => '<div class="sBar"><i style="width:' + Math.max(0, Math.min(100, v)) + '%;background:' + c + '"></i></div>';
 
   function html(k, X) {
@@ -16650,7 +16702,7 @@ VR.CelX = (() => {
         L.map((a, i) => '<div class="alRow"><input type="time" data-al="' + i + '" value="' + hm(a.m) + '"><select data-alb="' + i + '">' + LBL.map((l) => '<option' + (l === a.lbl ? ' selected' : '') + '>' + l + '</option>').join('') + '</select><button data-alt="' + i + '" title="Activar">' + (a.on ? '🔔' : '🔕') + '</button><button data-ald="' + i + '" title="Borrar">🗑</button></div>').join('') +
         (L.length ? '' : '<p>No tenés alarmas. Poné una para no llegar tarde a la misión o al cobro de la pieza.</p>') + '<button class="cbtn" data-aln>➕ Nueva alarma</button>';
     } else if (k === 'radio') {
-      const E = Radio.E, on = Radio.k && E[Radio.k]; h = '<h3>📻 Radio</h3><div class="rdDial"><b>' + (on ? on.fm + ' FM' : '— apagada —') + '</b><span>' + (on ? on.n : 'Elegí una emisora') + '</span><div class="rdBars' + (on ? ' on' : '') + '"><i></i><i></i><i></i><i></i><i></i></div></div>' +
+      const E = Radio.E, on = Radio.k && E[Radio.k]; h = '<h3>📻 Radio</h3><div class="rdDial"><b>' + (on ? on.fm + ' FM' : '— apagada —') + '</b><span>' + (on ? on.n : 'Elegí una emisora') + '</span>' + (Radio.linea ? '<em class="rdLin">🎙 ' + esc(Radio.linea) + '</em>' : '') + '<div class="rdBars' + (on ? ' on' : '') + '"><i></i><i></i><i></i><i></i><i></i></div></div>' +
         Radio.ORDEN.map((q) => '<button class="cbtn opc" data-rd="' + q + '"><span class="oi">📻</span><span class="ot"><b>' + E[q].fm + ' · ' + E[q].n + '</b><small>' + E[q].d + '</small></span><span class="op">' + (Radio.k === q ? '🔊' : '▶') + '</span></button>').join('') +
         (on ? '<button class="cbtn sec" data-rd="">⏹ Apagar</button>' : '') + '<p>Sigue sonando mientras jugás. Con el auto o la moto, la tecla R cambia de emisora.</p>';
     } else if (k === 'clima') {
@@ -16679,6 +16731,16 @@ VR.CelX = (() => {
         '<div class="row2"><span>📶 Saldo</span><b>' + (s.saldo > 0 ? Math.ceil(s.saldo) + ' días' : 'sin saldo') + '</b></div><div class="row2"><span>💸 Gastado hoy</span><b>' + gs(gasto) + '</b></div>' + (v.deudaTotal() > 0 ? '<div class="row2" style="color:#ff8a7a"><span>⚠ Deudas</span><b>' + gs(v.deudaTotal()) + '</b></div>' : '') +
         '<p>' + (ham < 30 ? '🍽 Tenés hambre: comé algo de la mochila o pedí en Ñembo\'u.' : hp < 50 ? '🩹 Andá más despacio: la vida baja con los golpes y se recupera sola. El hospital es el último recurso.' : '✔ Estás bien. Seguí así.') + '</p>' +
         (ham < 50 ? '<button class="cbtn" data-a="deliv">🍔 Pedir comida</button>' : '');
+    } else if (k === 'tere') {
+      const M = mias(), hm2 = (m) => { m = ((m % 1440) + 1440) % 1440; return pad(Math.floor(m / 60)) + ':' + pad(Math.floor(m % 60)); };
+      h = '<h3>🧉 Tereré</h3><div class="tpub"><input id="tePub" maxlength="120" placeholder="¿Qué estás pensando, che?"><button class="mini" data-tpub>Publicar</button></div>';
+      for (const p of M.mis.slice().reverse().slice(0, 6)) { const R = reacc(p); h += '<div class="tpost yo"><b>🙂 Vos</b> <small>' + hm2(p.min) + '</small><p>' + esc(p.t) + '</p><small>👍 ' + R.l + (R.cs.length ? ' · 💬 ' + R.cs.length : '') + '</small>' + R.cs.map((q) => '<div class="tcom"><b>' + q[0][1] + ' ' + q[0][0] + ':</b> ' + esc(q[1]) + '</div>').join('') + '</div>'; }
+      for (const p of feed()) { const me = M.lk[p.id]; h += '<div class="tpost"><b>' + p.g[1] + ' ' + p.g[0] + '</b> <small>' + hm2(p.h) + '</small><p>' + esc(p.t) + '</p><small><button class="mini" data-tlk="' + p.id + '">' + (me ? '👍 Te gusta' : '👍 Me gusta') + '</button> ' + (p.l + (me ? 1 : 0)) + '</small>' + (p.c ? '<div class="tcom"><b>💬</b> ' + esc(p.c) + '</div>' : '') + '</div>'; }
+    } else if (k === 'ajustes') {
+      const c = cfg(), tr = (n) => (n ? gs(n) : 'gratis');
+      h = '<h3>⚙️ Ajustes</h3><h4>🖼 Fondo de pantalla</h4><div class="fdGr">' + FONDOS.map(([id, n, bg, p]) => '<button class="fd' + (c.fondo === id ? ' sel' : '') + '" data-fd="' + id + '" style="background:' + bg + '"><b>' + n + '</b><small>' + (c.fondos.includes(id) ? (c.fondo === id ? '✔ puesto' : 'tuyo') : gs(p)) + '</small></button>').join('') + '</div>' +
+        '<h4>🔔 Tono de llamada</h4>' + TONOS.map(([id, n, p]) => '<div class="row2"><span>' + (c.tono === id ? '✔ ' : '') + n + '</span><span><button class="mini" data-tp="' + id + '">▶</button> <button class="mini" data-tu="' + id + '">' + (c.tonos.includes(id) ? (c.tono === id ? 'En uso' : 'Usar') : 'Comprar ' + tr(p)) + '</button></span></div>').join('') +
+        '<h4>📱 Orden de las apps</h4><p style="font-size:12px">Tocá ⬆ para llevar una app al principio de la pantalla.</p><div class="fdOrd">' + ordenar(X.todas || []).map(([a, i, n]) => '<button class="mini" data-up="' + a + '">⬆ ' + n.replace(/<[^>]*>/g, '') + '</button>').join('') + '</div><button class="cbtn sec" data-ordr>Restablecer orden</button>';
     } else if (k === 'juegos') {
       h = '<h3>🎮 Juegos</h3><div class="apps">' + GAMES.map(([g, i, n, c]) => '<button class="app" data-a="' + g + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>';
     } else if (k.startsWith('call:')) {
@@ -16694,6 +16756,21 @@ VR.CelX = (() => {
   function init(k, body, X) {
     if (VR.Juegos && VR.Juegos[k]) return VR.Juegos[k](body);
     const { vida: v } = X, $$ = (sel, f) => body.querySelectorAll(sel).forEach(f);
+    if (k === 'tere') {
+      const M = mias();
+      $$('[data-tpub]', (e) => e.onclick = () => { const t = body.querySelector('#tePub').value.trim(); if (!t) return; M.mis.push({ t, min: v.s.min }); if (M.mis.length > 20) M.mis.shift(); v.save(); try { A().coin(); } catch (x) { /* sin audio */ } X.paint(); });
+      $$('[data-tlk]', (e) => e.onclick = () => { M.lk[e.dataset.tlk] = !M.lk[e.dataset.tlk]; v.save(); X.paint(); });
+      return;
+    }
+    if (k === 'ajustes') {
+      const c = cfg(), sv = () => { v.save(); X.paint(); };
+      $$('[data-fd]', (e) => e.onclick = () => { const f = FONDOS.find((q) => q[0] === e.dataset.fd); if (!c.fondos.includes(f[0])) { if (!v.pagaBanco(f[3], 'Fondo ' + f[1])) return; c.fondos.push(f[0]); } c.fondo = f[0]; sv(); });
+      $$('[data-tp]', (e) => e.onclick = () => sonarTono(e.dataset.tp));
+      $$('[data-tu]', (e) => e.onclick = () => { const t = TONOS.find((q) => q[0] === e.dataset.tu); if (!c.tonos.includes(t[0])) { if (!v.pagaBanco(t[2], 'Tono ' + t[1])) return; c.tonos.push(t[0]); } c.tono = t[0]; sonarTono(t[0]); sv(); });
+      $$('[data-up]', (e) => e.onclick = () => { c.orden = [e.dataset.up].concat((c.orden || []).filter((q) => q !== e.dataset.up)); sv(); });
+      $$('[data-ordr]', (e) => e.onclick = () => { c.orden = []; sv(); });
+      return;
+    }
     if (k === 'alarma') {
       const L = alarmas(), sv = () => v.save();
       $$('[data-al]', (e) => e.onchange = () => { const m = /(\d+):(\d+)/.exec(e.value); if (m) { L[+e.dataset.al].m = +m[1] * 60 + +m[2]; sv(); } });
@@ -16714,15 +16791,34 @@ VR.CelX = (() => {
       const colgar = () => { tm.forEach(clearTimeout); rt.forEach(clearTimeout); rt = []; call = null; X.go2('agenda'); };
       $$("[data-hang]", (e) => e.onclick = () => { if (call && call.st === 'on') { call.st = 'fin'; } colgar(); });
       $$('[data-cr]', (e) => e.onclick = () => { const q = +e.dataset.cr, o = B.opciones(id)[q]; if (!o) return; call.yo = o.t; call.resp = '…'; const a = B.responder(id, q); X.paint();
-        rt.push(setTimeout(() => { const m = B.ultimo(id); if (!call) return; call.resp = m && !m.yo ? m.txt : 'Dale, hablamos.'; B.leerDe(id); if (X.app() === 'call:' + id) X.paint(); if (a) rt.push(setTimeout(() => X.go(() => B.hacer(a)), 1400)); }, 2100)); });
+        rt.push(setTimeout(() => { const m = B.ultimo(id); if (!call) return; call.resp = m && !m.yo ? m.txt : 'Dale, hablamos.'; B.leerDe(id); if (X.app() === 'call:' + id) X.paint(); if (a) rt.push(setTimeout(() => { if (B.CIERRA.includes(a)) X.go(() => B.hacer(a)); else { B.hacer(a); if (X.app() === 'call:' + id) X.paint(); } }, 1400)); }, 2100)); });
       if (call.st === 'ring') { const ring = () => { A().tone(440, 0.9, { type: 'sine', vol: 0.05 }); A().tone(480, 0.9, { type: 'sine', vol: 0.05 }); }; ring(); tm.push(setTimeout(ring, 1700));
         tm.push(setTimeout(() => { if (!call || call.id !== id) return; call.st = 'on'; A().blip(); if (X.app() === 'call:' + id) X.paint(); }, 3500)); }
       return () => { tm.forEach(clearTimeout); if (!/^call:/.test(X.app())) { rt.forEach(clearTimeout); rt = []; call = null; } };
     }
     return null;
   }
-  return { APPS, GAMES, has, html, init, Radio, llamar: (id) => { call = { id, st: 'ring', yo: '', resp: '' }; }, entrante,
-    arrancar(vida, X) { V = vida; X0 = X; last = Math.floor(V.s.min);
+  // Repartidor de Ñembo'u: un Mbohasa sin pasajero. Sale de una esquina fuera de pantalla, llega hasta vos, te da el pedido y se va por donde vino.
+  VR.Reparto = class extends VR.Mbohasa {
+    constructor(o) { super(Object.assign({ toast: () => {}, dialogo: () => {}, pagar: () => true, yo: () => null, tengoCasco: () => false, manejando: () => false, bajar: () => {} }, o)); this.pend = null; }
+    salir(p) { this.pend = p; if (!this.pedir('moto', 0, { name: 'tu casa' }, { modelo: 'cub', kv: 1.05 })) { this.pend = null; return false; } this.r.home = { x: this.v.x, y: this.v.y }; if (VR.toast) VR.toast('🛵 El repartidor de Ñembo\'u ya va para tu zona'); return true; }
+    quitar() { const p = this.pend; this.pend = null; super.quitar(); if (p) dar(p, false); } // si no pudo llegar, te lo dejan en la puerta
+    update(dt) {
+      const r = this.r, v = this.v;
+      if (r && v && r.st === 'espera' && this.pend) {
+        v.physics(dt, 0, 0, true, true); r.wait += dt; const f = this.player, d = Math.hypot(f.x - v.x, f.y - v.y);
+        if (d < 120 || r.wait > 25) { const p = this.pend; this.pend = null; dar(p, d < 160); const Q = this.ruta(v.x, v.y, r.home.x, r.home.y); if (Q && Q.length >= 6) { r.P = Q; r.st = 'sale'; r.t = 0; } else super.quitar(); }
+        return;
+      }
+      super.update(dt);
+    }
+  };
+  const ordenar = (L) => { const o = (V && V.s.cel && V.s.cel.orden) || []; return L.slice().sort((a, b) => { const x = o.indexOf(a[0]), y = o.indexOf(b[0]); return (x < 0 ? 999 : x) - (y < 0 ? 999 : y); }); };
+  return { APPS, GAMES, has, ordenar, fondo: () => { const f = FONDOS.find((q) => q[0] === cfg().fondo); return f ? f[2] : ''; }, sonarTono, html, init, Radio, llamar: (id) => { call = { id, st: 'ring', yo: '', resp: '' }; }, entrante,
+    // cada llamada que hacés gasta 0,1 día de saldo (las que te hacen son gratis)
+    cobraLlamada() { if (!(V.s.saldo >= 0.1)) { X0.toast('📵 No te alcanza el saldo para llamar'); return false; } V.s.saldo = Math.max(0, V.s.saldo - 0.1); V.save(); return true; },
+    arrancar(vida, X) { V = vida; X0 = X; last = Math.floor(V.s.min); pedidos().forEach((p) => { delete p.rep; delete p.espera; });
+      setInterval(() => { const hud = document.getElementById('radioHud'), sp = document.getElementById('speed'); if (!hud || !sp) return; const on = Radio.k && !sp.hidden; hud.hidden = !on; if (on) { const E = Radio.E[Radio.k]; hud.textContent = '📻 ' + E.fm + ' · ' + (Radio.k === 'noti' && Radio.linea ? Radio.linea.slice(0, 60) : E.n); hud.style.top = (sp.getBoundingClientRect().bottom + 4) + 'px'; } }, 500);
       setInterval(() => { const cur = Math.floor(V.s.min); if (cur !== last) { for (let t = Math.max(last + 1, cur - 180); t <= cur; t++) { const L = alarmas(), a = L.find((q) => q.on && q.m === t % 1440); if (a) { if (a.tmp) L.splice(L.indexOf(a), 1); V.save(); suena(a); break; } } last = cur; } entregas(); }, 400); } };
 })();
 
@@ -17395,7 +17491,7 @@ VR.Titulo = class {
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt); if (VR.guardia) VR.guardia.update(dt);
     if (vida) { player.setCasco(vida.cascoPuesto); if (pj && pj._cp !== vida.cascoPuesto) { pj._cp = vida.cascoPuesto; pj.icono(); } } if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car); if (pz) pz.update(dt, player, car);
-    syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
+    syncEq(); mbh.update(dt); if (VR.reparto) VR.reparto.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
     updateCamera(dt);
@@ -17642,9 +17738,11 @@ VR.Titulo = class {
   // devuelve el juego andando; si f solo marca algo (GPS), el juego queda andando. (Antes quedaba todo en pausa: se "colgaba" al marcar la misión.)
   // Si f falla, no se deja el juego congelado: se avisa y se sigue.
   const celGo = (f) => { celDlg._keep = true; celDlg.close(); resume(); try { f(); } catch (e) { console.error(e); toast('⚠ No se pudo hacer eso (' + (e && e.message || e) + ')'); VR.loop.paused = false; VR.input.enabled = true; } };
-  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); }, cel: (a) => openCel(a) };
+  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), get todas() { return X_todas; }, app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); }, cel: (a) => openCel(a) };
   if (vida) VR.CelX.arrancar(vida, CX);
+  let X_todas = [];
   function paintCel() {
+    if (celApp !== 'home') $('celBody').style.background = '';
     const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0; celDlg.classList.toggle('roto', vida.celuRoto());
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
@@ -17653,7 +17751,8 @@ VR.Titulo = class {
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true],
         ...VR.CelX.APPS.map(([k, i, n, c, red]) => [k, i, n, c, !red || net])];
-      h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
+      $('celBody').style.background = VR.CelX.fondo(); X_todas = A;
+      h = '<div class="apps">' + VR.CelX.ordenar(A).map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
       h = '<h3>🛵 Mbohasa</h3>';
       if (mbh.activo) { // como en Bolt: mapita con el conductor en vivo, su tarjeta y el estado
@@ -17712,15 +17811,15 @@ VR.Titulo = class {
     } else if (celApp === 'agenda') {
       const B = VR.Buzon, ids = B.contactos();
       h = '<h3>📒 Contactos</h3>' + (ids.length ? ids.map((id) => { const c = VR.CONTACTOS[id];
-        return '<div class="ctc"><i class="chAv">' + c[1] + '</i><span class="chTx"><b>' + esc(c[0]) + '</b><small>' + esc(c[3]) + '</small><small class="num">📞 ' + esc(c[2]) + '</small></span><button class="cbtn mini" data-call="' + id + '">📞</button><button class="cbtn mini" data-chat="' + id + '">💬</button></div>'; }).join('') : '<p>Tu agenda está vacía. Los personajes te van a ir pasando su número.</p>');
+        return '<div class="ctc"><i class="chAv">' + c[1] + '</i><span class="chTx"><b>' + esc(c[0]) + '</b><small>' + esc(c[3]) + '</small><small class="num">📞 ' + esc(c[2]) + '</small></span><button class="cbtn mini" data-call="' + id + '">📞</button><button class="cbtn mini" data-chat="' + id + '">💬</button></div>'; }).join('') : '<p>Tu agenda está vacía. Los personajes te van a ir pasando su número.</p>') + (ids.length ? '<p style="font-size:11px">📞 Cada llamada que hacés gasta 0,1 día de saldo. Las que te hacen son gratis.</p>' : '');
     } else if (celApp === 'stats') {
       h = '<h3>📊 Estadísticas</h3>' + VR.Stats.html();
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
     celBody.querySelectorAll('[data-chat]').forEach((b) => b.onclick = () => { celApp = 'msj:' + b.dataset.chat; paintCel(); });
-    celBody.querySelectorAll('[data-call]').forEach((b) => b.onclick = () => { if (!(vida.s.saldo > 0)) { toast('📵 Sin saldo para llamar'); return; } VR.CelX.llamar(b.dataset.call); celApp = 'call:' + b.dataset.call; paintCel(); });
-    celBody.querySelectorAll('[data-rp]').forEach((b) => b.onclick = () => { const id = celApp.slice(4), a = VR.Buzon.responder(id, +b.dataset.rp); if (a) celGo(() => VR.Buzon.hacer(a)); else paintCel(); });
+    celBody.querySelectorAll('[data-call]').forEach((b) => b.onclick = () => { if (!VR.CelX.cobraLlamada()) return; VR.CelX.llamar(b.dataset.call); celApp = 'call:' + b.dataset.call; paintCel(); });
+    celBody.querySelectorAll('[data-rp]').forEach((b) => b.onclick = () => { const id = celApp.slice(4), a = VR.Buzon.responder(id, +b.dataset.rp); if (a && VR.Buzon.CIERRA.includes(a)) celGo(() => VR.Buzon.hacer(a)); else { if (a) VR.Buzon.hacer(a); paintCel(); } });
     if (typeof celApp === 'string' && celApp.startsWith('msj:')) { const ch = celBody.querySelector('.chat'); celBody.scrollTop = celBody.scrollHeight; if (ch) ch.scrollTop = ch.scrollHeight; }
     celBody.querySelectorAll('[data-ch]').forEach((b) => b.onclick = () => celGo(() => changas.start(b.dataset.ch)));
     if (celApp === 'mis' && mis) paintMis(celBody, true);
@@ -17869,7 +17968,11 @@ VR.Titulo = class {
     mis.kikeViaje = () => { const r = mis.kikeRuta(); if (!r) return null; const n = vida.s.kikeViajes || 0; vida.s.kikeViajes = n + 1; let txt;
       if (n < 3) txt = '🏍 Viaje de regalo (' + (n + 1) + '/3)'; else { vida.cobrarODeber(5000, 'Kike te llevó'); txt = '🏍 Viaje con Kike · ' + VR.fmtGs(5000); }
       if (car) exitCar(); const f = $('celFade'); f.textContent = txt + ' · ' + (r.aCasa ? 'a tu pieza…' : 'a la plaza…'); f.classList.add('on'); setTimeout(() => { teleport(r.d.x, r.d.y, r.d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); return null; };
-    VR.Buzon.ctx = { vida, kikeRuta: () => mis.kikeRuta(), kikeViaje: () => setTimeout(() => mis.kikeViaje(), 2600) };
+    VR.Buzon.ctx = { vida, kikeRuta: () => mis.kikeRuta(),
+      kikeViaje: () => setTimeout(() => VR.Buzon.add('kike', '¡Ya llegué! Estoy ahí afuera, salí que nos vamos.', vida, 'kikeLlego', false, 1), 3500), // primero avisa por llamada y recién ahí te lleva
+      kikeSube: () => setTimeout(() => mis.kikeViaje(), 400),
+      chelaCarga: () => { const n = vida.llenaCanasto(10, true); if (n) toast('🥐 Doña Chela te cargó ' + n + ' chipas (anotadas)'); },
+      guardiaGps: () => { const cu = VR.guardia && VR.guardia.cuartel(); if (cu) setDest({ x: cu.x, y: cu.y, name: 'Cuartel de bomberos' }); } };
     mis.agendarViejas();
     VR.Buzon.onChange = (id) => { if (celDlg.open && (celApp === 'msj' || celApp === 'agenda' || celApp === 'msj:' + id)) paintCel(); };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
@@ -17890,6 +17993,7 @@ VR.Titulo = class {
     fin: (r) => { if (mis) mis.emit('jaha', r); },
     llevar: (d) => { VR.Stats.inc('mbohasa'); const f = $('celFade'); f.textContent = '🛵 En viaje…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); if (mis) mis.emit('jaha', { dest: d }); setTimeout(() => f.classList.remove('on'), 300); }, 900); } })
     : { riding: false, activo: false, r: null, v: null, saltear() {}, update() {}, rideTick() {}, cancelar() {}, pedir() { return false; }, texto() { return ''; } };
+  VR.reparto = vida && gpsNet ? new VR.Reparto({ world, gps: gpsNet, player }) : null; // repartidor de Ñembo'u (celextra.js)
   if (mis) VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => mis.dialogo(VR.despensaCompra(mis)) }); // despensa Ñande Róga por dentro
   VR.mercado = VR.crearMercado({ player, busy: () => false, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍽 ' + n + ' · −' + VR.fmtGs(p)); } } }); // Mercado Municipal por dentro (13/11/2026)

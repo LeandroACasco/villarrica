@@ -224,6 +224,11 @@
   body.historia #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px + 104px); }
   body.adentro #dock { visibility: hidden; }
   #dock.libre .dkRow { display: none; } body:not(.historia) #speed { top: calc(env(safe-area-inset-top) + 56px + var(--mini, 112px) + 10px + 58px); }
+  #radioHud { position: fixed; right: calc(env(safe-area-inset-right) + 10px); width: var(--mini, 112px); box-sizing: border-box; z-index: 4; text-align: center; font: 700 10.5px/1.25 system-ui, sans-serif; color: #d8c0ff; background: rgba(15,15,18,.62); border: 1px solid rgba(200,160,255,.5); border-radius: 10px; padding: 4px 6px; pointer-events: none; }
+  .rdLin { display: block; margin-top: 6px; font-style: normal; font-size: 11px; color: #e8dcff; }
+  #celBody h4 { margin: 10px 0 4px; font-size: 13px; color: #cfd6e4; } .fdGr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .fd { border: 2px solid transparent; border-radius: 10px; padding: 14px 4px 6px; color: #fff; text-shadow: 0 1px 2px #000; font: 700 12px system-ui; display: flex; flex-direction: column; gap: 2px; } .fd small { font-weight: 500; font-size: 10px; } .fd.sel { border-color: #fff; }
+  .fdOrd { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; } .mini { background: #3a4156; color: #fff; border: 0; border-radius: 8px; padding: 4px 8px; font: 600 11px system-ui; }
+  .tpub { display: flex; gap: 6px; margin: 6px 0; } .tpub input { flex: 1; min-width: 0; border: 0; border-radius: 8px; padding: 8px; font: 14px system-ui; } .tpost { background: rgba(255,255,255,.08); border-radius: 10px; padding: 8px 10px; margin: 6px 0; font-size: 13px; } .tpost.yo { border: 1px solid #3b9d5a; } .tpost p { margin: 4px 0; } .tcom { font-size: 12px; background: rgba(0,0,0,.25); border-radius: 6px; padding: 3px 6px; margin-top: 3px; }
   .inOv { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 65; display: flex; align-items: center; gap: 12px; background: #1b2130; border: 2px solid #6fe08a; border-radius: 40px; padding: 8px 10px 8px 12px; color: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.6); animation: inpu 1s ease-in-out infinite; min-width: 250px; }
   .inOv .chAv { width: 44px; height: 44px; font-size: 24px; } .inOv > div { flex: 1; display: flex; flex-direction: column; } .inOv b { font: 800 15px system-ui; } .inOv span { font-size: 12px; color: #9fe0a0; }
   .inOv button { width: 44px; height: 44px; border: 0; border-radius: 50%; font-size: 20px; cursor: pointer; } .inOv .no { background: #ff4a5a; } .inOv .si { background: #3cc87a; }
@@ -478,6 +483,7 @@
 <div id="pjHud" hidden title="Mi personaje"><canvas id="pjHudCv" width="56" height="56"></canvas><div class="pjBar vida"><i></i><b>❤</b></div><div class="pjBar ham"><i></i><b>🍽</b></div></div>
 <canvas id="mini" hidden></canvas>
 <div id="speed" hidden>0<small>km/h</small></div>
+<div id="radioHud" hidden></div>
 <div id="onHud" hidden></div>
 <div id="dock" hidden>
   <div class="dkRow"><button class="dkB" id="dkCel" title="Celular (C)"><span>📱</span><b class="dkBdg" id="dkCelB" hidden></b></button><button class="dkB" id="dkInv" title="Mochila (I)"><canvas id="dkInvCv" width="16" height="16"></canvas><b class="dkBdg" id="dkInvB" hidden></b></button></div>

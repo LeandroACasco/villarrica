@@ -39,9 +39,9 @@ VR.Buzon = {
   contactos() { const s = this.load(); return Object.keys(VR.CONTACTOS).filter((k) => s.ag[k]); },
   // ---- mensajes ----
   hora() { const v = this.vida(); return v ? v.hhmm : ''; },
-  add(de, txt, vida, tag, quiet) { const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
+  add(de, txt, vida, tag, quiet, prob) { const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
     s.msgs.unshift({ de, txt, dia: v ? v.dia : 0, hora: v ? v.hhmm : '', leido: false, tag: tag || null }); if (s.msgs.length > 200) s.msgs.length = 200; this.save();
-    const llama = !quiet && tag && VR.CelX && VR.CelX.entrante ? VR.CelX.entrante(de, txt, 0.55) : false; // los recordatorios a veces llegan como llamada (celextra.js)
+    const llama = !quiet && tag && VR.CelX && VR.CelX.entrante ? VR.CelX.entrante(de, txt, prob === undefined ? 0.55 : prob) : false; // los recordatorios a veces llegan como llamada (celextra.js)
     if (!quiet && !llama && VR.toast) VR.toast('💬 ' + p[0] + ': ' + (txt.length > 70 ? txt.slice(0, 68) + '…' : txt)); if (VR.audio && VR.audio.beep) VR.audio.beep(); if (this.onChange) this.onChange(de); },
   sinLeer() { return this.load().msgs.filter((m) => !m.leido && !m.yo).length; },
   sinLeerDe(id) { return this.load().msgs.filter((m) => !m.leido && !m.yo && m.de === id).length; },
@@ -58,18 +58,25 @@ VR.Buzon = {
     s.msgs.unshift({ de: id, yo: true, txt: o.t, dia: v ? v.dia : 0, hora: v ? v.hhmm : '', leido: true }); this.save(); if (this.onChange) this.onChange(id);
     const r = typeof o.r === 'function' ? o.r(this) : o.r; if (r) setTimeout(() => this.add(id, r, null, o.tag || null, true), 1100 + Math.random() * 900);
     return o.a || null; },
-  hacer(a) { const c = this.ctx; if (!c) return; if (a === 'kikeViaje' && c.kikeViaje) c.kikeViaje(); },
+  CIERRA: ['kikeViaje', 'kikeSube'], // estas acciones cierran el celular (las demás se hacen con el celular abierto)
+  hacer(a) { const c = this.ctx; if (!c || !c[a]) return; c[a](); },
   // recordatorios de los contactos (se llaman al cambiar el día)
   recordatorios(M) { const s = this.load(), v = this.vida(); if (!v) return; const dia = v.dia, ok = (id, cada) => this.tiene(id) && dia - (s.rec[id] || -99) >= cada, marca = (id) => { s.rec[id] = dia; this.save(); };
     if (ok('ramona', 2)) { const p = v.s.pieza, dias = Math.ceil((p.vence - v.s.min) / 1440); if (p.saldo > 0 && dias <= 3 && dias >= 0) { marca('ramona'); this.add('ramona', dias <= 0 ? 'Mitã, hoy vence la pieza. ¿Tenés para el alquiler?' : 'Mitã, en ' + dias + ' día' + (dias > 1 ? 's' : '') + ' vence la pieza (' + VR.fmtGs(p.saldo) + '). ¿Vas a tener, ajépa?', v, 'ramonaPaga'); } }
     if (ok('kike', 3) && Math.random() < 0.6) { marca('kike'); this.add('kike', ['Estoy en la plaza tomando tereré. Si necesitás que te lleve, avisame, che ra\'a.', 'Ey, ¿todo bien? Acá estoy en la plaza. Si estás lejos te paso a buscar.'][(Math.random() * 2) | 0], v, 'kikeOferta'); }
     if (ok('chela', 3) && v.s.fiado > 0) { marca('chela'); this.add('chela', '¿Y mi platita, che memby? Me debés ' + VR.fmtGs(v.s.fiado) + ' de la chipa.', v, 'chelaDebe'); }
-    if (ok('chela', 4) && v.s.canasto && v.s.stock <= 2 && !(v.s.fiado > 0)) { marca('chela'); this.add('chela', 'Che memby, hoy salió buena la chipa. Si querés reponer el canasto, vení temprano.', v, 'chelaOferta'); } },
+    if (ok('chela', 4) && v.s.canasto && v.s.stock <= 2 && !(v.s.fiado > 0)) { marca('chela'); this.add('chela', 'Che memby, hoy salió buena la chipa. Si querés reponer el canasto, vení temprano.', v, 'chelaOferta'); }
+    // llamadas con motivo (v2.01): Doña Chela con pedido grande para el finde, el Suboficial Benítez cuando falta gente de guardia
+    if (ok('chela', 5) && v.s.canasto && v.s.stock <= 10 && (dia - 1) % 7 >= 3 && (dia - 1) % 7 <= 5 && !(v.s.fiado > 60000)) { marca('chela'); this.add('chela', 'Che memby, me pidieron un montón de chipa para el finde. Si me ayudás a repartir te dejo 10 chipas más en el canasto, anotadas. ¿Querés?', v, 'chelaPedido', false, 0.85); }
+    if (ok('benitez', 4) && M.hecha && M.hecha('m3') && VR.guardia && !VR.guardia.hechoHoy() && !VR.guardia.job) { marca('benitez'); this.add('benitez', 'Suboficial Benítez. Hoy falta gente en el cuartel de bomberos, ¿podés venir de guardia?', v, 'benitezGuardia', false, 0.85); } },
   RESP: {
     ramonaPaga: () => [{ t: 'Sí, el sábado le pago', r: 'Bueno, mitã. Ani nde resarái.' }, { t: 'Estoy juntando, deme unos días', r: 'Unos días nomás, ¿eh? No puedo esperar mucho.' }, { t: 'Perdón, estoy en apuros', r: 'Hablemos cuando pases por acá, ¿ajépa?' }],
     kikeOferta: (B) => [{ t: '¡Dale, buscame!', r: (b) => b.kikeRespViaje(), a: 'kikeViaje' }, { t: 'Gracias, ahora no', r: 'Dale, cualquier cosa avisá.' }],
     chelaDebe: () => [{ t: 'Mañana le pago, Doña', r: 'Bueno, ¿ajépa? Ani rejapo tavy.' }, { t: 'Ya le llevo a la plaza', r: 'Aguyje, te espero acá.' }],
     chelaOferta: () => [{ t: 'Paso mañana temprano', r: 'Te dejo lo mejor, che memby.' }, { t: 'Ahora no tengo plata', r: 'Cuando puedas, po.' }],
+    kikeLlego: () => [{ t: '¡Ya salgo!', r: '¡Dale, subí! Agarrate fuerte, po.', a: 'kikeSube' }, { t: 'Esperá un ratito', r: 'Dale, avisame cuando estés listo.' }],
+    chelaPedido: () => [{ t: '¡Dale, Doña!', r: 'Aguyje, che memby. Te cargué las chipas en el canasto (anotadas, ¿ajépa?). Vendé tranquilo.', a: 'chelaCarga' }, { t: 'Hoy no puedo', r: 'Otra vez será, po.' }],
+    benitezGuardia: () => [{ t: 'Voy para el cuartel', r: 'Aguyje. Presentate y te asigno el turno. Te marqué el GPS.', a: 'guardiaGps' }, { t: 'Hoy no puedo', r: 'Entendido. Avisame cuando puedas.' }],
   },
   INICIO: {
     kike: (B) => { const o = [{ t: '¿Me venís a buscar?', r: (b) => b.kikeRespViaje(), a: 'kikeViaje' }, { t: '¿Cómo andás?', r: 'Bien, acá en la plaza con el tereré. ¿Y vos?' }]; return o; },

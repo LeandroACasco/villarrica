@@ -389,7 +389,7 @@
     if (car && !car.burning && !car.wreck && (car.hp ?? 100) > 35 && car.hp < 100) car.hp = Math.min(100, car.hp + dt * 0.5);
     changas.update(dt); if (VR.guardia) VR.guardia.update(dt);
     if (vida) { player.setCasco(vida.cascoPuesto); if (pj && pj._cp !== vida.cascoPuesto) { pj._cp = vida.cascoPuesto; pj.icono(); } } if (mis) mis.update(dt, player, car); if (ctrl) ctrl.update(dt, player, car); if (pz) pz.update(dt, player, car);
-    syncEq(); mbh.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
+    syncEq(); mbh.update(dt); if (VR.reparto) VR.reparto.update(dt); { const b = $('btnSaltaViaje'), on = !!(mbh.riding && mbh.r && mbh.r.st === 'viaje'); if (b.hidden === on) b.hidden = !on; }
     world.updateDynamic(dt);
     VR.audioCam = cam; VR.playerCar = car; VR.audio.engine(car || (mbh.riding ? mbh.v : null), dt);
     updateCamera(dt);
@@ -636,9 +636,11 @@
   // devuelve el juego andando; si f solo marca algo (GPS), el juego queda andando. (Antes quedaba todo en pausa: se "colgaba" al marcar la misión.)
   // Si f falla, no se deja el juego congelado: se avisa y se sigue.
   const celGo = (f) => { celDlg._keep = true; celDlg.close(); resume(); try { f(); } catch (e) { console.error(e); toast('⚠ No se pudo hacer eso (' + (e && e.message || e) + ')'); VR.loop.paused = false; VR.input.enabled = true; } };
-  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); }, cel: (a) => openCel(a) };
+  const CX = { vida, esc, gs: VR.fmtGs, B: VR.Buzon, toast: (m) => toast(m), paint: () => paintCel(), get todas() { return X_todas; }, app: () => celApp, go: (f) => celGo(f), go2: (a) => { celApp = a; paintCel(); }, cel: (a) => openCel(a) };
   if (vida) VR.CelX.arrancar(vida, CX);
+  let X_todas = [];
   function paintCel() {
+    if (celApp !== 'home') $('celBody').style.background = '';
     const s = vida.s, gs = VR.fmtGs, net = s.saldo > 0; celDlg.classList.toggle('roto', vida.celuRoto());
     $('celHora').textContent = vida.diaSemana + ' ' + vida.hhmm; $('celSaldo').textContent = (vida.celuRoto() ? '💔 ' : '') + (net ? '📶 ' + Math.ceil(s.saldo) + ' d' : '📵 sin saldo');
     let h = '';
@@ -647,7 +649,8 @@
         ['changas', '📋', 'Changas', '#8fd0ff', net], ['mis', '📌', 'Misiones', '#ff5fa2', true], ['mapa', '🗺', 'GPS', '#7fe08a', true],
         ['merc', '🛒', 'Mercadito', '#ff9a5a', net], ['camara', '📷', 'Cámara', '#6aa8ff', true], ['galeria', '🖼', 'Galería', '#c8a0ff', true],
         ...VR.CelX.APPS.map(([k, i, n, c, red]) => [k, i, n, c, !red || net])];
-      h = '<div class="apps">' + A.map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
+      $('celBody').style.background = VR.CelX.fondo(); X_todas = A;
+      h = '<div class="apps">' + VR.CelX.ordenar(A).map(([k, i, n, c, on]) => '<button class="app' + (on ? '' : ' off') + '" data-a="' + k + '"><i style="background:' + c + '">' + i + '</i>' + n + '</button>').join('') + '</div>' + (net ? '' : '<p>Sin saldo no andan las apps que usan internet. Cargá en la despensa.</p>') + (vida.celuRoto() ? '<p>💔 Tenés la pantalla rota: se ve mal y a veces no responde. Arreglala o comprá uno nuevo en <b>Celu Porã</b> (en el mapa: ☎).</p>' : '');
     } else if (celApp === 'jaha') {
       h = '<h3>🛵 Mbohasa</h3>';
       if (mbh.activo) { // como en Bolt: mapita con el conductor en vivo, su tarjeta y el estado
@@ -706,15 +709,15 @@
     } else if (celApp === 'agenda') {
       const B = VR.Buzon, ids = B.contactos();
       h = '<h3>📒 Contactos</h3>' + (ids.length ? ids.map((id) => { const c = VR.CONTACTOS[id];
-        return '<div class="ctc"><i class="chAv">' + c[1] + '</i><span class="chTx"><b>' + esc(c[0]) + '</b><small>' + esc(c[3]) + '</small><small class="num">📞 ' + esc(c[2]) + '</small></span><button class="cbtn mini" data-call="' + id + '">📞</button><button class="cbtn mini" data-chat="' + id + '">💬</button></div>'; }).join('') : '<p>Tu agenda está vacía. Los personajes te van a ir pasando su número.</p>');
+        return '<div class="ctc"><i class="chAv">' + c[1] + '</i><span class="chTx"><b>' + esc(c[0]) + '</b><small>' + esc(c[3]) + '</small><small class="num">📞 ' + esc(c[2]) + '</small></span><button class="cbtn mini" data-call="' + id + '">📞</button><button class="cbtn mini" data-chat="' + id + '">💬</button></div>'; }).join('') : '<p>Tu agenda está vacía. Los personajes te van a ir pasando su número.</p>') + (ids.length ? '<p style="font-size:11px">📞 Cada llamada que hacés gasta 0,1 día de saldo. Las que te hacen son gratis.</p>' : '');
     } else if (celApp === 'stats') {
       h = '<h3>📊 Estadísticas</h3>' + VR.Stats.html();
     }
     unmapCel(); if (celStop) { celStop(); celStop = null; }
     celBody.classList.toggle('cam', celApp === 'camara'); celBody.innerHTML = h;
     celBody.querySelectorAll('[data-chat]').forEach((b) => b.onclick = () => { celApp = 'msj:' + b.dataset.chat; paintCel(); });
-    celBody.querySelectorAll('[data-call]').forEach((b) => b.onclick = () => { if (!(vida.s.saldo > 0)) { toast('📵 Sin saldo para llamar'); return; } VR.CelX.llamar(b.dataset.call); celApp = 'call:' + b.dataset.call; paintCel(); });
-    celBody.querySelectorAll('[data-rp]').forEach((b) => b.onclick = () => { const id = celApp.slice(4), a = VR.Buzon.responder(id, +b.dataset.rp); if (a) celGo(() => VR.Buzon.hacer(a)); else paintCel(); });
+    celBody.querySelectorAll('[data-call]').forEach((b) => b.onclick = () => { if (!VR.CelX.cobraLlamada()) return; VR.CelX.llamar(b.dataset.call); celApp = 'call:' + b.dataset.call; paintCel(); });
+    celBody.querySelectorAll('[data-rp]').forEach((b) => b.onclick = () => { const id = celApp.slice(4), a = VR.Buzon.responder(id, +b.dataset.rp); if (a && VR.Buzon.CIERRA.includes(a)) celGo(() => VR.Buzon.hacer(a)); else { if (a) VR.Buzon.hacer(a); paintCel(); } });
     if (typeof celApp === 'string' && celApp.startsWith('msj:')) { const ch = celBody.querySelector('.chat'); celBody.scrollTop = celBody.scrollHeight; if (ch) ch.scrollTop = ch.scrollHeight; }
     celBody.querySelectorAll('[data-ch]').forEach((b) => b.onclick = () => celGo(() => changas.start(b.dataset.ch)));
     if (celApp === 'mis' && mis) paintMis(celBody, true);
@@ -863,7 +866,11 @@
     mis.kikeViaje = () => { const r = mis.kikeRuta(); if (!r) return null; const n = vida.s.kikeViajes || 0; vida.s.kikeViajes = n + 1; let txt;
       if (n < 3) txt = '🏍 Viaje de regalo (' + (n + 1) + '/3)'; else { vida.cobrarODeber(5000, 'Kike te llevó'); txt = '🏍 Viaje con Kike · ' + VR.fmtGs(5000); }
       if (car) exitCar(); const f = $('celFade'); f.textContent = txt + ' · ' + (r.aCasa ? 'a tu pieza…' : 'a la plaza…'); f.classList.add('on'); setTimeout(() => { teleport(r.d.x, r.d.y, r.d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 1100); return null; };
-    VR.Buzon.ctx = { vida, kikeRuta: () => mis.kikeRuta(), kikeViaje: () => setTimeout(() => mis.kikeViaje(), 2600) };
+    VR.Buzon.ctx = { vida, kikeRuta: () => mis.kikeRuta(),
+      kikeViaje: () => setTimeout(() => VR.Buzon.add('kike', '¡Ya llegué! Estoy ahí afuera, salí que nos vamos.', vida, 'kikeLlego', false, 1), 3500), // primero avisa por llamada y recién ahí te lleva
+      kikeSube: () => setTimeout(() => mis.kikeViaje(), 400),
+      chelaCarga: () => { const n = vida.llenaCanasto(10, true); if (n) toast('🥐 Doña Chela te cargó ' + n + ' chipas (anotadas)'); },
+      guardiaGps: () => { const cu = VR.guardia && VR.guardia.cuartel(); if (cu) setDest({ x: cu.x, y: cu.y, name: 'Cuartel de bomberos' }); } };
     mis.agendarViejas();
     VR.Buzon.onChange = (id) => { if (celDlg.open && (celApp === 'msj' || celApp === 'agenda' || celApp === 'msj:' + id)) paintCel(); };
     mis.taxi = (d, precio) => { if (car) return; vida.cobrarODeber(precio, 'Taxi del hospital'); VR.Stats.inc('taxis'); const f = $('celFade'); f.textContent = '🚕 En taxi…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); setTimeout(() => f.classList.remove('on'), 300); }, 900); };
@@ -884,6 +891,7 @@
     fin: (r) => { if (mis) mis.emit('jaha', r); },
     llevar: (d) => { VR.Stats.inc('mbohasa'); const f = $('celFade'); f.textContent = '🛵 En viaje…'; f.classList.add('on'); setTimeout(() => { teleport(d.x, d.y, d.name, true); if (mis) mis.emit('jaha', { dest: d }); setTimeout(() => f.classList.remove('on'), 300); }, 900); } })
     : { riding: false, activo: false, r: null, v: null, saltear() {}, update() {}, rideTick() {}, cancelar() {}, pedir() { return false; }, texto() { return ''; } };
+  VR.reparto = vida && gpsNet ? new VR.Reparto({ world, gps: gpsNet, player }) : null; // repartidor de Ñembo'u (celextra.js)
   if (mis) VR.despensa = VR.crearDespensa({ player, busy: () => false, comprar: () => mis.dialogo(VR.despensaCompra(mis)) }); // despensa Ñande Róga por dentro
   VR.mercado = VR.crearMercado({ player, busy: () => false, menu: (l) => (mis ? mis.dialogo(l) : VR.Dialogo.show(l, () => {}, {})),
     come: (p, h, n, cura) => { if (vida) { if (vida.come(p, h, n) && cura && VR.heal) VR.heal(cura); } else { if (VR.Wallet.get() < p) { toast('💸 No te alcanza'); return; } VR.Wallet.add(-p, n); VR.heal(Math.round(h * 0.6) + (cura || 0)); toast('🍽 ' + n + ' · −' + VR.fmtGs(p)); } } }); // Mercado Municipal por dentro (13/11/2026)
