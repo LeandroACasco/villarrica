@@ -50,7 +50,7 @@ VR.Flujo = class {
           const tx = bx + nx * g, ty = by + ny * g;
           if (g > 1 && isB(tx, ty)) break;
           if (!this.pass(tx * S + 8, ty * S + 8)) continue;
-          const score = (face === 's' ? 0 : 30) + (g - 1) * 12 + Math.abs(off);
+          const score = (face === (d.pref || 's') ? 0 : 30) + (g - 1) * 12 + Math.abs(off);
           if (!best || score < best.score) {
             const ex = bx * S + 8 + nx * 8, ey = by * S + 8 + ny * 8; // punto del borde del edificio hacia la calle
             best = { score, x: tx * S + 8, y: ty * S + 8, ix: ex - nx * 8, iy: ey - ny * 8, face, axis: horiz ? 'x' : 'y', nx, ny };

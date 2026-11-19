@@ -701,7 +701,7 @@ def main(src, out, preview=None):
         below = street[min(H - 1, ymax[new_id] + 2), xm]
         lm = LANDMARKS.get(tags.get('name', '')) or poi_lm.get(new_id)
         if tags.get('name') == 'Catedral de Villarrica':  # la Catedral ya tiene su diseño: solo se suma la puerta (gente de misa)
-            decals.append({'kind': 'iglesia', 'name': 'Catedral de Villarrica', 'nodraw': True, 'x': int(xmin[new_id]), 'y': int(ymin[new_id]), 'w': int(xmax[new_id] - xmin[new_id] + 1), 'h': int(ymax[new_id] - ymin[new_id] + 1)})
+            decals.append({'kind': 'iglesia', 'name': 'Catedral de Villarrica', 'nodraw': True, 'pref': 'w', 'x': int(xmin[new_id]), 'y': int(ymin[new_id]), 'w': int(xmax[new_id] - xmin[new_id] + 1), 'h': int(ymax[new_id] - ymin[new_id] + 1)})
             # Catedral con diseño propio (19/11/2026, fotos de Leandro): fachada y torre al OESTE (Plaza Libertad), crucero al este de la nave,
             # ábside angosto al fondo. 'cols' = [techo, piso] de cada columna de baldosas del edificio (para seguir la forma exacta)
             cols_ = []
@@ -1568,6 +1568,14 @@ def main(src, out, preview=None):
         for q_ in decals:
             if q_['kind'] == 'colegio' and q_.get('name') == 'Colegio Don Bosco': q_['nodraw'] = True
         print('Don Bosco: iglesia', (cx_, cy_, cw_, chh_), 'colegio', (sx_, sy_, sw_, shh_), 'patio', len(runs_), 'tramos')
+    # palmeras frente a la fachada oeste de la Catedral (19/11/2026): una fila a cada lado del camino al portón, como en las fotos
+    for q_ in decals:
+        if q_['kind'] != 'catedral': continue
+        c2_ = q_['cols'][2]; ym_ = (c2_[0] + c2_[1]) // 2; px_ = q_['x'] - 3
+        for dy_ in (-15, -12, -9, -6, 6, 9, 12, 15):
+            py_ = ym_ + dy_
+            if 0 <= px_ < W and bid[py_, px_] == 0 and tiles[py_, px_] not in (ROAD, BUILDING) and not tree_at[py_, px_]:
+                tree_at[py_, px_] = True; trees.append((px_, py_, 10, 4))
     # ---------- empaquetar ----------
     roads = {'kinds': KINDS, 'widths': [ROADS[k][0] for k in KINDS], 'swidths': [ROADS[k][1] for k in KINDS], 'nodes': gnodes, 'edges': gedges}
     meta = {'w': W, 'h': H, 'roads': roads, 'special': special, 'pois': {k: [int(v[0]), int(v[1])] for k, v in poi_pos.items()}, 'streets': names, 'areas': area_names, 'barrios': barrio_names, 'barrioLabels': blabels, 'labels': labels, 'decals': decals,

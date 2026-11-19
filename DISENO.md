@@ -577,3 +577,6 @@ Conocido: en las diagonales, los edificios y árboles siguen en la grilla (el bo
 
 ### v1.88 — Catedral: entrada por el oeste e interior grande (19/11/2026)
 Entrada por el portón de la fachada oeste (atrio de piedra dibujado en `catedral.js`); la puerta de la galería sur sigue funcionando. `VR.Salon` ahora admite `cfg.view = [ancho, alto]`: la sala puede ser más grande que la pantalla y la cámara sigue al jugador. Interior de 480×640: presbiterio con retablo, crucero con altares del Sagrado Corazón y San Roque, 14 filas de bancos, columnas, naves laterales con confesionarios, Virgen, bautisterio, avisos y alcancía, sacristía, cura y sacristán. Sin probar en el teléfono.
+
+### v1.89 — Catedral: sin entrada sur, ventiladores, palmeras y luces de noche (19/11/2026)
+Se sacó la puerta de la galería sur (ahora es otro arco; entrada y gente de misa solo por el portón oeste: decal `iglesia` con `pref:'w'` y `findDoor` respeta `d.pref`). Ventiladores de techo con 4 aspas rectas que giran (antes parecían hojas). Ocho palmeras en dos filas frente a la fachada oeste (converter). Luces de noche (`decorTop.catedral`): dos reflectores en el piso, faroles del portón y faroles de la galería sur. Sin probar en el teléfono.

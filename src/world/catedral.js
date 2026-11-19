@@ -63,12 +63,11 @@
     R(g, 'rgba(70,50,20,.10)', X0, Wt + 8, XT - X0, FH - 8);                                                                                  // la pared sur está a la sombra
     for (let c = door - P * 9; c < XT - 14; c += P) {
       if (c < X0 + 20) continue;
-      const aw = 16, ah = 28, ax = c - aw / 2, ay = Wt + 9, es = Math.abs(c - door) < 1;
+      const aw = 16, ah = 28, ax = c - aw / 2, ay = Wt + 9;
       arco(g, COL.trimD, ax - 1.8, ay - 1.8, aw + 3.6, ah + 1.8); arco(g, COL.trim, ax - 1, ay - 1, aw + 2, ah + 1);                         // marco de arco
       arco(g, COL.dark, ax, ay, aw, ah);
       arco(g, COL.back, ax + 2.5, ay + 3, aw - 5, ah - 6); R(g, COL.dark, ax + aw / 2 - 0.5, ay + 12, 1, ah - 12);                           // fondo de la galería
       R(g, '#a8987a', ax, B0 - 8, aw, 3);                                                                                                   // piso de la galería
-      if (es) { arco(g, COL.wood, ax + 2, ay + 4, aw - 4, ah - 8); arco(g, COL.woodL, ax + 3.2, ay + 5.2, aw - 6.4, ah - 10.4); R(g, COL.dark, ax + aw / 2 - 0.5, ay + 10, 1, ah - 10); R(g, '#d6b66e', ax + aw / 2 - 2.4, ay + 17, 1.2, 1.2); R(g, '#d6b66e', ax + aw / 2 + 1.2, ay + 17, 1.2, 1.2); }
       R(g, COL.trim, c - aw / 2 - 5.5, ay + 13, 5.5, 1.2); R(g, COL.trim, c + aw / 2, ay + 13, 5.5, 1.2);                                  // imposta
       R(g, COL.trimD, c - aw / 2 - 5.5, ay + 14.2, 5.5, 0.6); R(g, COL.trimD, c + aw / 2, ay + 14.2, 5.5, 0.6);
     }
@@ -176,6 +175,28 @@
       R(g, COL.iron, tcx - 0.4, cy - 25, 0.8, 11); R(g, COL.iron, tcx - 3, cy - 22, 6, 0.8);
       if (VR.night) VR.night.add(tcx, cy + 18, 26, '255,236,190', 0.22 * (VR.night.level || 0));
     } });
+    // luces de noche (19/11/2026): reflectores en el piso frente a la fachada oeste, farol del portón y faroles de la galería sur
+    {
+      const c2 = cols[2] || cols[1], ym = ((c2[0] + c2[1]) / 2) * S, lamps = [[X0 - 22, ym - 46], [X0 - 22, ym + 46]], galy = B0 - 2;
+      out.push({ sy: ym + 50, draw(g) {
+        const lv = VR.night ? (VR.night.level || 0) : 0;
+        for (const [lx, ly] of lamps) {                                                                                       // reflector: pie de hierro, cabeza que apunta a la fachada
+          R(g, 'rgba(0,0,0,.25)', lx - 3, ly + 1, 8, 2.4); R(g, COL.iron, lx - 0.6, ly - 9, 1.2, 10); R(g, '#3a3a40', lx - 2.6, ly - 12, 5.2, 4); R(g, lv > 0.3 ? '#fff3c4' : '#9a9a90', lx + 0.6, ly - 11.4, 2, 2.8);
+          if (VR.night && lv > 0.02) { VR.night.add(lx + 12, ly - 4, 54, '255,226,160', 0.42 * lv); VR.night.add(lx + 24, ly - 8, 40, '255,236,190', 0.26 * lv); }
+        }
+        R(g, COL.iron, X0 - 7, ym - 17, 1, 5); R(g, lv > 0.3 ? '#ffe9a8' : '#c8b878', X0 - 8, ym - 13, 3, 3);                         // farol del portón
+        R(g, COL.iron, X0 - 7, ym + 13, 1, 5); R(g, lv > 0.3 ? '#ffe9a8' : '#c8b878', X0 - 8, ym + 10, 3, 3);
+        if (VR.night && lv > 0.02) { VR.night.add(X0 - 6, ym, 46, '255,214,140', 0.4 * lv); VR.night.add(X0 - 8, ym - 14, 16, '255,230,170', 0.3 * lv); VR.night.add(X0 - 8, ym + 12, 16, '255,230,170', 0.3 * lv); }
+      } });
+      out.push({ sy: galy, draw(g) {
+        const lv = VR.night ? (VR.night.level || 0) : 0, XT2 = X0 + (d.w - 14) * S;
+        for (let c = X0 + 17 * S + 8 - 28 * 9; c < XT2; c += 56) {
+          if (c < X0 + 20) continue; const ly = B0 - FH + 20;
+          R(g, COL.iron, c - 0.4, ly - 3, 0.8, 3); R(g, lv > 0.3 ? '#ffe9a8' : '#c8b878', c - 1.4, ly, 2.8, 3.4);
+          if (VR.night && lv > 0.02) VR.night.add(c, B0 + 4, 30, '255,226,160', 0.24 * lv);
+        }
+      } });
+    }
     return out;
   };
 })();
