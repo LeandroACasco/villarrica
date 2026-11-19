@@ -741,4 +741,5 @@ La `cub` (Mbojoaju 125) ya no se arma con cortes apilados: es una malla de pieza
 
 ## Iglesias y colegios (18/11/2026)
 - `data/instituciones.json` → `tools/osm_to_map.py` (lista `INST`, estilos IGL/COLE/UNIV) → labels `small` + decals `iglesia`/`colegio` (`VR.decorOver`, `src/world/instituciones.js`).
+- **Catedral** (19/11/2026): decal propio `catedral` (`tools/osm_to_map.py`, lleva `cols` = [techo, piso] de cada columna de baldosas, y `o: 'w'` = fachada al oeste) → `src/world/catedral.js` (`VR.decorOver.catedral` para techo y paredes, `VR.decorTop.catedral` para la torre y los pináculos). La pared sur visible mide `FH = 40`; la puerta de la galería está en la columna 17 (donde `flujo.js` busca la entrada). Para cambiar de lado la fachada hay que reflejar en el eje x las zonas (nave, crucero, ábside) y la torre.
 - `VR.Flujo(world, peds)` (`src/game/flujo.js`, `VR.flujo`): `findDoor` por decal, `update(dt, focus, view)` cada 0.25 s con cupo 16 y rango 650 px; peatones con `mode:'go'`, `go`, `sc`, `fa`, `dead` (soportados en `peds.js`). Horario: `VR.vida` en Historia, reloj real en Libre; se puede pisar `VR.flujo.now` para pruebas.

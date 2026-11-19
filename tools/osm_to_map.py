@@ -702,6 +702,13 @@ def main(src, out, preview=None):
         lm = LANDMARKS.get(tags.get('name', '')) or poi_lm.get(new_id)
         if tags.get('name') == 'Catedral de Villarrica':  # la Catedral ya tiene su diseño: solo se suma la puerta (gente de misa)
             decals.append({'kind': 'iglesia', 'name': 'Catedral de Villarrica', 'nodraw': True, 'x': int(xmin[new_id]), 'y': int(ymin[new_id]), 'w': int(xmax[new_id] - xmin[new_id] + 1), 'h': int(ymax[new_id] - ymin[new_id] + 1)})
+            # Catedral con diseño propio (19/11/2026, fotos de Leandro): fachada y torre al OESTE (Plaza Libertad), crucero al este de la nave,
+            # ábside angosto al fondo. 'cols' = [techo, piso] de cada columna de baldosas del edificio (para seguir la forma exacta)
+            cols_ = []
+            for cx_ in range(int(xmin[new_id]), int(xmax[new_id]) + 1):
+                ys_ = np.nonzero(bid[:, cx_] == new_id)[0]
+                cols_.append([int(ys_.min()), int(ys_.max()) + 1])
+            decals.append({'kind': 'catedral', 'name': 'Catedral de Villarrica', 'o': 'w', 'x': int(xmin[new_id]), 'y': int(ymin[new_id]), 'w': int(xmax[new_id] - xmin[new_id] + 1), 'h': int(ymax[new_id] - ymin[new_id] + 1), 'cols': cols_})
         try:
             floors = int(float(tags.get('building:levels', '0')))
         except ValueError:
