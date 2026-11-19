@@ -885,22 +885,26 @@
   const superL = { pts: () => Object.keys(VR.SUPERS).map((id) => { const p = lugE.get('super_' + id); return p && { x: p.x, y: p.y, name: p.name, id }; }).filter(Boolean), near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 46) return p; return null; } };
   const mercL = { pts: () => ['mercado1', 'mercado2'].map((k) => lugE.get(k)).filter(Boolean), near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 46) return p; return null; } };
   const catL = { pts: () => { const d = (world.decals || []).find((q) => q.kind === 'catedral'); if (!d) return []; const c = d.cols[2] || d.cols[1], yc = ((c[0] + c[1]) / 2) * VR.TILE; return [{ x: d.x * VR.TILE - 12, y: yc, name: 'Catedral' }]; }, near(pl) { for (const p of this.pts()) if (Math.hypot(p.x - pl.x, p.y - pl.y) < 40) return p; return null; } }; // portón oeste de la Catedral (fachada con la torre); la entrada sur se sacó el 19/11/2026
-  const entradas = () => { const o = [];
-    if (shopDoor) o.push({ x: shopDoor.x, y: shopDoor.y - 6, ico: '👕', c: '#ff9ed0', name: 'Tienda Ao Porã' });
-    if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro' });
+  // Qué marcas se ven en el mapa y el minimapa (19/11/2026, pedido de Leandro): se elige en el mapa con 🔎 y se recuerda
+  const MF = [['npc', '🧍', 'Personajes importantes', 1], ['serv', '🏪', 'Tiendas y servicios', 1], ['veh', '🏍', 'Mis vehículos', 1], ['igl', '⛪', 'Catedral', 1], ['nafta', '⛽', 'Estaciones de servicio', 0], ['super', '🛒', 'Supermercados', 0], ['merc', '🧺', 'Mercados', 0], ['boli', '🎶', 'Boliches (de noche)', 0]];
+  const mf = Object.assign(Object.fromEntries(MF.map((m) => [m[0], !!m[3]])), VR.store.get('mapFiltro', {}) || {});
+  const entradas = (mapa) => { const o = [];
+    if (shopDoor) o.push({ x: shopDoor.x, y: shopDoor.y - 6, ico: '👕', c: '#ff9ed0', name: 'Tienda Ao Porã', cat: 'serv' });
+    if (cineDoor) o.push({ x: cineDoor.x, y: cineDoor.y - 6, ico: '🎬', c: '#c9a0ff', name: 'Teatro', cat: 'serv' });
     const C = { despensa: '#9fe0a0', pieza: '#ffd84a', cajero: '#7fd8ff', cajero2: '#7fd8ff', financiera: '#ffb36b', celulares: '#c9a0ff' };
-    for (const d of (world.decals || [])) if (d.kind === 'estacion') { const k = VR.Estaciones.lay(d).canopy; o.push({ x: k[0] + k[2] / 2, y: k[1] + k[3] / 2, ico: '⛽', c: '#ff8f6b', name: d.name }); }
-    for (const p of mercL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🧺', c: '#ffcf6b', name: p.name });
-    for (const p of catL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '⛪', c: '#d8c8ff', name: 'Catedral (entrada)' });
-    if (VR.bolicheAbierto()) for (const p of bolL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🎶', c: '#ff7ad0', name: p.name });
-    for (const p of superL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🛒', c: '#8fd0ff', name: p.name });
-    if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)' });
+    for (const d of (world.decals || [])) if (d.kind === 'estacion') { const k = VR.Estaciones.lay(d).canopy; o.push({ x: k[0] + k[2] / 2, y: k[1] + k[3] / 2, ico: '⛽', c: '#ff8f6b', name: d.name, cat: 'nafta' }); }
+    for (const p of mercL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🧺', c: '#ffcf6b', name: p.name, cat: 'merc' });
+    for (const p of catL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '⛪', c: '#d8c8ff', name: 'Catedral (entrada)', cat: 'igl' });
+    if (VR.bolicheAbierto()) for (const p of bolL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🎶', c: '#ff7ad0', name: p.name, cat: 'boli' });
+    for (const p of superL.pts()) o.push({ x: p.x, y: p.y - 6, ico: '🛒', c: '#8fd0ff', name: p.name, cat: 'super' });
+    if (garDoor) o.push({ x: garDoor.x, y: garDoor.y + 6, ico: '🔧', c: '#ffcf6b', name: 'Taller (con auto)', cat: 'serv' });
     if (mbh.activo && mbh.v && !mbh.riding) o.push({ x: mbh.v.x, y: mbh.v.y, ico: mbh.r.tipo === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: 'Tu Mbohasa' }); // el conductor, siempre visible en el minimapa y el mapa grande (12/11/2026)
     const ks = mis ? Object.keys(VR.PUNTOS) : ['despensa'];
     { const mios = new Set(); if (!car && lastCar) mios.add(lastCar); for (const c of cars) if (c.mio) mios.add(c); // dónde dejaste tus vehículos (el último del que te bajaste y los tuyos)
-      for (const c of mios) if (c !== car && !c.mbh) o.push({ x: c.x, y: c.y - 4, ico: c.type === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: c.prestada ? 'Moto de Kike (acá la dejaste)' : (c === lastCar ? 'Tu vehículo (el último)' : 'Tu vehículo') }); }
-    for (const k of ks) { const D = VR.PUNTOS[k], p = D && lugE.get(D.lugar); if (p) o.push({ x: p.x, y: p.y - (k === 'despensa' ? 4 : 0), ico: D.ico, c: C[k] || '#9fe0a0', name: D.nombre }); }
-    return o; };
+      for (const c of mios) if (c !== car && !c.mbh) o.push({ x: c.x, y: c.y - 4, ico: c.type === 'moto' ? '🏍' : '🚗', c: '#ffd84a', name: c.prestada ? 'Moto de Kike (acá la dejaste)' : (c === lastCar ? 'Tu vehículo (el último)' : 'Tu vehículo'), cat: 'veh' }); }
+    for (const k of ks) { const D = VR.PUNTOS[k], p = D && lugE.get(D.lugar); if (p) o.push({ x: p.x, y: p.y - (k === 'despensa' ? 4 : 0), ico: D.ico, c: C[k] || '#9fe0a0', name: D.nombre, cat: 'serv' }); }
+    if (mapa && mis) for (const [k, p] of mis.presentes()) if (!mis.marca(k)) o.push({ x: p.x, y: p.y - 4, ico: '🧍', c: VR.PERSONAJES[k].color || '#b8f08a', name: VR.PERSONAJES[k].nombre, cat: 'npc' }); // Kike, Doña Chela y los demás (si la misión los marca, ya salen con ▼ o !)
+    return mapa ? o.filter((e) => !e.cat || mf[e.cat]) : o; };
   const drawEntrada = (g, e, x, y, t) => { // flecha que late + ícono sobre la puerta
     const b = Math.sin(t * 4 + e.x) * 3, yy = y - 40 + b;
     g.save(); g.lineJoin = 'round';
@@ -1028,10 +1032,13 @@
     $('mapFriends').innerHTML = (mis ? mis.marcas() : []).map((m) => { const x = m.x / 16 * mv.k + mv.ox, y = m.y / 16 * mv.k + mv.oy;
       return `<div style="position:absolute;left:${x - 10}px;top:${y - 10}px;width:20px;height:20px;border-radius:50%;background:${m.c};border:2px solid #1a1a1e;box-sizing:border-box;font:900 12px/16px system-ui;text-align:center;color:#1a1a1e">${m.ico === '●' ? '' : m.ico}</div><div style="position:absolute;left:${x}px;top:${y - 30}px;transform:translateX(-50%);font:700 12px system-ui;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap">${String(m.name || '').replace(/[<>&"]/g, '')}</div>`; }).join('') + [...online.others.values()].map((o) => { const x = o.x / 16 * mv.k + mv.ox, y = o.y / 16 * mv.k + mv.oy, n = String(o.n || '').replace(/[<>&"]/g, '');
       return `<div style="position:absolute;left:${x - 8}px;top:${y - 8}px;width:16px;height:16px;border-radius:50%;background:#3fd3ff;border:2px solid #0b2a36;box-sizing:border-box"></div><div style="position:absolute;left:${x}px;top:${y - 26}px;transform:translateX(-50%);font:700 13px system-ui;color:#fff;text-shadow:0 0 3px #0b2a36,0 0 3px #0b2a36;white-space:nowrap">${n}</div>`; }).join('');
-    $('mapFriends').innerHTML += entradas().map((e) => { const x = e.x / 16 * mv.k + mv.ox, y = e.y / 16 * mv.k + mv.oy;
+    $('mapFriends').innerHTML += entradas(true).map((e) => { const x = e.x / 16 * mv.k + mv.ox, y = e.y / 16 * mv.k + mv.oy;
       return `<div style="position:absolute;pointer-events:none;left:${x - 12}px;top:${y - 12}px;width:24px;height:24px;border-radius:50%;background:${e.c};border:2px solid #1a1a1e;box-sizing:border-box;font:13px/20px system-ui;text-align:center">${e.ico}</div><div style="position:absolute;pointer-events:none;left:${x}px;top:${y - 32}px;transform:translateX(-50%);font:700 12px system-ui;color:#fff;text-shadow:0 0 3px #1a1a1e,0 0 3px #1a1a1e;white-space:nowrap">${e.name}</div>`; }).join('');
   };
   setInterval(() => { if (mapOpen) drawMapFriends(); }, 500);
+  { const fp = $('mapFilt'), paintF = () => { fp.innerHTML = '<b>Marcas en el mapa y el minimapa</b>' + MF.map((m) => '<label><input type="checkbox" data-f="' + m[0] + '"' + (mf[m[0]] ? ' checked' : '') + '><i>' + m[1] + '</i><span>' + m[2] + '</span></label>').join('') + '<small>Las marcas de la misión y tu destino siempre se ven.</small>';
+      fp.querySelectorAll('input').forEach((i) => { i.onchange = () => { mf[i.dataset.f] = i.checked; VR.store.set('mapFiltro', mf); if (mapOpen) drawMapFriends(); }; }); };
+    $('mzFilt').onclick = () => { if (fp.hidden) paintF(); fp.hidden = !fp.hidden; }; }
   function openMap() { if (!mapBuilt) buildMap(); if (vida) $('mapLabels').querySelectorAll('[data-barrio]').forEach((s) => { s.textContent = (VR.Barrios.abierto(s.dataset.barrio) ? '' : '🔒 ') + s.dataset.barrio; }); drawMapFriends(); mapOpen = true; VR.input.releaseAll(); $('mapView').hidden = false; sizeMap(); }
   function closeMap() { mapOpen = false; $('mapView').hidden = true; }
   const openMapAuto = () => (vida ? openCel('mapa') : openMap());
@@ -1231,7 +1238,7 @@
       const R0 = 6.5 * D / 112; mctx.fillStyle = '#1a1a1e'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = m.c; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
       mctx.fillStyle = '#1a1a1e'; mctx.font = `900 ${Math.round(9 * D / 112)}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText(m.ico === '●' ? '' : m.ico, px, py + 0.5);
     }
-    for (const e of entradas()) { // lugares donde se puede entrar
+    for (const e of entradas(true)) { // lugares donde se puede entrar
       let px = (e.x / VR.TILE - sx) * k, py = (e.y / VR.TILE - sy) * k; const dx = px - r, dy = py - r, dd = Math.hypot(dx, dy), lim = r - 9 * D / 112;
       if (dd > lim) { px = r + dx / dd * lim; py = r + dy / dd * lim; }
       const R0 = 6.5 * D / 112; mctx.fillStyle = '#1a1a1e'; mctx.beginPath(); mctx.arc(px, py, R0 + 1.5, 0, 7); mctx.fill(); mctx.fillStyle = e.c; mctx.beginPath(); mctx.arc(px, py, R0, 0, 7); mctx.fill();
@@ -1433,6 +1440,7 @@
 
   applyTouch();
   hideOverlay();
+  if (VR.modo === 'historia') setTimeout(() => toast('📂 Partida ' + VR.store.slot), 1200);
   if (!directo) enterTitle(true); else VR.store.set('modo', VR.modo);
   if (mis) { if (mis.s.act) mis.entrar(mis.s.act.paso, true); else mis.auto(); } // retomar la misión guardada (o arrancar la primera)
   VR.loop.start(update, render);

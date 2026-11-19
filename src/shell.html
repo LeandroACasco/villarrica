@@ -229,6 +229,9 @@
   #mapTools button { min-width: 44px; height: 44px; border-radius: 10px; border: 1px solid #44444f; background: rgba(30,30,36,.9); color: #fff;
     font: 700 18px system-ui; padding: 0 12px; cursor: pointer; }
   #mapTools button.wide { font-size: 13px; }
+  #mapFilt { position: fixed; top: calc(env(safe-area-inset-top) + 62px); right: calc(env(safe-area-inset-right) + 10px); z-index: 10; width: min(300px, 80vw); max-height: 70vh; overflow-y: auto; padding: 10px 12px; border-radius: 12px; background: rgba(24,24,30,.96); border: 1px solid #44444f; color: #fff; font: 600 13px system-ui; }
+  #mapFilt b { display: block; margin-bottom: 6px; } #mapFilt label { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; } #mapFilt label i { font-style: normal; font-size: 18px; width: 22px; text-align: center; } #mapFilt label span { flex: 1; } #mapFilt input { width: 18px; height: 18px; } #mapFilt small { display: block; margin-top: 6px; font-weight: 500; opacity: .65; font-size: 11px; }
+  #mapView.enCel #mapFilt { position: absolute; top: 48px; right: 6px; font-size: 12px; width: 215px; padding: 6px 10px; } #mapView.enCel #mapFilt label { padding: 3px 0; } #mapView.enCel #mapFilt small { display: none; }
   #mapHelp { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 10px); z-index: 9; margin: 0; text-align: center;
     color: #cfcabe; font-size: 13px; text-shadow: 0 1px 3px #000; pointer-events: none; padding: 0 70px; }
   #mapHelp b { color: #fff; }
@@ -461,7 +464,8 @@
 <div id="vcard"><canvas width="256" height="144"></canvas><div><b></b><span></span></div></div>
 <div id="mapView" hidden>
   <div id="mapBox"><div id="mapFriends" style="position:absolute;inset:0;pointer-events:none;z-index:3"></div><div id="mapInner"><canvas id="mapCanvas"></canvas><svg id="mapRoute"><polyline id="routeBg" stroke="#0b2a36" stroke-width="7"/><polyline id="routeFg" stroke="#3fd3ff" stroke-width="4"/></svg><div id="mapLabels"></div><div id="mapDest" hidden>🏁</div><div id="mapMe"></div></div></div>
-  <div id="mapTools"><button id="mzClose" title="Volver (M)">✕</button><button id="mzIn" title="Acercar (+)">＋</button><button id="mzOut" title="Alejar (−)">－</button><button id="mzMe" title="Ir a donde estoy">📍</button><button id="mzGo" class="wide" hidden title="Teletransportarme (T)">✨ Ir ahí</button><button id="mzClear" class="wide" hidden>Quitar destino</button></div>
+  <div id="mapTools"><button id="mzClose" title="Volver (M)">✕</button><button id="mzIn" title="Acercar (+)">＋</button><button id="mzOut" title="Alejar (−)">－</button><button id="mzFilt" title="Qué marcas mostrar">🔎</button><button id="mzMe" title="Ir a donde estoy">📍</button><button id="mzGo" class="wide" hidden title="Teletransportarme (T)">✨ Ir ahí</button><button id="mzClear" class="wide" hidden>Quitar destino</button></div>
+  <div id="mapFilt" hidden></div>
   <p id="mapHelp">Estás en <b id="mapWhere">—</b> · tocá el mapa para marcar un destino (y ✨ para aparecer ahí) · arrastrá o pellizcá para moverte</p>
 </div>
 
