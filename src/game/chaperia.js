@@ -16,7 +16,7 @@
 
   D.hit = (c, wx, wy, imp) => {
     if (!ok(c) || imp < 70) return;
-    const m = c.dmg || (c.dmg = { f: 0, r: 0, s: 0, fb: 0, rb: 0, hood: 0, ws: 0, rw: 0, cf: 0, cr: 0, cl: 0, cd: 0, sl: 0, sd: 0, dl: 0, dd: 0 });
+    const m = c.dmg || (c.dmg = { f: 0, r: 0, s: 0, fb: 0, rb: 0, hood: 0, ws: 0, rw: 0, cf: 0, cr: 0, cl: 0, cd: 0, sl: 0, sd: 0, dl: 0, dd: 0, seed: Math.random() * 0.9 + 0.05 });
     const a = c.a, dx = wx - c.x, dy = wy - c.y;
     const lr = dx * Math.cos(a) + dy * Math.sin(a), lf = dx * Math.sin(a) - dy * Math.cos(a);   // derecha / adelante
     const hl = c.LEN / 2, nf = lf / hl, side = Math.abs(lr) / (c.WID / 2);
@@ -134,7 +134,7 @@
     const m = c.dmg; if (!m) return;
     const A = c._dmgA || 0, LF = c._dmgLift || 0;
     const low = (k, fn) => { ctx.save(); ctx.rotate(-A); ctx.translate(0, Math.round(LF * k)); ctx.rotate(A); fn(); ctx.restore(); };   // las piezas bajas (trompa, costados) quedan más abajo en pantalla que el techo
-    const hl = c.LEN / 2, hw = c.WID / 2, seed = ((c.x * 13 + c.y * 7) % 10) / 10 || 0.37, col = hex(c);
+    const hl = c.LEN / 2, hw = c.WID / 2, seed = m.seed || 0.37, col = hex(c);
     // chapa arrugada: manchas oscuras y brillos cortados en la trompa / cola / costados
     const crumple = (x0, y0, w, h, k, flip) => {
       if (k < 0.15) return; const n = 4 + Math.round(k * 10);
