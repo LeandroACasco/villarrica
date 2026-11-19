@@ -39,7 +39,7 @@ VR.Buzon = {
   contactos() { const s = this.load(); return Object.keys(VR.CONTACTOS).filter((k) => s.ag[k]); },
   // ---- mensajes ----
   hora() { const v = this.vida(); return v ? v.hhmm : ''; },
-  add(de, txt, vida, tag, quiet, prob) { const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
+  add(de, txt, vida, tag, quiet, prob) { txt = VR.gt ? VR.gt(txt) : txt; const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
     s.msgs.unshift({ de, txt, dia: v ? v.dia : 0, hora: v ? v.hhmm : '', leido: false, tag: tag || null }); if (s.msgs.length > 200) s.msgs.length = 200; this.save();
     const llama = !quiet && tag && VR.CelX && VR.CelX.entrante ? VR.CelX.entrante(de, txt, prob === undefined ? 0.55 : prob) : false; // los recordatorios a veces llegan como llamada (celextra.js)
     if (!quiet && !llama && VR.toast) VR.toast('💬 ' + p[0] + ': ' + (txt.length > 70 ? txt.slice(0, 68) + '…' : txt)); if (VR.audio && VR.audio.beep) VR.audio.beep(); if (this.onChange) this.onChange(de); },
@@ -74,7 +74,7 @@ VR.Buzon = {
     kikeOferta: (B) => [{ t: '¡Dale, buscame!', r: (b) => b.kikeRespViaje(), a: 'kikeViaje' }, { t: 'Gracias, ahora no', r: 'Dale, cualquier cosa avisá.' }],
     chelaDebe: () => [{ t: 'Mañana le pago, Doña', r: 'Bueno, ¿ajépa? Ani rejapo tavy.' }, { t: 'Ya le llevo a la plaza', r: 'Aguyje, te espero acá.' }],
     chelaOferta: () => [{ t: 'Paso mañana temprano', r: 'Te dejo lo mejor, che memby.' }, { t: 'Ahora no tengo plata', r: 'Cuando puedas, po.' }],
-    kikeLlego: () => [{ t: '¡Ya salgo!', r: '¡Dale, subí! Agarrate fuerte, po.', a: 'kikeSube' }, { t: 'Esperá un ratito', r: 'Dale, avisame cuando estés listo.' }],
+    kikeLlego: () => [{ t: '¡Ya salgo!', r: '¡Dale, subí! Agarrate fuerte, po.', a: 'kikeSube' }, { t: 'Esperá un ratito', r: 'Dale, avisame cuando estés {listo|lista}.' }],
     chelaPedido: () => [{ t: '¡Dale, Doña!', r: 'Aguyje, che memby. Te cargué las chipas en el canasto (anotadas, ¿ajépa?). Vendé tranquilo.', a: 'chelaCarga' }, { t: 'Hoy no puedo', r: 'Otra vez será, po.' }],
     benitezGuardia: () => [{ t: 'Voy para el cuartel', r: 'Aguyje. Presentate y te asigno el turno. Te marqué el GPS.', a: 'guardiaGps' }, { t: 'Hoy no puedo', r: 'Entendido. Avisame cuando puedas.' }],
   },

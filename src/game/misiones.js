@@ -179,7 +179,7 @@ VR.Dialogo = {
     const look = L.quien === 'yo' ? (VR.myLook ? VR.myLook() : VR.AV2_DEFAULT) : P.look;
     this.cv.hidden = !look; this.look = look; this.pid = L.quien === 'yo' ? null : L.quien; this.pcol = P.color; this.exp = L.exp || (/[!¡]/.test(String(L.txt)) ? 'feliz' : /\?/.test(String(L.txt)) ? 'duda' : 'neutral'); this._o = false; this.cara(false);
     this.nm.textContent = L.quien === 'sis' ? (L.titulo || '') : P.nombre; this.nm.style.color = P.color; this.nm.hidden = L.quien === 'sis' && !L.titulo;
-    this.full = String(L.txt); this.n = 0; this.t0 = performance.now(); this.tx.textContent = ''; this.op.innerHTML = ''; this.more.hidden = true; this.sel = 0;
+    this.full = VR.gt(String(L.txt)); this.n = 0; this.t0 = performance.now(); this.tx.textContent = ''; this.op.innerHTML = ''; this.more.hidden = true; this.sel = 0;
     this.el.classList.toggle('sis', L.quien === 'sis');
     if (VR.audio && VR.audio.blip) VR.audio.blip();
   },
@@ -714,7 +714,7 @@ VR.menuKike = (M) => { const V = M.vida, P = VR.PRECIOS;
   if (!M.hecha('m2') && !(V.s.debe > 0)) { const o = [], v = viaje(); if (v) o.push(v); o.push(['Nada, Kike', () => false]); return [{ quien: 'kike', txt: 'Tengo una idea para hacernos ricos... después te cuento. Mientras, si necesitás que te lleve, avisá.', op: o }]; }
   const op = []; { const v = viaje(); if (v) op.push(v); } if (V.s.debe > 0) op.push(['Pagar mi deuda (' + VR.fmtGs(V.s.debe) + ')', () => { V.pagaDeuda(); return false; }]);
   if (!M.motoK) op.push(['Alquilar la moto · ' + VR.fmtGs(P.alquilerMoto) + ' por el día', () => { if (!V.s.casco) return [['kike', 'Sin casco no te la presto. Comprate uno en Ao Porã.']]; if (!V.gasta(P.alquilerMoto, 'Alquiler de la moto de Kike')) return false; if (M.prestaMoto) M.prestaMoto(); return [['kike', 'Está al lado mío. La devolvés al amanecer, ¿ajépa?']]; }]);
-  if (M.motoK) op.push(['Devolverle la moto', () => { if (M.getCar() === M.motoK) return [['kike', 'Bajate primero de la moto, amigo.']]; M.quitaMoto(); return [['kike', 'Listo, gracias. Cuando la necesites, ya sabés.']]; }]);
+  if (M.motoK) op.push(['Devolverle la moto', () => { if (M.getCar() === M.motoK) return [['kike', 'Bajate primero de la moto, {amigo|amiga}.']]; M.quitaMoto(); return [['kike', 'Listo, gracias. Cuando la necesites, ya sabés.']]; }]);
   op.push(['Nada, Kike', () => false]);
   return [{ quien: 'kike', txt: M.motoK ? 'La moto la tenés vos. Cada día que pasa te cobro ' + VR.fmtGs(P.alquilerMoto) + ' más. Ani rejapo tavy.' : "Ahí tengo mi moto, che ra'a. " + VR.fmtGs(P.alquilerMoto) + ' por el día.', op }];
 };

@@ -197,8 +197,8 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       d.querySelector('#garTank').onclick = () => { const r = VR.Tab.servicio(this.car); this.say(r.msg, r.bad ? 'triste' : r.n ? 'feliz' : 'duda', 6); if (r.n) { this.fx = { t: 0, rgb: '120,220,255', kind: 'spark' }; this.d.querySelector('#garMoney').textContent = '💰 ' + VR.fmtGs(VR.Wallet.get()); } };
       d.querySelector('#garFix').onclick = () => { // reparar: 1.500 Gs. por punto de vida
         const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.say('Si está joya, ¿qué querés que le repare? Dejalo así, po.', 'duda', 5); return; }
-        const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.say('Reparar te sale ' + VR.fmtGs(n) + '. Y vos tenés ' + VR.fmtGs(VR.Wallet.get()) + '. Las cuentas no cierran, amigo.', 'triste', 7); return; }
-        VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (VR.repairDmg) VR.repairDmg(c); if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.say('¡Chapa y pintura! Quedó como recién salido de fábrica. Son ' + VR.fmtGs(n) + ', amigo.', 'feliz', 6); this.fx = { t: 0, rgb: '255,230,120', kind: 'spark' }; this.total(); };
+        const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.say('Reparar te sale ' + VR.fmtGs(n) + '. Y vos tenés ' + VR.fmtGs(VR.Wallet.get()) + '. Las cuentas no cierran, {amigo|amiga}.', 'triste', 7); return; }
+        VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (VR.repairDmg) VR.repairDmg(c); if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.say('¡Chapa y pintura! Quedó como recién salido de fábrica. Son ' + VR.fmtGs(n) + ', {amigo|amiga}.', 'feliz', 6); this.fx = { t: 0, rgb: '255,230,120', kind: 'spark' }; this.total(); };
       addEventListener('keydown', (e) => { if (!this.d.hidden && e.key === 'Escape') this.close(); });
       addEventListener('resize', () => { if (!this.d.hidden) this.size(); });
     }
@@ -211,7 +211,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     }
     realColor(car) { const sp = VR.vspec(car.type, car.model), pal = sp.colors[(car.color || 0) % sp.colors.length]; return Array.isArray(pal) ? pal[0] : pal; }
     // --------------------------------------------------- Don Chicho
-    say(txt, exp = 'feliz', hold = 6) { const c = this.chat || (this.chat = {}); Object.assign(c, { full: txt, n: 0, t0: performance.now(), exp, hold, done: 0, open: false }); const el = this.d.querySelector('#garChat'); el.hidden = false; el.classList.remove('off'); this.d.querySelector('#garChat p').textContent = ''; this.face(false); }
+    say(txt, exp = 'feliz', hold = 6) { const c = this.chat || (this.chat = {}); Object.assign(c, { full: VR.gt(txt), n: 0, t0: performance.now(), exp, hold, done: 0, open: false }); const el = this.d.querySelector('#garChat'); el.hidden = false; el.classList.remove('off'); this.d.querySelector('#garChat p').textContent = ''; this.face(false); }
     face(open) { const c = this.chat; if (!c || !VR.retrato) return; try { const g = this.d.querySelector('#garChat canvas').getContext('2d'); g.clearRect(0, 0, 64, 64); g.drawImage(VR.retrato(CHICHO, 'chicho', c.exp, open, '#e6b422'), 0, 0, 64, 64); } catch (e) {} }
     chatTick(now) {
       const c = this.chat; if (!c || !c.full) return; const p = this.d.querySelector('#garChat p'), el = this.d.querySelector('#garChat');

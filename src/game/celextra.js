@@ -213,7 +213,7 @@ VR.CelX = (() => {
       VR.store.set('climaSem', JSON.stringify({ t: Date.now(), d: SEM })); }).catch(() => { SEM = false; }).finally(() => { semLoad = false; if (X.app() === 'clima') X.paint(); });
   }
   // ---------------- llamadas ----------------
-  let call = null, rt = [], inc = null; const HOLA = { kike: '¡Ey, hermano! ¿Qué necesitás?', ramona: 'Hola, hijo. ¿Todo bien con la pieza?', chela: 'Mba’éichapa, ¿querés chipa?', lucas: 'Marimer, buenas. ¿Qué le sirvo?', mirta: 'Ao Porã, buenas. ¿En qué le ayudo?', benitez: 'Bomberos voluntarios, dígame.' };
+  let call = null, rt = [], inc = null; const HOLA = { kike: '¡Ey, {hermano|hermana}! ¿Qué necesitás?', ramona: 'Hola, {hijo|hija}. ¿Todo bien con la pieza?', chela: 'Mba’éichapa, ¿querés chipa?', lucas: 'Marimer, buenas. ¿Qué le sirvo?', mirta: 'Ao Porã, buenas. ¿En qué le ayudo?', benitez: 'Bomberos voluntarios, dígame.' };
 
   // llamada entrante (19/11/2026): un contacto con un recordatorio a veces llama en vez de escribir. Suena 14 s; si no atendés queda la llamada perdida
   // y el mensaje sin leer. Al atender se abre el celular en la llamada y su primera frase es el mismo mensaje. Solo con saldo y con el juego andando.
@@ -314,7 +314,7 @@ VR.CelX = (() => {
     } else if (k.startsWith('call:')) {
       const id = k.slice(5), B = X.B, c = VR.CONTACTOS[id]; if (!c) return '<p>No existe ese contacto.</p>';
       h = '<div class="callBox"><i class="chAv big">' + c[1] + '</i><b>' + esc(c[0]) + '</b><span>' + (call && call.st === 'on' ? '📞 En llamada' : call && call.st === 'fin' ? 'Llamada terminada' : '📞 Llamando…') + '</span>';
-      if (call && call.st === 'on') { h += '<div class="bub el">' + esc(call.hola || HOLA[id] || 'Hola, ¿qué tal?') + '</div>' + (call.resp ? '<div class="bub yo">' + esc(call.yo) + '</div><div class="bub el">' + esc(call.resp) + '</div>' : '');
+      if (call && call.st === 'on') { h += '<div class="bub el">' + esc(VR.gt(call.hola || HOLA[id] || 'Hola, ¿qué tal?')) + '</div>' + (call.resp ? '<div class="bub yo">' + esc(call.yo) + '</div><div class="bub el">' + esc(call.resp) + '</div>' : '');
         if (!call.yo) h += '<div class="chRep">' + B.opciones(id).map((o, q) => '<button class="rep" data-cr="' + q + '">' + esc(o.t) + '</button>').join('') + '</div>'; }
       h += '<button class="cbtn hang" data-hang>' + (call && call.st === 'fin' ? '⬅ Volver' : '📵 Colgar') + '</button></div>';
     }

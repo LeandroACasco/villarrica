@@ -5,10 +5,10 @@
 // los trata como chiste: la idea es la calle como es, con jopara y con respeto. Todo el arte es propio (look del sistema de avatares).
 'use strict';
 VR.CHESPI_TALK = {
-  beg: ['¿Me das una moneda, hermano? Estoy mal.', 'Disculpá… ¿tenés unos pesos? Para el vicio, no te miento.', '¿Me ayudás con algo? Estoy pasando un mal momento.', "Mba'éichapa… ¿me prestás unos guaraníes? Después te devuelvo.", 'Una moneda nomás, por favor.'],
+  beg: ['¿Me das una moneda, {hermano|hermana}? Estoy mal.', 'Disculpá… ¿tenés unos pesos? Para el vicio, no te miento.', '¿Me ayudás con algo? Estoy pasando un mal momento.', "Mba'éichapa… ¿me prestás unos guaraníes? Después te devuelvo.", 'Una moneda nomás, por favor.'],
   insist: ['Dale, una moneda nomás…', '¿No me vas a ayudar?', 'Por favor, estoy mal…'],
   knife: ['¡Dame la plata, ya!', '¡No te hagas el vivo, dame lo que tenés!', '¡Soltá la plata!'],
-  thanks: ['¡Dios te bendiga!', 'Aguyje, hermano.', 'Gracias, que te vaya bien.'],
+  thanks: ['¡Dios te bendiga!', 'Aguyje, {hermano|hermana}.', 'Gracias, que te vaya bien.'],
   no: ['Bueno… igual gracias.', 'Ni modo.', 'Está bien, perdón por molestar.'],
   hit: ['¡Ay!', '¡Mirá por dónde andás!', "¡Mba'e piko!"],
 };

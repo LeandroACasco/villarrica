@@ -54,6 +54,7 @@
   const histStart = vida && !saved ? vida.s.casa : null;
   const start = histStart || (saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn);
   const player = new VR.Player(world, start.x, start.y);
+  VR.gen = () => (player.lookData && player.lookData.gender === 'f' ? 'f' : 'm'); // género del protagonista (según el look puesto)
   if (saved && saved.dir) player.dir = saved.dir;
   // ---------- autos estacionados (el primero, al lado del punto de partida) ----------
   const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 320, world.spawn);
@@ -807,11 +808,18 @@
   function maybeIntro() {
     if (!vida || !vida.nueva) return; vida.nueva = false; vida.save();
     vDlg._intro = true; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true;
+    // 1) elegir personaje: chico o chica (cambia el look inicial y cómo te hablan; después se personaliza en la tienda)
+    vBody.innerHTML = '<h2>¿Quién sos?</h2><p>Elegí tu personaje. Después podés cambiarle la ropa y el pelo en la tienda.</p><div class="gSel"><button data-g="generico"><canvas width="66" height="100"></canvas><b>Chico</b></button><button data-g="generica"><canvas width="66" height="100"></canvas><b>Chica</b></button></div>';
+    vBody.querySelectorAll('[data-g]').forEach((b) => { try { const im = VR.av2Render(Object.assign({}, VR.AV2_DEFAULT, VR.av2LookOf(b.dataset.g)), 'down', 'idle', 0, 3), c = b.querySelector('canvas'), g2 = c.getContext('2d'), k = Math.min(c.width / im.width, c.height / im.height); g2.imageSmoothingEnabled = false; g2.drawImage(im, (c.width - im.width * k) / 2, (c.height - im.height * k) / 2, im.width * k, im.height * k); } catch (e) { /* sin vista previa */ }
+      b.onclick = () => { settings.pj = b.dataset.g; VR.store.set('pj', b.dataset.g); player.setLook(b.dataset.g); if (car && car.rider) car.rider = me(); paintPj(); presentacion(); }; });
+    vDlg.showModal();
+  }
+  function presentacion() {
     vBody.innerHTML = '<h2>📖 Jajupíta</h2><p style="color:var(--text)">Te quedaste sin changa. Alquilás una pieza en <b>Santa Lucía</b> y en el bolsillo tenés <b>35.000 Gs.</b></p>' +
       '<p>La pieza cuesta ' + gs(VR.PRECIOS.pieza) + ' por semana y Ña Ramona cobra los sábados. Hoy es lunes.</p>' +
       '<p>Tenés que comer (el hambre baja todo el día), cargar saldo y juntar plata. Un día del juego dura 30 minutos. Mirá arriba a la izquierda: hora, hambre, saldo y pieza. Más cosas llegan en las próximas etapas.</p>' +
       '<div class="row"><button class="btn primary" id="vGo">Jajupíta ▶</button></div>';
-    $('vGo').onclick = () => vDlg.close(); vDlg.showModal();
+    $('vGo').onclick = () => vDlg.close(); if (!vDlg.open) vDlg.showModal();
   }
   // empezar la Historia de cero (en Configuración)
   { let sure = 0; const bh = $('btnBorraH'); bh.onclick = () => {

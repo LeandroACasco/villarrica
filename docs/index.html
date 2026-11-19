@@ -233,6 +233,7 @@
 .tfoto { display: block; width: 100%; border-radius: 8px; image-rendering: pixelated; margin: 4px 0; cursor: zoom-in; } .tfoto.big { position: fixed; inset: 8%; width: 84%; height: auto; max-height: 84%; object-fit: contain; z-index: 60; background: #000; cursor: zoom-out; border: 2px solid #fff; }
 .calcD { background: #0b0f16; color: #9fe0a0; font: 700 28px/1.3 monospace; text-align: right; padding: 6px 10px; border-radius: 8px; margin: 6px 0; overflow: hidden; } .calcG { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; } .ck { background: #3a4156; color: #fff; border: 0; border-radius: 10px; padding: 12px 0; font: 600 18px system-ui; } .ck.op { background: #ff9a5a; } .ck.z { grid-column: span 2; }
   .notaTx { width: 100%; box-sizing: border-box; min-height: 220px; background: #fbf3d2; color: #2a3a6a; border: 0; border-radius: 8px; padding: 8px; font: 500 20px/26px Caveat, cursive; resize: vertical; } .dmBox { max-height: 260px; overflow-y: auto; }
+.gSel { display: flex; gap: 12px; justify-content: center; margin: 10px 0; } .gSel button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 12px; border: 2px solid transparent; background: rgba(255,255,255,.08); color: inherit; font-size: 15px; } .gSel button:hover { border-color: #e8a840; } .gSel canvas { width: 66px; height: 100px; image-rendering: pixelated; }
   .inOv { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 65; display: flex; align-items: center; gap: 12px; background: #1b2130; border: 2px solid #6fe08a; border-radius: 40px; padding: 8px 10px 8px 12px; color: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.6); animation: inpu 1s ease-in-out infinite; min-width: 250px; }
   .inOv .chAv { width: 44px; height: 44px; font-size: 24px; } .inOv > div { flex: 1; display: flex; flex-direction: column; } .inOv b { font: 800 15px system-ui; } .inOv span { font-size: 12px; color: #9fe0a0; }
   .inOv button { width: 44px; height: 44px; border: 0; border-radius: 50%; font-size: 20px; cursor: pointer; } .inOv .no { background: #ff4a5a; } .inOv .si { background: #3cc87a; }
@@ -554,7 +555,7 @@
       <div class="tCuenta" id="tCuenta"></div>
     </div>
   </div>
-  <div class="tVer">Versión 526d8a53 · 2026-11-19</div>
+  <div class="tVer">Versión 3869b773 · 2026-11-19</div>
 </div>
 <div id="fade"></div>
 
@@ -604,7 +605,7 @@
     <h3>Controles táctiles</h3>
     <div class="seg" id="segTouch"><button data-v="auto">Automático</button><button data-v="on">Mostrar</button><button data-v="off">Ocultar</button></div>
     <h3>Personaje</h3>
-    <div class="seg" id="segPj"><button data-v="propio">Mío (tienda)</button><button data-v="generico">Genérico</button><button data-v="leandro">Leandro</button><button data-v="sofia">Sofía</button><button data-v="deisy">Deisy</button><button data-v="cinthia">Cinthia</button><button data-v="nora">Nora</button></div>
+    <div class="seg" id="segPj"><button data-v="propio">Mío (tienda)</button><button data-v="generico">Genérico</button><button data-v="generica">Genérica</button><button data-v="leandro">Leandro</button><button data-v="sofia">Sofía</button><button data-v="deisy">Deisy</button><button data-v="cinthia">Cinthia</button><button data-v="nora">Nora</button></div>
     <h3>Online (jugar con amigos)</h3>
     <div class="online"><input id="onNick" maxlength="14" placeholder="Tu nombre"><input id="onRoom" maxlength="8" placeholder="Código de sala">
     <div class="seg"><button id="onHost">Crear sala</button><button id="onJoin">Unirse</button><button id="onStop">Salir</button></div>
@@ -669,7 +670,7 @@
       <tr><td><kbd>Select</kbd></td><td>Mapa de la ciudad</td></tr>
       <tr><td><kbd>Start</kbd></td><td>Menú y pausa</td></tr>
     </table>
-    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 526d8a53 · 2026-11-19</p>
+    <p style="margin-top:8px">Juego original de Leandro Casco. Arte, código y textos propios. Mapa de Villarrica: © colaboradores de OpenStreetMap (ODbL). Barrios: INE Paraguay. Versión 3869b773 · 2026-11-19</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="menuClose">Cerrar</button></div>
   </div>
 </dialog>
@@ -1097,6 +1098,7 @@ VR.gfx = {
   // Texto en el mundo (globos, carteles): fuente del sistema, cacheada como imagen.
   _txt: new Map(),
   textImg(str, col = '#ffffff', size = 8, bold = true) {
+    if (VR.gt) str = VR.gt(str); // marcas de género {a|b}
     const key = str + '|' + col + '|' + size + '|' + bold + '|' + VR.RES;
     let c = this._txt.get(key);
     if (c) return c;
@@ -4182,6 +4184,14 @@ VR.makeTestMap = () => {
   return w;
 };
 
+// ===== game/genero.js =====
+// Género del protagonista (19/11/2026): VR.gen() devuelve 'm' o 'f' según el look que lleva puesto (main.js lo reemplaza por el real).
+// VR.gt(texto) resuelve las marcas {masculino|femenino} de los textos: «¡Ey, {hermano|hermana}!» → «¡Ey, hermana!» si sos chica.
+(function (VR) {
+  VR.gen = VR.gen || (() => 'm');
+  VR.gt = (s) => (typeof s === 'string' && s.indexOf('{') >= 0 ? s.replace(/\{([^{}|]*)\|([^{}|]*)\}/g, (m, a, b) => (VR.gen() === 'f' ? b : a)) : s);
+})(typeof VR !== 'undefined' ? VR : (window.VR = window.VR || {}));
+
 // ===== game/avatar2.js =====
 // Avatar 2 (04/11/2026): persona adulta armada con un esqueleto y prendas por capas, que se dibuja a cualquier
 // resolución con píxeles nítidos: 16×32 en el juego y 48×96 (o más) en la tienda, donde se distinguen las
@@ -4898,6 +4908,7 @@ VR.makeTestMap = () => {
   // protagonista genérico (por defecto) y el equipo de Kiut Studio, para elegir en el menú
   VR.AV2_TEAM = {
     generico: ['Genérico', { gender: 'm', skin: 2, hair: 'degrade', hairColor: 0, top: 'remera', topColor: 1, topColor2: 6, print: true, bottom: 'jean', bottomColor: 1, shoes: 'zapatillas', shoesColor: 1 }],
+    generica: ['Genérica', { gender: 'f', skin: 2, hair: 'colitaLado', hairColor: 1, top: 'remera', topColor: 1, topColor2: 6, print: true, bottom: 'jean', bottomColor: 1, shoes: 'zapatillas', shoesColor: 1 }],
     leandro: ['Leandro', { gender: 'm', skin: 1, hair: 'medio', hairColor: 0, beard: 'chivita', top: 'puffer', topColor: 3, topColor2: 13, bottom: 'jean', bottomColor: 2, shoes: 'zapatillas', shoesColor: 3 }],
     sofia: ['Sofía', { gender: 'f', skin: 1, hair: 'onduladoFlequillo', hairColor: 0, top: 'sueter', topColor: 7, bottom: 'cargoShort', bottomColor: 14, shoes: 'zapatillas', shoesColor: 14 }],
     deisy: ['Deisy', { gender: 'f', skin: 3, hair: 'largo', hairColor: 1, top: 'hoodieAbierto', topColor: 14, topColor2: 2, bottom: 'jean', bottomColor: 0, shoes: 'zapatillas', shoesColor: 3 }],
@@ -7869,7 +7880,7 @@ VR.polyNear = (p, x, y) => {
 VR.PED_TALK = {
   greet: ['¡Iporã, ha nde?', "¡Mba'éichapa, che ra'a!", 'Hína, ko hakuete...', '¡Ajépa!', 'Jaha ñamba\'apo', '¡Upéicha!'],
   flee: ['¡Epa!', '¡Cuidado, nde!', '¡Eñangarekóke!', '¡Despacio!'],
-  reckless: ["¡Upei oje'e lo mitã omanoreiha!", '¡Despacio, loco!', '¡Vas a matar a alguien!', "¡Upei oje'e lo mitã omanoreiha!"],
+  reckless: ["¡Upei oje'e lo mitã omanoreiha!", '¡Despacio, {loco|loca}!', '¡Vas a matar a alguien!', "¡Upei oje'e lo mitã omanoreiha!"],
   hit: ['¡Ay, po!', '¡Mirá por dónde andás!', "¡Mba'e piko!", '¡Ay, mi espalda!'],
 };
 VR.Peds = class {
@@ -10136,8 +10147,8 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
       d.querySelector('#garTank').onclick = () => { const r = VR.Tab.servicio(this.car); this.say(r.msg, r.bad ? 'triste' : r.n ? 'feliz' : 'duda', 6); if (r.n) { this.fx = { t: 0, rgb: '120,220,255', kind: 'spark' }; this.d.querySelector('#garMoney').textContent = '💰 ' + VR.fmtGs(VR.Wallet.get()); } };
       d.querySelector('#garFix').onclick = () => { // reparar: 1.500 Gs. por punto de vida
         const c = this.car, hp = c.hp ?? 100; if (hp >= 99 && !c.burning) { this.say('Si está joya, ¿qué querés que le repare? Dejalo así, po.', 'duda', 5); return; }
-        const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.say('Reparar te sale ' + VR.fmtGs(n) + '. Y vos tenés ' + VR.fmtGs(VR.Wallet.get()) + '. Las cuentas no cierran, amigo.', 'triste', 7); return; }
-        VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (VR.repairDmg) VR.repairDmg(c); if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.say('¡Chapa y pintura! Quedó como recién salido de fábrica. Son ' + VR.fmtGs(n) + ', amigo.', 'feliz', 6); this.fx = { t: 0, rgb: '255,230,120', kind: 'spark' }; this.total(); };
+        const n = Math.round((100 - Math.max(0, hp)) * 1500 / 1000) * 1000; if (n > VR.Wallet.get()) { this.say('Reparar te sale ' + VR.fmtGs(n) + '. Y vos tenés ' + VR.fmtGs(VR.Wallet.get()) + '. Las cuentas no cierran, {amigo|amiga}.', 'triste', 7); return; }
+        VR.Wallet.add(-n, 'Taller: reparación'); c.hp = 100; if (VR.repairDmg) VR.repairDmg(c); if (c.burning && VR.emer) { c.burning = false; VR.emer.burning && VR.emer.burning.delete(c); } this.say('¡Chapa y pintura! Quedó como recién salido de fábrica. Son ' + VR.fmtGs(n) + ', {amigo|amiga}.', 'feliz', 6); this.fx = { t: 0, rgb: '255,230,120', kind: 'spark' }; this.total(); };
       addEventListener('keydown', (e) => { if (!this.d.hidden && e.key === 'Escape') this.close(); });
       addEventListener('resize', () => { if (!this.d.hidden) this.size(); });
     }
@@ -10150,7 +10161,7 @@ VR.dlg = (id, html) => { const d = document.createElement('dialog'); d.id = id; 
     }
     realColor(car) { const sp = VR.vspec(car.type, car.model), pal = sp.colors[(car.color || 0) % sp.colors.length]; return Array.isArray(pal) ? pal[0] : pal; }
     // --------------------------------------------------- Don Chicho
-    say(txt, exp = 'feliz', hold = 6) { const c = this.chat || (this.chat = {}); Object.assign(c, { full: txt, n: 0, t0: performance.now(), exp, hold, done: 0, open: false }); const el = this.d.querySelector('#garChat'); el.hidden = false; el.classList.remove('off'); this.d.querySelector('#garChat p').textContent = ''; this.face(false); }
+    say(txt, exp = 'feliz', hold = 6) { const c = this.chat || (this.chat = {}); Object.assign(c, { full: VR.gt(txt), n: 0, t0: performance.now(), exp, hold, done: 0, open: false }); const el = this.d.querySelector('#garChat'); el.hidden = false; el.classList.remove('off'); this.d.querySelector('#garChat p').textContent = ''; this.face(false); }
     face(open) { const c = this.chat; if (!c || !VR.retrato) return; try { const g = this.d.querySelector('#garChat canvas').getContext('2d'); g.clearRect(0, 0, 64, 64); g.drawImage(VR.retrato(CHICHO, 'chicho', c.exp, open, '#e6b422'), 0, 0, 64, 64); } catch (e) {} }
     chatTick(now) {
       const c = this.chat; if (!c || !c.full) return; const p = this.d.querySelector('#garChat p'), el = this.d.querySelector('#garChat');
@@ -10716,7 +10727,7 @@ VR.Dialogo = {
     const look = L.quien === 'yo' ? (VR.myLook ? VR.myLook() : VR.AV2_DEFAULT) : P.look;
     this.cv.hidden = !look; this.look = look; this.pid = L.quien === 'yo' ? null : L.quien; this.pcol = P.color; this.exp = L.exp || (/[!¡]/.test(String(L.txt)) ? 'feliz' : /\?/.test(String(L.txt)) ? 'duda' : 'neutral'); this._o = false; this.cara(false);
     this.nm.textContent = L.quien === 'sis' ? (L.titulo || '') : P.nombre; this.nm.style.color = P.color; this.nm.hidden = L.quien === 'sis' && !L.titulo;
-    this.full = String(L.txt); this.n = 0; this.t0 = performance.now(); this.tx.textContent = ''; this.op.innerHTML = ''; this.more.hidden = true; this.sel = 0;
+    this.full = VR.gt(String(L.txt)); this.n = 0; this.t0 = performance.now(); this.tx.textContent = ''; this.op.innerHTML = ''; this.more.hidden = true; this.sel = 0;
     this.el.classList.toggle('sis', L.quien === 'sis');
     if (VR.audio && VR.audio.blip) VR.audio.blip();
   },
@@ -11251,7 +11262,7 @@ VR.menuKike = (M) => { const V = M.vida, P = VR.PRECIOS;
   if (!M.hecha('m2') && !(V.s.debe > 0)) { const o = [], v = viaje(); if (v) o.push(v); o.push(['Nada, Kike', () => false]); return [{ quien: 'kike', txt: 'Tengo una idea para hacernos ricos... después te cuento. Mientras, si necesitás que te lleve, avisá.', op: o }]; }
   const op = []; { const v = viaje(); if (v) op.push(v); } if (V.s.debe > 0) op.push(['Pagar mi deuda (' + VR.fmtGs(V.s.debe) + ')', () => { V.pagaDeuda(); return false; }]);
   if (!M.motoK) op.push(['Alquilar la moto · ' + VR.fmtGs(P.alquilerMoto) + ' por el día', () => { if (!V.s.casco) return [['kike', 'Sin casco no te la presto. Comprate uno en Ao Porã.']]; if (!V.gasta(P.alquilerMoto, 'Alquiler de la moto de Kike')) return false; if (M.prestaMoto) M.prestaMoto(); return [['kike', 'Está al lado mío. La devolvés al amanecer, ¿ajépa?']]; }]);
-  if (M.motoK) op.push(['Devolverle la moto', () => { if (M.getCar() === M.motoK) return [['kike', 'Bajate primero de la moto, amigo.']]; M.quitaMoto(); return [['kike', 'Listo, gracias. Cuando la necesites, ya sabés.']]; }]);
+  if (M.motoK) op.push(['Devolverle la moto', () => { if (M.getCar() === M.motoK) return [['kike', 'Bajate primero de la moto, {amigo|amiga}.']]; M.quitaMoto(); return [['kike', 'Listo, gracias. Cuando la necesites, ya sabés.']]; }]);
   op.push(['Nada, Kike', () => false]);
   return [{ quien: 'kike', txt: M.motoK ? 'La moto la tenés vos. Cada día que pasa te cobro ' + VR.fmtGs(P.alquilerMoto) + ' más. Ani rejapo tavy.' : "Ahí tengo mi moto, che ra'a. " + VR.fmtGs(P.alquilerMoto) + ' por el día.', op }];
 };
@@ -13630,7 +13641,7 @@ VR.Cisnes = class {
     hippie: { label: '📿 Comprar una pulsera · 10.000 Gs.', price: 10000, stock: 3, manta: 'hippie', items: ['#d8463a', '#e8b830', '#3b9a5a', '#2e6fc8', '#e86aa0', '#f2efe6'],
       looks: [{ gender: 'm', skin: 1, build: 'flaco', hair: 'rulos', hairColor: 3, beard: 'barba', top: 'musculosa', topColor: 10, bottom: 'cargo', bottomColor: 11, shoes: 'chinelas', shoesColor: 1, hat: 'gorro', hatColor: 5, cadenita: true },
         { gender: 'f', skin: 0, hair: 'trenza', hairColor: 4, top: 'top', topColor: 8, bottom: 'pollera', bottomColor: 6, shoes: 'chinelas', shoesColor: 1, cadenita: true }],
-      lines: ['¡Nde, mirá qué lindas pulseras!', 'Todo artesanal, amigo, llevate una.', 'Dale, está bien barata, mirá.', '¿Una pulserita, amigo? Hecha a mano.'], buy: ['¡Genial, gracias, amigo!', 'Buenísimo, que te dé buena onda.'], none: 'No me quedan más, po.' },
+      lines: ['¡Nde, mirá qué lindas pulseras!', 'Todo artesanal, {amigo|amiga}, llevate una.', 'Dale, está bien barata, mirá.', '¿Una pulserita, {amigo|amiga}? Hecha a mano.'], buy: ['¡Genial, gracias, {amigo|amiga}!', 'Buenísimo, que te dé buena onda.'], none: 'No me quedan más, po.' },
     indigena: { label: '🧺 Comprar artesanía · 15.000 Gs.', price: 15000, stock: 3, manta: 'tejida', items: ['#a8643a', '#7a4a24', '#c8322a', '#e8b830'],
       looks: [{ gender: 'f', skin: 4, hair: 'trenza', hairColor: 0, top: 'camisa', topColor: 0, bottom: 'pollera', bottomColor: 5, shoes: 'chinelas', shoesColor: 1, cadenita: true },
         { gender: 'm', skin: 4, hair: 'corto', hairColor: 0, top: 'camisaCorta', topColor: 5, bottom: 'bermuda', bottomColor: 3, shoes: 'chinelas', shoesColor: 1, hat: 'piri', hatColor: 4 }],
@@ -13922,7 +13933,7 @@ VR.Cisnes = class {
 'use strict';
 (() => {
   const rnd = (a, b) => a + Math.random() * (b - a), pick = (a) => a[(Math.random() * a.length) | 0];
-  const RETOS = ['¡Fijate por dónde andás, loco!', '¡Mba\'e piko, casi me matás!', '¡Qué hacés, bestia!', '¡Aprendé a manejar, nde!', '¡Mirá lo que hiciste con mi moto!'];
+  const RETOS = ['¡Fijate por dónde andás, {loco|loca}!', '¡Mba\'e piko, casi me matás!', '¡Qué hacés, bestia!', '¡Aprendé a manejar, nde!', '¡Mirá lo que hiciste con mi moto!'];
   const BOCINA = ['¡Pero fijate, po!', '¡Se cruzó de golpe!', '¡Ay, no, no, no!', '¡Mirá por dónde caminás!'];
 
   // abolladura en el vehículo: posición local (derecha / adelante) respecto de su centro. Se mete hacia adentro de la chapa
@@ -14371,10 +14382,10 @@ VR.Asalto = class {
 // los trata como chiste: la idea es la calle como es, con jopara y con respeto. Todo el arte es propio (look del sistema de avatares).
 'use strict';
 VR.CHESPI_TALK = {
-  beg: ['¿Me das una moneda, hermano? Estoy mal.', 'Disculpá… ¿tenés unos pesos? Para el vicio, no te miento.', '¿Me ayudás con algo? Estoy pasando un mal momento.', "Mba'éichapa… ¿me prestás unos guaraníes? Después te devuelvo.", 'Una moneda nomás, por favor.'],
+  beg: ['¿Me das una moneda, {hermano|hermana}? Estoy mal.', 'Disculpá… ¿tenés unos pesos? Para el vicio, no te miento.', '¿Me ayudás con algo? Estoy pasando un mal momento.', "Mba'éichapa… ¿me prestás unos guaraníes? Después te devuelvo.", 'Una moneda nomás, por favor.'],
   insist: ['Dale, una moneda nomás…', '¿No me vas a ayudar?', 'Por favor, estoy mal…'],
   knife: ['¡Dame la plata, ya!', '¡No te hagas el vivo, dame lo que tenés!', '¡Soltá la plata!'],
-  thanks: ['¡Dios te bendiga!', 'Aguyje, hermano.', 'Gracias, que te vaya bien.'],
+  thanks: ['¡Dios te bendiga!', 'Aguyje, {hermano|hermana}.', 'Gracias, que te vaya bien.'],
   no: ['Bueno… igual gracias.', 'Ni modo.', 'Está bien, perdón por molestar.'],
   hit: ['¡Ay!', '¡Mirá por dónde andás!', "¡Mba'e piko!"],
 };
@@ -15021,7 +15032,7 @@ VR.Chespis = class {
     avisos: ['📋 Avisos: horario de misas, rifa de la parroquia y «se busca la llave del salón». Nadie la encuentra desde 1998.'],
     sacristia: ['🔒 La puerta de la sacristía. Solo personal autorizado… y el sacristán, que tiene la llave desde antes de que nacieras.'],
     banco: ['🪑 Banco de madera pulida por años de rezos y de siestas disimuladas.', '🪑 Hay un cartelito: «Se ruega silencio». Un abuelo ronca bajito en la punta.'],
-    cura: ['👨‍🦳 El padre sonríe: «Buen día, hijo. ¿Viniste a rezar o a escaparte del calor?»', '👨‍🦳 «La misa es a las siete. Y no, no se puede entrar con el termo de tereré.»'],
+    cura: ['👨‍🦳 El padre sonríe: «Buen día, {hijo|hija}. ¿Viniste a rezar o a escaparte del calor?»', '👨‍🦳 «La misa es a las siete. Y no, no se puede entrar con el termo de tereré.»'],
     sacristan: ['🔔 El sacristán ajusta una vela: «Si tocás la campana sin permiso, la oye todo el barrio».', '🔔 «Hace cuarenta años que acomodo estas sillas. Ninguna está en su lugar».'],
   };
   VR.crearCatedral = function (o) {
@@ -16178,7 +16189,7 @@ VR.Buzon = {
   contactos() { const s = this.load(); return Object.keys(VR.CONTACTOS).filter((k) => s.ag[k]); },
   // ---- mensajes ----
   hora() { const v = this.vida(); return v ? v.hhmm : ''; },
-  add(de, txt, vida, tag, quiet, prob) { const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
+  add(de, txt, vida, tag, quiet, prob) { txt = VR.gt ? VR.gt(txt) : txt; const s = this.load(), v = vida || this.vida(), p = this.PERS[de] || [de, '💬'];
     s.msgs.unshift({ de, txt, dia: v ? v.dia : 0, hora: v ? v.hhmm : '', leido: false, tag: tag || null }); if (s.msgs.length > 200) s.msgs.length = 200; this.save();
     const llama = !quiet && tag && VR.CelX && VR.CelX.entrante ? VR.CelX.entrante(de, txt, prob === undefined ? 0.55 : prob) : false; // los recordatorios a veces llegan como llamada (celextra.js)
     if (!quiet && !llama && VR.toast) VR.toast('💬 ' + p[0] + ': ' + (txt.length > 70 ? txt.slice(0, 68) + '…' : txt)); if (VR.audio && VR.audio.beep) VR.audio.beep(); if (this.onChange) this.onChange(de); },
@@ -16213,7 +16224,7 @@ VR.Buzon = {
     kikeOferta: (B) => [{ t: '¡Dale, buscame!', r: (b) => b.kikeRespViaje(), a: 'kikeViaje' }, { t: 'Gracias, ahora no', r: 'Dale, cualquier cosa avisá.' }],
     chelaDebe: () => [{ t: 'Mañana le pago, Doña', r: 'Bueno, ¿ajépa? Ani rejapo tavy.' }, { t: 'Ya le llevo a la plaza', r: 'Aguyje, te espero acá.' }],
     chelaOferta: () => [{ t: 'Paso mañana temprano', r: 'Te dejo lo mejor, che memby.' }, { t: 'Ahora no tengo plata', r: 'Cuando puedas, po.' }],
-    kikeLlego: () => [{ t: '¡Ya salgo!', r: '¡Dale, subí! Agarrate fuerte, po.', a: 'kikeSube' }, { t: 'Esperá un ratito', r: 'Dale, avisame cuando estés listo.' }],
+    kikeLlego: () => [{ t: '¡Ya salgo!', r: '¡Dale, subí! Agarrate fuerte, po.', a: 'kikeSube' }, { t: 'Esperá un ratito', r: 'Dale, avisame cuando estés {listo|lista}.' }],
     chelaPedido: () => [{ t: '¡Dale, Doña!', r: 'Aguyje, che memby. Te cargué las chipas en el canasto (anotadas, ¿ajépa?). Vendé tranquilo.', a: 'chelaCarga' }, { t: 'Hoy no puedo', r: 'Otra vez será, po.' }],
     benitezGuardia: () => [{ t: 'Voy para el cuartel', r: 'Aguyje. Presentate y te asigno el turno. Te marqué el GPS.', a: 'guardiaGps' }, { t: 'Hoy no puedo', r: 'Entendido. Avisame cuando puedas.' }],
   },
@@ -16752,7 +16763,7 @@ VR.CelX = (() => {
       VR.store.set('climaSem', JSON.stringify({ t: Date.now(), d: SEM })); }).catch(() => { SEM = false; }).finally(() => { semLoad = false; if (X.app() === 'clima') X.paint(); });
   }
   // ---------------- llamadas ----------------
-  let call = null, rt = [], inc = null; const HOLA = { kike: '¡Ey, hermano! ¿Qué necesitás?', ramona: 'Hola, hijo. ¿Todo bien con la pieza?', chela: 'Mba’éichapa, ¿querés chipa?', lucas: 'Marimer, buenas. ¿Qué le sirvo?', mirta: 'Ao Porã, buenas. ¿En qué le ayudo?', benitez: 'Bomberos voluntarios, dígame.' };
+  let call = null, rt = [], inc = null; const HOLA = { kike: '¡Ey, {hermano|hermana}! ¿Qué necesitás?', ramona: 'Hola, {hijo|hija}. ¿Todo bien con la pieza?', chela: 'Mba’éichapa, ¿querés chipa?', lucas: 'Marimer, buenas. ¿Qué le sirvo?', mirta: 'Ao Porã, buenas. ¿En qué le ayudo?', benitez: 'Bomberos voluntarios, dígame.' };
 
   // llamada entrante (19/11/2026): un contacto con un recordatorio a veces llama en vez de escribir. Suena 14 s; si no atendés queda la llamada perdida
   // y el mensaje sin leer. Al atender se abre el celular en la llamada y su primera frase es el mismo mensaje. Solo con saldo y con el juego andando.
@@ -16853,7 +16864,7 @@ VR.CelX = (() => {
     } else if (k.startsWith('call:')) {
       const id = k.slice(5), B = X.B, c = VR.CONTACTOS[id]; if (!c) return '<p>No existe ese contacto.</p>';
       h = '<div class="callBox"><i class="chAv big">' + c[1] + '</i><b>' + esc(c[0]) + '</b><span>' + (call && call.st === 'on' ? '📞 En llamada' : call && call.st === 'fin' ? 'Llamada terminada' : '📞 Llamando…') + '</span>';
-      if (call && call.st === 'on') { h += '<div class="bub el">' + esc(call.hola || HOLA[id] || 'Hola, ¿qué tal?') + '</div>' + (call.resp ? '<div class="bub yo">' + esc(call.yo) + '</div><div class="bub el">' + esc(call.resp) + '</div>' : '');
+      if (call && call.st === 'on') { h += '<div class="bub el">' + esc(VR.gt(call.hola || HOLA[id] || 'Hola, ¿qué tal?')) + '</div>' + (call.resp ? '<div class="bub yo">' + esc(call.yo) + '</div><div class="bub el">' + esc(call.resp) + '</div>' : '');
         if (!call.yo) h += '<div class="chRep">' + B.opciones(id).map((o, q) => '<button class="rep" data-cr="' + q + '">' + esc(o.t) + '</button>').join('') + '</div>'; }
       h += '<button class="cbtn hang" data-hang>' + (call && call.st === 'fin' ? '⬅ Volver' : '📵 Colgar') + '</button></div>';
     }
@@ -17356,6 +17367,7 @@ VR.Titulo = class {
   const histStart = vida && !saved ? vida.s.casa : null;
   const start = histStart || (saved && !world.hits(saved.x - 4, saved.y - 4, saved.x + 4, saved.y) ? saved : world.spawn);
   const player = new VR.Player(world, start.x, start.y);
+  VR.gen = () => (player.lookData && player.lookData.gender === 'f' ? 'f' : 'm'); // género del protagonista (según el look puesto)
   if (saved && saved.dir) player.dir = saved.dir;
   // ---------- autos estacionados (el primero, al lado del punto de partida) ----------
   const parked = prueba ? { cars: [], first: null } : VR.parkCars(world, 320, world.spawn);
@@ -18109,11 +18121,18 @@ VR.Titulo = class {
   function maybeIntro() {
     if (!vida || !vida.nueva) return; vida.nueva = false; vida.save();
     vDlg._intro = true; VR.input.releaseAll(); VR.input.enabled = false; VR.loop.paused = true;
+    // 1) elegir personaje: chico o chica (cambia el look inicial y cómo te hablan; después se personaliza en la tienda)
+    vBody.innerHTML = '<h2>¿Quién sos?</h2><p>Elegí tu personaje. Después podés cambiarle la ropa y el pelo en la tienda.</p><div class="gSel"><button data-g="generico"><canvas width="66" height="100"></canvas><b>Chico</b></button><button data-g="generica"><canvas width="66" height="100"></canvas><b>Chica</b></button></div>';
+    vBody.querySelectorAll('[data-g]').forEach((b) => { try { const im = VR.av2Render(Object.assign({}, VR.AV2_DEFAULT, VR.av2LookOf(b.dataset.g)), 'down', 'idle', 0, 3), c = b.querySelector('canvas'), g2 = c.getContext('2d'), k = Math.min(c.width / im.width, c.height / im.height); g2.imageSmoothingEnabled = false; g2.drawImage(im, (c.width - im.width * k) / 2, (c.height - im.height * k) / 2, im.width * k, im.height * k); } catch (e) { /* sin vista previa */ }
+      b.onclick = () => { settings.pj = b.dataset.g; VR.store.set('pj', b.dataset.g); player.setLook(b.dataset.g); if (car && car.rider) car.rider = me(); paintPj(); presentacion(); }; });
+    vDlg.showModal();
+  }
+  function presentacion() {
     vBody.innerHTML = '<h2>📖 Jajupíta</h2><p style="color:var(--text)">Te quedaste sin changa. Alquilás una pieza en <b>Santa Lucía</b> y en el bolsillo tenés <b>35.000 Gs.</b></p>' +
       '<p>La pieza cuesta ' + gs(VR.PRECIOS.pieza) + ' por semana y Ña Ramona cobra los sábados. Hoy es lunes.</p>' +
       '<p>Tenés que comer (el hambre baja todo el día), cargar saldo y juntar plata. Un día del juego dura 30 minutos. Mirá arriba a la izquierda: hora, hambre, saldo y pieza. Más cosas llegan en las próximas etapas.</p>' +
       '<div class="row"><button class="btn primary" id="vGo">Jajupíta ▶</button></div>';
-    $('vGo').onclick = () => vDlg.close(); vDlg.showModal();
+    $('vGo').onclick = () => vDlg.close(); if (!vDlg.open) vDlg.showModal();
   }
   // empezar la Historia de cero (en Configuración)
   { let sure = 0; const bh = $('btnBorraH'); bh.onclick = () => {

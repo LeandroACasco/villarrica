@@ -20,7 +20,7 @@
     avisos: ['📋 Avisos: horario de misas, rifa de la parroquia y «se busca la llave del salón». Nadie la encuentra desde 1998.'],
     sacristia: ['🔒 La puerta de la sacristía. Solo personal autorizado… y el sacristán, que tiene la llave desde antes de que nacieras.'],
     banco: ['🪑 Banco de madera pulida por años de rezos y de siestas disimuladas.', '🪑 Hay un cartelito: «Se ruega silencio». Un abuelo ronca bajito en la punta.'],
-    cura: ['👨‍🦳 El padre sonríe: «Buen día, hijo. ¿Viniste a rezar o a escaparte del calor?»', '👨‍🦳 «La misa es a las siete. Y no, no se puede entrar con el termo de tereré.»'],
+    cura: ['👨‍🦳 El padre sonríe: «Buen día, {hijo|hija}. ¿Viniste a rezar o a escaparte del calor?»', '👨‍🦳 «La misa es a las siete. Y no, no se puede entrar con el termo de tereré.»'],
     sacristan: ['🔔 El sacristán ajusta una vela: «Si tocás la campana sin permiso, la oye todo el barrio».', '🔔 «Hace cuarenta años que acomodo estas sillas. Ninguna está en su lugar».'],
   };
   VR.crearCatedral = function (o) {

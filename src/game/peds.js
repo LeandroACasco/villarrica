@@ -5,7 +5,7 @@
 VR.PED_TALK = {
   greet: ['¡Iporã, ha nde?', "¡Mba'éichapa, che ra'a!", 'Hína, ko hakuete...', '¡Ajépa!', 'Jaha ñamba\'apo', '¡Upéicha!'],
   flee: ['¡Epa!', '¡Cuidado, nde!', '¡Eñangarekóke!', '¡Despacio!'],
-  reckless: ["¡Upei oje'e lo mitã omanoreiha!", '¡Despacio, loco!', '¡Vas a matar a alguien!', "¡Upei oje'e lo mitã omanoreiha!"],
+  reckless: ["¡Upei oje'e lo mitã omanoreiha!", '¡Despacio, {loco|loca}!', '¡Vas a matar a alguien!', "¡Upei oje'e lo mitã omanoreiha!"],
   hit: ['¡Ay, po!', '¡Mirá por dónde andás!', "¡Mba'e piko!", '¡Ay, mi espalda!'],
 };
 VR.Peds = class {

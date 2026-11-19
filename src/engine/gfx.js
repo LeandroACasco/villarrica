@@ -61,6 +61,7 @@ VR.gfx = {
   // Texto en el mundo (globos, carteles): fuente del sistema, cacheada como imagen.
   _txt: new Map(),
   textImg(str, col = '#ffffff', size = 8, bold = true) {
+    if (VR.gt) str = VR.gt(str); // marcas de género {a|b}
     const key = str + '|' + col + '|' + size + '|' + bold + '|' + VR.RES;
     let c = this._txt.get(key);
     if (c) return c;

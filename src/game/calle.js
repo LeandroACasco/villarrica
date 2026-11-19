@@ -17,7 +17,7 @@
     hippie: { label: '📿 Comprar una pulsera · 10.000 Gs.', price: 10000, stock: 3, manta: 'hippie', items: ['#d8463a', '#e8b830', '#3b9a5a', '#2e6fc8', '#e86aa0', '#f2efe6'],
       looks: [{ gender: 'm', skin: 1, build: 'flaco', hair: 'rulos', hairColor: 3, beard: 'barba', top: 'musculosa', topColor: 10, bottom: 'cargo', bottomColor: 11, shoes: 'chinelas', shoesColor: 1, hat: 'gorro', hatColor: 5, cadenita: true },
         { gender: 'f', skin: 0, hair: 'trenza', hairColor: 4, top: 'top', topColor: 8, bottom: 'pollera', bottomColor: 6, shoes: 'chinelas', shoesColor: 1, cadenita: true }],
-      lines: ['¡Nde, mirá qué lindas pulseras!', 'Todo artesanal, amigo, llevate una.', 'Dale, está bien barata, mirá.', '¿Una pulserita, amigo? Hecha a mano.'], buy: ['¡Genial, gracias, amigo!', 'Buenísimo, que te dé buena onda.'], none: 'No me quedan más, po.' },
+      lines: ['¡Nde, mirá qué lindas pulseras!', 'Todo artesanal, {amigo|amiga}, llevate una.', 'Dale, está bien barata, mirá.', '¿Una pulserita, {amigo|amiga}? Hecha a mano.'], buy: ['¡Genial, gracias, {amigo|amiga}!', 'Buenísimo, que te dé buena onda.'], none: 'No me quedan más, po.' },
     indigena: { label: '🧺 Comprar artesanía · 15.000 Gs.', price: 15000, stock: 3, manta: 'tejida', items: ['#a8643a', '#7a4a24', '#c8322a', '#e8b830'],
       looks: [{ gender: 'f', skin: 4, hair: 'trenza', hairColor: 0, top: 'camisa', topColor: 0, bottom: 'pollera', bottomColor: 5, shoes: 'chinelas', shoesColor: 1, cadenita: true },
         { gender: 'm', skin: 4, hair: 'corto', hairColor: 0, top: 'camisaCorta', topColor: 5, bottom: 'bermuda', bottomColor: 3, shoes: 'chinelas', shoesColor: 1, hat: 'piri', hatColor: 4 }],
