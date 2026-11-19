@@ -587,3 +587,5 @@ Los choques fuertes deforman los autos (`src/game/chaperia.js`, `VR.chap`). Cada
 v1.90b (19/11/2026): puertas que se aflojan (entreabiertas) y se sueltan con golpes de costado (`dl`/`dd`, `VR.chap.loseDoor`, pieza suelta en la calle); las piezas bajas (trompa, costados, parachoques) se dibujan más abajo que el techo para que se lean en el volumen de la vista oblicua (`c._dmgA`/`c._dmgLift`).
 
 v1.91 (19/11/2026): M1 más fácil para novatos: al hablar con Ña Ramona (primer paso) aparece su bici vieja al lado (`mis.prestaBici`, modelo `bici`, `mio`, se guarda en `mis.s.biciR`), así el viaje Santa Lucía ↔ Centro (~1 km) ya no es a pie. Es tuya, sin alquiler. Pendiente: que Leandro diga si hace falta más ayuda (teletransporte al volver, o acortar la distancia).
+
+v1.91b (19/11/2026): la bici de Ña Ramona es una **bici vieja de dama** (foto de Leandro): color salmón desteñido (`VR.BICI_COLORS[6]`, `.dama`), cuadro bajo sin tubo superior, guardabarros y cubrecadena del color del cuadro, manubrio alto curvo con campanita (`MESH.bici` en `moto3d.js`). También sale al azar en el tránsito como una bici más.

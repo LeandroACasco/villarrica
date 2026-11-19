@@ -157,7 +157,8 @@ VR.drawPati = (pal, t = {}) => VR.vbase(6, 14, (T) => { // manubrio en T, tabla 
   for (let y = 5.2; y < 11; y += 0.9) T.line(2, y, 4, y, 0.2, '#2c2c32');
   T.rr(2.2, 12, 1.6, 0.6, 0.3, '#e8302a');
 }, () => VR.OBL.moto('pati', pal));
-VR.BICI_COLORS = [['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#c8322a', '#8e1f1a', '#e4685c'], ['#e8e6e0', '#a9a69e', '#ffffff'], ['#3f8f4a', '#28552f', '#66b872'], ['#e8b830', '#a8841c', '#f4d870'], ['#2c2c32', '#16161a', '#55555e']];
+VR.BICI_COLORS = [['#2f5fa8', '#1e3f74', '#5c8ad0'], ['#c8322a', '#8e1f1a', '#e4685c'], ['#e8e6e0', '#a9a69e', '#ffffff'], ['#3f8f4a', '#28552f', '#66b872'], ['#e8b830', '#a8841c', '#f4d870'], ['#2c2c32', '#16161a', '#55555e'], ['#b9614f', '#7a3a2f', '#dc9382']];
+VR.BICI_COLORS[6].dama = true;   // bici vieja de dama (cuadro bajo, guardabarros, manubrio alto): la de Ña Ramona, foto de Leandro 19/11/2026
 VR.drawBici = (pal, t = {}) => VR.vbase(6, 15, (T) => { // vista desde arriba: dos cubiertas finitas, cuadro al medio, manubrio recto, asiento y parrilla
   const [C, D] = pal;
   T.tire(2.4, 0.2, 1.2, 3.6); T.tire(2.4, 11.2, 1.2, 3.6);
