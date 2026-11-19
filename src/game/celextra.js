@@ -78,7 +78,18 @@ VR.CelX = (() => {
   const cfg = () => (V.s.cel = V.s.cel || { fondo: 'noche', tono: 'cl', fondos: ['noche'], tonos: ['cl'], orden: [] });
   const NOTAS = { cl: [[440, 480]], gu: [[64, 67, 71, 69, 67, 64].map(mf)], cu: [[57, 60, 64, 60].map(mf)], di: [[880, 1175, 880, 1175]], ro: [[82, 98, 82, 123]] };
   function sonarTono(id) { const t = id || cfg().tono, L = NOTAS[t] ? NOTAS[t][0] : NOTAS.cl[0]; L.forEach((f, i) => setTimeout(() => { try { A().tone(f, t === 'cl' ? 0.9 : 0.22, { type: t === 'ro' ? 'sawtooth' : t === 'di' ? 'square' : 'sine', vol: 0.05 }); } catch (e) { /* sin audio */ } }, t === 'cl' ? 0 : i * 240)); }
-  const GAMES = [['culebra', '🐍', 'Culebra', '#9bbc0f'], ['tateti', '❌', 'Ta-te-tí', '#ff8a8a'], ['memoria', '🃏', 'Memoria', '#ffd84a'], ['bloques', '🧱', 'Bloques', '#5ac8fa'], ['rebote', '🏓', 'Rebote', '#7fe08a'], ['dinarun', '🐱', 'Dina Run', '#ff7ab8']];
+  // ícono de Dina Run: carita de la gata en pixel art 16×16 (se dibuja una vez y se usa como imagen)
+  const iconoDina = (() => { try { const c = document.createElement('canvas'); c.width = 16; c.height = 16; const g = c.getContext('2d'), R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    R(0, 0, 16, 16, '#ff9fcf'); R(0, 12, 16, 4, '#7ad07a'); R(1, 1, 3, 1, '#fff'); R(11, 2, 4, 1, '#fff'); // cielo rosa y pasto
+    R(3, 2, 3, 4, '#f09a3a'); R(10, 2, 3, 4, '#f09a3a'); R(4, 3, 1, 2, '#ff7a8a'); R(11, 3, 1, 2, '#ff7a8a'); // orejas
+    R(2, 5, 12, 8, '#f09a3a'); R(3, 4, 10, 1, '#f09a3a'); R(3, 13, 10, 1, '#f09a3a'); // cara
+    R(4, 5, 1, 2, '#c87820'); R(7, 5, 2, 1, '#c87820'); R(11, 5, 1, 2, '#c87820'); // rayas
+    R(4, 7, 3, 3, '#fff'); R(9, 7, 3, 3, '#fff'); R(5, 8, 2, 2, '#222'); R(10, 8, 2, 2, '#222'); R(5, 8, 1, 1, '#fff'); R(10, 8, 1, 1, '#fff'); // ojos
+    R(7, 10, 2, 1, '#ff5a7a'); R(7, 11, 1, 1, '#222'); R(8, 11, 1, 1, '#222'); // nariz y boca
+    R(0, 10, 3, 1, '#fff'); R(13, 10, 3, 1, '#fff'); R(1, 12, 2, 1, '#fff'); R(13, 12, 2, 1, '#fff'); // bigotes
+    R(11, 11, 3, 3, '#e8303a'); R(11, 10, 3, 1, '#3aa83a'); R(12, 12, 1, 1, '#ffe6a0'); // frutilla
+    return c.toDataURL(); } catch (e) { return ''; } })();
+  const GAMES = [['culebra', '🐍', 'Culebra', '#9bbc0f'], ['tateti', '❌', 'Ta-te-tí', '#ff8a8a'], ['memoria', '🃏', 'Memoria', '#ffd84a'], ['bloques', '🧱', 'Bloques', '#5ac8fa'], ['rebote', '🏓', 'Rebote', '#7fe08a'], ['dinarun', iconoDina ? '<img class="icoPx" src="' + iconoDina + '">' : '🐱', 'Dina Run', '#ff9fcf']];
   let V = null, X0 = null;
 
   // ---------------- Radio: tres emisoras inventadas, música propia sintetizada (guarania, polca y cumbia) ----------------
